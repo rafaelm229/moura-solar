@@ -89,6 +89,7 @@ export class MemberViewDto {
   @ApiProperty() version!: number;
 }
 export class ContextDto extends MemberViewDto {
+  @ApiProperty() userId!: string;
   @ApiProperty() organizationId!: string;
   @ApiProperty() organizationName!: string;
   @ApiProperty() sessionId!: string;
