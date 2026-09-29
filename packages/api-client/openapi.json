@@ -1,0 +1,1156 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/v1/health/live": {
+      "get": {
+        "operationId": "HealthController_live",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Health"]
+      }
+    },
+    "/api/v1/health/ready": {
+      "get": {
+        "operationId": "HealthController_ready",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Health"]
+      }
+    },
+    "/api/v1/identity/bootstrap": {
+      "post": {
+        "operationId": "IdentityController_bootstrap",
+        "parameters": [
+          {
+            "name": "x-bootstrap-token",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BootstrapDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Identidade"]
+      }
+    },
+    "/api/v1/identity/login": {
+      "post": {
+        "operationId": "IdentityController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContextDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Identidade"]
+      }
+    },
+    "/api/v1/identity/refresh": {
+      "post": {
+        "operationId": "IdentityController_refresh",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContextDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Identidade"]
+      }
+    },
+    "/api/v1/identity/accept-link": {
+      "post": {
+        "operationId": "IdentityController_accept",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptLinkDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Identidade"]
+      }
+    },
+    "/api/v1/identity/me": {
+      "get": {
+        "operationId": "IdentityController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContextDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Identidade"]
+      }
+    },
+    "/api/v1/identity/logout": {
+      "post": {
+        "operationId": "IdentityController_logout",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Identidade"]
+      }
+    },
+    "/api/v1/identity/sessions": {
+      "get": {
+        "operationId": "IdentityController_sessions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessionViewDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Identidade"]
+      }
+    },
+    "/api/v1/identity/sessions/{id}/revoke": {
+      "post": {
+        "operationId": "IdentityController_revoke",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Identidade"]
+      }
+    },
+    "/api/v1/identity/members/{id}/sessions": {
+      "get": {
+        "operationId": "IdentityController_memberSessions",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessionViewDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Identidade"]
+      }
+    },
+    "/api/v1/identity/members": {
+      "get": {
+        "operationId": "IdentityController_members",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MemberViewDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Identidade"]
+      }
+    },
+    "/api/v1/identity/invitations": {
+      "post": {
+        "operationId": "IdentityController_invite",
+        "parameters": [
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "description": "UUID estável por comando; repetir com o mesmo conteúdo retorna o resultado.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Identidade"]
+      }
+    },
+    "/api/v1/identity/members/{id}": {
+      "patch": {
+        "operationId": "IdentityController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "description": "UUID estável por comando; repetir com o mesmo conteúdo retorna o resultado.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMemberDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Identidade"]
+      }
+    },
+    "/api/v1/identity/members/{id}/recovery": {
+      "post": {
+        "operationId": "IdentityController_recovery",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "description": "UUID estável por comando; repetir com o mesmo conteúdo retorna o resultado.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Identidade"]
+      }
+    },
+    "/api/v1/identity/roles": {
+      "get": {
+        "operationId": "IdentityController_roles",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RoleViewDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Identidade"]
+      },
+      "post": {
+        "operationId": "IdentityController_createRole",
+        "parameters": [
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "description": "UUID estável por comando; repetir com o mesmo conteúdo retorna o resultado.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Identidade"]
+      }
+    },
+    "/api/v1/identity/permissions": {
+      "get": {
+        "operationId": "IdentityController_permissions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Identidade"]
+      }
+    },
+    "/api/v1/identity/roles/{id}": {
+      "patch": {
+        "operationId": "IdentityController_updateRole",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "description": "UUID estável por comando; repetir com o mesmo conteúdo retorna o resultado.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Identidade"]
+      }
+    },
+    "/api/v1/identity/team-candidates": {
+      "get": {
+        "operationId": "IdentityController_candidates",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CandidateDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Identidade"]
+      }
+    },
+    "/api/v1/identity/teams": {
+      "get": {
+        "operationId": "IdentityController_teams",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TeamViewDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Identidade"]
+      },
+      "post": {
+        "operationId": "IdentityController_createTeam",
+        "parameters": [
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "description": "UUID estável por comando; repetir com o mesmo conteúdo retorna o resultado.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeamDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Identidade"]
+      }
+    },
+    "/api/v1/identity/teams/{id}": {
+      "patch": {
+        "operationId": "IdentityController_updateTeam",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "description": "UUID estável por comando; repetir com o mesmo conteúdo retorna o resultado.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeamDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Identidade"]
+      }
+    },
+    "/api/v1/identity/audit": {
+      "get": {
+        "operationId": "IdentityController_audit",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AuditViewDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Identidade"]
+      }
+    }
+  },
+  "info": {
+    "title": "Moura Solar API",
+    "description": "",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "cookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "ms_access"
+      }
+    },
+    "schemas": {
+      "BootstrapDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 12,
+            "maxLength": 128
+          },
+          "name": {
+            "type": "string"
+          },
+          "organization": {
+            "type": "string"
+          }
+        },
+        "required": ["email", "password", "name", "organization"]
+      },
+      "CommandResultDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"]
+      },
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 12,
+            "maxLength": 128
+          }
+        },
+        "required": ["email", "password"]
+      },
+      "GrantDto": {
+        "type": "object",
+        "properties": {
+          "permission": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string",
+            "enum": ["own", "team", "organization", "assigned", "linked", "domain"]
+          }
+        },
+        "required": ["permission", "scope"]
+      },
+      "ContextDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "roleId": {
+            "type": "string"
+          },
+          "roleName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "organizationName": {
+            "type": "string"
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "grants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GrantDto"
+            }
+          },
+          "teamIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "roleId",
+          "roleName",
+          "status",
+          "version",
+          "organizationId",
+          "organizationName",
+          "sessionId",
+          "grants",
+          "teamIds"
+        ]
+      },
+      "AcceptLinkDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 12,
+            "maxLength": 128
+          }
+        },
+        "required": ["token", "password"]
+      },
+      "SessionViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "device": {
+            "type": "string"
+          },
+          "current": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "lastSeenAt": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "device", "current", "createdAt", "lastSeenAt"]
+      },
+      "MemberViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "roleId": {
+            "type": "string"
+          },
+          "roleName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          }
+        },
+        "required": ["id", "name", "email", "roleId", "roleName", "status", "version"]
+      },
+      "InviteDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "roleId": {
+            "type": "string"
+          }
+        },
+        "required": ["email", "name", "roleId"]
+      },
+      "LinkResultDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "token", "expiresAt"]
+      },
+      "UpdateMemberDto": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "number"
+          },
+          "roleId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "blocked"]
+          }
+        },
+        "required": ["version", "roleId", "status"]
+      },
+      "RoleViewDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "grants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GrantDto"
+            }
+          },
+          "version": {
+            "type": "number"
+          },
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["name", "grants", "id"]
+      },
+      "RoleDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "grants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GrantDto"
+            }
+          },
+          "version": {
+            "type": "number"
+          }
+        },
+        "required": ["name", "grants"]
+      },
+      "CandidateDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "name"]
+      },
+      "TeamViewDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "memberIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "version": {
+            "type": "number"
+          },
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["name", "memberIds", "id"]
+      },
+      "TeamDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "memberIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "version": {
+            "type": "number"
+          }
+        },
+        "required": ["name", "memberIds"]
+      },
+      "AuditViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "actorId": {
+            "type": "string",
+            "nullable": true
+          },
+          "entityId": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "traceId": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "action", "actorId", "entityId", "createdAt", "traceId"]
+      }
+    }
+  }
+}

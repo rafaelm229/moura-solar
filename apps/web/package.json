@@ -13,9 +13,12 @@
   "dependencies": {
     "@moura-solar/contracts": "workspace:*",
     "@moura-solar/design-tokens": "workspace:*",
+    "@tanstack/react-query": "^5.104.0",
     "next": "^15.5.4",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "react-hook-form": "^7.89.0",
+    "@moura-solar/api-client": "workspace:*"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",

@@ -10,12 +10,14 @@ COPY apps/api/package.json apps/api/package.json
 COPY apps/web/package.json apps/web/package.json
 COPY apps/worker/package.json apps/worker/package.json
 COPY packages/contracts/package.json packages/contracts/package.json
+COPY packages/api-client/package.json packages/api-client/package.json
 COPY packages/database/package.json packages/database/package.json
 COPY packages/design-tokens/package.json packages/design-tokens/package.json
 COPY packages/typescript-config/package.json packages/typescript-config/package.json
 RUN pnpm install --frozen-lockfile
 
 FROM dependencies AS builder
+ENV API_INTERNAL_URL=http://api:3001/api/v1
 COPY . .
 RUN pnpm db:generate
 RUN pnpm build

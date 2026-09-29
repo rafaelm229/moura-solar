@@ -1,6 +1,6 @@
 # Matriz completa de permissões — proposta para decisão
 
-**Status:** proposta, NÃO aprovada nem aplicada. Derivada das SPECs 002 e 004–012.
+**Status:** aprovada pelo usuário em 29/09/2026; implementação em andamento. Derivada das SPECs 002 e 004–012.
 Esta matriz não autoriza implementar os módulos posteriores ao M1.
 
 ## Escopos propostos
@@ -32,8 +32,8 @@ Permissões não substituem gates, limites de alçada ou habilitação técnica.
 
 ## Proposta de atribuição
 
-Cada linha é uma permissão independente; os escopos abaixo são sugestões para
-revisão operacional, inclusive quando uma SPEC ainda contém uma hipótese.
+Cada linha é uma permissão independente; os escopos abaixo foram aprovados para
+o catálogo inicial. Gates e alçadas dos domínios continuam nas respectivas SPECs.
 `Proposta` na origem identifica nomes novos que precisam ser incorporados à SPEC.
 
 | Permissão                          | Admin   | Gerente | Vendedor | Financeiro | Estoquista | Instalador | Engenharia | Origem   |
@@ -199,7 +199,7 @@ revisão operacional, inclusive quando uma SPEC ainda contém uma hipótese.
 | `work_orders:read`                 | ORG     | EQUIPE  | —        | —          | —          | DESIGNADO  | DESIGNADO  | SPEC-010 |
 | `work_orders:start`                | ORG     | EQUIPE  | —        | —          | —          | DESIGNADO  | DESIGNADO  | SPEC-010 |
 
-## Decisões de negócio que bloqueiam a implementação da matriz
+## Decisões de negócio aprovadas
 
 1. **Comercial:** vendedor vê apenas registros próprios (proposto), ou todos da
    equipe? Pode visualizar custo e margem das próprias propostas (proposto)?
@@ -229,3 +229,5 @@ módulos. Ter permissão não permite ignorar limite ainda não definido.
   consumo e troca de senha atômicos; recuperação revoga todas as sessões do usuário.
 - Testes positivos e negativos de cada permissão e escopo; isolamento organizacional.
 - Nenhuma permissão futura significa rota de negócio já implementada.
+
+As cinco decisões acima foram aprovadas na conversa de implementação em 29/09/2026.
