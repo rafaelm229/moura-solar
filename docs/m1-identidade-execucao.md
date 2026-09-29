@@ -51,8 +51,20 @@ critérios de saída. Build local não substitui validação de Compose, migrati
 
 O usuário decidiu que convites e recuperação serão mediados pelo administrador.
 Também determinou definir agora a matriz completa, sem adiar escopos para M2.
-A proposta de matriz permanece pendente de decisão operacional; não constitui
-permissão efetiva nem aprovação das hipóteses das SPECs futuras.
+A matriz completa foi aprovada na conversa de 29/09/2026 e incorporada ao catálogo
+de permissões. Isso não aprova gates ou alçadas pendentes das SPECs futuras.
 
-Enquanto essa decisão estiver pendente, não aplicar concessões de acesso nem
-avançar a implementação dependente. Nenhum dado de negócio foi migrado ou apagado.
+A implementação prosseguiu após essas decisões. Migrations e testes usam bancos
+ou schemas isolados. Nenhum dado dos ambientes anteriores foi alterado.
+
+Consulte `docs/m1-operacao.md` para configuração, demonstração e validação.
+
+## Resultado da implementação
+
+M1 implementado com API, persistência, web responsiva e testes. As lacunas de M0
+necessárias ao marco foram tratadas: configuração, comandos Prisma, build, seed,
+OpenAPI/cliente gerado, logs, integração real e workflow de CI. Compose validado em
+projeto isolado; os ambientes anteriores permaneceram intactos.
+
+Resultados detalhados em `docs/evidencias/m1/README.md`. A execução remota de CI
+é verificada no PR, separadamente dos resultados locais.

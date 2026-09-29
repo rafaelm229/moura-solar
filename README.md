@@ -30,6 +30,11 @@ docker compose logs -f api web migrate postgres
 Os volumes persistem entre reconstruções. Não use `docker compose down -v` sem
 pretender apagar os dados locais.
 
+Após subir o ambiente, configure os segredos e crie o administrador com
+`pnpm identity:bootstrap`. Consulte [Operação do M1](docs/m1-operacao.md) para
+primeiro acesso, convites, recuperação e testes. A documentação OpenAPI está em
+`http://localhost:3001/api/v1/docs`.
+
 ## Desenvolvimento sem containers da aplicação
 
 Com PostgreSQL e MinIO disponíveis, configure `.env` para os endereços acessíveis
@@ -43,7 +48,7 @@ pnpm dev
 
 ## Estado do projeto
 
-O projeto está na fase de especificação. Nenhuma funcionalidade será considerada
+O projeto possui a fundação executável e o M1 de identidade implementado e validado localmente. Nenhuma funcionalidade será considerada
 aprovada somente por existir na interface: toda ação precisa respeitar regras de
 negócio, persistir no PostgreSQL, produzir auditoria e atualizar a esteira real.
 
