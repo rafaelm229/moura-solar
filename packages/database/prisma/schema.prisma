@@ -17,6 +17,10 @@ model Organization {
   memberships Membership[]
   roles       Role[]
   teams       Team[]
+  customers   Customer[]
+  utilityUnits UtilityUnit[]
+  opportunities Opportunity[]
+  activities  Activity[]
 
   @@map("organizations")
 }
@@ -28,6 +32,8 @@ model User {
   passwordHash String?      @map("password_hash")
   createdAt    DateTime     @default(now()) @map("created_at")
   memberships  Membership[]
+  opportunities Opportunity[]
+  activities   Activity[]
 
   @@map("users")
 }
@@ -172,4 +178,180 @@ model LoginThrottle {
   resetAt  DateTime @map("reset_at")
 
   @@map("login_throttles")
+}
+
+model Customer {
+  id                String            @id @default(uuid()) @db.Uuid
+  organizationId    String            @map("organization_id") @db.Uuid
+  kind              String            @default("PERSON")
+  legalName         String            @map("legal_name")
+  tradeName         String?           @map("trade_name")
+  taxId             String?           @map("tax_id")
+  stateRegistration String?           @map("state_registration")
+  notes             String?
+  status            String            @default("ACTIVE")
+  version           Int               @default(1)
+  archivedAt        DateTime?         @map("archived_at")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+
+  organization      Organization      @relation(fields: [organizationId], references: [id])
+  contacts          CustomerContact[]
+  addresses         Address[]
+  utilityUnits      UtilityUnit[]
+  opportunities     Opportunity[]
+  activities        Activity[]
+
+  @@index([organizationId, status])
+  @@index([organizationId, taxId])
+  @@map("customers")
+}
+
+model CustomerContact {
+  id              String   @id @default(uuid()) @db.Uuid
+  customerId      String   @map("customer_id") @db.Uuid
+  type            String   // PHONE, EMAIL, WHATSAPP, OTHER
+  value           String
+  normalizedValue String   @map("normalized_value")
+  label           String?
+  isPrimary       Boolean  @default(false) @map("is_primary")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  customer        Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId, type])
+  @@index([normalizedValue])
+  @@map("customer_contacts")
+}
+
+model Address {
+  id           String        @id @default(uuid()) @db.Uuid
+  customerId   String?       @map("customer_id") @db.Uuid
+  postalCode   String        @map("postal_code")
+  street       String
+  number       String
+  complement   String?
+  district     String?
+  city         String
+  state        String
+  country      String        @default("BR")
+  latitude     Decimal?      @db.Decimal(10, 7)
+  longitude    Decimal?      @db.Decimal(10, 7)
+  isPrimary    Boolean       @default(false) @map("is_primary")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  customer     Customer?     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  utilityUnits UtilityUnit[]
+
+  @@index([customerId])
+  @@map("addresses")
+}
+
+model UtilityUnit {
+  id              String        @id @default(uuid()) @db.Uuid
+  organizationId  String        @map("organization_id") @db.Uuid
+  customerId      String        @map("customer_id") @db.Uuid
+  addressId       String?       @map("address_id") @db.Uuid
+  distributorName String        @map("distributor_name")
+  externalCode    String?       @map("external_code")
+  consumerClass   String        @default("RESIDENTIAL") @map("consumer_class")
+  tariffMode      String        @default("CONVENTIONAL") @map("tariff_mode")
+  connectionType  String        @default("BIPHASIC") @map("connection_type")
+  voltage         String        @default("220V")
+  status          String        @default("ACTIVE")
+  version         Int           @default(1)
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  organization    Organization  @relation(fields: [organizationId], references: [id])
+  customer        Customer      @relation(fields: [customerId], references: [id])
+  address         Address?      @relation(fields: [addressId], references: [id])
+  opportunities   Opportunity[]
+
+  @@index([organizationId, externalCode])
+  @@index([customerId])
+  @@map("utility_units")
+}
+
+model Opportunity {
+  id                   String                  @id @default(uuid()) @db.Uuid
+  organizationId       String                  @map("organization_id") @db.Uuid
+  customerId           String                  @map("customer_id") @db.Uuid
+  utilityUnitId        String?                 @map("utility_unit_id") @db.Uuid
+  code                 String
+  title                String
+  ownerUserId          String                  @map("owner_user_id") @db.Uuid
+  source               String                  @default("INBOUND")
+  projectType          String                  @default("ON_GRID") @map("project_type")
+  needSummary          String                  @map("need_summary")
+  estimatedConsumption Decimal?                @map("estimated_consumption") @db.Decimal(10, 2)
+  priority             String                  @default("WARM")
+  state                String                  @default("NOVO")
+  expectedCloseDate    DateTime?               @map("expected_close_date") @db.Date
+  lossReason           String?                 @map("loss_reason")
+  lossNotes            String?                 @map("loss_notes")
+  lostAt               DateTime?               @map("lost_at")
+  version              Int                     @default(1)
+  createdAt            DateTime                @default(now()) @map("created_at")
+  updatedAt            DateTime                @updatedAt @map("updated_at")
+
+  organization         Organization            @relation(fields: [organizationId], references: [id])
+  customer             Customer                @relation(fields: [customerId], references: [id])
+  utilityUnit          UtilityUnit?            @relation(fields: [utilityUnitId], references: [id])
+  owner                User                    @relation(fields: [ownerUserId], references: [id])
+  activities           Activity[]
+  transitions          OpportunityTransition[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId, state])
+  @@index([organizationId, ownerUserId])
+  @@index([customerId])
+  @@map("opportunities")
+}
+
+model OpportunityTransition {
+  id            String      @id @default(uuid()) @db.Uuid
+  opportunityId String      @map("opportunity_id") @db.Uuid
+  fromState     String      @map("from_state")
+  toState       String      @map("to_state")
+  command       String
+  actorId       String      @map("actor_id") @db.Uuid
+  justification String?
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@index([opportunityId, createdAt])
+  @@map("opportunity_transitions")
+}
+
+model Activity {
+  id                 String       @id @default(uuid()) @db.Uuid
+  organizationId     String       @map("organization_id") @db.Uuid
+  opportunityId      String?      @map("opportunity_id") @db.Uuid
+  customerId         String?      @map("customer_id") @db.Uuid
+  type               String       // CALL, MESSAGE, MEETING, VISIT, EMAIL, TASK
+  subject            String
+  description        String?
+  assigneeUserId     String       @map("assignee_user_id") @db.Uuid
+  dueAt              DateTime     @map("due_at")
+  status             String       @default("OPEN") // OPEN, COMPLETED, CANCELED
+  resultCode         String?      @map("result_code")
+  resultNotes        String?      @map("result_notes")
+  completedAt        DateTime?    @map("completed_at")
+  previousActivityId String?      @map("previous_activity_id") @db.Uuid
+  version            Int          @default(1)
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+
+  organization       Organization @relation(fields: [organizationId], references: [id])
+  opportunity        Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  customer           Customer?    @relation(fields: [customerId], references: [id])
+  assignee           User         @relation(fields: [assigneeUserId], references: [id])
+
+  @@index([organizationId, assigneeUserId, status, dueAt])
+  @@index([opportunityId])
+  @@map("activities")
 }
