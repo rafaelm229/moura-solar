@@ -1258,11 +1258,11 @@ export interface components {
       utilityUnitId: string;
       referenceMonth: string;
       consumptionKwh: number;
-      injectedKwh?: Record<string, never>;
-      billedAmount?: Record<string, never>;
+      injectedKwh?: number | null;
+      billedAmount?: number | null;
       source: string;
       status: string;
-      notes?: Record<string, never>;
+      notes?: string | null;
       createdAt: string;
     };
     ConsumptionSummaryViewDto: {
@@ -1292,18 +1292,18 @@ export interface components {
     SurveyViewDto: {
       id: string;
       opportunityId: string;
-      utilityUnitId?: Record<string, never>;
+      utilityUnitId?: string | null;
       type: string;
       status: string;
       tariffPerKwh: number;
       connectionType: string;
       voltage: string;
-      roofType?: Record<string, never>;
+      roofType?: string | null;
       shadingKnown: boolean;
-      notes?: Record<string, never>;
-      assumptions?: Record<string, never>;
-      completedById?: Record<string, never>;
-      completedAt?: Record<string, never>;
+      notes?: string | null;
+      assumptions?: Record<string, never> | null;
+      completedById?: string | null;
+      completedAt?: string | null;
       version: number;
       createdAt: string;
     };
@@ -1335,13 +1335,13 @@ export interface components {
       kind: string;
       category: string;
       name: string;
-      manufacturer?: Record<string, never>;
-      model?: Record<string, never>;
+      manufacturer?: string | null;
+      model?: string | null;
       unitOfMeasure: string;
-      powerRatingWp?: Record<string, never>;
-      powerRatingKw?: Record<string, never>;
+      powerRatingWp?: number | null;
+      powerRatingKw?: number | null;
       referenceCost: number;
-      referencePrice?: Record<string, never>;
+      referencePrice?: number | null;
       status: string;
       version: number;
     };
@@ -1404,10 +1404,10 @@ export interface components {
       suggestedDcPowerKwp: number;
       suggestedModuleQuantity: number;
       suggestedModulePowerWp: number;
-      suggestedModuleSku?: Record<string, never>;
+      suggestedModuleSku?: string | null;
       suggestedInverterPowerKw: number;
       suggestedInverterQuantity: number;
-      suggestedInverterSku?: Record<string, never>;
+      suggestedInverterSku?: string | null;
       dcAcRatio: number;
       estimatedMonthlyGenerationKwh: number;
       estimatedAnnualGenerationKwh: number;
@@ -1415,7 +1415,7 @@ export interface components {
     };
     DesignItemViewDto: {
       id: string;
-      catalogItemId?: Record<string, never>;
+      catalogItemId?: string | null;
       kind: string;
       category: string;
       description: string;
@@ -1425,7 +1425,7 @@ export interface components {
       totalCost: number;
       costSource: string;
       isOptional: boolean;
-      justification?: Record<string, never>;
+      justification?: string | null;
     };
     AdditionalCostViewDto: {
       id: string;
@@ -1433,7 +1433,7 @@ export interface components {
       description: string;
       amount: number;
       commercialTreatment: string;
-      justification?: Record<string, never>;
+      justification?: string | null;
     };
     PricingViewDto: {
       directMaterialCost: number;
@@ -1453,7 +1453,7 @@ export interface components {
       id: string;
       designId: string;
       versionNumber: number;
-      basedOnVersionId?: Record<string, never>;
+      basedOnVersionId?: string | null;
       status: string;
       systemType: string;
       targetMonthlyGenerationKwh: number;
@@ -1466,12 +1466,12 @@ export interface components {
       specificYield: number;
       calculationVersion: string;
       assumptionsSnapshot: Record<string, never>;
-      approvedById?: Record<string, never>;
-      approvedAt?: Record<string, never>;
-      justification?: Record<string, never>;
+      approvedById?: string | null;
+      approvedAt?: string | null;
+      justification?: string | null;
       items: components['schemas']['DesignItemViewDto'][];
       additionalCosts: components['schemas']['AdditionalCostViewDto'][];
-      pricing?: components['schemas']['PricingViewDto'];
+      pricing?: components['schemas']['PricingViewDto'] | null;
       createdAt: string;
     };
     DesignViewDto: {
@@ -1495,6 +1495,9 @@ export interface components {
       targetMonthlyGenerationKwh: number;
       /** @default 135 */
       specificYield: number;
+    };
+    CreateDesignVersionDto: {
+      basedOnVersionId?: string;
     };
     DesignItemInputDto: {
       catalogItemId?: string;
@@ -3003,7 +3006,11 @@ export interface operations {
       };
       cookie?: never;
     };
-    requestBody?: never;
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['CreateDesignVersionDto'];
+      };
+    };
     responses: {
       200: {
         headers: {

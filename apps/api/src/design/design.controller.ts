@@ -20,6 +20,7 @@ import {
   ConsumptionSummaryViewDto,
   CreateCatalogItemDto,
   CreateDesignDto,
+  CreateDesignVersionDto,
   CreateEnergyReadingDto,
   CreateSurveyDto,
   DesignSuggestionViewDto,
@@ -210,13 +211,14 @@ export class DesignController {
   @Post('designs/:id/versions')
   @RequirePermission('designs:create')
   @HttpCode(200)
+  @ApiBody({ type: CreateDesignVersionDto, required: false })
   @ApiOkResponse({ type: DesignVersionViewDto })
   async createDesignVersion(
     @Req() req: IdentityRequest,
     @Param('id', ParseUUIDPipe) id: string,
-    @Body('basedOnVersionId') basedOnVersionId?: string,
+    @Body() dto?: CreateDesignVersionDto,
   ): Promise<DesignVersionViewDto> {
-    return this.service.createDesignVersion(req.actor, id, basedOnVersionId, req.requestId);
+    return this.service.createDesignVersion(req.actor, id, dto?.basedOnVersionId, req.requestId);
   }
 
   @Put('design-versions/:id')

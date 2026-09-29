@@ -2404,6 +2404,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDesignVersionDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "",
@@ -3803,10 +3813,12 @@
             "type": "number"
           },
           "injectedKwh": {
-            "type": "object"
+            "type": "number",
+            "nullable": true
           },
           "billedAmount": {
-            "type": "object"
+            "type": "number",
+            "nullable": true
           },
           "source": {
             "type": "string"
@@ -3815,7 +3827,8 @@
             "type": "string"
           },
           "notes": {
-            "type": "object"
+            "type": "string",
+            "nullable": true
           },
           "createdAt": {
             "type": "string"
@@ -3905,7 +3918,8 @@
             "type": "string"
           },
           "utilityUnitId": {
-            "type": "object"
+            "type": "string",
+            "nullable": true
           },
           "type": {
             "type": "string"
@@ -3923,22 +3937,27 @@
             "type": "string"
           },
           "roofType": {
-            "type": "object"
+            "type": "string",
+            "nullable": true
           },
           "shadingKnown": {
             "type": "boolean"
           },
           "notes": {
-            "type": "object"
+            "type": "string",
+            "nullable": true
           },
           "assumptions": {
-            "type": "object"
+            "type": "object",
+            "nullable": true
           },
           "completedById": {
-            "type": "object"
+            "type": "string",
+            "nullable": true
           },
           "completedAt": {
-            "type": "object"
+            "type": "string",
+            "nullable": true
           },
           "version": {
             "type": "number"
@@ -3997,8 +4016,7 @@
           "plannedAdditionalLoadKwh": {
             "type": "number"
           }
-        },
-        "required": ["type", "tariffPerKwh", "connectionType", "voltage"]
+        }
       },
       "CatalogItemViewDto": {
         "type": "object",
@@ -4019,25 +4037,30 @@
             "type": "string"
           },
           "manufacturer": {
-            "type": "object"
+            "type": "string",
+            "nullable": true
           },
           "model": {
-            "type": "object"
+            "type": "string",
+            "nullable": true
           },
           "unitOfMeasure": {
             "type": "string"
           },
           "powerRatingWp": {
-            "type": "object"
+            "type": "number",
+            "nullable": true
           },
           "powerRatingKw": {
-            "type": "object"
+            "type": "number",
+            "nullable": true
           },
           "referenceCost": {
             "type": "number"
           },
           "referencePrice": {
-            "type": "object"
+            "type": "number",
+            "nullable": true
           },
           "status": {
             "type": "string"
@@ -4189,7 +4212,8 @@
             "type": "number"
           },
           "suggestedModuleSku": {
-            "type": "object"
+            "type": "string",
+            "nullable": true
           },
           "suggestedInverterPowerKw": {
             "type": "number"
@@ -4198,7 +4222,8 @@
             "type": "number"
           },
           "suggestedInverterSku": {
-            "type": "object"
+            "type": "string",
+            "nullable": true
           },
           "dcAcRatio": {
             "type": "number"
@@ -4234,7 +4259,8 @@
             "type": "string"
           },
           "catalogItemId": {
-            "type": "object"
+            "type": "string",
+            "nullable": true
           },
           "kind": {
             "type": "string"
@@ -4264,7 +4290,8 @@
             "type": "boolean"
           },
           "justification": {
-            "type": "object"
+            "type": "string",
+            "nullable": true
           }
         },
         "required": [
@@ -4299,7 +4326,8 @@
             "type": "string"
           },
           "justification": {
-            "type": "object"
+            "type": "string",
+            "nullable": true
           }
         },
         "required": ["id", "category", "description", "amount", "commercialTreatment"]
@@ -4372,7 +4400,8 @@
             "type": "number"
           },
           "basedOnVersionId": {
-            "type": "object"
+            "type": "string",
+            "nullable": true
           },
           "status": {
             "type": "string"
@@ -4411,13 +4440,16 @@
             "type": "object"
           },
           "approvedById": {
-            "type": "object"
+            "type": "string",
+            "nullable": true
           },
           "approvedAt": {
-            "type": "object"
+            "type": "string",
+            "nullable": true
           },
           "justification": {
-            "type": "object"
+            "type": "string",
+            "nullable": true
           },
           "items": {
             "type": "array",
@@ -4432,7 +4464,13 @@
             }
           },
           "pricing": {
-            "$ref": "#/components/schemas/PricingViewDto"
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PricingViewDto"
+              }
+            ]
           },
           "createdAt": {
             "type": "string"
@@ -4519,6 +4557,14 @@
           }
         },
         "required": ["targetMonthlyGenerationKwh"]
+      },
+      "CreateDesignVersionDto": {
+        "type": "object",
+        "properties": {
+          "basedOnVersionId": {
+            "type": "string"
+          }
+        }
       },
       "DesignItemInputDto": {
         "type": "object",

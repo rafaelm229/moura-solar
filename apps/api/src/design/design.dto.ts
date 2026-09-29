@@ -2,11 +2,11 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
   IsBoolean,
-  IsEnum,
   IsIn,
   IsNumber,
   IsOptional,
   IsString,
+  Matches,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -15,6 +15,7 @@ import { Type } from 'class-transformer';
 export class CreateEnergyReadingDto {
   @ApiProperty({ example: '2026-08' })
   @IsString()
+  @Matches(/^\d{4}-\d{2}$/)
   referenceMonth!: string;
 
   @ApiProperty({ example: 450.5 })
@@ -22,24 +23,24 @@ export class CreateEnergyReadingDto {
   @Min(0)
   consumptionKwh!: number;
 
-  @ApiPropertyOptional({ example: 0 })
+  @ApiPropertyOptional({ example: 0, type: Number })
   @IsOptional()
   @IsNumber()
   @Min(0)
   injectedKwh?: number;
 
-  @ApiPropertyOptional({ example: 425.8 })
+  @ApiPropertyOptional({ example: 425.8, type: Number })
   @IsOptional()
   @IsNumber()
   @Min(0)
   billedAmount?: number;
 
-  @ApiPropertyOptional({ default: 'MANUAL', enum: ['MANUAL', 'BILL', 'IMPORT'] })
+  @ApiPropertyOptional({ default: 'MANUAL', enum: ['MANUAL', 'BILL', 'IMPORT'], type: String })
   @IsOptional()
   @IsIn(['MANUAL', 'BILL', 'IMPORT'])
   source?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: String })
   @IsOptional()
   @IsString()
   notes?: string;
@@ -50,11 +51,11 @@ export class EnergyReadingViewDto {
   @ApiProperty() utilityUnitId!: string;
   @ApiProperty() referenceMonth!: string;
   @ApiProperty() consumptionKwh!: number;
-  @ApiPropertyOptional() injectedKwh!: number | null;
-  @ApiPropertyOptional() billedAmount!: number | null;
+  @ApiPropertyOptional({ type: Number, nullable: true }) injectedKwh!: number | null;
+  @ApiPropertyOptional({ type: Number, nullable: true }) billedAmount!: number | null;
   @ApiProperty() source!: string;
   @ApiProperty() status!: string;
-  @ApiPropertyOptional() notes!: string | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) notes!: string | null;
   @ApiProperty() createdAt!: string;
 }
 
@@ -68,47 +69,52 @@ export class ConsumptionSummaryViewDto {
 }
 
 export class CreateSurveyDto {
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: String })
   @IsOptional()
   @IsString()
   utilityUnitId?: string;
 
-  @ApiProperty({ default: 'REMOTE', enum: ['REMOTE', 'ONSITE', 'HYBRID'] })
+  @ApiPropertyOptional({ default: 'REMOTE', enum: ['REMOTE', 'ONSITE', 'HYBRID'], type: String })
   @IsOptional()
   @IsIn(['REMOTE', 'ONSITE', 'HYBRID'])
   type?: string;
 
-  @ApiProperty({ default: 0.95 })
+  @ApiPropertyOptional({ default: 0.95, type: Number })
+  @IsOptional()
   @IsNumber()
   @Min(0.01)
-  tariffPerKwh!: number;
+  tariffPerKwh?: number;
 
-  @ApiProperty({ default: 'BIPHASIC', enum: ['MONOPHASIC', 'BIPHASIC', 'TRIPHASIC'] })
+  @ApiPropertyOptional({
+    default: 'BIPHASIC',
+    enum: ['MONOPHASIC', 'BIPHASIC', 'TRIPHASIC'],
+    type: String,
+  })
   @IsOptional()
   @IsIn(['MONOPHASIC', 'BIPHASIC', 'TRIPHASIC'])
   connectionType?: string;
 
-  @ApiProperty({ default: '220V' })
+  @ApiPropertyOptional({ default: '220V', type: String })
   @IsOptional()
   @IsString()
   voltage?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: String })
   @IsOptional()
   @IsString()
   roofType?: string;
 
-  @ApiPropertyOptional({ default: false })
+  @ApiPropertyOptional({ default: false, type: Boolean })
   @IsOptional()
   @IsBoolean()
   shadingKnown?: boolean;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: String })
   @IsOptional()
   @IsString()
   notes?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: Number })
   @IsOptional()
   @IsNumber()
   @Min(0)
@@ -118,18 +124,21 @@ export class CreateSurveyDto {
 export class SurveyViewDto {
   @ApiProperty() id!: string;
   @ApiProperty() opportunityId!: string;
-  @ApiPropertyOptional() utilityUnitId!: string | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) utilityUnitId!: string | null;
   @ApiProperty() type!: string;
   @ApiProperty() status!: string;
   @ApiProperty() tariffPerKwh!: number;
   @ApiProperty() connectionType!: string;
   @ApiProperty() voltage!: string;
-  @ApiPropertyOptional() roofType!: string | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) roofType!: string | null;
   @ApiProperty() shadingKnown!: boolean;
-  @ApiPropertyOptional() notes!: string | null;
-  @ApiPropertyOptional() assumptions!: Record<string, unknown> | null;
-  @ApiPropertyOptional() completedById!: string | null;
-  @ApiPropertyOptional() completedAt!: string | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) notes!: string | null;
+  @ApiPropertyOptional({ type: Object, nullable: true }) assumptions!: Record<
+    string,
+    unknown
+  > | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) completedById!: string | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) completedAt!: string | null;
   @ApiProperty() version!: number;
   @ApiProperty() createdAt!: string;
 }
@@ -171,12 +180,12 @@ export class CreateCatalogItemDto {
   @IsString()
   name!: string;
 
-  @ApiPropertyOptional({ example: 'Longi Solar' })
+  @ApiPropertyOptional({ example: 'Longi Solar', type: String })
   @IsOptional()
   @IsString()
   manufacturer?: string;
 
-  @ApiPropertyOptional({ example: 'Hi-MO X6' })
+  @ApiPropertyOptional({ example: 'Hi-MO X6', type: String })
   @IsOptional()
   @IsString()
   model?: string;
@@ -186,13 +195,13 @@ export class CreateCatalogItemDto {
   @IsString()
   unitOfMeasure?: string;
 
-  @ApiPropertyOptional({ example: 630 })
+  @ApiPropertyOptional({ example: 630, type: Number })
   @IsOptional()
   @IsNumber()
   @Min(0)
   powerRatingWp?: number;
 
-  @ApiPropertyOptional({ example: 0 })
+  @ApiPropertyOptional({ example: 0, type: Number })
   @IsOptional()
   @IsNumber()
   @Min(0)
@@ -203,7 +212,7 @@ export class CreateCatalogItemDto {
   @Min(0)
   referenceCost!: number;
 
-  @ApiPropertyOptional({ example: 850.0 })
+  @ApiPropertyOptional({ example: 850.0, type: Number })
   @IsOptional()
   @IsNumber()
   @Min(0)
@@ -211,46 +220,46 @@ export class CreateCatalogItemDto {
 }
 
 export class UpdateCatalogItemDto {
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: String })
   @IsOptional()
   @IsString()
   name?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: String })
   @IsOptional()
   @IsString()
   manufacturer?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: String })
   @IsOptional()
   @IsString()
   model?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: Number })
   @IsOptional()
   @IsNumber()
   @Min(0)
   powerRatingWp?: number;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: Number })
   @IsOptional()
   @IsNumber()
   @Min(0)
   powerRatingKw?: number;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: Number })
   @IsOptional()
   @IsNumber()
   @Min(0)
   referenceCost?: number;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: Number })
   @IsOptional()
   @IsNumber()
   @Min(0)
   referencePrice?: number;
 
-  @ApiPropertyOptional({ enum: ['ACTIVE', 'INACTIVE'] })
+  @ApiPropertyOptional({ enum: ['ACTIVE', 'INACTIVE'], type: String })
   @IsOptional()
   @IsIn(['ACTIVE', 'INACTIVE'])
   status?: string;
@@ -266,19 +275,19 @@ export class CatalogItemViewDto {
   @ApiProperty() kind!: string;
   @ApiProperty() category!: string;
   @ApiProperty() name!: string;
-  @ApiPropertyOptional() manufacturer!: string | null;
-  @ApiPropertyOptional() model!: string | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) manufacturer!: string | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) model!: string | null;
   @ApiProperty() unitOfMeasure!: string;
-  @ApiPropertyOptional() powerRatingWp!: number | null;
-  @ApiPropertyOptional() powerRatingKw!: number | null;
+  @ApiPropertyOptional({ type: Number, nullable: true }) powerRatingWp!: number | null;
+  @ApiPropertyOptional({ type: Number, nullable: true }) powerRatingKw!: number | null;
   @ApiProperty() referenceCost!: number;
-  @ApiPropertyOptional() referencePrice!: number | null;
+  @ApiPropertyOptional({ type: Number, nullable: true }) referencePrice!: number | null;
   @ApiProperty() status!: string;
   @ApiProperty() version!: number;
 }
 
 export class DesignItemInputDto {
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: String })
   @IsOptional()
   @IsString()
   catalogItemId?: string;
@@ -309,17 +318,17 @@ export class DesignItemInputDto {
   @Min(0)
   unitCost!: number;
 
-  @ApiPropertyOptional({ default: 'CATALOG', enum: ['CATALOG', 'MANUAL', 'QUOTE'] })
+  @ApiPropertyOptional({ default: 'CATALOG', enum: ['CATALOG', 'MANUAL', 'QUOTE'], type: String })
   @IsOptional()
   @IsIn(['CATALOG', 'MANUAL', 'QUOTE'])
   costSource?: string;
 
-  @ApiPropertyOptional({ default: false })
+  @ApiPropertyOptional({ default: false, type: Boolean })
   @IsOptional()
   @IsBoolean()
   isOptional?: boolean;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: String })
   @IsOptional()
   @IsString()
   justification?: string;
@@ -364,24 +373,29 @@ export class AdditionalCostInputDto {
   @ApiPropertyOptional({
     default: 'INCLUDED_IN_PRICE',
     enum: ['INCLUDED_IN_PRICE', 'BILLED_SEPARATELY', 'INTERNAL_MONITORING'],
+    type: String,
   })
   @IsOptional()
   @IsIn(['INCLUDED_IN_PRICE', 'BILLED_SEPARATELY', 'INTERNAL_MONITORING'])
   commercialTreatment?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: String })
   @IsOptional()
   @IsString()
   justification?: string;
 }
 
 export class CreateDesignDto {
-  @ApiPropertyOptional({ default: 'Dimensionamento Padrão' })
+  @ApiPropertyOptional({ default: 'Dimensionamento Padrão', type: String })
   @IsOptional()
   @IsString()
   name?: string;
 
-  @ApiPropertyOptional({ default: 'ON_GRID', enum: ['ON_GRID', 'OFF_GRID', 'HYBRID'] })
+  @ApiPropertyOptional({
+    default: 'ON_GRID',
+    enum: ['ON_GRID', 'OFF_GRID', 'HYBRID'],
+    type: String,
+  })
   @IsOptional()
   @IsIn(['ON_GRID', 'OFF_GRID', 'HYBRID'])
   systemType?: string;
@@ -391,11 +405,18 @@ export class CreateDesignDto {
   @Min(1)
   targetMonthlyGenerationKwh!: number;
 
-  @ApiPropertyOptional({ default: 135.0 })
+  @ApiPropertyOptional({ default: 135.0, type: Number })
   @IsOptional()
   @IsNumber()
   @Min(1)
   specificYield?: number;
+}
+
+export class CreateDesignVersionDto {
+  @ApiPropertyOptional({ type: String })
+  @IsOptional()
+  @IsString()
+  basedOnVersionId?: string;
 }
 
 export class SuggestDesignDto {
@@ -404,13 +425,13 @@ export class SuggestDesignDto {
   @Min(1)
   targetMonthlyGenerationKwh!: number;
 
-  @ApiPropertyOptional({ default: 135.0 })
+  @ApiPropertyOptional({ default: 135.0, type: Number })
   @IsOptional()
   @IsNumber()
   @Min(1)
   specificYield?: number;
 
-  @ApiPropertyOptional({ default: 630 })
+  @ApiPropertyOptional({ default: 630, type: Number })
   @IsOptional()
   @IsNumber()
   @Min(100)
@@ -423,10 +444,10 @@ export class DesignSuggestionViewDto {
   @ApiProperty() suggestedDcPowerKwp!: number;
   @ApiProperty() suggestedModuleQuantity!: number;
   @ApiProperty() suggestedModulePowerWp!: number;
-  @ApiPropertyOptional() suggestedModuleSku!: string | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) suggestedModuleSku!: string | null;
   @ApiProperty() suggestedInverterPowerKw!: number;
   @ApiProperty() suggestedInverterQuantity!: number;
-  @ApiPropertyOptional() suggestedInverterSku!: string | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) suggestedInverterSku!: string | null;
   @ApiProperty() dcAcRatio!: number;
   @ApiProperty() estimatedMonthlyGenerationKwh!: number;
   @ApiProperty() estimatedAnnualGenerationKwh!: number;
@@ -434,19 +455,19 @@ export class DesignSuggestionViewDto {
 }
 
 export class UpdateDesignVersionDto {
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: Number })
   @IsOptional()
   @IsNumber()
   @Min(1)
   targetMonthlyGenerationKwh?: number;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: Number })
   @IsOptional()
   @IsNumber()
   @Min(0)
   targetConsumptionKwh?: number;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: Number })
   @IsOptional()
   @IsNumber()
   @Min(1)
@@ -465,7 +486,7 @@ export class UpdateDesignVersionDto {
   @Type(() => AdditionalCostInputDto)
   additionalCosts?: AdditionalCostInputDto[];
 
-  @ApiPropertyOptional({ default: 0 })
+  @ApiPropertyOptional({ default: 0, type: Number })
   @IsOptional()
   @IsNumber()
   @Min(0)
@@ -476,7 +497,7 @@ export class UpdateDesignVersionDto {
   @Min(0)
   markupPercent!: number;
 
-  @ApiPropertyOptional({ default: 0, description: 'Desconto absoluto em moeda' })
+  @ApiPropertyOptional({ default: 0, description: 'Desconto absoluto em moeda', type: Number })
   @IsOptional()
   @IsNumber()
   @Min(0)
@@ -484,13 +505,14 @@ export class UpdateDesignVersionDto {
 }
 
 export class ApproveDesignVersionDto {
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: String })
   @IsOptional()
   @IsString()
   justification?: string;
 
   @ApiPropertyOptional({
     description: 'Obrigatório se a margem for inferior à alçada mínima (20%)',
+    type: String,
   })
   @IsOptional()
   @IsString()
@@ -514,7 +536,7 @@ export class PricingViewDto {
 
 export class DesignItemViewDto {
   @ApiProperty() id!: string;
-  @ApiPropertyOptional() catalogItemId!: string | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) catalogItemId!: string | null;
   @ApiProperty() kind!: string;
   @ApiProperty() category!: string;
   @ApiProperty() description!: string;
@@ -524,7 +546,7 @@ export class DesignItemViewDto {
   @ApiProperty() totalCost!: number;
   @ApiProperty() costSource!: string;
   @ApiProperty() isOptional!: boolean;
-  @ApiPropertyOptional() justification!: string | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) justification!: string | null;
 }
 
 export class AdditionalCostViewDto {
@@ -533,14 +555,14 @@ export class AdditionalCostViewDto {
   @ApiProperty() description!: string;
   @ApiProperty() amount!: number;
   @ApiProperty() commercialTreatment!: string;
-  @ApiPropertyOptional() justification!: string | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) justification!: string | null;
 }
 
 export class DesignVersionViewDto {
   @ApiProperty() id!: string;
   @ApiProperty() designId!: string;
   @ApiProperty() versionNumber!: number;
-  @ApiPropertyOptional() basedOnVersionId!: string | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) basedOnVersionId!: string | null;
   @ApiProperty() status!: string;
   @ApiProperty() systemType!: string;
   @ApiProperty() targetMonthlyGenerationKwh!: number;
@@ -553,12 +575,12 @@ export class DesignVersionViewDto {
   @ApiProperty() specificYield!: number;
   @ApiProperty() calculationVersion!: string;
   @ApiProperty() assumptionsSnapshot!: Record<string, unknown>;
-  @ApiPropertyOptional() approvedById!: string | null;
-  @ApiPropertyOptional() approvedAt!: string | null;
-  @ApiPropertyOptional() justification!: string | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) approvedById!: string | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) approvedAt!: string | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) justification!: string | null;
   @ApiProperty({ type: [DesignItemViewDto] }) items!: DesignItemViewDto[];
   @ApiProperty({ type: [AdditionalCostViewDto] }) additionalCosts!: AdditionalCostViewDto[];
-  @ApiPropertyOptional({ type: PricingViewDto }) pricing!: PricingViewDto | null;
+  @ApiPropertyOptional({ type: PricingViewDto, nullable: true }) pricing!: PricingViewDto | null;
   @ApiProperty() createdAt!: string;
 }
 
