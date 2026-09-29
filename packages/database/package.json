@@ -1,0 +1,22 @@
+{
+  "name": "@moura-solar/database",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "prisma generate",
+    "generate": "prisma generate",
+    "migrate": "prisma migrate dev",
+    "deploy": "prisma migrate deploy",
+    "studio": "prisma studio",
+    "lint": "DATABASE_URL=${DATABASE_URL:-postgresql://moura:local@localhost:5432/moura_solar} prisma validate",
+    "test": "node --test",
+    "typecheck": "DATABASE_URL=${DATABASE_URL:-postgresql://moura:local@localhost:5432/moura_solar} prisma validate"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.16.2"
+  },
+  "devDependencies": {
+    "prisma": "^6.16.2"
+  }
+}

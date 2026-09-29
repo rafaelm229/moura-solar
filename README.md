@@ -1,0 +1,120 @@
+# Moura Solar Platform
+
+Nova plataforma integrada de CRM, propostas, contratos, financeiro, engenharia,
+suprimentos, instalações e pós-venda da Moura Solar.
+
+## Início rápido
+
+Requisitos: Docker com Compose v2 e Git.
+
+```bash
+cp .env.example .env
+docker compose up -d --build
+docker compose ps
+```
+
+Acessos locais padrão:
+
+- web: `http://localhost:3000`;
+- API: `http://localhost:3001/api/v1`;
+- health: `http://localhost:3001/api/v1/health/ready`;
+- MinIO: `http://localhost:9001`.
+
+As portas externas podem ser alteradas no `.env` sem mudar a comunicação entre
+os containers. Para acompanhar a inicialização:
+
+```bash
+docker compose logs -f api web migrate postgres
+```
+
+Os volumes persistem entre reconstruções. Não use `docker compose down -v` sem
+pretender apagar os dados locais.
+
+## Desenvolvimento sem containers da aplicação
+
+Com PostgreSQL e MinIO disponíveis, configure `.env` para os endereços acessíveis
+pela máquina e execute:
+
+```bash
+pnpm install
+pnpm db:generate
+pnpm dev
+```
+
+## Estado do projeto
+
+O projeto está na fase de especificação. Nenhuma funcionalidade será considerada
+aprovada somente por existir na interface: toda ação precisa respeitar regras de
+negócio, persistir no PostgreSQL, produzir auditoria e atualizar a esteira real.
+
+## Stack aprovada
+
+- Web responsiva: Next.js, React e TypeScript.
+- API: NestJS e TypeScript.
+- Banco de dados: PostgreSQL e Prisma.
+- Aplicativo futuro: React Native e Expo.
+- Monorepo: Turborepo e pnpm.
+- Arquivos: armazenamento compatível com S3; MinIO no desenvolvimento.
+- Filas: Redis e BullMQ quando houver processamento assíncrono real.
+- Infraestrutura local: Docker Compose.
+
+## Princípios
+
+1. A API é a autoridade das regras de negócio.
+2. PostgreSQL é a fonte única de verdade.
+3. Web completa para todos os perfis, inclusive instaladores.
+4. Permissão define acesso; tamanho de tela define somente apresentação.
+5. Mudanças críticas são transacionais, auditáveis e idempotentes.
+6. A esteira é derivada do estado real do processo.
+7. Cada funcionalidade nasce de uma SPEC aprovada e termina com testes.
+
+## Especificações
+
+- [SPEC-000 — Arquitetura e padrões de engenharia](specs/SPEC-000-arquitetura/spec.md)
+- [SPEC-001 — Jornada do cliente](specs/SPEC-001-jornada-cliente/spec.md)
+- [Estados e transições](specs/SPEC-001-jornada-cliente/estados-e-transicoes.md)
+- [Responsabilidades e gates](specs/SPEC-001-jornada-cliente/responsabilidades-e-gates.md)
+- [Fatia vertical inicial](specs/SPEC-001-jornada-cliente/fatia-vertical-001.md)
+- [Glossário de domínio](specs/SPEC-001-jornada-cliente/glossario.md)
+- [SPEC-002 — Identidade e permissões](specs/SPEC-002-identidade-permissoes/spec.md)
+- [SPEC-003 — Design system e arquitetura de informação](specs/SPEC-003-design-system-ia/spec.md)
+- [Mapa de navegação](specs/SPEC-003-design-system-ia/mapa-navegacao.md)
+- [SPEC-004 — Clientes e oportunidades](specs/SPEC-004-clientes-oportunidades/spec.md)
+- [Modelo de dados comercial](specs/SPEC-004-clientes-oportunidades/modelo-dados.md)
+- [Contrato inicial da API comercial](specs/SPEC-004-clientes-oportunidades/api.md)
+- [SPEC-005 — Levantamento, dimensionamento e custos](specs/SPEC-005-dimensionamento-custos/spec.md)
+- [Modelo técnico e comercial](specs/SPEC-005-dimensionamento-custos/modelo-dados.md)
+- [Regras de cálculo e unidades](specs/SPEC-005-dimensionamento-custos/calculos.md)
+- [Automações de dimensionamento](specs/SPEC-005-dimensionamento-custos/automacoes.md)
+- [SPEC-006 — Propostas e aceite comercial](specs/SPEC-006-propostas/spec.md)
+- [Modelo de dados de propostas](specs/SPEC-006-propostas/modelo-dados.md)
+- [Estrutura do PDF comercial](specs/SPEC-006-propostas/pdf.md)
+- [SPEC-007 — Contratos e documentos](specs/SPEC-007-contratos-documentos/spec.md)
+- [Modelo de contratos](specs/SPEC-007-contratos-documentos/modelo-dados.md)
+- [Templates, campos e cláusulas](specs/SPEC-007-contratos-documentos/templates-clausulas.md)
+- [SPEC-008 — Financeiro](specs/SPEC-008-financeiro/spec.md)
+- [Modelo de dados financeiro](specs/SPEC-008-financeiro/modelo-dados.md)
+- [Cálculos, conciliação e indicadores](specs/SPEC-008-financeiro/calculos-indicadores.md)
+- [SPEC-009 — Estoque e compras](specs/SPEC-009-estoque-compras/spec.md)
+- [Modelo de dados de estoque](specs/SPEC-009-estoque-compras/modelo-dados.md)
+- [Movimentos, saldos e custo médio](specs/SPEC-009-estoque-compras/movimentos-custeio.md)
+- [SPEC-010 — Engenharia e instalação](specs/SPEC-010-engenharia-instalacao/spec.md)
+- [Fluxo de engenharia e homologação](specs/SPEC-010-engenharia-instalacao/engenharia-homologacao.md)
+- [Checklist e operação de campo](specs/SPEC-010-engenharia-instalacao/campo-checklist.md)
+- [SPEC-011 — Pós-venda, suporte e desempenho](specs/SPEC-011-pos-venda/spec.md)
+- [Modelo de dados de pós-venda](specs/SPEC-011-pos-venda/modelo-dados.md)
+- [Monitoramento e operação de suporte](specs/SPEC-011-pos-venda/monitoramento-suporte.md)
+- [SPEC-012 — Automações, notificações, gestão e observabilidade](specs/SPEC-012-automacoes-gestao/spec.md)
+- [Modelo de dados de automações e gestão](specs/SPEC-012-automacoes-gestao/modelo-dados.md)
+- [Indicadores, alertas e observabilidade](specs/SPEC-012-automacoes-gestao/indicadores-observabilidade.md)
+
+## Decisões arquiteturais
+
+- [ADR-001 — Monólito modular](docs/adr/ADR-001-monolito-modular.md)
+- [ADR-002 — Web completa e aplicativo complementar](docs/adr/ADR-002-web-e-mobile.md)
+
+## Implementação
+
+- [Plano de implementação](docs/plano-implementacao.md)
+- [Execução da primeira fatia vertical](docs/fatia-vertical-001-execucao.md)
+- [Definition of Done](docs/definition-of-done.md)

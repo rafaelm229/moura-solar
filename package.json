@@ -1,0 +1,28 @@
+{
+  "name": "moura-solar-platform",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "format:check": "prettier --check .",
+    "format": "prettier --write .",
+    "db:generate": "pnpm --filter @moura-solar/database generate",
+    "db:migrate": "pnpm --filter @moura-solar/database migrate",
+    "db:deploy": "pnpm --filter @moura-solar/database deploy",
+    "db:studio": "pnpm --filter @moura-solar/database studio",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2",
+    "turbo": "^2.5.6",
+    "typescript": "^5.9.2"
+  }
+}

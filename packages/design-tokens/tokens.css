@@ -1,0 +1,19 @@
+:root {
+  --color-brand-950: #062d21;
+  --color-brand-900: #084c36;
+  --color-brand-700: #0b6b48;
+  --color-brand-500: #15945f;
+  --color-brand-100: #dff3e8;
+  --color-accent-500: #f59e0b;
+  --color-ink-950: #07172f;
+  --color-ink-700: #334155;
+  --color-ink-500: #64748b;
+  --color-surface: #ffffff;
+  --color-canvas: #f4f8f6;
+  --color-border: #d9e4df;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --shadow-card: 0 12px 32px rgb(6 45 33 / 8%);
+  --content-max: 90rem;
+}
