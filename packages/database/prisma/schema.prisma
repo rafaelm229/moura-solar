@@ -21,6 +21,14 @@ model Organization {
   utilityUnits UtilityUnit[]
   opportunities Opportunity[]
   activities  Activity[]
+  energyReadings EnergyReading[]
+  surveys     Survey[]
+  catalogItems CatalogItem[]
+  designs     Design[]
+  designVersions DesignVersion[]
+  designItems DesignItem[]
+  additionalCosts AdditionalCost[]
+  pricingCalculations PricingCalculation[]
 
   @@map("organizations")
 }
@@ -34,6 +42,8 @@ model User {
   memberships  Membership[]
   opportunities Opportunity[]
   activities   Activity[]
+  completedSurveys Survey[] @relation("CompletedSurveys")
+  approvedDesignVersions DesignVersion[] @relation("ApprovedDesignVersions")
 
   @@map("users")
 }
@@ -269,6 +279,8 @@ model UtilityUnit {
   customer        Customer      @relation(fields: [customerId], references: [id])
   address         Address?      @relation(fields: [addressId], references: [id])
   opportunities   Opportunity[]
+  energyReadings  EnergyReading[]
+  surveys         Survey[]
 
   @@index([organizationId, externalCode])
   @@index([customerId])
@@ -303,6 +315,8 @@ model Opportunity {
   owner                User                    @relation(fields: [ownerUserId], references: [id])
   activities           Activity[]
   transitions          OpportunityTransition[]
+  surveys              Survey[]
+  designs              Design[]
 
   @@unique([organizationId, code])
   @@index([organizationId, state])
@@ -354,4 +368,202 @@ model Activity {
   @@index([organizationId, assigneeUserId, status, dueAt])
   @@index([opportunityId])
   @@map("activities")
+}
+
+model EnergyReading {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  utilityUnitId  String       @map("utility_unit_id") @db.Uuid
+  referenceMonth String       @map("reference_month")
+  consumptionKwh Decimal      @map("consumption_kwh") @db.Decimal(10, 2)
+  injectedKwh    Decimal?     @map("injected_kwh") @db.Decimal(10, 2)
+  billedAmount   Decimal?     @map("billed_amount") @db.Decimal(12, 2)
+  source         String       @default("MANUAL")
+  status         String       @default("ACTIVE")
+  notes          String?
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  utilityUnit    UtilityUnit  @relation(fields: [utilityUnitId], references: [id], onDelete: Cascade)
+
+  @@unique([utilityUnitId, referenceMonth])
+  @@index([utilityUnitId])
+  @@map("energy_readings")
+}
+
+model Survey {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  opportunityId  String       @map("opportunity_id") @db.Uuid
+  utilityUnitId  String?      @map("utility_unit_id") @db.Uuid
+  type           String       @default("REMOTE")
+  status         String       @default("DRAFT")
+  tariffPerKwh   Decimal      @default(0.95) @map("tariff_per_kwh") @db.Decimal(10, 4)
+  connectionType String       @default("BIPHASIC") @map("connection_type")
+  voltage        String       @default("220V")
+  roofType       String?      @map("roof_type")
+  shadingKnown   Boolean      @default(false) @map("shading_known")
+  notes          String?
+  assumptions    Json?
+  completedById  String?      @map("completed_by_id") @db.Uuid
+  completedAt    DateTime?    @map("completed_at")
+  version        Int          @default(1)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  opportunity    Opportunity  @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  utilityUnit    UtilityUnit? @relation(fields: [utilityUnitId], references: [id])
+  completedBy    User?        @relation("CompletedSurveys", fields: [completedById], references: [id])
+
+  @@index([opportunityId])
+  @@map("surveys")
+}
+
+model CatalogItem {
+  id                  String        @id @default(uuid()) @db.Uuid
+  organizationId      String        @map("organization_id") @db.Uuid
+  sku                 String
+  kind                String
+  category            String
+  name                String
+  manufacturer        String?
+  model               String?
+  unitOfMeasure       String        @default("UN") @map("unit_of_measure")
+  powerRatingWp       Decimal?      @map("power_rating_wp") @db.Decimal(10, 2)
+  powerRatingKw       Decimal?      @map("power_rating_kw") @db.Decimal(10, 2)
+  technicalAttributes Json?         @map("technical_attributes")
+  referenceCost       Decimal       @map("reference_cost") @db.Decimal(12, 2)
+  referencePrice      Decimal?      @map("reference_price") @db.Decimal(12, 2)
+  status              String        @default("ACTIVE")
+  version             Int           @default(1)
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
+
+  organization        Organization  @relation(fields: [organizationId], references: [id])
+  designItems         DesignItem[]
+
+  @@unique([organizationId, sku])
+  @@index([organizationId, category, status])
+  @@map("catalog_items")
+}
+
+model Design {
+  id             String          @id @default(uuid()) @db.Uuid
+  organizationId String          @map("organization_id") @db.Uuid
+  opportunityId  String          @map("opportunity_id") @db.Uuid
+  name           String          @default("Dimensionamento Padrão")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  opportunity    Opportunity     @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  versions       DesignVersion[]
+
+  @@index([opportunityId])
+  @@map("designs")
+}
+
+model DesignVersion {
+  id                            String               @id @default(uuid()) @db.Uuid
+  organizationId                String               @map("organization_id") @db.Uuid
+  designId                      String               @map("design_id") @db.Uuid
+  versionNumber                 Int                  @map("version_number")
+  basedOnVersionId              String?              @map("based_on_version_id") @db.Uuid
+  status                        String               @default("DRAFT")
+  systemType                    String               @default("ON_GRID") @map("system_type")
+  targetMonthlyGenerationKwh    Decimal              @map("target_monthly_generation_kwh") @db.Decimal(12, 2)
+  targetConsumptionKwh          Decimal              @map("target_consumption_kwh") @db.Decimal(12, 2)
+  dcPowerKwp                    Decimal              @map("dc_power_kwp") @db.Decimal(10, 3)
+  acPowerKw                     Decimal              @map("ac_power_kw") @db.Decimal(10, 3)
+  estimatedMonthlyGenerationKwh Decimal              @map("estimated_monthly_generation_kwh") @db.Decimal(12, 2)
+  estimatedAnnualGenerationKwh  Decimal              @map("estimated_annual_generation_kwh") @db.Decimal(12, 2)
+  specificYield                 Decimal              @default(135.00) @map("specific_yield") @db.Decimal(10, 2)
+  calculationVersion            String               @default("v1.0-simplified") @map("calculation_version")
+  assumptionsSnapshot           Json                 @map("assumptions_snapshot")
+  approvedById                  String?              @map("approved_by_id") @db.Uuid
+  approvedAt                    DateTime?            @map("approved_at")
+  justification                 String?
+  createdAt                     DateTime             @default(now()) @map("created_at")
+  updatedAt                     DateTime             @updatedAt @map("updated_at")
+
+  organization                  Organization         @relation(fields: [organizationId], references: [id])
+  design                        Design               @relation(fields: [designId], references: [id], onDelete: Cascade)
+  approvedBy                    User?                @relation("ApprovedDesignVersions", fields: [approvedById], references: [id])
+  items                         DesignItem[]
+  additionalCosts               AdditionalCost[]
+  pricing                       PricingCalculation?
+
+  @@unique([designId, versionNumber])
+  @@index([designId, status])
+  @@map("design_versions")
+}
+
+model DesignItem {
+  id              String        @id @default(uuid()) @db.Uuid
+  organizationId  String        @map("organization_id") @db.Uuid
+  designVersionId String        @map("design_version_id") @db.Uuid
+  catalogItemId   String?       @map("catalog_item_id") @db.Uuid
+  kind            String
+  category        String
+  description     String
+  unitOfMeasure   String        @map("unit_of_measure")
+  quantity        Decimal       @db.Decimal(10, 2)
+  unitCost        Decimal       @map("unit_cost") @db.Decimal(12, 2)
+  totalCost       Decimal       @map("total_cost") @db.Decimal(12, 2)
+  costSource      String        @default("CATALOG") @map("cost_source")
+  isOptional      Boolean       @default(false) @map("is_optional")
+  justification   String?
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  organization    Organization  @relation(fields: [organizationId], references: [id])
+  designVersion   DesignVersion @relation(fields: [designVersionId], references: [id], onDelete: Cascade)
+  catalogItem     CatalogItem?  @relation(fields: [catalogItemId], references: [id])
+
+  @@index([designVersionId])
+  @@map("design_items")
+}
+
+model AdditionalCost {
+  id                  String        @id @default(uuid()) @db.Uuid
+  organizationId      String        @map("organization_id") @db.Uuid
+  designVersionId     String        @map("design_version_id") @db.Uuid
+  category            String
+  description         String
+  amount              Decimal       @db.Decimal(12, 2)
+  commercialTreatment String        @default("INCLUDED_IN_PRICE") @map("commercial_treatment")
+  justification       String?
+  createdAt           DateTime      @default(now()) @map("created_at")
+
+  organization        Organization  @relation(fields: [organizationId], references: [id])
+  designVersion       DesignVersion @relation(fields: [designVersionId], references: [id], onDelete: Cascade)
+
+  @@index([designVersionId])
+  @@map("additional_costs")
+}
+
+model PricingCalculation {
+  id                  String        @id @default(uuid()) @db.Uuid
+  organizationId      String        @map("organization_id") @db.Uuid
+  designVersionId     String        @unique @map("design_version_id") @db.Uuid
+  directMaterialCost  Decimal       @map("direct_material_cost") @db.Decimal(12, 2)
+  directServiceCost   Decimal       @map("direct_service_cost") @db.Decimal(12, 2)
+  additionalCost      Decimal       @map("additional_cost") @db.Decimal(12, 2)
+  contingencyAmount   Decimal       @default(0) @map("contingency_amount") @db.Decimal(12, 2)
+  totalEstimatedCost  Decimal       @map("total_estimated_cost") @db.Decimal(12, 2)
+  markupPercent       Decimal       @map("markup_percent") @db.Decimal(6, 2)
+  priceBeforeDiscount Decimal       @map("price_before_discount") @db.Decimal(12, 2)
+  discountAmount      Decimal       @default(0) @map("discount_amount") @db.Decimal(12, 2)
+  finalPrice          Decimal       @map("final_price") @db.Decimal(12, 2)
+  grossMarginAmount   Decimal       @map("gross_margin_amount") @db.Decimal(12, 2)
+  grossMarginPercent  Decimal       @map("gross_margin_percent") @db.Decimal(6, 2)
+  status              String        @default("DRAFT")
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
+
+  organization        Organization  @relation(fields: [organizationId], references: [id])
+  designVersion       DesignVersion @relation(fields: [designVersionId], references: [id], onDelete: Cascade)
+
+  @@map("pricing_calculations")
 }
