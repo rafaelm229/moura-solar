@@ -21,6 +21,7 @@
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "api:generate": "node scripts/generate-api.mjs",
     "test:integration": "pnpm --filter @moura-solar/api build && node --test tests/identity.integration.mjs",
+    "test:e2e": "pnpm --filter @moura-solar/api build && playwright test",
     "test:migrations": "node tests/migrations.mjs",
     "identity:bootstrap": "node --env-file=.env scripts/bootstrap.mjs",
     "db:seed": "node --env-file=.env scripts/seed-development.mjs"

@@ -17,3 +17,20 @@
   --shadow-card: 0 12px 32px rgb(6 45 33 / 8%);
   --content-max: 90rem;
 }
+
+:root {
+  --brand-primary: #087443;
+  --brand-primary-strong: #045c34;
+  --brand-primary-soft: #e2f3e9;
+  --text-primary: #102a23;
+  --text-secondary: #52615c;
+  --status-danger: #b91c1c;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --touch-target: 3rem;
+  --form-max: 32rem;
+}
