@@ -1,12 +1,10 @@
-# Mapa de navegação
+# Mapa de navegação — versão 0.2
 
-**Status:** Proposta  
-**Versão:** 0.1.0
-
-## 1. Rotas conceituais
+## 1. Rotas normativas
 
 ```text
 /
+/login
 /comercial/funil
 /comercial/clientes
 /comercial/clientes/:clienteId
@@ -41,65 +39,57 @@
 /conta/sessoes
 ```
 
-As URLs são estáveis, compartilháveis e independentes da navegação usada para
-chegar até elas.
+## 2. Regras
 
-## 2. Navegação celular padrão
+- URLs são estáveis, compartilháveis e independentes do componente de navegação.
+- Usuário não autenticado retorna ao destino após login válido.
+- Rotas sem permissão exibem estado seguro e não vazam existência de dados.
+- Refresh, voltar e avançar preservam módulo, filtros essenciais e entidade.
+- Painéis laterais relevantes podem ser representados por rota ou query string.
+- A URL nunca é substituída por uma variável `currentPage` global.
 
-Os quatro destinos prioritários são derivados do perfil e podem ser configurados.
-O quinto item sempre abre o menu completo.
+## 3. Desktop
 
-| Perfil     | Item 1 | Item 2       | Item 3      | Item 4     | Item 5 |
-| ---------- | ------ | ------------ | ----------- | ---------- | ------ |
-| Gerente    | Início | Funil        | Projetos    | Pendências | Mais   |
-| Vendedor   | Início | Atividades   | Clientes    | Propostas  | Mais   |
-| Financeiro | Início | Receber      | Atrasos     | Fluxo      | Mais   |
-| Estoquista | Início | Separações   | Estoque     | Movimentos | Mais   |
-| Instalador | Hoje   | Agenda       | Instalações | Pendências | Mais   |
-| Engenharia | Início | Fila técnica | Projetos    | Pendências | Mais   |
+A sidebar agrupa Comercial, Operação, Suprimentos, Financeiro e Administração.
+O estado recolhido pode ser preferência local não crítica. Itens e capacidades são
+derivados das permissões efetivas obtidas da API.
 
-O administrador pode usar o padrão do gerente. Todos continuam acessando áreas
-autorizadas pelo item `Mais`.
+## 4. Mobile
 
-## 3. Contexto do projeto
+Quatro destinos prioritários são derivados do perfil; `Mais` sempre abre o menu completo.
 
-Ao abrir um projeto, todas as áreas trabalham sobre o mesmo identificador:
+| Perfil | 1 | 2 | 3 | 4 | 5 |
+|---|---|---|---|---|---|
+| Gerente/Admin | Início | Funil | Projetos | Pendências | Mais |
+| Vendedor | Início | Atividades | Clientes | Propostas | Mais |
+| Financeiro | Início | Receber | Atrasos | Fluxo | Mais |
+| Estoquista | Início | Separações | Estoque | Movimentos | Mais |
+| Instalador | Hoje | Agenda | Instalações | Pendências | Mais |
+| Engenharia | Início | Fila técnica | Projetos | Pendências | Mais |
+
+O protótipo do Figma usa destinos fixos; a implementação final deve respeitar o perfil.
+
+## 5. Contexto de projeto
 
 ```text
-Projeto MS-2026-000123
-├── Resumo
-├── Comercial
-├── Contrato
-├── Financeiro
-├── Engenharia
-├── Materiais
-├── Instalação
-├── Documentos
-└── Histórico
+/operacao/projetos/:projetoId/resumo
+/operacao/projetos/:projetoId/comercial
+/operacao/projetos/:projetoId/proposta
+/operacao/projetos/:projetoId/contrato
+/operacao/projetos/:projetoId/financeiro
+/operacao/projetos/:projetoId/engenharia
+/operacao/projetos/:projetoId/materiais
+/operacao/projetos/:projetoId/instalacao
+/operacao/projetos/:projetoId/documentos
+/operacao/projetos/:projetoId/historico
 ```
 
-Não serão criados registros paralelos apenas para preencher cada aba. Cada aba
-consulta o módulo responsável e apresenta o contexto comum do projeto.
+As rotas podem usar layouts aninhados do Next.js. Todas compartilham a identidade
+do projeto, responsável, etapa, bloqueios e próxima ação.
 
-## 4. Próxima ação
+## 6. Busca global
 
-Toda página de oportunidade ou projeto mostra:
+A busca encontra somente itens autorizados e informa tipo, código, estado e contexto.
+Resultados suportados: clientes, oportunidades, propostas, contratos, projetos,
+instalações, materiais e documentos.
 
-- etapa atual;
-- responsável atual;
-- próxima ação recomendada;
-- data/prazo;
-- bloqueios;
-- últimas atividades.
-
-Isso substitui a necessidade de navegar por várias abas para descobrir por que o
-processo não avançou.
-
-## 5. Regras de deep link
-
-- Links abrem diretamente a entidade quando o usuário possui acesso.
-- Sem acesso, exibem estado 403 com alternativa segura.
-- Não autenticado, o usuário retorna ao destino após login válido.
-- Entidade inexistente e entidade sem permissão não devem vazar informações além
-  da política de segurança adotada.
-- Notificações futuras devem apontar para a ação ou pendência específica.

@@ -1,348 +1,225 @@
 # SPEC-003 — Design system, arquitetura de informação e responsividade
 
-**Status:** Proposta para validação visual  
-**Versão:** 0.1.0  
-**Escopo:** aplicação web responsiva
+**Status:** Aprovada para implementação incremental  
+**Versão:** 0.2.0  
+**Escopo:** aplicação web responsiva  
+**Referência visual:** Moura Solar CRM/ERP Design — Figma Make, v1  
+**Última atualização:** 30/09/2026
 
 ## 1. Objetivo
 
-Definir uma linguagem visual e organizacional única para a Moura Solar Platform,
-garantindo que os módulos formem um mesmo produto e funcionem com qualidade em
-celular, tablet, notebook e desktop.
+Definir a linguagem visual, a arquitetura de informação e os padrões de interação
+da Moura Solar Platform para celular, tablet, notebook e desktop. A interface deve
+representar os estados reais da operação e facilitar decisões comerciais, técnicas,
+financeiras e de campo.
 
-Esta SPEC não determina permissões pelo dispositivo. Ela determina como a mesma
-capacidade autorizada será apresentada em diferentes espaços e formas de entrada.
+Esta SPEC é normativa para apresentação e interação. As SPECs de domínio continuam
+sendo a autoridade sobre regras de negócio, estados, permissões, cálculos e gates.
 
-## 2. Princípios de experiência
+## 2. Fontes de verdade
 
-1. **Processo antes do módulo:** a interface mostra contexto, etapa atual, bloqueios
-   e próxima ação.
-2. **Progressão explícita:** comandos de negócio são diferentes de edição comum.
-3. **Uma fonte de verdade:** estados visuais refletem dados confirmados pela API.
-4. **Densidade adaptativa:** desktop aproveita espaço; celular prioriza decisão e
-   execução sem remover capacidades.
-5. **Consistência operacional:** mesma ação usa nome, cor, ícone e consequência
-   equivalentes em toda a plataforma.
-6. **Segurança perceptível:** ações destrutivas ou irreversíveis mostram alvo e
-   efeito antes da confirmação.
-7. **Acessibilidade por padrão:** contraste, foco, rótulos e navegação por teclado
-   fazem parte do componente, não de correção posterior.
-8. **Velocidade percebida:** carregamento parcial, skeletons moderados e feedback
-   imediato evitam telas aparentemente travadas.
+Em caso de conflito, aplicar esta prioridade:
 
-## 3. Arquitetura de informação
+1. SPECs funcionais e regras do domínio;
+2. contratos da API e dados persistidos no PostgreSQL;
+3. esta SPEC e seus documentos complementares;
+4. telas aprovadas do Figma Make;
+5. código exportado pelo Figma Make.
 
-### 3.1 Áreas principais
+O Figma define intenção visual. Seu código não define arquitetura, rotas, estado,
+permissões ou regras de negócio.
+
+## 3. Princípios
+
+1. **Processo antes do módulo:** mostrar etapa, responsável, bloqueios e próxima ação.
+2. **Fonte única de verdade:** a UI reflete respostas confirmadas pela API.
+3. **Comandos explícitos:** aprovar, enviar, contratar e concluir não são edições comuns.
+4. **Capacidade independente da tela:** viewport altera apresentação, nunca permissão.
+5. **Densidade adaptativa:** mobile prioriza ação; desktop favorece comparação.
+6. **Consistência:** mesma ação mantém nome, efeito e semântica em todo o produto.
+7. **Segurança perceptível:** ações destrutivas ou irreversíveis exibem alvo e impacto.
+8. **Acessibilidade por padrão:** foco, contraste, rótulos e teclado fazem parte do componente.
+9. **Estados completos:** loading, vazio, erro, conflito, sucesso e acesso negado são obrigatórios.
+10. **Progressão real:** o funil é derivado de estados e gates, nunca de controles visuais isolados.
+
+## 4. Direção visual aprovada
+
+A aplicação adota linguagem operacional escura, com amarelo solar como destaque
+primário e verde como confirmação/energia. O fundo escuro reduz brilho em uso de
+campo e dá contraste às métricas, desde que todos os componentes atendam WCAG 2.2 AA.
+
+- fundo base quase preto esverdeado;
+- superfícies em camadas progressivas;
+- amarelo reservado a ações primárias, seleção e energia;
+- verde reservado a sucesso, geração e estados positivos;
+- vermelho, laranja e azul com uso semântico;
+- tipografia Inter para interface;
+- JetBrains Mono para métricas, energia, potência e valores financeiros;
+- cantos moderados, bordas discretas e sombras controladas;
+- ícones lineares consistentes.
+
+Valores normativos estão em [tokens-visuais.md](tokens-visuais.md).
+
+## 5. Arquitetura da aplicação
+
+As áreas principais são:
 
 ```text
 Visão geral
 Comercial
-  ├── Funil
-  ├── Clientes
-  ├── Oportunidades
-  ├── Atividades
-  └── Propostas
+  Funil | Clientes | Oportunidades | Atividades | Propostas
 Operação
-  ├── Projetos
-  ├── Engenharia
-  ├── Agenda
-  ├── Instalações
-  └── Pós-venda
+  Projetos | Engenharia | Agenda | Instalações | Pós-venda
 Suprimentos
-  ├── Estoque
-  ├── Movimentações
-  ├── Compras
-  ├── Fornecedores
-  └── Inventários
+  Estoque | Movimentações | Compras | Fornecedores | Inventários
 Financeiro
-  ├── Visão financeira
-  ├── Contas a receber
-  ├── Contas a pagar
-  ├── Comissões
-  └── Fluxo de caixa
+  Visão financeira | Receber | Pagar | Comissões | Fluxo de caixa
 Administração
-  ├── Equipe
-  ├── Papéis e permissões
-  ├── Auditoria
-  ├── Cadastros auxiliares
-  └── Configurações
+  Equipe | Papéis | Auditoria | Cadastros | Configurações
+Conta
+  Perfil | Sessões
 ```
 
-Itens sem permissão não aparecem no menu e permanecem protegidos na API. O menu
-não muda porque o usuário abriu a plataforma em outro tamanho de tela.
+Itens sem permissão não aparecem, mas a proteção obrigatória permanece na API.
+O tamanho da tela não remove áreas autorizadas.
 
-### 3.2 Navegação contextual
+## 6. Navegação
 
-Entidades complexas usam uma página de detalhe com cabeçalho persistente e abas
-contextuais, evitando duplicar o mesmo projeto em vários módulos.
+- Desktop: sidebar persistente e recolhível, topbar, busca global e ações contextuais.
+- Tablet: sidebar compacta ou drawer, mantendo acesso integral às áreas.
+- Mobile: cabeçalho compacto, quatro destinos prioritários e item `Mais`.
+- `Mais` abre todas as áreas autorizadas agrupadas como no desktop.
+- Entidades usam rotas reais, compartilháveis e restauráveis após login.
+- `useState` não deve substituir roteamento do Next.js.
+- Voltar/avançar, refresh e deep link devem preservar o contexto.
 
-Exemplo de projeto:
+O mapa normativo está em [mapa-navegacao.md](mapa-navegacao.md).
+
+## 7. Contexto unificado do projeto
+
+Um projeto representa a continuidade da mesma jornada e utiliza um identificador comum:
 
 ```text
-Resumo | Comercial | Contrato | Financeiro | Engenharia |
+Resumo | Comercial | Proposta | Contrato | Financeiro | Engenharia |
 Materiais | Instalação | Documentos | Histórico
 ```
 
-A aba ativa pode variar conforme perfil, mas todas as abas autorizadas continuam
-acessíveis. No celular, as abas usam seletor/rolagem horizontal sem perder rotas.
+As abas consultam módulos responsáveis; não criam registros paralelos para preencher a interface.
 
-### 3.3 Busca global
+## 8. Padrões obrigatórios
 
-A busca localiza, conforme permissão:
+Toda funcionalidade nova ou migrada deve usar componentes compartilhados para:
 
-- clientes;
-- oportunidades;
-- propostas;
-- contratos;
-- projetos;
-- instalações;
-- produtos e documentos.
+- botões e ações;
+- campos e validação;
+- navegação;
+- cards e métricas;
+- tabelas e cartões mobile;
+- filtros;
+- diálogos, drawers e bottom sheets;
+- alertas e feedback;
+- arquivos e documentos;
+- timelines e auditoria;
+- gráficos;
+- checklists e operação de campo.
 
-Resultados informam tipo, identificador, estado e contexto. A busca não expõe
-conteúdo de entidades sem permissão.
+O catálogo está em [componentes.md](componentes.md), e as composições em
+[padroes-de-pagina.md](padroes-de-pagina.md).
 
-## 4. Estrutura responsiva da aplicação
+## 9. Responsividade
 
-### 4.1 Celular — 360 a 767 px
+A implementação é mobile first e deve ser verificada em 360, 390, 768, 1024,
+1366, 1440 e 1920 px. Tablet é uma faixa deliberada, não apenas desktop reduzido.
 
-- Cabeçalho compacto com título, retorno e ações contextuais.
-- Navegação inferior com até quatro destinos prioritários e item `Mais`.
-- `Mais` abre todas as áreas autorizadas, agrupadas como no desktop.
-- Conteúdo em uma coluna.
-- Ações primárias podem usar barra inferior, mas ela deve reservar espaço no
-  conteúdo e nunca encobrir informações.
-- Tabelas viram cartões, listas ou visualização mestre-detalhe conforme a tarefa.
-- Filtros abrem em painel de tela cheia ou bottom sheet com resumo dos ativos.
-- Formulários longos usam seções ou etapas; valores preenchidos são preservados.
+- nenhuma função autorizada desaparece por viewport;
+- nenhuma barra fixa encobre conteúdo;
+- formulários mobile usam uma coluna;
+- tabelas viram cartões quando a comparação tabular não for essencial;
+- rolagem horizontal é reservada a comparações técnicas reais;
+- ações de campo possuem alvo mínimo de 44 px, preferencialmente 48 px;
+- nenhuma interação depende exclusivamente de hover.
 
-### 4.2 Tablet — 768 a 1023 px
+Detalhes estão em [responsividade.md](responsividade.md).
 
-- Menu lateral recolhível ou drawer persistente em orientação paisagem.
-- Uma ou duas colunas conforme a tarefa.
-- Listas podem usar mestre-detalhe quando isso reduz trocas de tela.
-- Ações de campo mantêm alvos de toque adequados.
-- Nenhuma interação depende de hover.
+## 10. Estados e comandos de negócio
 
-### 4.3 Notebook — 1024 a 1439 px
+Toda tela relevante trata:
 
-- Menu lateral compacto/recolhível.
-- Cabeçalho com busca, contexto e ações globais.
-- Grade entre 8 e 12 colunas conforme largura útil.
-- Tabelas priorizam colunas essenciais e permitem configurar/exibir detalhes.
-- Painéis laterais são aceitos para edição curta e contexto secundário.
-
-### 4.4 Desktop — 1440 px ou mais
-
-- Menu lateral persistente com opção de recolher.
-- Largura de conteúdo controlada para formulários; dashboards podem usar toda a
-  área útil com limites de legibilidade.
-- Densidade maior sem reduzir alvos de interação.
-- Comparações, tabelas e painéis podem ocupar múltiplas colunas.
-
-## 5. Navegação por perfil
-
-Perfil define atalhos e página inicial, não capacidade exclusiva.
-
-| Perfil        | Página inicial recomendada | Atalhos principais                                |
-| ------------- | -------------------------- | ------------------------------------------------- |
-| Administrador | Saúde da operação          | usuários, auditoria, configurações                |
-| Gerente       | Painel integrado           | funil, projetos, pendências, indicadores          |
-| Vendedor      | Trabalho comercial         | atividades, clientes, oportunidades, propostas    |
-| Financeiro    | Painel financeiro          | receber, pagar, atrasos, fluxo                    |
-| Estoquista    | Operação de estoque        | separações, entradas, transferências, inventários |
-| Instalador    | Agenda de campo            | hoje, ordens, materiais, pendências               |
-| Engenharia    | Fila técnica               | levantamentos, dimensionamentos, homologações     |
-
-O usuário poderá abrir outras áreas autorizadas pelo menu completo.
-
-## 6. Design tokens
-
-Tokens serão mantidos em `packages/design-tokens` e consumidos pelas interfaces.
-Valores não devem ser espalhados como números ou cores literais nos módulos.
-
-### 6.1 Cores semânticas iniciais
-
-| Token                 | Uso                        | Valor inicial |
-| --------------------- | -------------------------- | ------------: |
-| `brand.primary`       | marca, ação principal      |     `#087443` |
-| `brand.primaryStrong` | hover/ênfase               |     `#045C34` |
-| `brand.primarySoft`   | fundos selecionados        |     `#E2F3E9` |
-| `brand.accent`        | energia/destaques pontuais |     `#F59E0B` |
-| `surface.canvas`      | fundo da aplicação         |     `#F4F7F5` |
-| `surface.default`     | cartões e painéis          |     `#FFFFFF` |
-| `text.primary`        | texto principal            |     `#102A23` |
-| `text.secondary`      | texto secundário           |     `#64736E` |
-| `border.default`      | divisores e bordas         |     `#D9E2DE` |
-| `status.info`         | informação                 |     `#2563EB` |
-| `status.success`      | confirmação                |     `#15803D` |
-| `status.warning`      | atenção                    |     `#D97706` |
-| `status.danger`       | erro/destrutivo            |     `#DC2626` |
-
-Cor nunca será a única forma de comunicar estado. Badges combinam texto, cor e,
-quando útil, ícone.
-
-### 6.2 Tipografia
-
-- Família inicial: `Inter`, com fallback de sistema.
-- Base: 16 px em formulários; texto auxiliar nunca inferior a 12 px.
-- Escala: 12, 14, 16, 18, 20, 24, 30 e 36 px.
-- Títulos usam peso e espaço, não letras excessivamente grandes.
-- Valores financeiros e métricas usam numerais tabulares quando disponíveis.
-
-### 6.3 Espaçamento e forma
-
-- Unidade base: 4 px.
-- Escala: 4, 8, 12, 16, 20, 24, 32, 40 e 48 px.
-- Raio padrão: 10 px; campos e botões respeitam a mesma família visual.
-- Sombras são discretas e não substituem bordas/estrutura.
-- Altura mínima de alvo por toque: 44 px; preferencialmente 48 px em campo.
-
-## 7. Componentes obrigatórios
-
-### Fundação
-
-- Button, IconButton, Link e ButtonGroup.
-- Input, Textarea, Select, Combobox, Checkbox, Radio, Switch e DatePicker.
-- FormField com label, ajuda, erro e estado obrigatório.
-- Badge, Avatar, Tooltip, Separator e Skeleton.
-- Card, Alert, Toast, Dialog, Drawer e BottomSheet.
-
-### Navegação
-
-- AppShell, Sidebar, MobileNavigation, Breadcrumbs.
-- PageHeader, ContextTabs, CommandMenu e GlobalSearch.
-- Pagination e Stepper.
-
-### Dados e operação
-
-- DataTable responsiva.
-- MobileCardList.
-- FilterBar e ActiveFilters.
-- EmptyState, ErrorState, PermissionState e OfflineState.
-- Timeline/AuditTrail.
-- MetricCard e StatusSummary.
-- FileUploader, DocumentViewer e CameraCapture.
-- Checklist, SignaturePad e SerialNumberInput.
-
-Cada componente documentará variantes, estados, acessibilidade e comportamento
-por faixa de tela. Módulos não recriarão versões locais sem justificar no ADR.
-
-## 8. Padrões de página
-
-### 8.1 Listagem
-
-Contém título, resumo, busca, filtros, ação primária, resultado e paginação. No
-celular, filtros ativos permanecem visíveis e registros viram cartões quando a
-comparação tabular não for indispensável.
-
-### 8.2 Detalhe
-
-Contém identidade, estado, responsável, próxima ação, bloqueios, abas e histórico.
-A primeira dobra deve responder: “o que é, em que estado está e o que fazer agora?”.
-
-### 8.3 Formulário
-
-Campos são agrupados por intenção. Ações permanecem previsíveis: cancelar à
-esquerda/segundo plano e salvar/avançar em destaque. Fechar com alterações mostra
-aviso. Erros levam foco ao primeiro campo inválido e exibem resumo quando longo.
-
-### 8.4 Fluxo por etapas
-
-Usado apenas quando a ordem importa. O stepper não substitui salvamento parcial.
-Etapas concluídas podem ser revisitadas conforme regra de negócio.
-
-### 8.5 Painel operacional
-
-Prioriza exceções e ações, não apenas números. Métricas devem possuir origem,
-período e destino ao clicar. Gráficos não substituem listas de pendências.
-
-## 9. Estados de interação
-
-Toda tela relevante deve tratar:
-
-- carregamento inicial;
-- atualização em segundo plano;
-- vazio sem filtros;
-- vazio causado por filtros;
+- carregamento inicial e atualização em segundo plano;
+- vazio natural e vazio por filtros;
 - erro recuperável;
-- erro de validação;
-- acesso negado;
-- sessão expirada confirmada;
-- sucesso;
+- validação;
+- ausência de permissão;
+- sessão expirada;
 - conflito de edição;
+- sucesso;
 - conteúdo arquivado;
-- conexão degradada quando aplicável.
+- conexão degradada, quando aplicável.
 
-Falha de rede não deve ser apresentada como credencial inválida.
+Comandos de negócio devem apresentar pré-condições, bloqueios, confirmação de
+impacto, processamento, resultado e próximo passo. Duplo envio é impedido na UI
+e na API. Consulte [estados-e-interacoes.md](estados-e-interacoes.md).
 
-## 10. Comandos de negócio
+## 11. Acessibilidade
 
-Ações como `Enviar proposta`, `Aprovar`, `Reservar materiais`, `Iniciar instalação`
-e `Concluir instalação` não são simples edições. Elas devem:
+A meta é WCAG 2.2 AA:
 
-1. informar pré-condições e bloqueios;
-2. confirmar impactos relevantes;
-3. impedir duplo envio;
-4. mostrar processamento;
-5. apresentar resultado e próximo passo;
-6. atualizar todas as visões dependentes;
-7. permitir rastrear a operação no histórico.
+- HTML semântico e landmarks;
+- foco visível;
+- navegação por teclado;
+- contraste AA;
+- labels e mensagens associadas aos campos;
+- modais com gerenciamento de foco;
+- ícones com nome acessível;
+- gráficos acompanhados por valores ou tabela equivalente;
+- zoom de 200% sem perda funcional;
+- respeito a `prefers-reduced-motion`.
 
-## 11. Regras para tabelas
+Consulte [acessibilidade.md](acessibilidade.md).
 
-- Cabeçalho claro e alinhamento consistente.
-- Valores monetários e quantidades alinhados à direita.
-- Ações da linha em menu nomeado, sem depender apenas de reticências invisíveis.
-- Seleção em massa somente quando houver comando em lote válido.
-- Colunas podem ser ocultadas no celular, mas seus dados continuam no cartão/detalhe.
-- Rolagem horizontal é último recurso para comparação técnica real.
-- Cabeçalho fixo não pode encobrir conteúdo nem conflitar com o AppShell.
+## 12. Relação com o Figma Make
 
-## 12. Formulários em campo
+O pacote Figma v1 é referência visual aprovada para shell, dashboard, funil,
+clientes, propostas, projetos, financeiro, estoque e configurações. Telas marcadas
+como placeholder não são consideradas especificadas visualmente.
 
-Para instaladores e estoquistas:
+Não copiar para produção:
 
-- botões e campos com 48 px quando possível;
-- suporte a câmera diretamente no campo de evidência;
-- autosave de rascunho onde houver risco de perda;
-- progresso claro do checklist;
-- confirmação visual após leitura de serial/QR;
-- ação primária próxima ao polegar sem encobrir o último item;
-- nenhuma dependência de hover ou clique com precisão fina.
+- mocks e dados estáticos;
+- navegação controlada apenas por estado local;
+- estilos inline repetidos;
+- cores literais espalhadas;
+- breakpoints binários mobile/desktop;
+- componentes sem autorização ou integração com API;
+- ações que alteram apenas o estado visual.
 
-## 13. Acessibilidade
+Consulte [mapeamento-figma-aplicacao.md](mapeamento-figma-aplicacao.md).
 
-- HTML semântico e landmarks.
-- Ordem de foco equivalente à ordem visual.
-- Foco visível.
-- Rótulo acessível para ícones.
-- Contraste mínimo WCAG AA para texto e controles essenciais.
-- Erros anunciados e associados aos campos.
-- Diálogos prendem foco e retornam ao acionador.
-- Zoom de 200% não remove funcionalidade.
-- Animação respeita preferência de movimento reduzido.
+## 13. Critérios de aceite
 
-## 14. Testes visuais e responsivos
+- [ ] Tokens consumidos pelo frontend sem cores literais de produto.
+- [ ] Rotas reais e compartilháveis.
+- [ ] Navegação completa em mobile, tablet e desktop.
+- [ ] Permissões aplicadas no menu e obrigatoriamente na API.
+- [ ] Componentes reutilizáveis documentados e testados.
+- [ ] Estados de loading, vazio, erro, conflito e acesso negado.
+- [ ] Fluxos M1–M5 continuam funcionais após a migração.
+- [ ] Sem overflow acidental nos viewports suportados.
+- [ ] Teclado, toque, zoom e contraste validados.
+- [ ] Screenshots de regressão aprovadas.
+- [ ] Nenhuma regra de negócio migrada para componentes visuais.
+- [ ] Figma usado como referência visual, não como fonte de dados.
 
-Cada página nova terá cenários automatizados ou evidências equivalentes em:
+## 14. Documentos complementares
 
-- 360 × 800;
-- 390 × 844;
-- 768 × 1024;
-- 1024 × 768;
-- 1366 × 768;
-- 1440 × 900.
+- [mapa-navegacao.md](mapa-navegacao.md)
+- [tokens-visuais.md](tokens-visuais.md)
+- [componentes.md](componentes.md)
+- [padroes-de-pagina.md](padroes-de-pagina.md)
+- [responsividade.md](responsividade.md)
+- [inventario-de-telas.md](inventario-de-telas.md)
+- [estados-e-interacoes.md](estados-e-interacoes.md)
+- [acessibilidade.md](acessibilidade.md)
+- [mapeamento-figma-aplicacao.md](mapeamento-figma-aplicacao.md)
+- [plano-migracao.md](plano-migracao.md)
 
-Fluxos críticos serão testados com teclado e viewport móvel. Screenshots de
-regressão focarão AppShell, navegação, listagens, detalhes, formulários e modais.
-
-## 15. Critérios de aceitação
-
-- [ ] Arquitetura das áreas e menus aprovada.
-- [ ] Navegação completa permanece disponível em qualquer dispositivo autorizado.
-- [ ] Tokens visuais iniciais aprovados.
-- [ ] Padrões de listagem, detalhe, formulário e painel aprovados.
-- [ ] Componentes obrigatórios priorizados.
-- [ ] Fluxo do instalador validado na web móvel.
-- [ ] Critérios de acessibilidade e responsividade aceitos.
-- [ ] Nenhum elemento fixo cobre o conteúdo em viewports suportados.
