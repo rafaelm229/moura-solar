@@ -181,11 +181,21 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
     queryKey: ['me'],
     queryFn: () => result(api.GET('/api/v1/identity/me')),
   });
-  const canCreate = me.data ? allows(me.data, 'contracts:create', false) : true;
-  const canSend = me.data ? allows(me.data, 'contracts:send', false) : true;
-  const canUpload = me.data ? allows(me.data, 'contracts:upload_signed', false) : true;
-  const canVerify = me.data ? allows(me.data, 'contracts:verify_signed', false) : true;
-  const canDownload = me.data ? allows(me.data, 'contracts:download', false) : true;
+  const canCreate = me.data
+    ? allows(me.data, 'contracts:create', false) || me.data.roleName === 'Administrador'
+    : true;
+  const canSend = me.data
+    ? allows(me.data, 'contracts:send', false) || me.data.roleName === 'Administrador'
+    : true;
+  const canUpload = me.data
+    ? allows(me.data, 'contracts:upload_signed', false) || me.data.roleName === 'Administrador'
+    : true;
+  const canVerify = me.data
+    ? allows(me.data, 'contracts:verify_signed', false) || me.data.roleName === 'Administrador'
+    : true;
+  const canDownload = me.data
+    ? allows(me.data, 'contracts:download', false) || me.data.roleName === 'Administrador'
+    : true;
 
   // Fetch contracts
   const { data: contracts = [], isLoading } = useQuery({

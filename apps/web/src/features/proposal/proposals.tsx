@@ -36,10 +36,15 @@ export interface ProposalVersionView {
   proposalId: string;
   versionNumber: number;
   status: 'DRAFT' | 'READY' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
-  systemPowerKwp: number | string;
-  estimatedMonthlyGenerationKwh: number | string;
-  totalInvestmentAmount: number | string;
-  finalAmount: number | string;
+  systemPowerKwp?: number | string;
+  estimatedMonthlyGenerationKwh?: number | string;
+  totalInvestmentAmount?: number | string;
+  finalAmount?: number | string;
+  finalPrice?: number | string;
+  technicalSnapshot?: {
+    dcPowerKwp?: number | string;
+    estimatedMonthlyGenerationKwh?: number | string;
+  } | null;
   validityDays: number;
   validUntil?: string | null;
   paymentConditions?: Record<string, unknown> | null;
@@ -123,10 +128,18 @@ export function Proposals({
     queryKey: ['me'],
     queryFn: () => result(api.GET('/api/v1/identity/me')),
   });
-  const canCreate = me.data ? allows(me.data, 'proposals:create', false) : true;
-  const canSend = me.data ? allows(me.data, 'proposals:send', false) : true;
-  const canAccept = me.data ? allows(me.data, 'proposals:accept', false) : true;
-  const canReject = me.data ? allows(me.data, 'proposals:reject', false) : true;
+  const canCreate = me.data
+    ? allows(me.data, 'proposals:create', false) || me.data.roleName === 'Administrador'
+    : true;
+  const canSend = me.data
+    ? allows(me.data, 'proposals:send', false) || me.data.roleName === 'Administrador'
+    : true;
+  const canAccept = me.data
+    ? allows(me.data, 'proposals:accept', false) || me.data.roleName === 'Administrador'
+    : true;
+  const canReject = me.data
+    ? allows(me.data, 'proposals:reject', false) || me.data.roleName === 'Administrador'
+    : true;
 
   const proposalsQuery = useQuery({
     queryKey: ['proposals', opportunityId],
@@ -676,7 +689,12 @@ export function Proposals({
                           Potência Pico
                         </span>
                         <strong style={{ fontSize: '1.1rem' }}>
-                          {Number(version.systemPowerKwp ?? 0).toFixed(2)} kWp
+                          {Number(
+                            version.systemPowerKwp ??
+                              version.technicalSnapshot?.dcPowerKwp ??
+                              0,
+                          ).toFixed(2)}{' '}
+                          kWp
                         </strong>
                       </div>
 
@@ -691,7 +709,12 @@ export function Proposals({
                           Geração Estimada
                         </span>
                         <strong style={{ fontSize: '1.1rem' }}>
-                          {Number(version.estimatedMonthlyGenerationKwh ?? 0).toFixed(0)} kWh/mês
+                          {Number(
+                            version.estimatedMonthlyGenerationKwh ??
+                              version.technicalSnapshot?.estimatedMonthlyGenerationKwh ??
+                              0,
+                          ).toFixed(0)}{' '}
+                          kWh/mês
                         </strong>
                       </div>
 
@@ -713,7 +736,9 @@ export function Proposals({
                           }}
                         >
                           R${' '}
-                          {Number(version.finalAmount ?? 0).toLocaleString('pt-BR', {
+                          {Number(
+                            version.finalAmount ?? version.finalPrice ?? 0,
+                          ).toLocaleString('pt-BR', {
                             minimumFractionDigits: 2,
                           })}
                         </strong>
