@@ -10,6 +10,7 @@ import { PrismaService } from '../database/prisma.service';
 import { AuditService } from '../database/audit.service';
 import { StorageService } from '../proposal/storage.service';
 import { ContractGeneratorService, type ContractTemplateData } from './contract-generator.service';
+import { FinancialService } from '../financial/financial.service';
 import {
   CreateContractDto,
   UpdateContractDraftDto,
@@ -30,6 +31,7 @@ export class ContractService {
     private readonly storage: StorageService,
     private readonly generator: ContractGeneratorService,
     private readonly audit: AuditService,
+    private readonly financial: FinancialService,
   ) {}
 
   async createContract(organizationId: string, userId: string, dto: CreateContractDto) {
@@ -988,6 +990,18 @@ export class ContractService {
 
       return review;
     });
+
+    if (dto.decision === SignedReviewDecision.VERIFIED) {
+      try {
+        await this.financial.generatePaymentPlanFromContract(
+          organizationId,
+          contract.opportunityId,
+          userId,
+        );
+      } catch (err) {
+        console.error('Aviso: Falha ao inicializar plano financeiro automaticamente:', err);
+      }
+    }
 
     return { review: result, contract: await this.getContract(organizationId, contractId) };
   }

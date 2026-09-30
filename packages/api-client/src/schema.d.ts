@@ -1236,6 +1236,150 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/financial/accounts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['FinancialController_listAccounts'];
+    put?: never;
+    post: operations['FinancialController_createAccount'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/opportunities/{opportunityId}/financial': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['FinancialController_getOpportunityFinancial'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/opportunities/{opportunityId}/payment-plan/generate': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['FinancialController_generatePaymentPlan'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/receipts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['FinancialController_recordReceipt'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/receipts/{id}/reverse': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['FinancialController_reverseReceipt'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/payables': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['FinancialController_listPayables'];
+    put?: never;
+    post: operations['FinancialController_createPayable'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/payments': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['FinancialController_recordPayment'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/commissions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['FinancialController_listCommissions'];
+    put?: never;
+    post: operations['FinancialController_configureCommission'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/financial/cash-flow': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['FinancialController_getCashFlow'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2104,6 +2248,166 @@ export interface components {
       /** @description Motivo do cancelamento do contrato */
       reason: string;
       /** @description Observações adicionais */
+      notes?: string;
+    };
+    CreateFinancialAccountDto: {
+      /** @description Nome da conta financeira (ex: Banco Cora - Moura Solar) */
+      name: string;
+      /**
+       * @default CHECKING
+       * @enum {string}
+       */
+      accountType: 'CHECKING' | 'CASH' | 'ESCROW' | 'SAVINGS';
+      /** @description Código do banco (ex: 403 para Cora) */
+      bankCode?: string;
+      /** @description Agência bancária */
+      agency?: string;
+      /** @description Número da conta corrente */
+      accountNumber?: string;
+    };
+    GeneratePaymentPlanDto: {
+      /** @description ID do contrato vinculado */
+      contractId?: string;
+      /** @description Valor total a faturar (se omitido, lê do contrato ou proposta aceita) */
+      totalAmount?: number;
+      /**
+       * @description Valor de entrada / sinal
+       * @default 0
+       */
+      downPaymentAmount: number;
+      /**
+       * @description Quantidade de parcelas do saldo
+       * @default 3
+       */
+      installmentCount: number;
+      /**
+       * @default PIX
+       * @enum {string}
+       */
+      paymentMethod:
+        'PIX' | 'TED' | 'BOLETO' | 'CREDIT_CARD' | 'CASH' | 'FINANCING_RELEASE' | 'MIXED';
+      /** @description Data do primeiro vencimento do saldo (ISO YYYY-MM-DD) */
+      firstDueDate?: string;
+      /** @description Observações do plano de pagamento */
+      notes?: string;
+    };
+    ReceiptAllocationItemDto: {
+      /** @description ID do título a receber */
+      receivableId: string;
+      /** @description Valor principal alocado */
+      allocatedPrincipal: number;
+      /**
+       * @description Juros recebidos
+       * @default 0
+       */
+      interestAmount: number;
+      /**
+       * @description Desconto concedido
+       * @default 0
+       */
+      discountAmount: number;
+    };
+    RecordReceiptDto: {
+      /** @description ID da oportunidade vinculada */
+      opportunityId?: string;
+      /** @description ID da conta financeira que recebeu os fundos */
+      accountId: string;
+      /** @description Valor total recebido */
+      amount: number;
+      /** @description Data efetiva da compensação/recebimento (ISO date) */
+      effectiveDate?: string;
+      /**
+       * @default PIX
+       * @enum {string}
+       */
+      paymentMethod:
+        'PIX' | 'TED' | 'BOLETO' | 'CREDIT_CARD' | 'CASH' | 'FINANCING_RELEASE' | 'MIXED';
+      /** @description Nome de quem efetuou o pagamento */
+      payerName?: string;
+      /** @description CPF ou CNPJ do pagador */
+      payerTaxId?: string;
+      /** @description URL ou chave do comprovante */
+      receiptDocumentUrl?: string;
+      /** @description Notas ou observações do recebimento */
+      notes?: string;
+      /** @description Alocações em títulos a receber (se omitido e tiver oportunidade, aloca automaticamente nos mais antigos) */
+      allocations?: components['schemas']['ReceiptAllocationItemDto'][];
+    };
+    ReverseTransactionDto: {
+      /** @description Motivo / justificativa do estorno */
+      reason: string;
+    };
+    CreatePayableDto: {
+      /** @description ID da oportunidade associada ao custo */
+      opportunityId?: string;
+      /**
+       * @description Categoria do custo/despesa
+       * @enum {string}
+       */
+      category:
+        | 'EQUIPMENT'
+        | 'INSTALLATION_LABOR'
+        | 'COMMISSION'
+        | 'ENGINEERING_HOMOLOGATION'
+        | 'FREIGHT'
+        | 'OTHER';
+      /** @description Descrição da despesa ou fornecimento */
+      description: string;
+      /** @description Nome do fornecedor ou beneficiário */
+      recipient: string;
+      /** @description CPF ou CNPJ do recebedor */
+      recipientTaxId?: string;
+      /** @description Valor original da obrigação */
+      originalAmount: number;
+      /** @description Data de vencimento (ISO YYYY-MM-DD) */
+      dueDate: string;
+      /** @description Observações */
+      notes?: string;
+    };
+    PaymentAllocationItemDto: {
+      /** @description ID da conta a pagar */
+      payableId: string;
+      /** @description Valor alocado/liquidado */
+      allocatedAmount: number;
+    };
+    RecordPaymentDto: {
+      /** @description ID da conta financeira debitada */
+      accountId: string;
+      /** @description Valor total pago */
+      amount: number;
+      /** @description Data efetiva do pagamento (ISO date) */
+      effectiveDate?: string;
+      /**
+       * @default PIX
+       * @enum {string}
+       */
+      paymentMethod:
+        'PIX' | 'TED' | 'BOLETO' | 'CREDIT_CARD' | 'CASH' | 'FINANCING_RELEASE' | 'MIXED';
+      /** @description Número do documento ou autenticação bancária */
+      documentNumber?: string;
+      /** @description Observações do pagamento */
+      notes?: string;
+      /** @description Alocações nas contas a pagar */
+      allocations?: components['schemas']['PaymentAllocationItemDto'][];
+    };
+    ConfigureCommissionDto: {
+      /** @description ID da oportunidade */
+      opportunityId: string;
+      /** @description Nome do consultor ou parceiro beneficiário */
+      beneficiaryName: string;
+      /**
+       * @description Função do participante
+       * @default SALES_REP
+       */
+      role: string;
+      /** @description Percentual de comissão (ex: 3.50 para 3.5%) */
+      percentage: number;
+      /**
+       * @description Gatilho de aquisição
+       * @default FINANCIAL
+       */
+      triggerGate: string;
+      /** @description Notas da comissão */
       notes?: string;
     };
   };
@@ -4152,6 +4456,248 @@ export interface operations {
     requestBody?: never;
     responses: {
       /** @description Download do documento assinado */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FinancialController_listAccounts: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FinancialController_createAccount: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateFinancialAccountDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FinancialController_getOpportunityFinancial: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        opportunityId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FinancialController_generatePaymentPlan: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        opportunityId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['GeneratePaymentPlanDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FinancialController_recordReceipt: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RecordReceiptDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FinancialController_reverseReceipt: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReverseTransactionDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FinancialController_listPayables: {
+    parameters: {
+      query?: {
+        opportunityId?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FinancialController_createPayable: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreatePayableDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FinancialController_recordPayment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RecordPaymentDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FinancialController_listCommissions: {
+    parameters: {
+      query?: {
+        opportunityId?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FinancialController_configureCommission: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ConfigureCommissionDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FinancialController_getCashFlow: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
       200: {
         headers: {
           [name: string]: unknown;

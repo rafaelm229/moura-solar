@@ -40,6 +40,16 @@ model Organization {
   contractDeliveries  ContractDelivery[]
   signedReviews       SignedContractReview[]
   projectGates        ProjectGate[]
+  financialAccounts   FinancialAccount[]
+  paymentPlans        PaymentPlan[]
+  receivables         Receivable[]
+  receipts            Receipt[]
+  receiptAllocations  ReceiptAllocation[]
+  payables            Payable[]
+  payments            Payment[]
+  paymentAllocations  PaymentAllocation[]
+  commissions         Commission[]
+  cashMovements       CashMovement[]
 
   @@map("organizations")
 }
@@ -62,6 +72,8 @@ model User {
   sentContractDeliveries ContractDelivery[] @relation("SentContractDeliveries")
   reviewedSignedContracts SignedContractReview[] @relation("ReviewedSignedContracts")
   satisfiedProjectGates ProjectGate[] @relation("SatisfiedProjectGates")
+  createdReceipts       Receipt[]     @relation("CreatedReceipts")
+  createdPayments       Payment[]     @relation("CreatedPayments")
 
   @@map("users")
 }
@@ -338,6 +350,11 @@ model Opportunity {
   proposals            Proposal[]
   contracts            Contract[]
   projectGates         ProjectGate[]
+  paymentPlans         PaymentPlan[]
+  receivables          Receivable[]
+  receipts             Receipt[]
+  payables             Payable[]
+  commissions          Commission[]
 
   @@unique([organizationId, code])
   @@index([organizationId, state])
@@ -724,6 +741,7 @@ model Contract {
   deliveries                 ContractDelivery[]
   signedReviews              SignedContractReview[]
   projectGates               ProjectGate[]
+  paymentPlans               PaymentPlan[]
 
   @@unique([organizationId, code])
   @@index([opportunityId])
@@ -844,4 +862,249 @@ model ProjectGate {
   @@index([opportunityId, gateType])
   @@map("project_gates")
 }
+
+// ==========================================
+// M6: Financial, Receivables, Payables, Cash Flow (SPEC-008)
+// ==========================================
+
+model FinancialAccount {
+  id             String         @id @default(uuid()) @db.Uuid
+  organizationId String         @map("organization_id") @db.Uuid
+  name           String
+  accountType    String         @default("CHECKING") @map("account_type") // CHECKING, CASH, ESCROW, SAVINGS
+  bankCode       String?        @map("bank_code")
+  agency         String?
+  accountNumber  String?        @map("account_number")
+  status         String         @default("ACTIVE") // ACTIVE, INACTIVE
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  receipts       Receipt[]
+  payments       Payment[]
+  cashMovements  CashMovement[]
+
+  @@index([organizationId, status])
+  @@map("financial_accounts")
+}
+
+model PaymentPlan {
+  id                String       @id @default(uuid()) @db.Uuid
+  organizationId    String       @map("organization_id") @db.Uuid
+  opportunityId     String       @map("opportunity_id") @db.Uuid
+  contractId        String?      @map("contract_id") @db.Uuid
+  versionNumber     Int          @default(1) @map("version_number")
+  totalAmount       Decimal      @map("total_amount") @db.Decimal(12, 2)
+  currency          String       @default("BRL")
+  downPaymentAmount Decimal      @default(0) @map("down_payment_amount") @db.Decimal(12, 2)
+  installmentCount  Int          @default(1) @map("installment_count")
+  paymentMethod     String       @default("PIX") @map("payment_method") // PIX, FINANCING, BOLETO, CREDIT_CARD, CASH, MIXED
+  status            String       @default("ACTIVE") // ACTIVE, RENEGOTIATED, CANCELED, COMPLETED
+  notes             String?
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+
+  organization      Organization @relation(fields: [organizationId], references: [id])
+  opportunity       Opportunity  @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  contract          Contract?    @relation(fields: [contractId], references: [id])
+  receivables       Receivable[]
+
+  @@index([opportunityId, status])
+  @@map("payment_plans")
+}
+
+model Receivable {
+  id                String              @id @default(uuid()) @db.Uuid
+  organizationId    String              @map("organization_id") @db.Uuid
+  opportunityId     String              @map("opportunity_id") @db.Uuid
+  paymentPlanId     String              @map("payment_plan_id") @db.Uuid
+  installmentNumber Int                 @map("installment_number")
+  title             String
+  originalAmount    Decimal             @map("original_amount") @db.Decimal(12, 2)
+  paidAmount        Decimal             @default(0) @map("paid_amount") @db.Decimal(12, 2)
+  outstandingAmount Decimal             @map("outstanding_amount") @db.Decimal(12, 2)
+  dueDate           DateTime            @map("due_date") @db.Date
+  status            String              @default("OPEN") // OPEN, PARTIALLY_PAID, PAID, OVERDUE, RENEGOTIATED, CANCELED, WRITTEN_OFF
+  notes             String?
+  version           Int                 @default(1)
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+
+  organization      Organization        @relation(fields: [organizationId], references: [id])
+  opportunity       Opportunity         @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  paymentPlan       PaymentPlan         @relation(fields: [paymentPlanId], references: [id], onDelete: Cascade)
+  allocations       ReceiptAllocation[]
+
+  @@index([opportunityId, status])
+  @@index([dueDate, status])
+  @@map("receivables")
+}
+
+model Receipt {
+  id                 String              @id @default(uuid()) @db.Uuid
+  organizationId     String              @map("organization_id") @db.Uuid
+  opportunityId      String?             @map("opportunity_id") @db.Uuid
+  accountId          String              @map("account_id") @db.Uuid
+  amount             Decimal             @db.Decimal(12, 2)
+  effectiveDate      DateTime            @map("effective_date") @db.Date
+  paymentMethod      String              @default("PIX") @map("payment_method") // PIX, TED, BOLETO, CREDIT_CARD, CASH, FINANCING_RELEASE
+  payerName          String?             @map("payer_name")
+  payerTaxId         String?             @map("payer_tax_id")
+  receiptDocumentUrl String?             @map("receipt_document_url")
+  status             String              @default("CONFIRMED") // CONFIRMED, REVERSED
+  notes              String?
+  createdById        String              @map("created_by_id") @db.Uuid
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+
+  organization       Organization        @relation(fields: [organizationId], references: [id])
+  opportunity        Opportunity?        @relation(fields: [opportunityId], references: [id])
+  account            FinancialAccount    @relation(fields: [accountId], references: [id])
+  createdBy          User                @relation("CreatedReceipts", fields: [createdById], references: [id])
+  allocations        ReceiptAllocation[]
+  cashMovements      CashMovement[]
+
+  @@index([opportunityId])
+  @@index([accountId])
+  @@map("receipts")
+}
+
+model ReceiptAllocation {
+  id                 String       @id @default(uuid()) @db.Uuid
+  organizationId     String       @map("organization_id") @db.Uuid
+  receiptId          String       @map("receipt_id") @db.Uuid
+  receivableId       String       @map("receivable_id") @db.Uuid
+  allocatedPrincipal Decimal      @map("allocated_principal") @db.Decimal(12, 2)
+  interestAmount     Decimal      @default(0) @map("interest_amount") @db.Decimal(12, 2)
+  discountAmount     Decimal      @default(0) @map("discount_amount") @db.Decimal(12, 2)
+  status             String       @default("ACTIVE") // ACTIVE, REVERSED
+  createdAt          DateTime     @default(now()) @map("created_at")
+
+  organization       Organization @relation(fields: [organizationId], references: [id])
+  receipt            Receipt      @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  receivable         Receivable   @relation(fields: [receivableId], references: [id], onDelete: Cascade)
+
+  @@index([receiptId])
+  @@index([receivableId])
+  @@map("receipt_allocations")
+}
+
+model Payable {
+  id                String              @id @default(uuid()) @db.Uuid
+  organizationId    String              @map("organization_id") @db.Uuid
+  opportunityId     String?             @map("opportunity_id") @db.Uuid
+  category          String              // EQUIPMENT, INSTALLATION_LABOR, COMMISSION, ENGINEERING_HOMOLOGATION, FREIGHT, OTHER
+  description       String
+  recipient         String
+  recipientTaxId    String?             @map("recipient_tax_id")
+  originalAmount    Decimal             @map("original_amount") @db.Decimal(12, 2)
+  paidAmount        Decimal             @default(0) @map("paid_amount") @db.Decimal(12, 2)
+  outstandingAmount Decimal             @map("outstanding_amount") @db.Decimal(12, 2)
+  dueDate           DateTime            @map("due_date") @db.Date
+  status            String              @default("OPEN") // OPEN, PARTIALLY_PAID, PAID, OVERDUE, CANCELED
+  notes             String?
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+
+  organization      Organization        @relation(fields: [organizationId], references: [id])
+  opportunity       Opportunity?        @relation(fields: [opportunityId], references: [id])
+  allocations       PaymentAllocation[]
+  commissions       Commission[]
+
+  @@index([opportunityId, status])
+  @@index([dueDate, status])
+  @@map("payables")
+}
+
+model Payment {
+  id             String              @id @default(uuid()) @db.Uuid
+  organizationId String              @map("organization_id") @db.Uuid
+  accountId      String              @map("account_id") @db.Uuid
+  amount         Decimal             @db.Decimal(12, 2)
+  effectiveDate  DateTime            @map("effective_date") @db.Date
+  paymentMethod  String              @default("PIX") @map("payment_method")
+  documentNumber String?             @map("document_number")
+  status         String              @default("CONFIRMED") // CONFIRMED, REVERSED
+  notes          String?
+  createdById    String              @map("created_by_id") @db.Uuid
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
+
+  organization   Organization        @relation(fields: [organizationId], references: [id])
+  account        FinancialAccount    @relation(fields: [accountId], references: [id])
+  createdBy      User                @relation("CreatedPayments", fields: [createdById], references: [id])
+  allocations    PaymentAllocation[]
+  cashMovements  CashMovement[]
+
+  @@index([accountId])
+  @@map("payments")
+}
+
+model PaymentAllocation {
+  id              String       @id @default(uuid()) @db.Uuid
+  organizationId  String       @map("organization_id") @db.Uuid
+  paymentId       String       @map("payment_id") @db.Uuid
+  payableId       String       @map("payable_id") @db.Uuid
+  allocatedAmount Decimal      @map("allocated_amount") @db.Decimal(12, 2)
+  status          String       @default("ACTIVE") // ACTIVE, REVERSED
+  createdAt       DateTime     @default(now()) @map("created_at")
+
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  payment         Payment      @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  payable         Payable      @relation(fields: [payableId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
+  @@index([payableId])
+  @@map("payment_allocations")
+}
+
+model Commission {
+  id               String       @id @default(uuid()) @db.Uuid
+  organizationId   String       @map("organization_id") @db.Uuid
+  opportunityId    String       @map("opportunity_id") @db.Uuid
+  payableId        String?      @map("payable_id") @db.Uuid
+  beneficiaryName  String       @map("beneficiary_name")
+  role             String       @default("SALES_REP") // SALES_REP, TECHNICAL_PARTNER, MANAGER
+  percentage       Decimal      @db.Decimal(5, 2)
+  baseAmount       Decimal      @map("base_amount") @db.Decimal(12, 2)
+  commissionAmount Decimal      @map("commission_amount") @db.Decimal(12, 2)
+  triggerGate      String       @default("CONTRACT") @map("trigger_gate") // CONTRACT, FINANCIAL, CONCLUSION
+  status           String       @default("ESTIMATED") // ESTIMATED, ACQUIRED, PAID, CANCELED
+  notes            String?
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  organization     Organization @relation(fields: [organizationId], references: [id])
+  opportunity      Opportunity  @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  payable          Payable?     @relation(fields: [payableId], references: [id])
+
+  @@index([opportunityId])
+  @@map("commissions")
+}
+
+model CashMovement {
+  id                 String            @id @default(uuid()) @db.Uuid
+  organizationId     String            @map("organization_id") @db.Uuid
+  accountId          String            @map("account_id") @db.Uuid
+  direction          String            // IN, OUT
+  type               String            // RECEIPT, PAYMENT, REVERSAL, TRANSFER, ADJUSTMENT
+  amount             Decimal           @db.Decimal(12, 2)
+  currency           String            @default("BRL")
+  effectiveAt        DateTime          @default(now()) @map("effective_at")
+  receiptId          String?           @map("receipt_id") @db.Uuid
+  paymentId          String?           @map("payment_id") @db.Uuid
+  reversedMovementId String?           @map("reversed_movement_id") @db.Uuid
+  status             String            @default("CONFIRMED") // CONFIRMED, REVERSED
+  description        String
+  createdAt          DateTime          @default(now()) @map("created_at")
+
+  organization       Organization      @relation(fields: [organizationId], references: [id])
+  account            FinancialAccount  @relation(fields: [accountId], references: [id])
+  receipt            Receipt?          @relation(fields: [receiptId], references: [id])
+  payment            Payment?          @relation(fields: [paymentId], references: [id])
+
+  @@index([accountId, effectiveAt])
+  @@map("cash_movements")
+}
+
 

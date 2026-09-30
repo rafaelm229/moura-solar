@@ -19,6 +19,7 @@ import { Customers } from '../commercial/customers';
 import { Opportunities } from '../commercial/opportunities';
 import { Activities } from '../commercial/activities';
 import { Catalog } from '../design/catalog';
+import { GlobalFinancialDashboard } from '../financial/financial';
 
 const destinations = [
   { id: 'sessions', label: 'Minhas sessões', permission: 'sessions:read_own', organization: false },
@@ -33,6 +34,7 @@ const destinations = [
     organization: false,
   },
   { id: 'activities', label: 'Atividades', permission: 'activities:manage', organization: false },
+  { id: 'financial', label: 'Financeiro', permission: 'finance:read', organization: false },
   { id: 'catalog', label: 'Catálogo', permission: 'catalog:read', organization: false },
   { id: 'roles', label: 'Papéis', permission: 'roles:manage', organization: true },
 ];
@@ -203,6 +205,7 @@ function Application() {
               />
             )}
             {tab === 'activities' && <Activities />}
+            {tab === 'financial' && <GlobalFinancialDashboard />}
             {tab === 'catalog' && <Catalog />}
             {tab === 'sessions' && <Sessions onLogout={logoutLocal} />}
             {tab === 'members' && <Members />}

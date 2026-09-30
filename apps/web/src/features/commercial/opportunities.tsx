@@ -8,6 +8,7 @@ import { TechnicalSurvey } from '../design/survey';
 import { SolarDesigner } from '../design/solar-designer';
 import { Proposals } from '../proposal/proposals';
 import { ContractsView } from '../contract/contracts';
+import { OpportunityFinancial } from '../financial/financial';
 import type { Schemas } from '@moura-solar/api-client';
 
 type Opportunity = Schemas['OpportunityViewDto'];
@@ -23,7 +24,7 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
   const [search, setSearch] = useState('');
   const [selectedOpp, setSelectedOpp] = useState<Opportunity | null>(null);
   const [oppTab, setOppTab] = useState<
-    'commercial' | 'consumption' | 'design' | 'proposals' | 'contracts'
+    'commercial' | 'consumption' | 'design' | 'proposals' | 'contracts' | 'financial'
   >('commercial');
   const [isCreating, setIsCreating] = useState(!!initialCustomerId);
 
@@ -504,6 +505,18 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
             >
               📝 Contratos & Documentos
             </button>
+            <button
+              type="button"
+              aria-current={oppTab === 'financial' ? 'page' : undefined}
+              style={{
+                background:
+                  oppTab === 'financial' ? 'var(--brand-primary)' : 'var(--color-surface)',
+                color: oppTab === 'financial' ? 'var(--color-surface)' : 'var(--text-primary)',
+              }}
+              onClick={() => setOppTab('financial')}
+            >
+              💰 Financeiro & Margem
+            </button>
           </div>
 
           {oppTab === 'commercial' && (
@@ -726,6 +739,19 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
               <ContractsView
                 opportunityId={selectedOpp.id}
                 onRefresh={() => {
+                  queryClient.invalidateQueries({ queryKey: ['opportunity', selectedOpp.id] });
+                  queryClient.invalidateQueries({ queryKey: ['opportunities'] });
+                }}
+              />
+            </div>
+          )}
+
+          {oppTab === 'financial' && (
+            <div style={{ marginTop: '1rem' }}>
+              <OpportunityFinancial
+                opportunityId={selectedOpp.id}
+                opportunityCode={selectedOpp.code}
+                onUpdated={() => {
                   queryClient.invalidateQueries({ queryKey: ['opportunity', selectedOpp.id] });
                   queryClient.invalidateQueries({ queryKey: ['opportunities'] });
                 }}

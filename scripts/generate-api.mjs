@@ -1,7 +1,10 @@
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
 const run = (command, args, env = process.env) => {
-  const child = spawnSync(command, args, { stdio: 'inherit', env });
+  const child = spawnSync(command, args, {
+    stdio: 'inherit',
+    env: { ...env, PATH: `${process.cwd()}/.bin:${env.PATH || ''}` },
+  });
   if (child.status !== 0) process.exit(child.status ?? 1);
 };
 run('pnpm', ['--filter', '@moura-solar/api', 'build']);

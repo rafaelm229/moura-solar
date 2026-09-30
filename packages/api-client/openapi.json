@@ -3313,6 +3313,319 @@
         ],
         "tags": ["contracts"]
       }
+    },
+    "/api/v1/financial/accounts": {
+      "get": {
+        "operationId": "FinancialController_listAccounts",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["financial"]
+      },
+      "post": {
+        "operationId": "FinancialController_createAccount",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFinancialAccountDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["financial"]
+      }
+    },
+    "/api/v1/opportunities/{opportunityId}/financial": {
+      "get": {
+        "operationId": "FinancialController_getOpportunityFinancial",
+        "parameters": [
+          {
+            "name": "opportunityId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["financial"]
+      }
+    },
+    "/api/v1/opportunities/{opportunityId}/payment-plan/generate": {
+      "post": {
+        "operationId": "FinancialController_generatePaymentPlan",
+        "parameters": [
+          {
+            "name": "opportunityId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GeneratePaymentPlanDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["financial"]
+      }
+    },
+    "/api/v1/receipts": {
+      "post": {
+        "operationId": "FinancialController_recordReceipt",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordReceiptDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["financial"]
+      }
+    },
+    "/api/v1/receipts/{id}/reverse": {
+      "post": {
+        "operationId": "FinancialController_reverseReceipt",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReverseTransactionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["financial"]
+      }
+    },
+    "/api/v1/payables": {
+      "get": {
+        "operationId": "FinancialController_listPayables",
+        "parameters": [
+          {
+            "name": "opportunityId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["financial"]
+      },
+      "post": {
+        "operationId": "FinancialController_createPayable",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePayableDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["financial"]
+      }
+    },
+    "/api/v1/payments": {
+      "post": {
+        "operationId": "FinancialController_recordPayment",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordPaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["financial"]
+      }
+    },
+    "/api/v1/commissions": {
+      "get": {
+        "operationId": "FinancialController_listCommissions",
+        "parameters": [
+          {
+            "name": "opportunityId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["financial"]
+      },
+      "post": {
+        "operationId": "FinancialController_configureCommission",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigureCommissionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["financial"]
+      }
+    },
+    "/api/v1/financial/cash-flow": {
+      "get": {
+        "operationId": "FinancialController_getCashFlow",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["financial"]
+      }
     }
   },
   "info": {
@@ -5785,6 +6098,283 @@
           }
         },
         "required": ["reason"]
+      },
+      "CreateFinancialAccountDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Nome da conta financeira (ex: Banco Cora - Moura Solar)"
+          },
+          "accountType": {
+            "type": "string",
+            "enum": ["CHECKING", "CASH", "ESCROW", "SAVINGS"],
+            "default": "CHECKING"
+          },
+          "bankCode": {
+            "type": "string",
+            "description": "Código do banco (ex: 403 para Cora)"
+          },
+          "agency": {
+            "type": "string",
+            "description": "Agência bancária"
+          },
+          "accountNumber": {
+            "type": "string",
+            "description": "Número da conta corrente"
+          }
+        },
+        "required": ["name"]
+      },
+      "GeneratePaymentPlanDto": {
+        "type": "object",
+        "properties": {
+          "contractId": {
+            "type": "string",
+            "description": "ID do contrato vinculado"
+          },
+          "totalAmount": {
+            "type": "number",
+            "description": "Valor total a faturar (se omitido, lê do contrato ou proposta aceita)"
+          },
+          "downPaymentAmount": {
+            "type": "number",
+            "description": "Valor de entrada / sinal",
+            "default": 0
+          },
+          "installmentCount": {
+            "type": "number",
+            "description": "Quantidade de parcelas do saldo",
+            "default": 3
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": ["PIX", "TED", "BOLETO", "CREDIT_CARD", "CASH", "FINANCING_RELEASE", "MIXED"],
+            "default": "PIX"
+          },
+          "firstDueDate": {
+            "type": "string",
+            "description": "Data do primeiro vencimento do saldo (ISO YYYY-MM-DD)"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Observações do plano de pagamento"
+          }
+        }
+      },
+      "ReceiptAllocationItemDto": {
+        "type": "object",
+        "properties": {
+          "receivableId": {
+            "type": "string",
+            "description": "ID do título a receber"
+          },
+          "allocatedPrincipal": {
+            "type": "number",
+            "description": "Valor principal alocado"
+          },
+          "interestAmount": {
+            "type": "number",
+            "description": "Juros recebidos",
+            "default": 0
+          },
+          "discountAmount": {
+            "type": "number",
+            "description": "Desconto concedido",
+            "default": 0
+          }
+        },
+        "required": ["receivableId", "allocatedPrincipal"]
+      },
+      "RecordReceiptDto": {
+        "type": "object",
+        "properties": {
+          "opportunityId": {
+            "type": "string",
+            "description": "ID da oportunidade vinculada"
+          },
+          "accountId": {
+            "type": "string",
+            "description": "ID da conta financeira que recebeu os fundos"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Valor total recebido"
+          },
+          "effectiveDate": {
+            "type": "string",
+            "description": "Data efetiva da compensação/recebimento (ISO date)"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": ["PIX", "TED", "BOLETO", "CREDIT_CARD", "CASH", "FINANCING_RELEASE", "MIXED"],
+            "default": "PIX"
+          },
+          "payerName": {
+            "type": "string",
+            "description": "Nome de quem efetuou o pagamento"
+          },
+          "payerTaxId": {
+            "type": "string",
+            "description": "CPF ou CNPJ do pagador"
+          },
+          "receiptDocumentUrl": {
+            "type": "string",
+            "description": "URL ou chave do comprovante"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Notas ou observações do recebimento"
+          },
+          "allocations": {
+            "description": "Alocações em títulos a receber (se omitido e tiver oportunidade, aloca automaticamente nos mais antigos)",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReceiptAllocationItemDto"
+            }
+          }
+        },
+        "required": ["accountId", "amount"]
+      },
+      "ReverseTransactionDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Motivo / justificativa do estorno"
+          }
+        },
+        "required": ["reason"]
+      },
+      "CreatePayableDto": {
+        "type": "object",
+        "properties": {
+          "opportunityId": {
+            "type": "string",
+            "description": "ID da oportunidade associada ao custo"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "EQUIPMENT",
+              "INSTALLATION_LABOR",
+              "COMMISSION",
+              "ENGINEERING_HOMOLOGATION",
+              "FREIGHT",
+              "OTHER"
+            ],
+            "description": "Categoria do custo/despesa"
+          },
+          "description": {
+            "type": "string",
+            "description": "Descrição da despesa ou fornecimento"
+          },
+          "recipient": {
+            "type": "string",
+            "description": "Nome do fornecedor ou beneficiário"
+          },
+          "recipientTaxId": {
+            "type": "string",
+            "description": "CPF ou CNPJ do recebedor"
+          },
+          "originalAmount": {
+            "type": "number",
+            "description": "Valor original da obrigação"
+          },
+          "dueDate": {
+            "type": "string",
+            "description": "Data de vencimento (ISO YYYY-MM-DD)"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Observações"
+          }
+        },
+        "required": ["category", "description", "recipient", "originalAmount", "dueDate"]
+      },
+      "PaymentAllocationItemDto": {
+        "type": "object",
+        "properties": {
+          "payableId": {
+            "type": "string",
+            "description": "ID da conta a pagar"
+          },
+          "allocatedAmount": {
+            "type": "number",
+            "description": "Valor alocado/liquidado"
+          }
+        },
+        "required": ["payableId", "allocatedAmount"]
+      },
+      "RecordPaymentDto": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "description": "ID da conta financeira debitada"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Valor total pago"
+          },
+          "effectiveDate": {
+            "type": "string",
+            "description": "Data efetiva do pagamento (ISO date)"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": ["PIX", "TED", "BOLETO", "CREDIT_CARD", "CASH", "FINANCING_RELEASE", "MIXED"],
+            "default": "PIX"
+          },
+          "documentNumber": {
+            "type": "string",
+            "description": "Número do documento ou autenticação bancária"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Observações do pagamento"
+          },
+          "allocations": {
+            "description": "Alocações nas contas a pagar",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentAllocationItemDto"
+            }
+          }
+        },
+        "required": ["accountId", "amount"]
+      },
+      "ConfigureCommissionDto": {
+        "type": "object",
+        "properties": {
+          "opportunityId": {
+            "type": "string",
+            "description": "ID da oportunidade"
+          },
+          "beneficiaryName": {
+            "type": "string",
+            "description": "Nome do consultor ou parceiro beneficiário"
+          },
+          "role": {
+            "type": "string",
+            "description": "Função do participante",
+            "default": "SALES_REP"
+          },
+          "percentage": {
+            "type": "number",
+            "description": "Percentual de comissão (ex: 3.50 para 3.5%)"
+          },
+          "triggerGate": {
+            "type": "string",
+            "description": "Gatilho de aquisição",
+            "default": "FINANCIAL"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Notas da comissão"
+          }
+        },
+        "required": ["opportunityId", "beneficiaryName", "percentage"]
       }
     }
   }
