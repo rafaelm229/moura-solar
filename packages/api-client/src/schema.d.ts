@@ -1012,6 +1012,230 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/contracts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['ContractController_listContracts'];
+    put?: never;
+    post: operations['ContractController_createContract'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/opportunities/{opportunityId}/contracts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['ContractController_listOpportunityContracts'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/contracts/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['ContractController_getContract'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/contracts/{id}/draft': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['ContractController_updateDraft'];
+    trace?: never;
+  };
+  '/api/v1/contracts/{id}/request-review': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['ContractController_requestReview'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/contracts/{id}/approve': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['ContractController_approveContract'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/contracts/{id}/deliveries': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['ContractController_recordDelivery'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/contracts/{id}/upload-signed': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['ContractController_uploadSigned'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/contracts/{id}/verify-signed': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['ContractController_verifySigned'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/contracts/{id}/amendments': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['ContractController_createAmendment'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/contracts/{id}/cancel': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['ContractController_cancelContract'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/contracts/{id}/docx': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['ContractController_downloadDocx'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/contracts/{id}/pdf': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['ContractController_downloadPdf'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/contracts/{id}/signed': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['ContractController_downloadSigned'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1778,6 +2002,108 @@ export interface components {
       /** @description Motivo da recusa da proposta comercial pelo cliente */
       reason: string;
       /** @description Observações complementares da recusa */
+      notes?: string;
+    };
+    CreateContractDto: {
+      /** @description ID da oportunidade comercial */
+      opportunityId: string;
+      /** @description ID da versão da proposta aceita (se omitido, busca automaticamente a aceita na oportunidade) */
+      acceptedProposalVersionId?: string;
+      /**
+       * @description Cidade de assinatura do contrato
+       * @default Recife
+       */
+      signingCity: string;
+      /** @description Observações ou condições comerciais especiais */
+      notes?: string;
+      /** @description Tipo de telhado/superfície para instalação */
+      roofType?: string;
+    };
+    UpdateContractDraftDto: {
+      /** @description Snapshot ou ajustes das partes envolvidas */
+      partySnapshot?: Record<string, never>;
+      /** @description Snapshot ou ajustes das especificações técnicas */
+      technicalSnapshot?: Record<string, never>;
+      /** @description Snapshot ou ajustes das condições financeiras e parcelamento */
+      commercialSnapshot?: Record<string, never>;
+      /** @description Snapshot do escopo e inclusões/exclusões */
+      scopeSnapshot?: Record<string, never>;
+      /** @description Snapshot das cláusulas e termos */
+      clausesSnapshot?: Record<string, never>;
+      /** @description Observações gerais */
+      observations?: string;
+    };
+    RequestContractReviewDto: {
+      /** @description Justificativa para a solicitação de revisão jurídica/comercial */
+      notes?: string;
+    };
+    ApproveContractDto: {
+      /** @description Notas da aprovação */
+      notes?: string;
+    };
+    RecordContractDeliveryDto: {
+      /**
+       * @description Canal de envio do contrato ao cliente
+       * @example WHATSAPP
+       * @enum {string}
+       */
+      channel: 'WHATSAPP' | 'EMAIL' | 'DOWNLOAD' | 'IN_PERSON' | 'MANUAL';
+      /**
+       * @description Destinatário (número de WhatsApp, e-mail ou nome)
+       * @example 5581999998888
+       */
+      recipient?: string;
+      /** @description Observações sobre o envio */
+      notes?: string;
+    };
+    UploadSignedContractDto: {
+      /**
+       * @description Nome do arquivo enviado
+       * @example contrato-assinado-cliente.pdf
+       */
+      fileName: string;
+      /** @description Conteúdo do arquivo codificado em Base64 */
+      fileBase64: string;
+      /**
+       * @description Tipo MIME do arquivo
+       * @default application/pdf
+       */
+      mimeType: string;
+      /** @description Observações sobre o arquivo assinado */
+      notes?: string;
+    };
+    VerifySignedContractDto: {
+      /** @description Confirmação se os dados das partes conferem com o cadastro */
+      partiesMatch: boolean;
+      /** @description Confirmação se todas as páginas e anexos estão presentes */
+      allPagesPresent: boolean;
+      /** @description Confirmação se o modelo e versão correspondem ao gerado */
+      versionMatches: boolean;
+      /** @description Confirmação se as assinaturas e rubricas estão legíveis */
+      signaturesLegible: boolean;
+      /**
+       * @description Decisão da conferência formal
+       * @example VERIFIED
+       * @enum {string}
+       */
+      decision: 'VERIFIED' | 'REJECTED';
+      /** @description Motivo da rejeição caso não aprovado */
+      rejectionReason?: string;
+      /** @description Notas da conferência */
+      notes?: string;
+    };
+    CreateAmendmentDto: {
+      /** @description Motivo do aditivo contratual */
+      reason: string;
+      /** @description Alterações estruturadas introduzidas pelo aditivo */
+      changes?: Record<string, never>;
+      /** @description Observações do aditivo */
+      notes?: string;
+    };
+    CancelContractDto: {
+      /** @description Motivo do cancelamento do contrato */
+      reason: string;
+      /** @description Observações adicionais */
       notes?: string;
     };
   };
@@ -3505,6 +3831,328 @@ export interface operations {
     requestBody?: never;
     responses: {
       201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ContractController_listContracts: {
+    parameters: {
+      query?: {
+        opportunityId?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ContractController_createContract: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateContractDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ContractController_listOpportunityContracts: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        opportunityId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ContractController_getContract: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ContractController_updateDraft: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateContractDraftDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ContractController_requestReview: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RequestContractReviewDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ContractController_approveContract: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ApproveContractDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ContractController_recordDelivery: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RecordContractDeliveryDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ContractController_uploadSigned: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UploadSignedContractDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ContractController_verifySigned: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['VerifySignedContractDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ContractController_createAmendment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateAmendmentDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ContractController_cancelContract: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CancelContractDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ContractController_downloadDocx: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Download da Minuta do Contrato em formato DOCX */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ContractController_downloadPdf: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Download do Contrato em formato PDF */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ContractController_downloadSigned: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Download do documento assinado */
+      200: {
         headers: {
           [name: string]: unknown;
         };

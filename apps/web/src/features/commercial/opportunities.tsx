@@ -7,6 +7,7 @@ import { EnergyReadings } from '../design/consumption';
 import { TechnicalSurvey } from '../design/survey';
 import { SolarDesigner } from '../design/solar-designer';
 import { Proposals } from '../proposal/proposals';
+import { ContractsView } from '../contract/contracts';
 import type { Schemas } from '@moura-solar/api-client';
 
 type Opportunity = Schemas['OpportunityViewDto'];
@@ -21,9 +22,9 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
   const [stateFilter, setStateFilter] = useState('');
   const [search, setSearch] = useState('');
   const [selectedOpp, setSelectedOpp] = useState<Opportunity | null>(null);
-  const [oppTab, setOppTab] = useState<'commercial' | 'consumption' | 'design' | 'proposals'>(
-    'commercial',
-  );
+  const [oppTab, setOppTab] = useState<
+    'commercial' | 'consumption' | 'design' | 'proposals' | 'contracts'
+  >('commercial');
   const [isCreating, setIsCreating] = useState(!!initialCustomerId);
 
   // Creation form state
@@ -417,10 +418,12 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
               </h3>
               <p className="device">
                 Estágio da esteira:{' '}
-                <span className={`badge badge-${selectedOpp.state.toLowerCase()}`}>
-                  {selectedOpp.state}
+                <span
+                  className={`badge badge-${(detailQuery.data?.state ?? selectedOpp.state).toLowerCase()}`}
+                >
+                  {detailQuery.data?.state ?? selectedOpp.state}
                 </span>{' '}
-                | Versão: {selectedOpp.version}
+                | Versão: {detailQuery.data?.version ?? selectedOpp.version}
               </p>
             </div>
             <button
@@ -488,6 +491,18 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
               onClick={() => setOppTab('proposals')}
             >
               📄 Propostas Comerciais
+            </button>
+            <button
+              type="button"
+              aria-current={oppTab === 'contracts' ? 'page' : undefined}
+              style={{
+                background:
+                  oppTab === 'contracts' ? 'var(--brand-primary)' : 'var(--color-surface)',
+                color: oppTab === 'contracts' ? 'var(--color-surface)' : 'var(--text-primary)',
+              }}
+              onClick={() => setOppTab('contracts')}
+            >
+              📝 Contratos & Documentos
             </button>
           </div>
 
@@ -699,6 +714,18 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
                 opportunityTitle={selectedOpp.title}
                 opportunityState={detailQuery.data?.state ?? selectedOpp.state}
                 onOpportunityUpdated={() => {
+                  queryClient.invalidateQueries({ queryKey: ['opportunity', selectedOpp.id] });
+                  queryClient.invalidateQueries({ queryKey: ['opportunities'] });
+                }}
+              />
+            </div>
+          )}
+
+          {oppTab === 'contracts' && (
+            <div style={{ marginTop: '1rem' }}>
+              <ContractsView
+                opportunityId={selectedOpp.id}
+                onRefresh={() => {
                   queryClient.invalidateQueries({ queryKey: ['opportunity', selectedOpp.id] });
                   queryClient.invalidateQueries({ queryKey: ['opportunities'] });
                 }}
