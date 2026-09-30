@@ -29,6 +29,11 @@ model Organization {
   designItems DesignItem[]
   additionalCosts AdditionalCost[]
   pricingCalculations PricingCalculation[]
+  proposals   Proposal[]
+  proposalVersions ProposalVersion[]
+  proposalDocuments ProposalDocument[]
+  proposalDeliveries ProposalDelivery[]
+  proposalAcceptances ProposalAcceptance[]
 
   @@map("organizations")
 }
@@ -44,6 +49,9 @@ model User {
   activities   Activity[]
   completedSurveys Survey[] @relation("CompletedSurveys")
   approvedDesignVersions DesignVersion[] @relation("ApprovedDesignVersions")
+  createdProposalVersions ProposalVersion[] @relation("CreatedProposalVersions")
+  sentProposalDeliveries ProposalDelivery[] @relation("SentProposalDeliveries")
+  recordedProposalAcceptances ProposalAcceptance[] @relation("RecordedProposalAcceptances")
 
   @@map("users")
 }
@@ -317,6 +325,7 @@ model Opportunity {
   transitions          OpportunityTransition[]
   surveys              Survey[]
   designs              Design[]
+  proposals            Proposal[]
 
   @@unique([organizationId, code])
   @@index([organizationId, state])
@@ -494,6 +503,7 @@ model DesignVersion {
   items                         DesignItem[]
   additionalCosts               AdditionalCost[]
   pricing                       PricingCalculation?
+  proposalVersions              ProposalVersion[]
 
   @@unique([designId, versionNumber])
   @@index([designId, status])
@@ -567,3 +577,118 @@ model PricingCalculation {
 
   @@map("pricing_calculations")
 }
+
+model Proposal {
+  id                String            @id @default(uuid()) @db.Uuid
+  organizationId    String            @map("organization_id") @db.Uuid
+  opportunityId     String            @map("opportunity_id") @db.Uuid
+  code              String
+  acceptedVersionId String?           @map("accepted_version_id") @db.Uuid
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+
+  organization      Organization      @relation(fields: [organizationId], references: [id])
+  opportunity       Opportunity       @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  versions          ProposalVersion[]
+
+  @@unique([organizationId, code])
+  @@index([opportunityId])
+  @@map("proposals")
+}
+
+model ProposalVersion {
+  id                   String               @id @default(uuid()) @db.Uuid
+  organizationId       String               @map("organization_id") @db.Uuid
+  proposalId           String               @map("proposal_id") @db.Uuid
+  versionNumber        Int                  @map("version_number")
+  designVersionId      String               @map("design_version_id") @db.Uuid
+  basedOnVersionId     String?              @map("based_on_version_id") @db.Uuid
+  status               String               @default("DRAFT") // DRAFT, READY, SENT, VIEWED, ACCEPTED, REJECTED, EXPIRED, SUPERSEDED, CANCELED
+  customerSnapshot     Json                 @map("customer_snapshot")
+  utilityUnitSnapshot  Json                 @map("utility_unit_snapshot")
+  technicalSnapshot    Json                 @map("technical_snapshot")
+  commercialSnapshot   Json                 @map("commercial_snapshot")
+  validityDays         Int                  @default(10) @map("validity_days")
+  validUntil           DateTime?            @map("valid_until")
+  currency             String               @default("BRL")
+  finalPrice           Decimal              @map("final_price") @db.Decimal(12, 2)
+  paymentConditions    Json?                @map("payment_conditions")
+  observations         String?
+  contentHash          String               @map("content_hash")
+  version              Int                  @default(1)
+  createdById          String?              @map("created_by_id") @db.Uuid
+  createdAt            DateTime             @default(now()) @map("created_at")
+  updatedAt            DateTime             @updatedAt @map("updated_at")
+
+  organization         Organization         @relation(fields: [organizationId], references: [id])
+  proposal             Proposal             @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  designVersion        DesignVersion        @relation(fields: [designVersionId], references: [id])
+  createdBy            User?                @relation("CreatedProposalVersions", fields: [createdById], references: [id])
+  documents            ProposalDocument[]
+  deliveries           ProposalDelivery[]
+  acceptance           ProposalAcceptance?
+
+  @@unique([proposalId, versionNumber])
+  @@index([proposalId, status])
+  @@map("proposal_versions")
+}
+
+model ProposalDocument {
+  id                String          @id @default(uuid()) @db.Uuid
+  organizationId    String          @map("organization_id") @db.Uuid
+  proposalVersionId String          @map("proposal_version_id") @db.Uuid
+  type              String          @default("PDF_PROPOSAL")
+  fileName          String          @map("file_name")
+  fileSize          Int             @map("file_size")
+  mimeType          String          @default("application/pdf") @map("mime_type")
+  s3Bucket          String          @map("s3_bucket")
+  s3Key             String          @map("s3_key")
+  contentHash       String          @map("content_hash")
+  generationStatus  String          @default("READY") @map("generation_status")
+  generatedAt       DateTime        @default(now()) @map("generated_at")
+
+  organization      Organization    @relation(fields: [organizationId], references: [id])
+  proposalVersion   ProposalVersion @relation(fields: [proposalVersionId], references: [id], onDelete: Cascade)
+
+  @@index([proposalVersionId])
+  @@map("proposal_documents")
+}
+
+model ProposalDelivery {
+  id                String          @id @default(uuid()) @db.Uuid
+  organizationId    String          @map("organization_id") @db.Uuid
+  proposalVersionId String          @map("proposal_version_id") @db.Uuid
+  channel           String          // WHATSAPP, EMAIL, DOWNLOAD, IN_PERSON, MANUAL
+  recipient         String?
+  status            String          @default("SENT")
+  sentById          String          @map("sent_by_id") @db.Uuid
+  sentAt            DateTime        @default(now()) @map("sent_at")
+  notes             String?
+  createdAt         DateTime        @default(now()) @map("created_at")
+
+  organization      Organization    @relation(fields: [organizationId], references: [id])
+  proposalVersion   ProposalVersion @relation(fields: [proposalVersionId], references: [id], onDelete: Cascade)
+  sentBy            User            @relation("SentProposalDeliveries", fields: [sentById], references: [id])
+
+  @@index([proposalVersionId])
+  @@map("proposal_deliveries")
+}
+
+model ProposalAcceptance {
+  id                String          @id @default(uuid()) @db.Uuid
+  organizationId    String          @map("organization_id") @db.Uuid
+  proposalVersionId String          @unique @map("proposal_version_id") @db.Uuid
+  method            String          // SIGNED_DOCUMENT, MESSAGE, IN_PERSON, E_SIGNATURE
+  acceptedByName    String          @map("accepted_by_name")
+  acceptedAt        DateTime        @default(now()) @map("accepted_at")
+  recordedById      String          @map("recorded_by_id") @db.Uuid
+  notes             String?
+  createdAt         DateTime        @default(now()) @map("created_at")
+
+  organization      Organization    @relation(fields: [organizationId], references: [id])
+  proposalVersion   ProposalVersion @relation(fields: [proposalVersionId], references: [id], onDelete: Cascade)
+  recordedBy        User            @relation("RecordedProposalAcceptances", fields: [recordedById], references: [id])
+
+  @@map("proposal_acceptances")
+}
+

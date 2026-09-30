@@ -852,6 +852,166 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/proposals': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['ProposalController_listProposals'];
+    put?: never;
+    post: operations['ProposalController_createProposal'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/opportunities/{opportunityId}/proposals': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['ProposalController_listOpportunityProposals'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/proposals/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['ProposalController_getProposal'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/proposal-versions/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['ProposalController_updateDraft'];
+    trace?: never;
+  };
+  '/api/v1/proposal-versions/{id}/generate-pdf': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['ProposalController_generatePdf'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/proposal-versions/{id}/pdf': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['ProposalController_getPdf'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/proposal-versions/{id}/deliveries': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['ProposalController_recordDelivery'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/proposal-versions/{id}/accept': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['ProposalController_recordAcceptance'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/proposal-versions/{id}/reject': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['ProposalController_recordRejection'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/proposal-versions/{id}/new-version': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['ProposalController_createNextVersion'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1566,6 +1726,59 @@ export interface components {
       justification?: string;
       /** @description Obrigatório se a margem for inferior à alçada mínima (20%) */
       overrideLowMarginReason?: string;
+    };
+    CreateProposalDto: {
+      /** @description ID da oportunidade comercial */
+      opportunityId: string;
+      /** @description ID da versão aprovada de dimensionamento */
+      designVersionId: string;
+      /**
+       * @description Dias de validade da proposta (padrão 10)
+       * @default 10
+       */
+      validityDays: number;
+      /** @description Condições de pagamento e parcelamento */
+      paymentConditions?: Record<string, never>;
+      /** @description Observações comerciais visíveis na proposta */
+      observations?: string;
+    };
+    UpdateProposalDraftDto: {
+      /** @description Versão esperada do registro para controle de concorrência */
+      expectedVersion: number;
+      /** @description Dias de validade da proposta (padrão 10) */
+      validityDays?: number;
+      /** @description Condições de pagamento e parcelamento */
+      paymentConditions?: Record<string, never>;
+      /** @description Observações comerciais */
+      observations?: string;
+    };
+    RecordProposalDeliveryDto: {
+      /**
+       * @description Canal utilizado para envio da proposta comercial
+       * @enum {string}
+       */
+      channel: 'WHATSAPP' | 'EMAIL' | 'DOWNLOAD' | 'IN_PERSON' | 'MANUAL';
+      /** @description Destinatário do envio (e-mail, número WhatsApp, etc.) */
+      recipient?: string;
+      /** @description Notas ou observações sobre o envio */
+      notes?: string;
+    };
+    RecordProposalAcceptanceDto: {
+      /**
+       * @description Forma pela qual o aceite do cliente foi confirmado
+       * @enum {string}
+       */
+      method: 'SIGNED_DOCUMENT' | 'MESSAGE' | 'IN_PERSON' | 'E_SIGNATURE';
+      /** @description Nome da pessoa responsável pelo aceite no cliente */
+      acceptedByName: string;
+      /** @description Observações sobre o aceite ou evidência anexada */
+      notes?: string;
+    };
+    RecordProposalRejectionDto: {
+      /** @description Motivo da recusa da proposta comercial pelo cliente */
+      reason: string;
+      /** @description Observações complementares da recusa */
+      notes?: string;
     };
   };
   responses: never;
@@ -3069,6 +3282,233 @@ export interface operations {
         content: {
           'application/json': components['schemas']['DesignVersionViewDto'];
         };
+      };
+    };
+  };
+  ProposalController_listProposals: {
+    parameters: {
+      query?: {
+        opportunityId?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ProposalController_createProposal: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateProposalDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ProposalController_listOpportunityProposals: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        opportunityId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ProposalController_getProposal: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ProposalController_updateDraft: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateProposalDraftDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ProposalController_generatePdf: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ProposalController_getPdf: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ProposalController_recordDelivery: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RecordProposalDeliveryDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ProposalController_recordAcceptance: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RecordProposalAcceptanceDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ProposalController_recordRejection: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RecordProposalRejectionDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ProposalController_createNextVersion: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };

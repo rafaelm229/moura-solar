@@ -2519,6 +2519,331 @@
         ],
         "tags": ["design"]
       }
+    },
+    "/api/v1/proposals": {
+      "post": {
+        "operationId": "ProposalController_createProposal",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProposalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["proposals"]
+      },
+      "get": {
+        "operationId": "ProposalController_listProposals",
+        "parameters": [
+          {
+            "name": "opportunityId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["proposals"]
+      }
+    },
+    "/api/v1/opportunities/{opportunityId}/proposals": {
+      "get": {
+        "operationId": "ProposalController_listOpportunityProposals",
+        "parameters": [
+          {
+            "name": "opportunityId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["proposals"]
+      }
+    },
+    "/api/v1/proposals/{id}": {
+      "get": {
+        "operationId": "ProposalController_getProposal",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["proposals"]
+      }
+    },
+    "/api/v1/proposal-versions/{id}": {
+      "patch": {
+        "operationId": "ProposalController_updateDraft",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProposalDraftDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["proposals"]
+      }
+    },
+    "/api/v1/proposal-versions/{id}/generate-pdf": {
+      "post": {
+        "operationId": "ProposalController_generatePdf",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["proposals"]
+      }
+    },
+    "/api/v1/proposal-versions/{id}/pdf": {
+      "get": {
+        "operationId": "ProposalController_getPdf",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["proposals"]
+      }
+    },
+    "/api/v1/proposal-versions/{id}/deliveries": {
+      "post": {
+        "operationId": "ProposalController_recordDelivery",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordProposalDeliveryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["proposals"]
+      }
+    },
+    "/api/v1/proposal-versions/{id}/accept": {
+      "post": {
+        "operationId": "ProposalController_recordAcceptance",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordProposalAcceptanceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["proposals"]
+      }
+    },
+    "/api/v1/proposal-versions/{id}/reject": {
+      "post": {
+        "operationId": "ProposalController_recordRejection",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordProposalRejectionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["proposals"]
+      }
+    },
+    "/api/v1/proposal-versions/{id}/new-version": {
+      "post": {
+        "operationId": "ProposalController_createNextVersion",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["proposals"]
+      }
     }
   },
   "info": {
@@ -4697,6 +5022,107 @@
             "description": "Obrigatório se a margem for inferior à alçada mínima (20%)"
           }
         }
+      },
+      "CreateProposalDto": {
+        "type": "object",
+        "properties": {
+          "opportunityId": {
+            "type": "string",
+            "description": "ID da oportunidade comercial"
+          },
+          "designVersionId": {
+            "type": "string",
+            "description": "ID da versão aprovada de dimensionamento"
+          },
+          "validityDays": {
+            "type": "number",
+            "description": "Dias de validade da proposta (padrão 10)",
+            "default": 10
+          },
+          "paymentConditions": {
+            "type": "object",
+            "description": "Condições de pagamento e parcelamento"
+          },
+          "observations": {
+            "type": "string",
+            "description": "Observações comerciais visíveis na proposta"
+          }
+        },
+        "required": ["opportunityId", "designVersionId"]
+      },
+      "UpdateProposalDraftDto": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "number",
+            "description": "Versão esperada do registro para controle de concorrência"
+          },
+          "validityDays": {
+            "type": "number",
+            "description": "Dias de validade da proposta (padrão 10)"
+          },
+          "paymentConditions": {
+            "type": "object",
+            "description": "Condições de pagamento e parcelamento"
+          },
+          "observations": {
+            "type": "string",
+            "description": "Observações comerciais"
+          }
+        },
+        "required": ["expectedVersion"]
+      },
+      "RecordProposalDeliveryDto": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": ["WHATSAPP", "EMAIL", "DOWNLOAD", "IN_PERSON", "MANUAL"],
+            "description": "Canal utilizado para envio da proposta comercial"
+          },
+          "recipient": {
+            "type": "string",
+            "description": "Destinatário do envio (e-mail, número WhatsApp, etc.)"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Notas ou observações sobre o envio"
+          }
+        },
+        "required": ["channel"]
+      },
+      "RecordProposalAcceptanceDto": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": ["SIGNED_DOCUMENT", "MESSAGE", "IN_PERSON", "E_SIGNATURE"],
+            "description": "Forma pela qual o aceite do cliente foi confirmado"
+          },
+          "acceptedByName": {
+            "type": "string",
+            "description": "Nome da pessoa responsável pelo aceite no cliente"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Observações sobre o aceite ou evidência anexada"
+          }
+        },
+        "required": ["method", "acceptedByName"]
+      },
+      "RecordProposalRejectionDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Motivo da recusa da proposta comercial pelo cliente"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Observações complementares da recusa"
+          }
+        },
+        "required": ["reason"]
       }
     }
   }

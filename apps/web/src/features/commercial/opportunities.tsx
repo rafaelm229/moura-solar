@@ -6,6 +6,7 @@ import { Feedback } from '../identity/feedback';
 import { EnergyReadings } from '../design/consumption';
 import { TechnicalSurvey } from '../design/survey';
 import { SolarDesigner } from '../design/solar-designer';
+import { Proposals } from '../proposal/proposals';
 import type { Schemas } from '@moura-solar/api-client';
 
 type Opportunity = Schemas['OpportunityViewDto'];
@@ -20,7 +21,9 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
   const [stateFilter, setStateFilter] = useState('');
   const [search, setSearch] = useState('');
   const [selectedOpp, setSelectedOpp] = useState<Opportunity | null>(null);
-  const [oppTab, setOppTab] = useState<'commercial' | 'consumption' | 'design'>('commercial');
+  const [oppTab, setOppTab] = useState<'commercial' | 'consumption' | 'design' | 'proposals'>(
+    'commercial',
+  );
   const [isCreating, setIsCreating] = useState(!!initialCustomerId);
 
   // Creation form state
@@ -474,6 +477,18 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
             >
               ☀️ Dimensionamento & Custos
             </button>
+            <button
+              type="button"
+              aria-current={oppTab === 'proposals' ? 'page' : undefined}
+              style={{
+                background:
+                  oppTab === 'proposals' ? 'var(--brand-primary)' : 'var(--color-surface)',
+                color: oppTab === 'proposals' ? 'var(--color-surface)' : 'var(--text-primary)',
+              }}
+              onClick={() => setOppTab('proposals')}
+            >
+              📄 Propostas Comerciais
+            </button>
           </div>
 
           {oppTab === 'commercial' && (
@@ -673,6 +688,20 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
                   selectedOpp.estimatedConsumption ??
                   undefined
                 }
+              />
+            </div>
+          )}
+
+          {oppTab === 'proposals' && (
+            <div style={{ marginTop: '1rem' }}>
+              <Proposals
+                opportunityId={selectedOpp.id}
+                opportunityTitle={selectedOpp.title}
+                opportunityState={detailQuery.data?.state ?? selectedOpp.state}
+                onOpportunityUpdated={() => {
+                  queryClient.invalidateQueries({ queryKey: ['opportunity', selectedOpp.id] });
+                  queryClient.invalidateQueries({ queryKey: ['opportunities'] });
+                }}
               />
             </div>
           )}
