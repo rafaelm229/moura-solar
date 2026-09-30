@@ -1,0 +1,173 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import 'tailwindcss';
+
+@theme inline {
+  --color-bg-base: #090B0A;
+  --color-surface: #111412;
+  --color-card: #161A17;
+  --color-elevated: #1C211D;
+  --color-border: #29302B;
+  --color-border-subtle: #1E2420;
+
+  --color-solar: #FFD400;
+  --color-solar-hover: #E6BE00;
+  --color-solar-muted: #3A3200;
+  --color-solar-text: #FFD400;
+
+  --color-green: #26D866;
+  --color-green-inst: #087443;
+  --color-green-muted: #113522;
+
+  --color-red: #FF4D57;
+  --color-orange: #FF9F1C;
+  --color-blue: #3B82F6;
+
+  --color-text: #F5F7F5;
+  --color-text-secondary: #9BA49E;
+  --color-text-disabled: #626A65;
+
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #090B0A;
+  color: #F5F7F5;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #29302B transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #29302B;
+  border-radius: 3px;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+input, textarea, select, button {
+  font-family: inherit;
+}
+
+.sidebar-transition {
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fade-in {
+  animation: fadeIn 0.18s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.slide-up {
+  animation: slideUp 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.chart-gradient-yellow {
+  background: linear-gradient(180deg, rgba(255,212,0,0.18) 0%, rgba(255,212,0,0) 100%);
+}
+
+.chart-gradient-green {
+  background: linear-gradient(180deg, rgba(38,216,102,0.18) 0%, rgba(38,216,102,0) 100%);
+}
+
+.chart-gradient-blue {
+  background: linear-gradient(180deg, rgba(59,130,246,0.18) 0%, rgba(59,130,246,0) 100%);
+}
+
+.solar-glow {
+  box-shadow: 0 0 20px rgba(255, 212, 0, 0.12);
+}
+
+.card-hover {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card-hover:hover {
+  border-color: #3A3600;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.35);
+}
+
+.btn-solar {
+  background: #FFD400;
+  color: #0A0800;
+  font-weight: 600;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-solar:hover {
+  background: #E6BE00;
+  box-shadow: 0 0 16px rgba(255,212,0,0.2);
+}
+
+.btn-solar:active {
+  background: #C9A800;
+}
+
+.nav-item {
+  transition: background 0.1s ease, color 0.1s ease;
+}
+
+.nav-item:hover {
+  background: #1C211D;
+  color: #F5F7F5;
+}
+
+.nav-item.active {
+  background: #3A3200;
+  color: #FFD400;
+}
+
+.kanban-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.kanban-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+@media (max-width: 768px) {
+  .desktop-only { display: none !important; }
+}
+
+@media (min-width: 769px) {
+  .mobile-only { display: none !important; }
+}
