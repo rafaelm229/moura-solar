@@ -7,6 +7,7 @@ import { IdentityModule } from './identity/identity.module';
 import { HealthModule } from './health/health.module';
 import { CommercialModule } from './commercial/commercial.module';
 import { DesignModule } from './design/design.module';
+import { ProposalModule } from './proposal/proposal.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { DesignModule } from './design/design.module';
     IdentityModule,
     CommercialModule,
     DesignModule,
+    ProposalModule,
   ],
 })
 export class AppModule {}

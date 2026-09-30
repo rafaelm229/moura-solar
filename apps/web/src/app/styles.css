@@ -505,10 +505,30 @@ label {
   color: var(--status-danger);
   border-color: #fca5a5;
 }
-.badge.badge-ativo {
+.badge.badge-ativo,
+.badge.badge-accepted,
+.badge.badge-contratacao {
   background: #f0fdf4;
   color: var(--status-success);
   border-color: #86efac;
+}
+.badge.badge-ready,
+.badge.badge-viewed {
+  background: #f5f3ff;
+  color: #6d28d9;
+  border-color: #c4b5fd;
+}
+.badge.badge-sent,
+.badge.badge-proposta_apresentada {
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
+}
+.badge.badge-rejected,
+.badge.badge-expired {
+  background: #fef2f2;
+  color: var(--status-danger);
+  border-color: #fca5a5;
 }
 
 .table-wrapper {
