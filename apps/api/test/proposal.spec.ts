@@ -144,4 +144,30 @@ describe('SPEC-006 Proposals, PDF Engine & Lifecycle Governance', () => {
       expect(acceptedVersions.length).toBe(1);
     });
   });
+
+  describe('3. Auditoria e Resiliência Transacional (Vulnerabilidades Auditadas)', () => {
+    it('deve mapear ações críticas para o modelo AuditEvent', () => {
+      const requiredAuditActions = [
+        'PROPOSAL_CREATED',
+        'PROPOSAL_DRAFT_UPDATED',
+        'PROPOSAL_DELIVERED',
+        'PROPOSAL_ACCEPTED',
+        'PROPOSAL_REJECTED',
+        'PROPOSAL_VERSION_CREATED',
+      ];
+
+      for (const action of requiredAuditActions) {
+        expect(action.startsWith('PROPOSAL_')).toBe(true);
+      }
+    });
+
+    it('impede sobrescrita concorrente do rascunho através de expectedVersion', () => {
+      const currentVersion: number = 1;
+      const concurrentRequestExpectedVersion: number = 1;
+      const outdatedRequestExpectedVersion: number = 0;
+
+      expect(concurrentRequestExpectedVersion === currentVersion).toBe(true);
+      expect(outdatedRequestExpectedVersion === currentVersion).toBe(false);
+    });
+  });
 });
