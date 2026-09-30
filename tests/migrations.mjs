@@ -9,7 +9,11 @@ const url = new URL(
 );
 const schema = `upgrade_${randomUUID().replaceAll('-', '')}`;
 url.searchParams.set('schema', schema);
-const env = { ...process.env, DATABASE_URL: url.toString() };
+const env = {
+  ...process.env,
+  PATH: `${process.cwd()}/.bin:/tmp/moura-solar-tools:${process.env.PATH}`,
+  DATABASE_URL: url.toString(),
+};
 const db = new PrismaClient({ datasources: { db: { url: url.toString() } } });
 function prisma(args) {
   const command = spawnSync(
@@ -40,10 +44,11 @@ try {
   assert.equal(await db.opportunity.count(), 0);
   assert.equal(await db.catalogItem.count(), 0);
   assert.equal(await db.design.count(), 0);
+  assert.equal(await db.proposal.count(), 0);
   prisma(['migrate', 'deploy']);
   assert.equal(await db.organization.count(), 1);
   console.log(
-    'Upgrade M0 → M1 → M2 → M3 preserved existing organization; repeated deployment was safe.',
+    'Upgrade M0 → M1 → M2 → M3 → M4 preserved existing organization; repeated deployment was safe.',
   );
 } finally {
   await db.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);
