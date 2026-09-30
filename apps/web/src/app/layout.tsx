@@ -1,4 +1,5 @@
 import '@moura-solar/design-tokens/tokens.css';
+import '../ui/primitives.css';
 import './styles.css';
 
 import type { Metadata, Viewport } from 'next';
@@ -12,12 +13,12 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#084c36',
+  themeColor: '#090B0A',
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" data-theme="dark">
       <body>{children}</body>
     </html>
   );

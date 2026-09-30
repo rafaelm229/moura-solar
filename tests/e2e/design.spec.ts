@@ -47,9 +47,17 @@ for (const [width, height] of [
       .fill(`Solar Residencial Silva ${width}`);
     await page
       .getByLabel('Telefone / WhatsApp')
-      .fill(`(31) 97777-${width.toString().padStart(4, '0')}`);
+      .fill(`(31) 95555-${width.toString().padStart(4, '0')}`);
     await page.getByLabel('Cidade').fill('Belo Horizonte');
     await page.getByRole('button', { name: 'Salvar Cliente' }).click();
+
+    const overrideDuplicate = page.getByLabel(
+      'Confirmar e cadastrar mesmo com as correspondências acima',
+    );
+    if (await overrideDuplicate.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await overrideDuplicate.check();
+      await page.getByRole('button', { name: 'Salvar Cliente' }).click();
+    }
 
     await expect(
       page.getByRole('heading', { name: `Solar Residencial Silva ${width}` }),

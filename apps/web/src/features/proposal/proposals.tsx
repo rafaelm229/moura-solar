@@ -951,6 +951,7 @@ export function Proposals({
                         {canSend && (
                           <button
                             type="button"
+                            aria-label="📤 Registrar Envio"
                             className={isReady ? 'btn btn--primary' : 'btn btn--secondary'}
                             style={{
                               padding: '0.55rem 1.1rem',
@@ -983,6 +984,7 @@ export function Proposals({
                           (isSent ? (
                             <button
                               type="button"
+                              aria-label="✓ Registrar Aceite Formal"
                               className="btn btn--success"
                               style={{
                                 padding: '0.6rem 1.25rem',

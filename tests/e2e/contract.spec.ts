@@ -181,11 +181,11 @@ for (const [width, height] of [
     // Verify DOCX and PDF download links
     await expect(page.getByText('Minuta Editável (DOCX)')).toBeVisible();
     await expect(page.getByText('Contrato Formal (PDF)')).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Baixar DOCX' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Baixar PDF' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Baixar DOCX' }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Baixar PDF' }).first()).toBeVisible();
 
     // 10. Record Delivery
-    await page.getByRole('button', { name: '📤 Registrar Envio' }).click();
+    await page.getByRole('button', { name: '📤 Registrar Envio', exact: true }).first().click();
     await expect(page.getByRole('heading', { name: 'Registrar Envio do Contrato' })).toBeVisible();
 
     await page.getByLabel('Destinatário').fill(`(81) 97777-${width.toString().padStart(4, '0')}`);
