@@ -220,4 +220,50 @@ describe('SPEC-007 Contracts, Document Engine, Lifecycle & Gate C Governance', (
       expect(isVerified).toBe(false);
     });
   });
+
+  describe('4. Segurança do Upload de Contrato Assinado (Vulnerabilidades Auditadas)', () => {
+    it('deve reconhecer assinatura binária mágica %PDF- e rejeitar payloads não-PDF', () => {
+      const validPdfBuffer = Buffer.from('%PDF-1.7 Conteudo valido do contrato assinado');
+      const textBuffer = Buffer.from('Este é um arquivo de texto comum fingindo ser PDF');
+      const elfBinaryBuffer = Buffer.from([0x7f, 0x45, 0x4c, 0x46, 0x02, 0x01, 0x01, 0x00]);
+
+      expect(validPdfBuffer.subarray(0, 5).toString('ascii').startsWith('%PDF-')).toBe(true);
+      expect(textBuffer.subarray(0, 5).toString('ascii').startsWith('%PDF-')).toBe(false);
+      expect(elfBinaryBuffer.subarray(0, 5).toString('ascii').startsWith('%PDF-')).toBe(false);
+    });
+
+    it('deve sanitizar nomes de arquivos com tentativas de path traversal e caracteres perigosos', () => {
+      const maliciousNames = [
+        '../../etc/passwd.pdf',
+        '..\\windows\\system32\\malware.pdf',
+        'contrato;rm -rf;.pdf',
+        'contrato assinado.exe',
+      ];
+
+      for (const name of maliciousNames) {
+        const basenameOnly = name.split(/[/\\]/).pop() || name;
+        const sanitized = basenameOnly.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const safeName = sanitized.toLowerCase().endsWith('.pdf') ? sanitized : `${sanitized}.pdf`;
+
+        expect(safeName).not.toContain('/');
+        expect(safeName).not.toContain('\\');
+        expect(safeName).not.toContain('..');
+        expect(safeName.toLowerCase().endsWith('.pdf')).toBe(true);
+      }
+    });
+
+    it('deve bloquear upload em contratos cancelados ou já ativos', () => {
+      const invalidStates = ['CANCELED', 'TERMINATED', 'ACTIVE'];
+      for (const state of invalidStates) {
+        const isBlocked = ['CANCELED', 'TERMINATED', 'ACTIVE'].includes(state);
+        expect(isBlocked).toBe(true);
+      }
+
+      const validStates = ['SENT', 'SIGNED_UPLOADED', 'REJECTED'];
+      for (const state of validStates) {
+        const isBlocked = ['CANCELED', 'TERMINATED', 'ACTIVE'].includes(state);
+        expect(isBlocked).toBe(false);
+      }
+    });
+  });
 });

@@ -8,6 +8,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import type { NextFunction, Request, Response } from 'express';
+import { json, urlencoded } from 'express';
 import helmet from 'helmet';
 
 import { AppModule } from './app.module';
@@ -19,6 +20,8 @@ async function bootstrap(): Promise<void> {
 
   const log = pino();
   app.use(helmet());
+  app.use(json({ limit: '25mb' }));
+  app.use(urlencoded({ extended: true, limit: '25mb' }));
   app.enableCors({ origin: config.getOrThrow<string>('WEB_ORIGIN'), credentials: true });
   app.use((request: Request, response: Response, next: NextFunction) => {
     const incoming = request.header('x-request-id');

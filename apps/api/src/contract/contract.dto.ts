@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  Matches,
 } from 'class-validator';
 
 export enum ContractDeliveryChannel {
@@ -130,6 +131,10 @@ export class UploadSignedContractDto {
   @ApiProperty({ description: 'Nome do arquivo enviado', example: 'contrato-assinado-cliente.pdf' })
   @IsString()
   @IsNotEmpty()
+  @Matches(/^[\w\-. ]+\.pdf$/i, {
+    message:
+      'O nome do arquivo deve terminar em .pdf e não conter caracteres especiais ou caminhos relativos.',
+  })
   fileName!: string;
 
   @ApiProperty({ description: 'Conteúdo do arquivo codificado em Base64' })
@@ -140,6 +145,9 @@ export class UploadSignedContractDto {
   @ApiPropertyOptional({ description: 'Tipo MIME do arquivo', default: 'application/pdf' })
   @IsString()
   @IsOptional()
+  @Matches(/^application\/pdf$/i, {
+    message: 'O tipo MIME deve ser application/pdf.',
+  })
   mimeType?: string;
 
   @ApiPropertyOptional({ description: 'Observações sobre o arquivo assinado' })

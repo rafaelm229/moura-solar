@@ -748,7 +748,9 @@ button:disabled {
   background: var(--color-surface, #ffffff);
   border: 1px solid var(--color-border, #d9e4df);
   border-radius: var(--radius-lg, 1rem);
-  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.15), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  box-shadow:
+    0 20px 25px -5px rgb(0 0 0 / 0.15),
+    0 8px 10px -6px rgb(0 0 0 / 0.1);
   padding: 1.5rem;
   position: relative;
   max-height: calc(100vh - 2rem);
@@ -774,11 +776,12 @@ button:disabled {
   color: var(--text-primary, #102a23);
   outline: none;
   min-height: auto;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .form-input:focus {
   border-color: var(--brand-primary, #087443);
   box-shadow: 0 0 0 2px var(--brand-primary-soft, #e2f3e9);
 }
-

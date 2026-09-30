@@ -690,9 +690,7 @@ export function Proposals({
                         </span>
                         <strong style={{ fontSize: '1.1rem' }}>
                           {Number(
-                            version.systemPowerKwp ??
-                              version.technicalSnapshot?.dcPowerKwp ??
-                              0,
+                            version.systemPowerKwp ?? version.technicalSnapshot?.dcPowerKwp ?? 0,
                           ).toFixed(2)}{' '}
                           kWp
                         </strong>
@@ -736,11 +734,12 @@ export function Proposals({
                           }}
                         >
                           R${' '}
-                          {Number(
-                            version.finalAmount ?? version.finalPrice ?? 0,
-                          ).toLocaleString('pt-BR', {
-                            minimumFractionDigits: 2,
-                          })}
+                          {Number(version.finalAmount ?? version.finalPrice ?? 0).toLocaleString(
+                            'pt-BR',
+                            {
+                              minimumFractionDigits: 2,
+                            },
+                          )}
                         </strong>
                       </div>
                     </div>

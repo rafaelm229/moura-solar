@@ -5,6 +5,7 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { basename } from 'node:path';
 import { PrismaService } from '../database/prisma.service';
 import { StorageService } from '../proposal/storage.service';
 import { ContractGeneratorService, type ContractTemplateData } from './contract-generator.service';
@@ -663,6 +664,12 @@ export class ContractService {
     dto: UploadSignedContractDto,
   ) {
     const contract = await this.getContract(organizationId, contractId);
+    if (['CANCELED', 'TERMINATED', 'ACTIVE'].includes(contract.state)) {
+      throw new BadRequestException(
+        `Não é possível enviar contrato assinado para um contrato no estado ${contract.state}.`,
+      );
+    }
+
     const activeVersion = contract.versions[0];
     if (!activeVersion) {
       throw new NotFoundException('Versão do contrato não encontrada');
@@ -670,11 +677,24 @@ export class ContractService {
 
     const buffer = Buffer.from(dto.fileBase64, 'base64');
     if (buffer.length === 0) {
-      throw new BadRequestException('O arquivo enviado está vazio');
+      throw new BadRequestException('O arquivo enviado está vazio.');
     }
     if (buffer.length > 25 * 1024 * 1024) {
-      throw new BadRequestException('O arquivo enviado excede o limite máximo permitido de 25MB');
+      throw new BadRequestException('O arquivo enviado excede o limite máximo permitido de 25MB.');
     }
+
+    // PDF Magic Bytes: deve começar com %PDF- (0x25 0x50 0x44 0x46 0x2D)
+    const magicHeader = buffer.subarray(0, 5).toString('ascii');
+    if (!magicHeader.startsWith('%PDF-')) {
+      throw new BadRequestException(
+        'O arquivo enviado não possui uma assinatura binária de PDF válida (%PDF-).',
+      );
+    }
+
+    const sanitizedBase = basename(dto.fileName).replace(/[^a-zA-Z0-9._-]/g, '_');
+    const safeFileName = sanitizedBase.toLowerCase().endsWith('.pdf')
+      ? sanitizedBase
+      : `${sanitizedBase}.pdf`;
 
     const contentHash = this.generator.computeHash(buffer);
     const s3Key = `contracts/${contract.id}/signed/contrato-assinado-${Date.now()}.pdf`;
@@ -692,7 +712,7 @@ export class ContractService {
           organizationId,
           contractVersionId: activeVersion.id,
           type: 'SIGNED_UPLOAD',
-          fileName: dto.fileName,
+          fileName: safeFileName,
           fileSize: buffer.length,
           mimeType: dto.mimeType || 'application/pdf',
           s3Bucket: 'moura-solar-contracts',
