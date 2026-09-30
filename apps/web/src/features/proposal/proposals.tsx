@@ -882,27 +882,89 @@ export function Proposals({
                       </div>
                     )}
 
+                    {/* Next Step Guidance Banner */}
+                    {!readonly && !hasAcceptedVersion && !isRejected && !isExpired && (
+                      <>
+                        {isReady && (
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.75rem',
+                              backgroundColor: 'rgba(8, 116, 67, 0.08)',
+                              border: '1px solid var(--brand-primary, #087443)',
+                              borderRadius: 'var(--radius-sm, 6px)',
+                              padding: '0.75rem 1rem',
+                              marginTop: '0.75rem',
+                              fontSize: '0.875rem',
+                              color: 'var(--brand-primary-strong, #045c34)',
+                            }}
+                          >
+                            <span style={{ fontSize: '1.25rem' }}>👉</span>
+                            <div>
+                              <strong>Próximo Passo Comercial:</strong> Envie a proposta ao cliente
+                              e registre o canal de entrega abaixo para liberar o{' '}
+                              <strong>Aceite Formal</strong> e a etapa de contratação.
+                            </div>
+                          </div>
+                        )}
+
+                        {isSent && (
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.75rem',
+                              backgroundColor: 'rgba(21, 128, 61, 0.1)',
+                              border: '1px solid #16a34a',
+                              borderRadius: 'var(--radius-sm, 6px)',
+                              padding: '0.75rem 1rem',
+                              marginTop: '0.75rem',
+                              fontSize: '0.875rem',
+                              color: '#15803d',
+                            }}
+                          >
+                            <span style={{ fontSize: '1.25rem' }}>🎯</span>
+                            <div>
+                              <strong>Proposta Entregue ao Cliente!</strong> Assim que o cliente der
+                              o retorno positivo, registre o <strong>Aceite Formal</strong> no botão
+                              verde destacado abaixo para avançar à etapa de Contratos.
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+
                     {/* Action Buttons Toolbar */}
                     {!readonly && !hasAcceptedVersion && (
                       <div
                         style={{
                           display: 'flex',
                           flexWrap: 'wrap',
-                          gap: '0.5rem',
-                          marginTop: '0.5rem',
-                          paddingTop: '0.5rem',
+                          alignItems: 'center',
+                          gap: '0.625rem',
+                          marginTop: '0.75rem',
+                          paddingTop: '0.75rem',
                           borderTop: '1px dashed var(--color-border)',
                         }}
                       >
-                        {canSend && (isReady || isSent) && (
+                        {canSend && (
                           <button
                             type="button"
-                            className="btn btn--secondary"
+                            className={isReady ? 'btn btn--primary' : 'btn btn--secondary'}
                             style={{
-                              padding: '0.45rem 0.85rem',
-                              fontSize: '0.8125rem',
+                              padding: '0.55rem 1.1rem',
+                              fontSize: '0.875rem',
                               minHeight: 'auto',
                               fontWeight: 600,
+                              backgroundColor: isReady
+                                ? 'var(--brand-primary, #087443)'
+                                : undefined,
+                              color: isReady ? '#ffffff' : undefined,
+                              border: isReady
+                                ? '1px solid var(--brand-primary-strong, #045c34)'
+                                : undefined,
+                              boxShadow: isReady ? '0 1px 3px rgba(0, 0, 0, 0.12)' : undefined,
                             }}
                             onClick={() => {
                               setDeliveryVersionId(version.id);
@@ -910,41 +972,68 @@ export function Proposals({
                               setRejectVersionId(null);
                             }}
                           >
-                            📤 Registrar Envio
+                            📤{' '}
+                            {isReady
+                              ? '1. Registrar Envio ao Cliente (Gate B)'
+                              : 'Registrar Novo Envio'}
                           </button>
                         )}
 
-                        {canAccept && isSent && (
-                          <button
-                            type="button"
-                            className="btn btn--success"
-                            style={{
-                              padding: '0.45rem 0.85rem',
-                              fontSize: '0.8125rem',
-                              minHeight: 'auto',
-                              backgroundColor: '#15803d',
-                              color: '#ffffff',
-                              border: '1px solid #166534',
-                              fontWeight: 600,
-                              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.12)',
-                            }}
-                            onClick={() => {
-                              setAcceptVersionId(version.id);
-                              setDeliveryVersionId(null);
-                              setRejectVersionId(null);
-                            }}
-                          >
-                            ✓ Registrar Aceite Formal
-                          </button>
-                        )}
+                        {canAccept &&
+                          (isSent ? (
+                            <button
+                              type="button"
+                              className="btn btn--success"
+                              style={{
+                                padding: '0.6rem 1.25rem',
+                                fontSize: '0.9375rem',
+                                minHeight: 'auto',
+                                backgroundColor: '#15803d',
+                                color: '#ffffff',
+                                border: '1px solid #166534',
+                                fontWeight: 700,
+                                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.18)',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                              }}
+                              onClick={() => {
+                                setAcceptVersionId(version.id);
+                                setDeliveryVersionId(null);
+                                setRejectVersionId(null);
+                              }}
+                            >
+                              ✓ Registrar Aceite Formal do Cliente
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="btn"
+                              disabled
+                              title="O aceite formal requer o envio prévio da proposta ao cliente (Gate B)."
+                              style={{
+                                padding: '0.55rem 1rem',
+                                fontSize: '0.875rem',
+                                minHeight: 'auto',
+                                backgroundColor: '#f1f5f9',
+                                color: '#64748b',
+                                border: '1px dashed #cbd5e1',
+                                fontWeight: 600,
+                                cursor: 'not-allowed',
+                                opacity: 0.65,
+                              }}
+                            >
+                              ✓ Registrar Aceite Formal (Aguardando Envio)
+                            </button>
+                          ))}
 
                         {canReject && isSent && (
                           <button
                             type="button"
                             className="btn btn--danger"
                             style={{
-                              padding: '0.45rem 0.85rem',
-                              fontSize: '0.8125rem',
+                              padding: '0.55rem 1rem',
+                              fontSize: '0.875rem',
                               minHeight: 'auto',
                               backgroundColor: '#fee2e2',
                               color: '#b91c1c',
@@ -966,8 +1055,8 @@ export function Proposals({
                             type="button"
                             className="btn btn--subtle"
                             style={{
-                              padding: '0.45rem 0.85rem',
-                              fontSize: '0.8125rem',
+                              padding: '0.55rem 1rem',
+                              fontSize: '0.875rem',
                               minHeight: 'auto',
                               fontWeight: 600,
                             }}
