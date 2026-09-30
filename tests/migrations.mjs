@@ -5,7 +5,9 @@ import assert from 'node:assert/strict';
 const require = createRequire(new URL('../apps/api/package.json', import.meta.url));
 const { PrismaClient } = require('@prisma/client');
 const url = new URL(
-  process.env.TEST_DATABASE_URL ?? 'postgresql://moura:m1-test-only@localhost:55439/moura_m1_test',
+  process.env.TEST_DATABASE_URL ??
+    process.env.DATABASE_URL ??
+    'postgresql://moura:change-me-local@localhost:5433/moura_solar',
 );
 const schema = `upgrade_${randomUUID().replaceAll('-', '')}`;
 url.searchParams.set('schema', schema);
