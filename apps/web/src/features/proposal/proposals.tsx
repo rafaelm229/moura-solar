@@ -36,10 +36,15 @@ export interface ProposalVersionView {
   proposalId: string;
   versionNumber: number;
   status: 'DRAFT' | 'READY' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
-  systemPowerKwp: number | string;
-  estimatedMonthlyGenerationKwh: number | string;
-  totalInvestmentAmount: number | string;
-  finalAmount: number | string;
+  systemPowerKwp?: number | string;
+  estimatedMonthlyGenerationKwh?: number | string;
+  totalInvestmentAmount?: number | string;
+  finalAmount?: number | string;
+  finalPrice?: number | string;
+  technicalSnapshot?: {
+    dcPowerKwp?: number | string;
+    estimatedMonthlyGenerationKwh?: number | string;
+  } | null;
   validityDays: number;
   validUntil?: string | null;
   paymentConditions?: Record<string, unknown> | null;
@@ -123,10 +128,18 @@ export function Proposals({
     queryKey: ['me'],
     queryFn: () => result(api.GET('/api/v1/identity/me')),
   });
-  const canCreate = me.data ? allows(me.data, 'proposals:create', false) : true;
-  const canSend = me.data ? allows(me.data, 'proposals:send', false) : true;
-  const canAccept = me.data ? allows(me.data, 'proposals:accept', false) : true;
-  const canReject = me.data ? allows(me.data, 'proposals:reject', false) : true;
+  const canCreate = me.data
+    ? allows(me.data, 'proposals:create', false) || me.data.roleName === 'Administrador'
+    : true;
+  const canSend = me.data
+    ? allows(me.data, 'proposals:send', false) || me.data.roleName === 'Administrador'
+    : true;
+  const canAccept = me.data
+    ? allows(me.data, 'proposals:accept', false) || me.data.roleName === 'Administrador'
+    : true;
+  const canReject = me.data
+    ? allows(me.data, 'proposals:reject', false) || me.data.roleName === 'Administrador'
+    : true;
 
   const proposalsQuery = useQuery({
     queryKey: ['proposals', opportunityId],
@@ -676,7 +689,12 @@ export function Proposals({
                           Potência Pico
                         </span>
                         <strong style={{ fontSize: '1.1rem' }}>
-                          {Number(version.systemPowerKwp ?? 0).toFixed(2)} kWp
+                          {Number(
+                            version.systemPowerKwp ??
+                              version.technicalSnapshot?.dcPowerKwp ??
+                              0,
+                          ).toFixed(2)}{' '}
+                          kWp
                         </strong>
                       </div>
 
@@ -691,7 +709,12 @@ export function Proposals({
                           Geração Estimada
                         </span>
                         <strong style={{ fontSize: '1.1rem' }}>
-                          {Number(version.estimatedMonthlyGenerationKwh ?? 0).toFixed(0)} kWh/mês
+                          {Number(
+                            version.estimatedMonthlyGenerationKwh ??
+                              version.technicalSnapshot?.estimatedMonthlyGenerationKwh ??
+                              0,
+                          ).toFixed(0)}{' '}
+                          kWh/mês
                         </strong>
                       </div>
 
@@ -713,7 +736,9 @@ export function Proposals({
                           }}
                         >
                           R${' '}
-                          {Number(version.finalAmount ?? 0).toLocaleString('pt-BR', {
+                          {Number(
+                            version.finalAmount ?? version.finalPrice ?? 0,
+                          ).toLocaleString('pt-BR', {
                             minimumFractionDigits: 2,
                           })}
                         </strong>
@@ -873,12 +898,12 @@ export function Proposals({
                         {canSend && (isReady || isSent) && (
                           <button
                             type="button"
+                            className="btn btn--secondary"
                             style={{
-                              padding: '0.35rem 0.75rem',
+                              padding: '0.45rem 0.85rem',
                               fontSize: '0.8125rem',
-                              background: 'var(--color-surface)',
-                              color: 'var(--brand-primary)',
-                              borderColor: 'var(--brand-primary)',
+                              minHeight: 'auto',
+                              fontWeight: 600,
                             }}
                             onClick={() => {
                               setDeliveryVersionId(version.id);
@@ -893,12 +918,16 @@ export function Proposals({
                         {canAccept && isSent && (
                           <button
                             type="button"
+                            className="btn btn--success"
                             style={{
-                              padding: '0.35rem 0.75rem',
+                              padding: '0.45rem 0.85rem',
                               fontSize: '0.8125rem',
-                              background: 'var(--status-success)',
-                              color: '#fff',
-                              border: 'none',
+                              minHeight: 'auto',
+                              backgroundColor: '#15803d',
+                              color: '#ffffff',
+                              border: '1px solid #166534',
+                              fontWeight: 600,
+                              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.12)',
                             }}
                             onClick={() => {
                               setAcceptVersionId(version.id);
@@ -913,12 +942,15 @@ export function Proposals({
                         {canReject && isSent && (
                           <button
                             type="button"
+                            className="btn btn--danger"
                             style={{
-                              padding: '0.35rem 0.75rem',
+                              padding: '0.45rem 0.85rem',
                               fontSize: '0.8125rem',
-                              background: 'var(--color-surface)',
-                              color: 'var(--status-danger)',
-                              borderColor: 'var(--status-danger)',
+                              minHeight: 'auto',
+                              backgroundColor: '#fee2e2',
+                              color: '#b91c1c',
+                              border: '1px solid #ef4444',
+                              fontWeight: 600,
                             }}
                             onClick={() => {
                               setRejectVersionId(version.id);
@@ -933,11 +965,12 @@ export function Proposals({
                         {canCreate && (
                           <button
                             type="button"
+                            className="btn btn--subtle"
                             style={{
-                              padding: '0.35rem 0.75rem',
+                              padding: '0.45rem 0.85rem',
                               fontSize: '0.8125rem',
-                              background: 'var(--color-surface)',
-                              color: 'var(--text-secondary)',
+                              minHeight: 'auto',
+                              fontWeight: 600,
                             }}
                             onClick={() => {
                               setNewVersionParentId(version.id);
@@ -1115,20 +1148,19 @@ export function Proposals({
                           >
                             <button
                               type="button"
-                              style={{
-                                background: 'var(--color-surface)',
-                                color: 'var(--text-primary)',
-                              }}
+                              className="btn btn--subtle"
                               onClick={() => setAcceptVersionId(null)}
                             >
                               Cancelar
                             </button>
                             <button
                               type="submit"
+                              className="btn btn--success"
                               style={{
-                                background: 'var(--status-success)',
-                                color: '#fff',
-                                border: 'none',
+                                background: '#15803d',
+                                color: '#ffffff',
+                                border: '1px solid #166534',
+                                fontWeight: 600,
                               }}
                               disabled={acceptMutation.isPending || !acceptedByName}
                             >
@@ -1197,20 +1229,19 @@ export function Proposals({
                           >
                             <button
                               type="button"
-                              style={{
-                                background: 'var(--color-surface)',
-                                color: 'var(--text-primary)',
-                              }}
+                              className="btn btn--subtle"
                               onClick={() => setRejectVersionId(null)}
                             >
                               Cancelar
                             </button>
                             <button
                               type="submit"
+                              className="btn btn--danger"
                               style={{
-                                background: 'var(--status-danger)',
-                                color: '#fff',
-                                border: 'none',
+                                background: '#b91c1c',
+                                color: '#ffffff',
+                                border: '1px solid #991b1b',
+                                fontWeight: 600,
                               }}
                               disabled={rejectMutation.isPending}
                             >

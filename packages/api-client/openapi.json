@@ -2844,6 +2844,475 @@
         ],
         "tags": ["proposals"]
       }
+    },
+    "/api/v1/contracts": {
+      "post": {
+        "operationId": "ContractController_createContract",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateContractDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["contracts"]
+      },
+      "get": {
+        "operationId": "ContractController_listContracts",
+        "parameters": [
+          {
+            "name": "opportunityId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["contracts"]
+      }
+    },
+    "/api/v1/opportunities/{opportunityId}/contracts": {
+      "get": {
+        "operationId": "ContractController_listOpportunityContracts",
+        "parameters": [
+          {
+            "name": "opportunityId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["contracts"]
+      }
+    },
+    "/api/v1/contracts/{id}": {
+      "get": {
+        "operationId": "ContractController_getContract",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["contracts"]
+      }
+    },
+    "/api/v1/contracts/{id}/draft": {
+      "patch": {
+        "operationId": "ContractController_updateDraft",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateContractDraftDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["contracts"]
+      }
+    },
+    "/api/v1/contracts/{id}/request-review": {
+      "post": {
+        "operationId": "ContractController_requestReview",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestContractReviewDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["contracts"]
+      }
+    },
+    "/api/v1/contracts/{id}/approve": {
+      "post": {
+        "operationId": "ContractController_approveContract",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveContractDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["contracts"]
+      }
+    },
+    "/api/v1/contracts/{id}/deliveries": {
+      "post": {
+        "operationId": "ContractController_recordDelivery",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordContractDeliveryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["contracts"]
+      }
+    },
+    "/api/v1/contracts/{id}/upload-signed": {
+      "post": {
+        "operationId": "ContractController_uploadSigned",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadSignedContractDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["contracts"]
+      }
+    },
+    "/api/v1/contracts/{id}/verify-signed": {
+      "post": {
+        "operationId": "ContractController_verifySigned",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifySignedContractDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["contracts"]
+      }
+    },
+    "/api/v1/contracts/{id}/amendments": {
+      "post": {
+        "operationId": "ContractController_createAmendment",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAmendmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["contracts"]
+      }
+    },
+    "/api/v1/contracts/{id}/cancel": {
+      "post": {
+        "operationId": "ContractController_cancelContract",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelContractDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["contracts"]
+      }
+    },
+    "/api/v1/contracts/{id}/docx": {
+      "get": {
+        "operationId": "ContractController_downloadDocx",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Download da Minuta do Contrato em formato DOCX"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["contracts"]
+      }
+    },
+    "/api/v1/contracts/{id}/pdf": {
+      "get": {
+        "operationId": "ContractController_downloadPdf",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Download do Contrato em formato PDF"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["contracts"]
+      }
+    },
+    "/api/v1/contracts/{id}/signed": {
+      "get": {
+        "operationId": "ContractController_downloadSigned",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Download do documento assinado"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["contracts"]
+      }
     }
   },
   "info": {
@@ -5120,6 +5589,199 @@
           "notes": {
             "type": "string",
             "description": "Observações complementares da recusa"
+          }
+        },
+        "required": ["reason"]
+      },
+      "CreateContractDto": {
+        "type": "object",
+        "properties": {
+          "opportunityId": {
+            "type": "string",
+            "description": "ID da oportunidade comercial"
+          },
+          "acceptedProposalVersionId": {
+            "type": "string",
+            "description": "ID da versão da proposta aceita (se omitido, busca automaticamente a aceita na oportunidade)"
+          },
+          "signingCity": {
+            "type": "string",
+            "description": "Cidade de assinatura do contrato",
+            "default": "Recife"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Observações ou condições comerciais especiais"
+          },
+          "roofType": {
+            "type": "string",
+            "description": "Tipo de telhado/superfície para instalação"
+          }
+        },
+        "required": ["opportunityId"]
+      },
+      "UpdateContractDraftDto": {
+        "type": "object",
+        "properties": {
+          "partySnapshot": {
+            "type": "object",
+            "description": "Snapshot ou ajustes das partes envolvidas"
+          },
+          "technicalSnapshot": {
+            "type": "object",
+            "description": "Snapshot ou ajustes das especificações técnicas"
+          },
+          "commercialSnapshot": {
+            "type": "object",
+            "description": "Snapshot ou ajustes das condições financeiras e parcelamento"
+          },
+          "scopeSnapshot": {
+            "type": "object",
+            "description": "Snapshot do escopo e inclusões/exclusões"
+          },
+          "clausesSnapshot": {
+            "type": "object",
+            "description": "Snapshot das cláusulas e termos"
+          },
+          "observations": {
+            "type": "string",
+            "description": "Observações gerais"
+          }
+        }
+      },
+      "RequestContractReviewDto": {
+        "type": "object",
+        "properties": {
+          "notes": {
+            "type": "string",
+            "description": "Justificativa para a solicitação de revisão jurídica/comercial"
+          }
+        }
+      },
+      "ApproveContractDto": {
+        "type": "object",
+        "properties": {
+          "notes": {
+            "type": "string",
+            "description": "Notas da aprovação"
+          }
+        }
+      },
+      "RecordContractDeliveryDto": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "description": "Canal de envio do contrato ao cliente",
+            "enum": ["WHATSAPP", "EMAIL", "DOWNLOAD", "IN_PERSON", "MANUAL"],
+            "example": "WHATSAPP"
+          },
+          "recipient": {
+            "type": "string",
+            "description": "Destinatário (número de WhatsApp, e-mail ou nome)",
+            "example": "5581999998888"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Observações sobre o envio"
+          }
+        },
+        "required": ["channel"]
+      },
+      "UploadSignedContractDto": {
+        "type": "object",
+        "properties": {
+          "fileName": {
+            "type": "string",
+            "description": "Nome do arquivo enviado",
+            "example": "contrato-assinado-cliente.pdf"
+          },
+          "fileBase64": {
+            "type": "string",
+            "description": "Conteúdo do arquivo codificado em Base64"
+          },
+          "mimeType": {
+            "type": "string",
+            "description": "Tipo MIME do arquivo",
+            "default": "application/pdf"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Observações sobre o arquivo assinado"
+          }
+        },
+        "required": ["fileName", "fileBase64"]
+      },
+      "VerifySignedContractDto": {
+        "type": "object",
+        "properties": {
+          "partiesMatch": {
+            "type": "boolean",
+            "description": "Confirmação se os dados das partes conferem com o cadastro"
+          },
+          "allPagesPresent": {
+            "type": "boolean",
+            "description": "Confirmação se todas as páginas e anexos estão presentes"
+          },
+          "versionMatches": {
+            "type": "boolean",
+            "description": "Confirmação se o modelo e versão correspondem ao gerado"
+          },
+          "signaturesLegible": {
+            "type": "boolean",
+            "description": "Confirmação se as assinaturas e rubricas estão legíveis"
+          },
+          "decision": {
+            "type": "string",
+            "description": "Decisão da conferência formal",
+            "enum": ["VERIFIED", "REJECTED"],
+            "example": "VERIFIED"
+          },
+          "rejectionReason": {
+            "type": "string",
+            "description": "Motivo da rejeição caso não aprovado"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Notas da conferência"
+          }
+        },
+        "required": [
+          "partiesMatch",
+          "allPagesPresent",
+          "versionMatches",
+          "signaturesLegible",
+          "decision"
+        ]
+      },
+      "CreateAmendmentDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Motivo do aditivo contratual"
+          },
+          "changes": {
+            "type": "object",
+            "description": "Alterações estruturadas introduzidas pelo aditivo"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Observações do aditivo"
+          }
+        },
+        "required": ["reason"]
+      },
+      "CancelContractDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Motivo do cancelamento do contrato"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Observações adicionais"
           }
         },
         "required": ["reason"]

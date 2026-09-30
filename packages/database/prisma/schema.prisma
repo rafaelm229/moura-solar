@@ -34,6 +34,12 @@ model Organization {
   proposalDocuments ProposalDocument[]
   proposalDeliveries ProposalDelivery[]
   proposalAcceptances ProposalAcceptance[]
+  contracts           Contract[]
+  contractVersions    ContractVersion[]
+  contractDocuments   ContractDocument[]
+  contractDeliveries  ContractDelivery[]
+  signedReviews       SignedContractReview[]
+  projectGates        ProjectGate[]
 
   @@map("organizations")
 }
@@ -52,6 +58,10 @@ model User {
   createdProposalVersions ProposalVersion[] @relation("CreatedProposalVersions")
   sentProposalDeliveries ProposalDelivery[] @relation("SentProposalDeliveries")
   recordedProposalAcceptances ProposalAcceptance[] @relation("RecordedProposalAcceptances")
+  createdContractVersions ContractVersion[] @relation("CreatedContractVersions")
+  sentContractDeliveries ContractDelivery[] @relation("SentContractDeliveries")
+  reviewedSignedContracts SignedContractReview[] @relation("ReviewedSignedContracts")
+  satisfiedProjectGates ProjectGate[] @relation("SatisfiedProjectGates")
 
   @@map("users")
 }
@@ -326,6 +336,8 @@ model Opportunity {
   surveys              Survey[]
   designs              Design[]
   proposals            Proposal[]
+  contracts            Contract[]
+  projectGates         ProjectGate[]
 
   @@unique([organizationId, code])
   @@index([organizationId, state])
@@ -627,6 +639,7 @@ model ProposalVersion {
   documents            ProposalDocument[]
   deliveries           ProposalDelivery[]
   acceptance           ProposalAcceptance?
+  contracts            Contract[]
 
   @@unique([proposalId, versionNumber])
   @@index([proposalId, status])
@@ -690,5 +703,145 @@ model ProposalAcceptance {
   recordedBy        User            @relation("RecordedProposalAcceptances", fields: [recordedById], references: [id])
 
   @@map("proposal_acceptances")
+}
+
+model Contract {
+  id                         String                 @id @default(uuid()) @db.Uuid
+  organizationId             String                 @map("organization_id") @db.Uuid
+  opportunityId              String                 @map("opportunity_id") @db.Uuid
+  acceptedProposalVersionId  String                 @map("accepted_proposal_version_id") @db.Uuid
+  code                       String
+  state                      String                 @default("DRAFT") // DRAFT, PENDING_REVIEW, APPROVED, READY, SENT, SIGNED_UPLOADED, SIGNED_VERIFIED, ACTIVE, AMENDED, CANCELED, TERMINATED
+  activeVersionId            String?                @map("active_version_id") @db.Uuid
+  notes                      String?
+  createdAt                  DateTime               @default(now()) @map("created_at")
+  updatedAt                  DateTime               @updatedAt @map("updated_at")
+
+  organization               Organization           @relation(fields: [organizationId], references: [id])
+  opportunity                Opportunity            @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  acceptedProposalVersion    ProposalVersion        @relation(fields: [acceptedProposalVersionId], references: [id])
+  versions                   ContractVersion[]
+  deliveries                 ContractDelivery[]
+  signedReviews              SignedContractReview[]
+  projectGates               ProjectGate[]
+
+  @@unique([organizationId, code])
+  @@index([opportunityId])
+  @@index([acceptedProposalVersionId])
+  @@map("contracts")
+}
+
+model ContractVersion {
+  id                   String             @id @default(uuid()) @db.Uuid
+  organizationId       String             @map("organization_id") @db.Uuid
+  contractId           String             @map("contract_id") @db.Uuid
+  versionNumber        Int                @map("version_number")
+  status               String             @default("DRAFT") // DRAFT, PENDING_REVIEW, APPROVED, READY, SUPERSEDED, CANCELED
+  partySnapshot        Json               @map("party_snapshot")
+  technicalSnapshot    Json               @map("technical_snapshot")
+  commercialSnapshot   Json               @map("commercial_snapshot")
+  scopeSnapshot        Json               @map("scope_snapshot")
+  clausesSnapshot      Json               @map("clauses_snapshot")
+  observations         String?
+  contentHash          String             @map("content_hash")
+  createdById          String?            @map("created_by_id") @db.Uuid
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+
+  organization         Organization       @relation(fields: [organizationId], references: [id])
+  contract             Contract           @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  createdBy            User?              @relation("CreatedContractVersions", fields: [createdById], references: [id])
+  documents            ContractDocument[]
+
+  @@unique([contractId, versionNumber])
+  @@index([contractId, status])
+  @@map("contract_versions")
+}
+
+model ContractDocument {
+  id                String          @id @default(uuid()) @db.Uuid
+  organizationId    String          @map("organization_id") @db.Uuid
+  contractVersionId String          @map("contract_version_id") @db.Uuid
+  type              String          @default("PDF_CONTRACT") // DOCX_CONTRACT, PDF_CONTRACT, SIGNED_UPLOAD
+  fileName          String          @map("file_name")
+  fileSize          Int             @map("file_size")
+  mimeType          String          @default("application/pdf") @map("mime_type")
+  s3Bucket          String          @map("s3_bucket")
+  s3Key             String          @map("s3_key")
+  contentHash       String          @map("content_hash")
+  generationStatus  String          @default("READY") @map("generation_status")
+  generatedAt       DateTime        @default(now()) @map("generated_at")
+
+  organization      Organization    @relation(fields: [organizationId], references: [id])
+  contractVersion   ContractVersion @relation(fields: [contractVersionId], references: [id], onDelete: Cascade)
+
+  @@index([contractVersionId])
+  @@map("contract_documents")
+}
+
+model ContractDelivery {
+  id                String       @id @default(uuid()) @db.Uuid
+  organizationId    String       @map("organization_id") @db.Uuid
+  contractId        String       @map("contract_id") @db.Uuid
+  channel           String       // WHATSAPP, EMAIL, DOWNLOAD, IN_PERSON, MANUAL
+  recipient         String?
+  status            String       @default("SENT")
+  sentById          String       @map("sent_by_id") @db.Uuid
+  sentAt            DateTime     @default(now()) @map("sent_at")
+  notes             String?
+  createdAt         DateTime     @default(now()) @map("created_at")
+
+  organization      Organization @relation(fields: [organizationId], references: [id])
+  contract          Contract     @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  sentBy            User         @relation("SentContractDeliveries", fields: [sentById], references: [id])
+
+  @@index([contractId])
+  @@map("contract_deliveries")
+}
+
+model SignedContractReview {
+  id                 String       @id @default(uuid()) @db.Uuid
+  organizationId     String       @map("organization_id") @db.Uuid
+  contractId         String       @map("contract_id") @db.Uuid
+  contractDocumentId String?      @map("contract_document_id") @db.Uuid
+  partiesMatch       Boolean      @default(false) @map("parties_match")
+  allPagesPresent    Boolean      @default(false) @map("all_pages_present")
+  versionMatches     Boolean      @default(false) @map("version_matches")
+  signaturesLegible  Boolean      @default(false) @map("signatures_legible")
+  decision           String       // VERIFIED, REJECTED
+  rejectionReason    String?      @map("rejection_reason")
+  reviewedById       String       @map("reviewed_by_id") @db.Uuid
+  reviewedAt         DateTime     @default(now()) @map("reviewed_at")
+  notes              String?
+  createdAt          DateTime     @default(now()) @map("created_at")
+
+  organization       Organization @relation(fields: [organizationId], references: [id])
+  contract           Contract     @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  reviewedBy         User         @relation("ReviewedSignedContracts", fields: [reviewedById], references: [id])
+
+  @@index([contractId])
+  @@map("signed_contract_reviews")
+}
+
+model ProjectGate {
+  id              String       @id @default(uuid()) @db.Uuid
+  organizationId  String       @map("organization_id") @db.Uuid
+  opportunityId   String       @map("opportunity_id") @db.Uuid
+  contractId      String?      @map("contract_id") @db.Uuid
+  gateType        String       @default("CONTRACT") @map("gate_type") // CONTRACT, FINANCIAL, ENGINEERING, SUPPLY, SCHEDULE
+  status          String       @default("PENDING") // PENDING, SATISFIED, BLOCKED, WAIVED
+  satisfiedById   String?      @map("satisfied_by_id") @db.Uuid
+  satisfiedAt     DateTime?    @map("satisfied_at")
+  evidenceSummary String?      @map("evidence_summary")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  opportunity     Opportunity  @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  contract        Contract?    @relation(fields: [contractId], references: [id])
+  satisfiedBy     User?        @relation("SatisfiedProjectGates", fields: [satisfiedById], references: [id])
+
+  @@index([opportunityId, gateType])
+  @@map("project_gates")
 }
 
