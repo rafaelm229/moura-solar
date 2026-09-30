@@ -791,6 +791,1116 @@
         ],
         "tags": ["Identidade"]
       }
+    },
+    "/api/v1/customers/duplicates": {
+      "get": {
+        "operationId": "CommercialController_checkDuplicates",
+        "parameters": [
+          {
+            "name": "taxId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "email",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "phone",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "externalCode",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DuplicateMatchDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Comercial"]
+      }
+    },
+    "/api/v1/customers": {
+      "get": {
+        "operationId": "CommercialController_listCustomers",
+        "parameters": [
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "skip",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "take",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Comercial"]
+      },
+      "post": {
+        "operationId": "CommercialController_createCustomer",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Comercial"]
+      }
+    },
+    "/api/v1/customers/{customerId}": {
+      "get": {
+        "operationId": "CommercialController_getCustomer",
+        "parameters": [
+          {
+            "name": "customerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Comercial"]
+      },
+      "patch": {
+        "operationId": "CommercialController_updateCustomer",
+        "parameters": [
+          {
+            "name": "customerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCustomerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Comercial"]
+      }
+    },
+    "/api/v1/customers/{customerId}/archive": {
+      "post": {
+        "operationId": "CommercialController_archiveCustomer",
+        "parameters": [
+          {
+            "name": "customerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpectedVersionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Comercial"]
+      }
+    },
+    "/api/v1/customers/{customerId}/restore": {
+      "post": {
+        "operationId": "CommercialController_restoreCustomer",
+        "parameters": [
+          {
+            "name": "customerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpectedVersionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Comercial"]
+      }
+    },
+    "/api/v1/customers/{customerId}/contacts": {
+      "post": {
+        "operationId": "CommercialController_addContact",
+        "parameters": [
+          {
+            "name": "customerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddContactDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerContactViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Comercial"]
+      }
+    },
+    "/api/v1/customers/{customerId}/contacts/{contactId}": {
+      "delete": {
+        "operationId": "CommercialController_deleteContact",
+        "parameters": [
+          {
+            "name": "customerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "contactId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Comercial"]
+      }
+    },
+    "/api/v1/customers/{customerId}/addresses": {
+      "post": {
+        "operationId": "CommercialController_addAddress",
+        "parameters": [
+          {
+            "name": "customerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddAddressDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Comercial"]
+      }
+    },
+    "/api/v1/customers/{customerId}/utility-units": {
+      "get": {
+        "operationId": "CommercialController_listUtilityUnits",
+        "parameters": [
+          {
+            "name": "customerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UtilityUnitViewDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Comercial"]
+      },
+      "post": {
+        "operationId": "CommercialController_createUtilityUnit",
+        "parameters": [
+          {
+            "name": "customerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUtilityUnitDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UtilityUnitViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Comercial"]
+      }
+    },
+    "/api/v1/utility-units/{utilityUnitId}": {
+      "patch": {
+        "operationId": "CommercialController_updateUtilityUnit",
+        "parameters": [
+          {
+            "name": "utilityUnitId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUtilityUnitDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UtilityUnitViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Comercial"]
+      }
+    },
+    "/api/v1/opportunities": {
+      "get": {
+        "operationId": "CommercialController_listOpportunities",
+        "parameters": [
+          {
+            "name": "state",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ownerUserId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "customerId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "skip",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "take",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Comercial"]
+      },
+      "post": {
+        "operationId": "CommercialController_createOpportunity",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOpportunityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Comercial"]
+      }
+    },
+    "/api/v1/opportunities/{opportunityId}": {
+      "get": {
+        "operationId": "CommercialController_getOpportunity",
+        "parameters": [
+          {
+            "name": "opportunityId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Comercial"]
+      },
+      "patch": {
+        "operationId": "CommercialController_updateOpportunity",
+        "parameters": [
+          {
+            "name": "opportunityId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOpportunityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Comercial"]
+      }
+    },
+    "/api/v1/opportunities/{opportunityId}/qualify": {
+      "post": {
+        "operationId": "CommercialController_qualifyOpportunity",
+        "parameters": [
+          {
+            "name": "opportunityId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QualifyOpportunityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Comercial"]
+      }
+    },
+    "/api/v1/opportunities/{opportunityId}/lose": {
+      "post": {
+        "operationId": "CommercialController_loseOpportunity",
+        "parameters": [
+          {
+            "name": "opportunityId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoseOpportunityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Comercial"]
+      }
+    },
+    "/api/v1/opportunities/{opportunityId}/reopen": {
+      "post": {
+        "operationId": "CommercialController_reopenOpportunity",
+        "parameters": [
+          {
+            "name": "opportunityId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReopenOpportunityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Comercial"]
+      }
+    },
+    "/api/v1/activities": {
+      "get": {
+        "operationId": "CommercialController_listActivities",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "assigneeUserId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "opportunityId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "customerId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "dueFrom",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "dueTo",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "overdue",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActivityViewDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Comercial"]
+      },
+      "post": {
+        "operationId": "CommercialController_createActivity",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateActivityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Comercial"]
+      }
+    },
+    "/api/v1/activities/{activityId}/complete": {
+      "post": {
+        "operationId": "CommercialController_completeActivity",
+        "parameters": [
+          {
+            "name": "activityId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteActivityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Comercial"]
+      }
+    },
+    "/api/v1/activities/{activityId}/reschedule": {
+      "post": {
+        "operationId": "CommercialController_rescheduleActivity",
+        "parameters": [
+          {
+            "name": "activityId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescheduleActivityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Comercial"]
+      }
+    },
+    "/api/v1/activities/{activityId}/cancel": {
+      "post": {
+        "operationId": "CommercialController_cancelActivity",
+        "parameters": [
+          {
+            "name": "activityId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpectedVersionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Comercial"]
+      }
     }
   },
   "info": {
@@ -890,6 +2000,9 @@
           "version": {
             "type": "number"
           },
+          "userId": {
+            "type": "string"
+          },
           "organizationId": {
             "type": "string"
           },
@@ -920,6 +2033,7 @@
           "roleName",
           "status",
           "version",
+          "userId",
           "organizationId",
           "organizationName",
           "sessionId",
@@ -1150,6 +2264,920 @@
           }
         },
         "required": ["id", "action", "actorId", "entityId", "createdAt", "traceId"]
+      },
+      "DuplicateMatchDto": {
+        "type": "object",
+        "properties": {
+          "strength": {
+            "type": "string",
+            "enum": ["STRONG", "MODERATE"]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "customerId": {
+            "type": "string"
+          },
+          "customerName": {
+            "type": "string"
+          },
+          "taxId": {
+            "type": "string"
+          }
+        },
+        "required": ["strength", "reason", "customerId", "customerName"]
+      },
+      "CustomerContactViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "isPrimary": {
+            "type": "boolean"
+          }
+        },
+        "required": ["id", "type", "value", "isPrimary"]
+      },
+      "AddressViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "postalCode": {
+            "type": "string"
+          },
+          "street": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "complement": {
+            "type": "string"
+          },
+          "district": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "isPrimary": {
+            "type": "boolean"
+          }
+        },
+        "required": ["id", "postalCode", "street", "number", "city", "state", "isPrimary"]
+      },
+      "UtilityUnitViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "customerId": {
+            "type": "string"
+          },
+          "distributorName": {
+            "type": "string"
+          },
+          "externalCode": {
+            "type": "string"
+          },
+          "consumerClass": {
+            "type": "string"
+          },
+          "tariffMode": {
+            "type": "string"
+          },
+          "connectionType": {
+            "type": "string"
+          },
+          "voltage": {
+            "type": "string"
+          },
+          "addressId": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "organizationId",
+          "customerId",
+          "distributorName",
+          "consumerClass",
+          "tariffMode",
+          "connectionType",
+          "voltage",
+          "version",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CustomerOpportunitySummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "code", "title", "state"]
+      },
+      "CustomerViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "legalName": {
+            "type": "string"
+          },
+          "tradeName": {
+            "type": "string"
+          },
+          "taxId": {
+            "type": "string"
+          },
+          "stateRegistration": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "contacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomerContactViewDto"
+            }
+          },
+          "addresses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AddressViewDto"
+            }
+          },
+          "utilityUnits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UtilityUnitViewDto"
+            }
+          },
+          "opportunities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomerOpportunitySummaryDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "organizationId",
+          "kind",
+          "legalName",
+          "status",
+          "version",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CustomerListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomerViewDto"
+            }
+          },
+          "total": {
+            "type": "number"
+          }
+        },
+        "required": ["items", "total"]
+      },
+      "CreateCustomerDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": ["PERSON", "COMPANY"],
+            "default": "PERSON"
+          },
+          "legalName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 200
+          },
+          "tradeName": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "taxId": {
+            "type": "string"
+          },
+          "stateRegistration": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "postalCode": {
+            "type": "string"
+          },
+          "street": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "complement": {
+            "type": "string"
+          },
+          "district": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "overrideDuplicate": {
+            "type": "boolean"
+          }
+        },
+        "required": ["kind", "legalName"]
+      },
+      "UpdateCustomerDto": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "number"
+          },
+          "legalName": {
+            "type": "string"
+          },
+          "tradeName": {
+            "type": "string"
+          },
+          "taxId": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "required": ["expectedVersion"]
+      },
+      "ExpectedVersionDto": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "number"
+          }
+        },
+        "required": ["expectedVersion"]
+      },
+      "AddContactDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["PHONE", "EMAIL", "WHATSAPP", "OTHER"]
+          },
+          "value": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "isPrimary": {
+            "type": "boolean"
+          }
+        },
+        "required": ["type", "value"]
+      },
+      "AddAddressDto": {
+        "type": "object",
+        "properties": {
+          "postalCode": {
+            "type": "string"
+          },
+          "street": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "complement": {
+            "type": "string"
+          },
+          "district": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "isPrimary": {
+            "type": "boolean"
+          }
+        },
+        "required": ["postalCode", "street", "number", "city", "state"]
+      },
+      "CreateUtilityUnitDto": {
+        "type": "object",
+        "properties": {
+          "distributorName": {
+            "type": "string"
+          },
+          "externalCode": {
+            "type": "string"
+          },
+          "consumerClass": {
+            "type": "string",
+            "default": "RESIDENTIAL"
+          },
+          "tariffMode": {
+            "type": "string",
+            "default": "CONVENTIONAL"
+          },
+          "connectionType": {
+            "type": "string",
+            "default": "BIPHASIC"
+          },
+          "voltage": {
+            "type": "string",
+            "default": "220V"
+          },
+          "addressId": {
+            "type": "string"
+          }
+        },
+        "required": ["distributorName"]
+      },
+      "UpdateUtilityUnitDto": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "number"
+          },
+          "distributorName": {
+            "type": "string"
+          },
+          "externalCode": {
+            "type": "string"
+          },
+          "consumerClass": {
+            "type": "string"
+          },
+          "tariffMode": {
+            "type": "string"
+          },
+          "connectionType": {
+            "type": "string"
+          },
+          "voltage": {
+            "type": "string"
+          }
+        },
+        "required": ["expectedVersion"]
+      },
+      "OpportunityCustomerViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "legalName": {
+            "type": "string"
+          },
+          "tradeName": {
+            "type": "string"
+          },
+          "taxId": {
+            "type": "string"
+          },
+          "contacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomerContactViewDto"
+            }
+          }
+        },
+        "required": ["id", "legalName"]
+      },
+      "OpportunityTransitionViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "fromState": {
+            "type": "string"
+          },
+          "toState": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "actorUserId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "fromState", "toState", "reason", "createdAt"]
+      },
+      "OpportunityViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "customerId": {
+            "type": "string"
+          },
+          "utilityUnitId": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "lossReason": {
+            "type": "string"
+          },
+          "lossNotes": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "projectType": {
+            "type": "string"
+          },
+          "needSummary": {
+            "type": "string"
+          },
+          "estimatedConsumption": {
+            "type": "number"
+          },
+          "priority": {
+            "type": "string"
+          },
+          "expectedCloseDate": {
+            "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "customer": {
+            "$ref": "#/components/schemas/OpportunityCustomerViewDto"
+          },
+          "transitions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OpportunityTransitionViewDto"
+            }
+          },
+          "utilityUnit": {
+            "$ref": "#/components/schemas/UtilityUnitViewDto"
+          }
+        },
+        "required": [
+          "id",
+          "organizationId",
+          "code",
+          "customerId",
+          "state",
+          "title",
+          "source",
+          "projectType",
+          "needSummary",
+          "priority",
+          "ownerUserId",
+          "version",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "OpportunityListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OpportunityViewDto"
+            }
+          },
+          "total": {
+            "type": "number"
+          }
+        },
+        "required": ["items", "total"]
+      },
+      "FirstActivityDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["CALL", "MESSAGE", "MEETING", "VISIT", "EMAIL", "TASK"]
+          },
+          "subject": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "dueAt": {
+            "type": "string"
+          }
+        },
+        "required": ["type", "subject", "dueAt"]
+      },
+      "CreateOpportunityDto": {
+        "type": "object",
+        "properties": {
+          "customerId": {
+            "type": "string"
+          },
+          "utilityUnitId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "default": "INBOUND"
+          },
+          "projectType": {
+            "type": "string",
+            "default": "ON_GRID"
+          },
+          "needSummary": {
+            "type": "string"
+          },
+          "estimatedConsumption": {
+            "type": "number"
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["COLD", "WARM", "HOT"],
+            "default": "WARM"
+          },
+          "expectedCloseDate": {
+            "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string"
+          },
+          "firstActivity": {
+            "$ref": "#/components/schemas/FirstActivityDto"
+          }
+        },
+        "required": ["customerId", "title", "needSummary", "firstActivity"]
+      },
+      "UpdateOpportunityDto": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "number"
+          },
+          "title": {
+            "type": "string"
+          },
+          "needSummary": {
+            "type": "string"
+          },
+          "estimatedConsumption": {
+            "type": "number"
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["COLD", "WARM", "HOT"]
+          },
+          "expectedCloseDate": {
+            "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string"
+          },
+          "utilityUnitId": {
+            "type": "string"
+          }
+        },
+        "required": ["expectedVersion"]
+      },
+      "QualifyOpportunityDto": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "number"
+          },
+          "confirmedNeedSummary": {
+            "type": "string"
+          },
+          "estimatedConsumption": {
+            "type": "number"
+          },
+          "nextActivity": {
+            "$ref": "#/components/schemas/FirstActivityDto"
+          }
+        },
+        "required": ["expectedVersion", "confirmedNeedSummary"]
+      },
+      "LoseOpportunityDto": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "number"
+          },
+          "lossReason": {
+            "type": "string"
+          },
+          "lossNotes": {
+            "type": "string"
+          }
+        },
+        "required": ["expectedVersion", "lossReason"]
+      },
+      "ReopenOpportunityDto": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "number"
+          },
+          "justification": {
+            "type": "string"
+          }
+        },
+        "required": ["expectedVersion", "justification"]
+      },
+      "ActivityOpportunityViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "code", "title", "state"]
+      },
+      "ActivityCustomerViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "legalName": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "legalName"]
+      },
+      "ActivityAssigneeViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "name", "email"]
+      },
+      "ActivityViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "opportunityId": {
+            "type": "string"
+          },
+          "customerId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "assigneeUserId": {
+            "type": "string"
+          },
+          "dueAt": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "resultCode": {
+            "type": "string"
+          },
+          "resultNotes": {
+            "type": "string"
+          },
+          "completedAt": {
+            "type": "string"
+          },
+          "previousActivityId": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "opportunity": {
+            "$ref": "#/components/schemas/ActivityOpportunityViewDto"
+          },
+          "customer": {
+            "$ref": "#/components/schemas/ActivityCustomerViewDto"
+          },
+          "assignee": {
+            "$ref": "#/components/schemas/ActivityAssigneeViewDto"
+          }
+        },
+        "required": [
+          "id",
+          "organizationId",
+          "type",
+          "subject",
+          "assigneeUserId",
+          "dueAt",
+          "status",
+          "version",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreateActivityDto": {
+        "type": "object",
+        "properties": {
+          "opportunityId": {
+            "type": "string"
+          },
+          "customerId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["CALL", "MESSAGE", "MEETING", "VISIT", "EMAIL", "TASK"]
+          },
+          "subject": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "assigneeUserId": {
+            "type": "string"
+          },
+          "dueAt": {
+            "type": "string"
+          }
+        },
+        "required": ["type", "subject", "dueAt"]
+      },
+      "CompleteActivityDto": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "number"
+          },
+          "resultCode": {
+            "type": "string"
+          },
+          "resultNotes": {
+            "type": "string"
+          },
+          "nextActivity": {
+            "$ref": "#/components/schemas/FirstActivityDto"
+          }
+        },
+        "required": ["expectedVersion", "resultCode"]
+      },
+      "RescheduleActivityDto": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "number"
+          },
+          "dueAt": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "required": ["expectedVersion", "dueAt"]
       }
     }
   }

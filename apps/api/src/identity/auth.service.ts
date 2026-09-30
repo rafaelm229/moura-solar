@@ -179,6 +179,7 @@ export class AuthService {
     const m = session.membership;
     return {
       id: m.id,
+      userId: m.userId,
       name: m.user.name,
       email: m.user.email,
       roleId: m.roleId,

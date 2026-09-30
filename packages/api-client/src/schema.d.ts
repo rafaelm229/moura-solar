@@ -356,6 +356,310 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/customers/duplicates': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['CommercialController_checkDuplicates'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/customers': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['CommercialController_listCustomers'];
+    put?: never;
+    post: operations['CommercialController_createCustomer'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/customers/{customerId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['CommercialController_getCustomer'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['CommercialController_updateCustomer'];
+    trace?: never;
+  };
+  '/api/v1/customers/{customerId}/archive': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['CommercialController_archiveCustomer'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/customers/{customerId}/restore': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['CommercialController_restoreCustomer'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/customers/{customerId}/contacts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['CommercialController_addContact'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/customers/{customerId}/contacts/{contactId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete: operations['CommercialController_deleteContact'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/customers/{customerId}/addresses': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['CommercialController_addAddress'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/customers/{customerId}/utility-units': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['CommercialController_listUtilityUnits'];
+    put?: never;
+    post: operations['CommercialController_createUtilityUnit'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/utility-units/{utilityUnitId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['CommercialController_updateUtilityUnit'];
+    trace?: never;
+  };
+  '/api/v1/opportunities': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['CommercialController_listOpportunities'];
+    put?: never;
+    post: operations['CommercialController_createOpportunity'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/opportunities/{opportunityId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['CommercialController_getOpportunity'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['CommercialController_updateOpportunity'];
+    trace?: never;
+  };
+  '/api/v1/opportunities/{opportunityId}/qualify': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['CommercialController_qualifyOpportunity'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/opportunities/{opportunityId}/lose': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['CommercialController_loseOpportunity'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/opportunities/{opportunityId}/reopen': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['CommercialController_reopenOpportunity'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/activities': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['CommercialController_listActivities'];
+    put?: never;
+    post: operations['CommercialController_createActivity'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/activities/{activityId}/complete': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['CommercialController_completeActivity'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/activities/{activityId}/reschedule': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['CommercialController_rescheduleActivity'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/activities/{activityId}/cancel': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['CommercialController_cancelActivity'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -386,6 +690,7 @@ export interface components {
       roleName: string;
       status: string;
       version: number;
+      userId: string;
       organizationId: string;
       organizationName: string;
       sessionId: string;
@@ -461,6 +766,300 @@ export interface components {
       entityId: string | null;
       createdAt: string;
       traceId: string;
+    };
+    DuplicateMatchDto: {
+      /** @enum {string} */
+      strength: 'STRONG' | 'MODERATE';
+      reason: string;
+      customerId: string;
+      customerName: string;
+      taxId?: string;
+    };
+    CustomerContactViewDto: {
+      id: string;
+      type: string;
+      value: string;
+      label?: string;
+      isPrimary: boolean;
+    };
+    AddressViewDto: {
+      id: string;
+      postalCode: string;
+      street: string;
+      number: string;
+      complement?: string;
+      district?: string;
+      city: string;
+      state: string;
+      isPrimary: boolean;
+    };
+    UtilityUnitViewDto: {
+      id: string;
+      organizationId: string;
+      customerId: string;
+      distributorName: string;
+      externalCode?: string;
+      consumerClass: string;
+      tariffMode: string;
+      connectionType: string;
+      voltage: string;
+      addressId?: string;
+      version: number;
+      createdAt: string;
+      updatedAt: string;
+    };
+    CustomerOpportunitySummaryDto: {
+      id: string;
+      code: string;
+      title: string;
+      state: string;
+    };
+    CustomerViewDto: {
+      id: string;
+      organizationId: string;
+      kind: string;
+      legalName: string;
+      tradeName?: string;
+      taxId?: string;
+      stateRegistration?: string;
+      status: string;
+      notes?: string;
+      version: number;
+      createdAt: string;
+      updatedAt: string;
+      contacts?: components['schemas']['CustomerContactViewDto'][];
+      addresses?: components['schemas']['AddressViewDto'][];
+      utilityUnits?: components['schemas']['UtilityUnitViewDto'][];
+      opportunities?: components['schemas']['CustomerOpportunitySummaryDto'][];
+    };
+    CustomerListResponseDto: {
+      items: components['schemas']['CustomerViewDto'][];
+      total: number;
+    };
+    CreateCustomerDto: {
+      /**
+       * @default PERSON
+       * @enum {string}
+       */
+      kind: 'PERSON' | 'COMPANY';
+      legalName: string;
+      tradeName?: string;
+      taxId?: string;
+      stateRegistration?: string;
+      notes?: string;
+      phone?: string;
+      email?: string;
+      postalCode?: string;
+      street?: string;
+      number?: string;
+      complement?: string;
+      district?: string;
+      city?: string;
+      state?: string;
+      overrideDuplicate?: boolean;
+    };
+    UpdateCustomerDto: {
+      expectedVersion: number;
+      legalName?: string;
+      tradeName?: string;
+      taxId?: string;
+      notes?: string;
+    };
+    ExpectedVersionDto: {
+      expectedVersion: number;
+    };
+    AddContactDto: {
+      /** @enum {string} */
+      type: 'PHONE' | 'EMAIL' | 'WHATSAPP' | 'OTHER';
+      value: string;
+      label?: string;
+      isPrimary?: boolean;
+    };
+    AddAddressDto: {
+      postalCode: string;
+      street: string;
+      number: string;
+      complement?: string;
+      district?: string;
+      city: string;
+      state: string;
+      isPrimary?: boolean;
+    };
+    CreateUtilityUnitDto: {
+      distributorName: string;
+      externalCode?: string;
+      /** @default RESIDENTIAL */
+      consumerClass: string;
+      /** @default CONVENTIONAL */
+      tariffMode: string;
+      /** @default BIPHASIC */
+      connectionType: string;
+      /** @default 220V */
+      voltage: string;
+      addressId?: string;
+    };
+    UpdateUtilityUnitDto: {
+      expectedVersion: number;
+      distributorName?: string;
+      externalCode?: string;
+      consumerClass?: string;
+      tariffMode?: string;
+      connectionType?: string;
+      voltage?: string;
+    };
+    OpportunityCustomerViewDto: {
+      id: string;
+      legalName: string;
+      tradeName?: string;
+      taxId?: string;
+      contacts?: components['schemas']['CustomerContactViewDto'][];
+    };
+    OpportunityTransitionViewDto: {
+      id: string;
+      fromState: string;
+      toState: string;
+      reason: string;
+      notes?: string;
+      actorUserId?: string;
+      createdAt: string;
+    };
+    OpportunityViewDto: {
+      id: string;
+      organizationId: string;
+      code: string;
+      customerId: string;
+      utilityUnitId?: string;
+      state: string;
+      lossReason?: string;
+      lossNotes?: string;
+      title: string;
+      source: string;
+      projectType: string;
+      needSummary: string;
+      estimatedConsumption?: number;
+      priority: string;
+      expectedCloseDate?: string;
+      ownerUserId: string;
+      version: number;
+      createdAt: string;
+      updatedAt: string;
+      customer?: components['schemas']['OpportunityCustomerViewDto'];
+      transitions?: components['schemas']['OpportunityTransitionViewDto'][];
+      utilityUnit?: components['schemas']['UtilityUnitViewDto'];
+    };
+    OpportunityListResponseDto: {
+      items: components['schemas']['OpportunityViewDto'][];
+      total: number;
+    };
+    FirstActivityDto: {
+      /** @enum {string} */
+      type: 'CALL' | 'MESSAGE' | 'MEETING' | 'VISIT' | 'EMAIL' | 'TASK';
+      subject: string;
+      description?: string;
+      dueAt: string;
+    };
+    CreateOpportunityDto: {
+      customerId: string;
+      utilityUnitId?: string;
+      title: string;
+      /** @default INBOUND */
+      source: string;
+      /** @default ON_GRID */
+      projectType: string;
+      needSummary: string;
+      estimatedConsumption?: number;
+      /**
+       * @default WARM
+       * @enum {string}
+       */
+      priority: 'COLD' | 'WARM' | 'HOT';
+      expectedCloseDate?: string;
+      ownerUserId?: string;
+      firstActivity: components['schemas']['FirstActivityDto'];
+    };
+    UpdateOpportunityDto: {
+      expectedVersion: number;
+      title?: string;
+      needSummary?: string;
+      estimatedConsumption?: number;
+      /** @enum {string} */
+      priority?: 'COLD' | 'WARM' | 'HOT';
+      expectedCloseDate?: string;
+      ownerUserId?: string;
+      utilityUnitId?: string;
+    };
+    QualifyOpportunityDto: {
+      expectedVersion: number;
+      confirmedNeedSummary: string;
+      estimatedConsumption?: number;
+      nextActivity?: components['schemas']['FirstActivityDto'];
+    };
+    LoseOpportunityDto: {
+      expectedVersion: number;
+      lossReason: string;
+      lossNotes?: string;
+    };
+    ReopenOpportunityDto: {
+      expectedVersion: number;
+      justification: string;
+    };
+    ActivityOpportunityViewDto: {
+      id: string;
+      code: string;
+      title: string;
+      state: string;
+    };
+    ActivityCustomerViewDto: {
+      id: string;
+      legalName: string;
+    };
+    ActivityAssigneeViewDto: {
+      id: string;
+      name: string;
+      email: string;
+    };
+    ActivityViewDto: {
+      id: string;
+      organizationId: string;
+      opportunityId?: string;
+      customerId?: string;
+      type: string;
+      subject: string;
+      description?: string;
+      assigneeUserId: string;
+      dueAt: string;
+      status: string;
+      resultCode?: string;
+      resultNotes?: string;
+      completedAt?: string;
+      previousActivityId?: string;
+      version: number;
+      createdAt: string;
+      updatedAt: string;
+      opportunity?: components['schemas']['ActivityOpportunityViewDto'];
+      customer?: components['schemas']['ActivityCustomerViewDto'];
+      assignee?: components['schemas']['ActivityAssigneeViewDto'];
+    };
+    CreateActivityDto: {
+      opportunityId?: string;
+      customerId?: string;
+      /** @enum {string} */
+      type: 'CALL' | 'MESSAGE' | 'MEETING' | 'VISIT' | 'EMAIL' | 'TASK';
+      subject: string;
+      description?: string;
+      assigneeUserId?: string;
+      dueAt: string;
+    };
+    CompleteActivityDto: {
+      expectedVersion: number;
+      resultCode: string;
+      resultNotes?: string;
+      nextActivity?: components['schemas']['FirstActivityDto'];
+    };
+    RescheduleActivityDto: {
+      expectedVersion: number;
+      dueAt: string;
+      notes?: string;
     };
   };
   responses: never;
@@ -990,6 +1589,610 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['AuditViewDto'][];
+        };
+      };
+    };
+  };
+  CommercialController_checkDuplicates: {
+    parameters: {
+      query?: {
+        taxId?: string;
+        email?: string;
+        phone?: string;
+        name?: string;
+        externalCode?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DuplicateMatchDto'][];
+        };
+      };
+    };
+  };
+  CommercialController_listCustomers: {
+    parameters: {
+      query?: {
+        search?: string;
+        status?: string;
+        skip?: string;
+        take?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CustomerListResponseDto'];
+        };
+      };
+    };
+  };
+  CommercialController_createCustomer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateCustomerDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CustomerViewDto'];
+        };
+      };
+    };
+  };
+  CommercialController_getCustomer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        customerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CustomerViewDto'];
+        };
+      };
+    };
+  };
+  CommercialController_updateCustomer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        customerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateCustomerDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CustomerViewDto'];
+        };
+      };
+    };
+  };
+  CommercialController_archiveCustomer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        customerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ExpectedVersionDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CustomerViewDto'];
+        };
+      };
+    };
+  };
+  CommercialController_restoreCustomer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        customerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ExpectedVersionDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CustomerViewDto'];
+        };
+      };
+    };
+  };
+  CommercialController_addContact: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        customerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AddContactDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CustomerContactViewDto'];
+        };
+      };
+    };
+  };
+  CommercialController_deleteContact: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        customerId: string;
+        contactId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CommercialController_addAddress: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        customerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AddAddressDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AddressViewDto'];
+        };
+      };
+    };
+  };
+  CommercialController_listUtilityUnits: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        customerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UtilityUnitViewDto'][];
+        };
+      };
+    };
+  };
+  CommercialController_createUtilityUnit: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        customerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateUtilityUnitDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UtilityUnitViewDto'];
+        };
+      };
+    };
+  };
+  CommercialController_updateUtilityUnit: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        utilityUnitId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateUtilityUnitDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UtilityUnitViewDto'];
+        };
+      };
+    };
+  };
+  CommercialController_listOpportunities: {
+    parameters: {
+      query?: {
+        state?: string;
+        ownerUserId?: string;
+        customerId?: string;
+        search?: string;
+        skip?: string;
+        take?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OpportunityListResponseDto'];
+        };
+      };
+    };
+  };
+  CommercialController_createOpportunity: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateOpportunityDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OpportunityViewDto'];
+        };
+      };
+    };
+  };
+  CommercialController_getOpportunity: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        opportunityId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OpportunityViewDto'];
+        };
+      };
+    };
+  };
+  CommercialController_updateOpportunity: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        opportunityId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateOpportunityDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OpportunityViewDto'];
+        };
+      };
+    };
+  };
+  CommercialController_qualifyOpportunity: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        opportunityId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['QualifyOpportunityDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OpportunityViewDto'];
+        };
+      };
+    };
+  };
+  CommercialController_loseOpportunity: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        opportunityId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['LoseOpportunityDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OpportunityViewDto'];
+        };
+      };
+    };
+  };
+  CommercialController_reopenOpportunity: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        opportunityId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReopenOpportunityDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OpportunityViewDto'];
+        };
+      };
+    };
+  };
+  CommercialController_listActivities: {
+    parameters: {
+      query?: {
+        status?: string;
+        assigneeUserId?: string;
+        opportunityId?: string;
+        customerId?: string;
+        dueFrom?: string;
+        dueTo?: string;
+        overdue?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ActivityViewDto'][];
+        };
+      };
+    };
+  };
+  CommercialController_createActivity: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateActivityDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ActivityViewDto'];
+        };
+      };
+    };
+  };
+  CommercialController_completeActivity: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        activityId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CompleteActivityDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ActivityViewDto'];
+        };
+      };
+    };
+  };
+  CommercialController_rescheduleActivity: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        activityId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RescheduleActivityDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ActivityViewDto'];
+        };
+      };
+    };
+  };
+  CommercialController_cancelActivity: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        activityId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ExpectedVersionDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ActivityViewDto'];
         };
       };
     };

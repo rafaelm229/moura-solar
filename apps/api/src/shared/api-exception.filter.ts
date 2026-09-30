@@ -15,10 +15,20 @@ export class ApiExceptionFilter implements ExceptionFilter {
       exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
     const traceId = request.requestId ?? randomUUID();
 
+    const body = exception instanceof HttpException ? exception.getResponse() : null;
+    const details =
+      typeof body === 'object' &&
+      body !== null &&
+      'details' in body &&
+      typeof body.details === 'object' &&
+      body.details !== null
+        ? (body.details as Record<string, unknown>)
+        : {};
+
     const payload: ApiErrorResponse = {
       code: this.codeFor(exception, status),
       message: this.messageFor(exception, status),
-      details: {},
+      details,
       traceId,
     };
 

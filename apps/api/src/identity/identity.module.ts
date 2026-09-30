@@ -13,5 +13,6 @@ import { TeamService } from './team.service';
     TeamService,
     { provide: APP_GUARD, useClass: IdentityGuard },
   ],
+  exports: [IdentityStore, AuthService],
 })
 export class IdentityModule {}

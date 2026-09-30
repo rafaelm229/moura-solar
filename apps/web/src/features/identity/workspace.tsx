@@ -15,16 +15,29 @@ import { Sessions } from './sessions';
 import { Teams } from './teams';
 import { AuditTrail } from './audit';
 import { Feedback } from './feedback';
+import { Customers } from '../commercial/customers';
+import { Opportunities } from '../commercial/opportunities';
+import { Activities } from '../commercial/activities';
+
 const destinations = [
   { id: 'sessions', label: 'Minhas sessões', permission: 'sessions:read_own', organization: false },
   { id: 'members', label: 'Pessoas', permission: 'users:manage', organization: true },
   { id: 'teams', label: 'Equipes', permission: 'teams:manage', organization: true },
-  { id: 'roles', label: 'Papéis', permission: 'roles:manage', organization: true },
   { id: 'audit', label: 'Auditoria', permission: 'audit:read', organization: false },
+  { id: 'customers', label: 'Clientes', permission: 'customers:read', organization: false },
+  {
+    id: 'opportunities',
+    label: 'Oportunidades',
+    permission: 'opportunities:read',
+    organization: false,
+  },
+  { id: 'activities', label: 'Atividades', permission: 'activities:manage', organization: false },
+  { id: 'roles', label: 'Papéis', permission: 'roles:manage', organization: true },
 ];
 function Application() {
   const client = useQueryClient();
   const [tab, setTab] = useState('sessions');
+  const [preselectedCustomerId, setPreselectedCustomerId] = useState<string | undefined>(undefined);
   const [accessToken, setAccessToken] = useState('');
   const canLeave = () =>
     !document.querySelector('form[data-dirty="true"]') ||
@@ -173,6 +186,21 @@ function Application() {
           </section>
         ) : (
           <>
+            {tab === 'customers' && (
+              <Customers
+                onCreateOpportunity={(customer) => {
+                  setPreselectedCustomerId(customer.id);
+                  switchTab('opportunities');
+                }}
+              />
+            )}
+            {tab === 'opportunities' && (
+              <Opportunities
+                initialCustomerId={preselectedCustomerId}
+                onCreated={() => setPreselectedCustomerId(undefined)}
+              />
+            )}
+            {tab === 'activities' && <Activities />}
             {tab === 'sessions' && <Sessions onLogout={logoutLocal} />}
             {tab === 'members' && <Members />}
             {tab === 'roles' && <Roles />}

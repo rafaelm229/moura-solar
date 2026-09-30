@@ -12,8 +12,13 @@ const derive = (
   );
 export const hash = (value: string): string => createHash('sha256').update(value).digest('hex');
 export const token = (): string => randomBytes(32).toString('base64url');
-export function fail(code: string, message: string, status = 400): never {
-  throw new HttpException({ code, message }, status);
+export function fail(
+  code: string,
+  message: string,
+  status = 400,
+  details: Record<string, unknown> = {},
+): never {
+  throw new HttpException({ code, message, details }, status);
 }
 export async function passwordHash(password: string): Promise<string> {
   const salt = randomBytes(16).toString('hex');
