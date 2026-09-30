@@ -543,7 +543,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                   canSend && (
                     <button
                       type="button"
-                      className="btn btn--subtle"
+                      className="btn btn--secondary"
                       onClick={() => setIsDelivering(true)}
                     >
                       📤 Registrar Envio
@@ -557,7 +557,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                   canUpload && (
                     <button
                       type="button"
-                      className="btn btn--subtle"
+                      className="btn btn--secondary"
                       onClick={() => setIsUploading(true)}
                     >
                       📥 Anexar Via Assinada

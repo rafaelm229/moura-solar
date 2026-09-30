@@ -25,6 +25,15 @@
   --text-primary: #102a23;
   --text-secondary: #52615c;
   --status-danger: #b91c1c;
+  --status-danger-bg: #fee2e2;
+  --status-success: #15803d;
+  --status-success-bg: #dcfce7;
+  --status-success-strong: #166534;
+  --status-warning: #b45309;
+  --status-warning-bg: #fef3c7;
+  --text-muted: #64748b;
+  --surface-sunken: #f8fafc;
+  --border-subtle: #e2e8f0;
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;

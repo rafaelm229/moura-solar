@@ -898,12 +898,12 @@ export function Proposals({
                         {canSend && (isReady || isSent) && (
                           <button
                             type="button"
+                            className="btn btn--secondary"
                             style={{
-                              padding: '0.35rem 0.75rem',
+                              padding: '0.45rem 0.85rem',
                               fontSize: '0.8125rem',
-                              background: 'var(--color-surface)',
-                              color: 'var(--brand-primary)',
-                              borderColor: 'var(--brand-primary)',
+                              minHeight: 'auto',
+                              fontWeight: 600,
                             }}
                             onClick={() => {
                               setDeliveryVersionId(version.id);
@@ -918,12 +918,16 @@ export function Proposals({
                         {canAccept && isSent && (
                           <button
                             type="button"
+                            className="btn btn--success"
                             style={{
-                              padding: '0.35rem 0.75rem',
+                              padding: '0.45rem 0.85rem',
                               fontSize: '0.8125rem',
-                              background: 'var(--status-success)',
-                              color: '#fff',
-                              border: 'none',
+                              minHeight: 'auto',
+                              backgroundColor: '#15803d',
+                              color: '#ffffff',
+                              border: '1px solid #166534',
+                              fontWeight: 600,
+                              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.12)',
                             }}
                             onClick={() => {
                               setAcceptVersionId(version.id);
@@ -938,12 +942,15 @@ export function Proposals({
                         {canReject && isSent && (
                           <button
                             type="button"
+                            className="btn btn--danger"
                             style={{
-                              padding: '0.35rem 0.75rem',
+                              padding: '0.45rem 0.85rem',
                               fontSize: '0.8125rem',
-                              background: 'var(--color-surface)',
-                              color: 'var(--status-danger)',
-                              borderColor: 'var(--status-danger)',
+                              minHeight: 'auto',
+                              backgroundColor: '#fee2e2',
+                              color: '#b91c1c',
+                              border: '1px solid #ef4444',
+                              fontWeight: 600,
                             }}
                             onClick={() => {
                               setRejectVersionId(version.id);
@@ -958,11 +965,12 @@ export function Proposals({
                         {canCreate && (
                           <button
                             type="button"
+                            className="btn btn--subtle"
                             style={{
-                              padding: '0.35rem 0.75rem',
+                              padding: '0.45rem 0.85rem',
                               fontSize: '0.8125rem',
-                              background: 'var(--color-surface)',
-                              color: 'var(--text-secondary)',
+                              minHeight: 'auto',
+                              fontWeight: 600,
                             }}
                             onClick={() => {
                               setNewVersionParentId(version.id);
@@ -1140,20 +1148,19 @@ export function Proposals({
                           >
                             <button
                               type="button"
-                              style={{
-                                background: 'var(--color-surface)',
-                                color: 'var(--text-primary)',
-                              }}
+                              className="btn btn--subtle"
                               onClick={() => setAcceptVersionId(null)}
                             >
                               Cancelar
                             </button>
                             <button
                               type="submit"
+                              className="btn btn--success"
                               style={{
-                                background: 'var(--status-success)',
-                                color: '#fff',
-                                border: 'none',
+                                background: '#15803d',
+                                color: '#ffffff',
+                                border: '1px solid #166534',
+                                fontWeight: 600,
                               }}
                               disabled={acceptMutation.isPending || !acceptedByName}
                             >
@@ -1222,20 +1229,19 @@ export function Proposals({
                           >
                             <button
                               type="button"
-                              style={{
-                                background: 'var(--color-surface)',
-                                color: 'var(--text-primary)',
-                              }}
+                              className="btn btn--subtle"
                               onClick={() => setRejectVersionId(null)}
                             >
                               Cancelar
                             </button>
                             <button
                               type="submit"
+                              className="btn btn--danger"
                               style={{
-                                background: 'var(--status-danger)',
-                                color: '#fff',
-                                border: 'none',
+                                background: '#b91c1c',
+                                color: '#ffffff',
+                                border: '1px solid #991b1b',
+                                fontWeight: 600,
                               }}
                               disabled={rejectMutation.isPending}
                             >
