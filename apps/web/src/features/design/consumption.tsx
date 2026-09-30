@@ -484,7 +484,7 @@ export function EnergyReadings({
       )}
 
       {/* Desktop Table View */}
-      <div className="table-wrapper desktop-only" style={{ display: 'none' }}>
+      <div className="table-wrapper desktop-only">
         <table className="data-table">
           <thead>
             <tr>

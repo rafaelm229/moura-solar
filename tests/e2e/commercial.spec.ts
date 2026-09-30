@@ -110,18 +110,19 @@ for (const [width, height] of [
     await seller.getByRole('button', { name: 'Atividades', exact: true }).click();
     await expect(seller.getByRole('heading', { name: 'Atividades Comerciais' })).toBeVisible();
 
+    const activitiesContainer = seller.locator(width < 768 ? '.mobile-cards' : '.desktop-only');
     await expect(
-      seller.getByText('Reunião técnica inicial com proprietário').first(),
+      activitiesContainer.getByText('Reunião técnica inicial com proprietário'),
     ).toBeVisible();
 
     // Complete the activity
-    await seller.getByRole('button', { name: 'Concluir' }).first().click();
+    await activitiesContainer.getByRole('button', { name: 'Concluir' }).first().click();
     await expect(seller.getByRole('heading', { name: 'Concluir Atividade' })).toBeVisible();
     await seller.getByRole('button', { name: 'Confirmar Conclusão' }).click();
 
     // Verify activity moved to completed state in "Todas" tab
     await seller.getByRole('tab', { name: 'Todas' }).click();
-    await expect(seller.getByText('Concluída').first()).toBeVisible();
+    await expect(activitiesContainer.getByText('Concluída').first()).toBeVisible();
 
     // 8. Viewport and responsiveness check
     await expect
