@@ -578,3 +578,20 @@ label {
   border-radius: 50%;
   background: var(--brand-primary);
 }
+
+@media (min-width: 768px) {
+  .desktop-only {
+    display: block !important;
+  }
+  .mobile-readings-list {
+    display: none !important;
+  }
+}
+@media (max-width: 767px) {
+  .desktop-only {
+    display: none !important;
+  }
+  .mobile-readings-list {
+    display: block !important;
+  }
+}

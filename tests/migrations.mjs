@@ -38,10 +38,12 @@ try {
   assert.equal(await db.membership.count(), 0);
   assert.equal(await db.customer.count(), 0);
   assert.equal(await db.opportunity.count(), 0);
+  assert.equal(await db.catalogItem.count(), 0);
+  assert.equal(await db.design.count(), 0);
   prisma(['migrate', 'deploy']);
   assert.equal(await db.organization.count(), 1);
   console.log(
-    'Upgrade M0 → M1 → M2 preserved existing organization; repeated deployment was safe.',
+    'Upgrade M0 → M1 → M2 → M3 preserved existing organization; repeated deployment was safe.',
   );
 } finally {
   await db.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);

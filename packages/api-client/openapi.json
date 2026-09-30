@@ -1901,6 +1901,624 @@
         ],
         "tags": ["Comercial"]
       }
+    },
+    "/api/v1/utility-units/{id}/readings": {
+      "get": {
+        "operationId": "DesignController_getReadings",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumptionSummaryViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["design"]
+      },
+      "post": {
+        "operationId": "DesignController_createOrUpdateReading",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEnergyReadingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnergyReadingViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["design"]
+      }
+    },
+    "/api/v1/utility-units/{id}/readings/{readingId}": {
+      "delete": {
+        "operationId": "DesignController_deleteReading",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "readingId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["design"]
+      }
+    },
+    "/api/v1/opportunities/{id}/surveys": {
+      "get": {
+        "operationId": "DesignController_getSurveys",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SurveyViewDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["design"]
+      },
+      "post": {
+        "operationId": "DesignController_createOrUpdateSurvey",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSurveyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SurveyViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["design"]
+      }
+    },
+    "/api/v1/surveys/{id}/complete": {
+      "post": {
+        "operationId": "DesignController_completeSurvey",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SurveyViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["design"]
+      }
+    },
+    "/api/v1/catalog": {
+      "get": {
+        "operationId": "DesignController_listCatalog",
+        "parameters": [
+          {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CatalogItemViewDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["design"]
+      },
+      "post": {
+        "operationId": "DesignController_createCatalogItem",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCatalogItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItemViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["design"]
+      }
+    },
+    "/api/v1/catalog/{id}": {
+      "put": {
+        "operationId": "DesignController_updateCatalogItem",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCatalogItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItemViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["design"]
+      }
+    },
+    "/api/v1/designs/suggest": {
+      "post": {
+        "operationId": "DesignController_suggestDesign",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuggestDesignDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DesignSuggestionViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["design"]
+      }
+    },
+    "/api/v1/opportunities/{id}/designs": {
+      "get": {
+        "operationId": "DesignController_getDesigns",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DesignViewDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["design"]
+      },
+      "post": {
+        "operationId": "DesignController_createDesign",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDesignDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DesignViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["design"]
+      }
+    },
+    "/api/v1/designs/{id}": {
+      "get": {
+        "operationId": "DesignController_getDesign",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DesignViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["design"]
+      }
+    },
+    "/api/v1/designs/{id}/versions": {
+      "post": {
+        "operationId": "DesignController_createDesignVersion",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDesignVersionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DesignVersionViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["design"]
+      }
+    },
+    "/api/v1/design-versions/{id}": {
+      "put": {
+        "operationId": "DesignController_updateDesignVersion",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDesignVersionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DesignVersionViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["design"]
+      }
+    },
+    "/api/v1/design-versions/{id}/approve": {
+      "post": {
+        "operationId": "DesignController_approveDesignVersion",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveDesignVersionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DesignVersionViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["design"]
+      }
     }
   },
   "info": {
@@ -3178,6 +3796,907 @@
           }
         },
         "required": ["expectedVersion", "dueAt"]
+      },
+      "EnergyReadingViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "utilityUnitId": {
+            "type": "string"
+          },
+          "referenceMonth": {
+            "type": "string"
+          },
+          "consumptionKwh": {
+            "type": "number"
+          },
+          "injectedKwh": {
+            "type": "number",
+            "nullable": true
+          },
+          "billedAmount": {
+            "type": "number",
+            "nullable": true
+          },
+          "source": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "utilityUnitId",
+          "referenceMonth",
+          "consumptionKwh",
+          "source",
+          "status",
+          "createdAt"
+        ]
+      },
+      "ConsumptionSummaryViewDto": {
+        "type": "object",
+        "properties": {
+          "readings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EnergyReadingViewDto"
+            }
+          },
+          "validMonthsCount": {
+            "type": "number"
+          },
+          "hasIncompleteHistory": {
+            "type": "boolean"
+          },
+          "averageMonthlyConsumptionKwh": {
+            "type": "number"
+          },
+          "annualizedConsumptionKwh": {
+            "type": "number"
+          },
+          "targetConsumptionKwh": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "readings",
+          "validMonthsCount",
+          "hasIncompleteHistory",
+          "averageMonthlyConsumptionKwh",
+          "annualizedConsumptionKwh",
+          "targetConsumptionKwh"
+        ]
+      },
+      "CreateEnergyReadingDto": {
+        "type": "object",
+        "properties": {
+          "referenceMonth": {
+            "type": "string",
+            "example": "2026-08"
+          },
+          "consumptionKwh": {
+            "type": "number",
+            "example": 450.5
+          },
+          "injectedKwh": {
+            "type": "number",
+            "example": 0
+          },
+          "billedAmount": {
+            "type": "number",
+            "example": 425.8
+          },
+          "source": {
+            "type": "string",
+            "default": "MANUAL",
+            "enum": ["MANUAL", "BILL", "IMPORT"]
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "required": ["referenceMonth", "consumptionKwh"]
+      },
+      "SurveyViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "opportunityId": {
+            "type": "string"
+          },
+          "utilityUnitId": {
+            "type": "string",
+            "nullable": true
+          },
+          "type": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "tariffPerKwh": {
+            "type": "number"
+          },
+          "connectionType": {
+            "type": "string"
+          },
+          "voltage": {
+            "type": "string"
+          },
+          "roofType": {
+            "type": "string",
+            "nullable": true
+          },
+          "shadingKnown": {
+            "type": "boolean"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "assumptions": {
+            "type": "object",
+            "nullable": true
+          },
+          "completedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "completedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "version": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "opportunityId",
+          "type",
+          "status",
+          "tariffPerKwh",
+          "connectionType",
+          "voltage",
+          "shadingKnown",
+          "version",
+          "createdAt"
+        ]
+      },
+      "CreateSurveyDto": {
+        "type": "object",
+        "properties": {
+          "utilityUnitId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "default": "REMOTE",
+            "enum": ["REMOTE", "ONSITE", "HYBRID"]
+          },
+          "tariffPerKwh": {
+            "type": "number",
+            "default": 0.95
+          },
+          "connectionType": {
+            "type": "string",
+            "default": "BIPHASIC",
+            "enum": ["MONOPHASIC", "BIPHASIC", "TRIPHASIC"]
+          },
+          "voltage": {
+            "type": "string",
+            "default": "220V"
+          },
+          "roofType": {
+            "type": "string"
+          },
+          "shadingKnown": {
+            "type": "boolean",
+            "default": false
+          },
+          "notes": {
+            "type": "string"
+          },
+          "plannedAdditionalLoadKwh": {
+            "type": "number"
+          }
+        }
+      },
+      "CatalogItemViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "manufacturer": {
+            "type": "string",
+            "nullable": true
+          },
+          "model": {
+            "type": "string",
+            "nullable": true
+          },
+          "unitOfMeasure": {
+            "type": "string"
+          },
+          "powerRatingWp": {
+            "type": "number",
+            "nullable": true
+          },
+          "powerRatingKw": {
+            "type": "number",
+            "nullable": true
+          },
+          "referenceCost": {
+            "type": "number"
+          },
+          "referencePrice": {
+            "type": "number",
+            "nullable": true
+          },
+          "status": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "sku",
+          "kind",
+          "category",
+          "name",
+          "unitOfMeasure",
+          "referenceCost",
+          "status",
+          "version"
+        ]
+      },
+      "CreateCatalogItemDto": {
+        "type": "object",
+        "properties": {
+          "sku": {
+            "type": "string",
+            "example": "MOD-LONGI-630W"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["MATERIAL", "SERVICE"]
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "MODULE",
+              "INVERTER",
+              "STRUCTURE",
+              "CABLE_ELECTRICAL",
+              "BATTERY",
+              "SERVICE_INSTALLATION",
+              "SERVICE_ENGINEERING",
+              "OTHER"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "example": "Módulo Fotovoltaico Longi 630W N-Type"
+          },
+          "manufacturer": {
+            "type": "string",
+            "example": "Longi Solar"
+          },
+          "model": {
+            "type": "string",
+            "example": "Hi-MO X6"
+          },
+          "unitOfMeasure": {
+            "type": "string",
+            "default": "UN"
+          },
+          "powerRatingWp": {
+            "type": "number",
+            "example": 630
+          },
+          "powerRatingKw": {
+            "type": "number",
+            "example": 0
+          },
+          "referenceCost": {
+            "type": "number",
+            "example": 650
+          },
+          "referencePrice": {
+            "type": "number",
+            "example": 850
+          }
+        },
+        "required": ["sku", "kind", "category", "name", "unitOfMeasure", "referenceCost"]
+      },
+      "UpdateCatalogItemDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "manufacturer": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "powerRatingWp": {
+            "type": "number"
+          },
+          "powerRatingKw": {
+            "type": "number"
+          },
+          "referenceCost": {
+            "type": "number"
+          },
+          "referencePrice": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["ACTIVE", "INACTIVE"]
+          },
+          "expectedVersion": {
+            "type": "number",
+            "example": 1
+          }
+        },
+        "required": ["expectedVersion"]
+      },
+      "SuggestDesignDto": {
+        "type": "object",
+        "properties": {
+          "targetMonthlyGenerationKwh": {
+            "type": "number",
+            "example": 600
+          },
+          "specificYield": {
+            "type": "number",
+            "default": 135
+          },
+          "preferredModulePowerWp": {
+            "type": "number",
+            "default": 630
+          }
+        },
+        "required": ["targetMonthlyGenerationKwh"]
+      },
+      "DesignSuggestionViewDto": {
+        "type": "object",
+        "properties": {
+          "targetMonthlyGenerationKwh": {
+            "type": "number"
+          },
+          "specificYield": {
+            "type": "number"
+          },
+          "suggestedDcPowerKwp": {
+            "type": "number"
+          },
+          "suggestedModuleQuantity": {
+            "type": "number"
+          },
+          "suggestedModulePowerWp": {
+            "type": "number"
+          },
+          "suggestedModuleSku": {
+            "type": "string",
+            "nullable": true
+          },
+          "suggestedInverterPowerKw": {
+            "type": "number"
+          },
+          "suggestedInverterQuantity": {
+            "type": "number"
+          },
+          "suggestedInverterSku": {
+            "type": "string",
+            "nullable": true
+          },
+          "dcAcRatio": {
+            "type": "number"
+          },
+          "estimatedMonthlyGenerationKwh": {
+            "type": "number"
+          },
+          "estimatedAnnualGenerationKwh": {
+            "type": "number"
+          },
+          "classification": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "targetMonthlyGenerationKwh",
+          "specificYield",
+          "suggestedDcPowerKwp",
+          "suggestedModuleQuantity",
+          "suggestedModulePowerWp",
+          "suggestedInverterPowerKw",
+          "suggestedInverterQuantity",
+          "dcAcRatio",
+          "estimatedMonthlyGenerationKwh",
+          "estimatedAnnualGenerationKwh",
+          "classification"
+        ]
+      },
+      "DesignItemViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "catalogItemId": {
+            "type": "string",
+            "nullable": true
+          },
+          "kind": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "unitOfMeasure": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unitCost": {
+            "type": "number"
+          },
+          "totalCost": {
+            "type": "number"
+          },
+          "costSource": {
+            "type": "string"
+          },
+          "isOptional": {
+            "type": "boolean"
+          },
+          "justification": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "category",
+          "description",
+          "unitOfMeasure",
+          "quantity",
+          "unitCost",
+          "totalCost",
+          "costSource",
+          "isOptional"
+        ]
+      },
+      "AdditionalCostViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "commercialTreatment": {
+            "type": "string"
+          },
+          "justification": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": ["id", "category", "description", "amount", "commercialTreatment"]
+      },
+      "PricingViewDto": {
+        "type": "object",
+        "properties": {
+          "directMaterialCost": {
+            "type": "number"
+          },
+          "directServiceCost": {
+            "type": "number"
+          },
+          "additionalCost": {
+            "type": "number"
+          },
+          "contingencyAmount": {
+            "type": "number"
+          },
+          "totalEstimatedCost": {
+            "type": "number"
+          },
+          "markupPercent": {
+            "type": "number"
+          },
+          "priceBeforeDiscount": {
+            "type": "number"
+          },
+          "discountAmount": {
+            "type": "number"
+          },
+          "finalPrice": {
+            "type": "number"
+          },
+          "grossMarginAmount": {
+            "type": "number"
+          },
+          "grossMarginPercent": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "directMaterialCost",
+          "directServiceCost",
+          "additionalCost",
+          "contingencyAmount",
+          "totalEstimatedCost",
+          "markupPercent",
+          "priceBeforeDiscount",
+          "discountAmount",
+          "finalPrice",
+          "grossMarginAmount",
+          "grossMarginPercent",
+          "status"
+        ]
+      },
+      "DesignVersionViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "designId": {
+            "type": "string"
+          },
+          "versionNumber": {
+            "type": "number"
+          },
+          "basedOnVersionId": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string"
+          },
+          "systemType": {
+            "type": "string"
+          },
+          "targetMonthlyGenerationKwh": {
+            "type": "number"
+          },
+          "targetConsumptionKwh": {
+            "type": "number"
+          },
+          "dcPowerKwp": {
+            "type": "number"
+          },
+          "acPowerKw": {
+            "type": "number"
+          },
+          "estimatedMonthlyGenerationKwh": {
+            "type": "number"
+          },
+          "estimatedAnnualGenerationKwh": {
+            "type": "number"
+          },
+          "coveragePercent": {
+            "type": "number"
+          },
+          "specificYield": {
+            "type": "number"
+          },
+          "calculationVersion": {
+            "type": "string"
+          },
+          "assumptionsSnapshot": {
+            "type": "object"
+          },
+          "approvedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "approvedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "justification": {
+            "type": "string",
+            "nullable": true
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DesignItemViewDto"
+            }
+          },
+          "additionalCosts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdditionalCostViewDto"
+            }
+          },
+          "pricing": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PricingViewDto"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "designId",
+          "versionNumber",
+          "status",
+          "systemType",
+          "targetMonthlyGenerationKwh",
+          "targetConsumptionKwh",
+          "dcPowerKwp",
+          "acPowerKw",
+          "estimatedMonthlyGenerationKwh",
+          "estimatedAnnualGenerationKwh",
+          "coveragePercent",
+          "specificYield",
+          "calculationVersion",
+          "assumptionsSnapshot",
+          "items",
+          "additionalCosts",
+          "createdAt"
+        ]
+      },
+      "DesignViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "opportunityId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "currentVersionNumber": {
+            "type": "number"
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DesignVersionViewDto"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "opportunityId",
+          "name",
+          "currentVersionNumber",
+          "versions",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreateDesignDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "default": "Dimensionamento Padrão"
+          },
+          "systemType": {
+            "type": "string",
+            "default": "ON_GRID",
+            "enum": ["ON_GRID", "OFF_GRID", "HYBRID"]
+          },
+          "targetMonthlyGenerationKwh": {
+            "type": "number",
+            "example": 600
+          },
+          "specificYield": {
+            "type": "number",
+            "default": 135
+          }
+        },
+        "required": ["targetMonthlyGenerationKwh"]
+      },
+      "CreateDesignVersionDto": {
+        "type": "object",
+        "properties": {
+          "basedOnVersionId": {
+            "type": "string"
+          }
+        }
+      },
+      "DesignItemInputDto": {
+        "type": "object",
+        "properties": {
+          "catalogItemId": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["MATERIAL", "SERVICE"]
+          },
+          "category": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "unitOfMeasure": {
+            "type": "string",
+            "default": "UN"
+          },
+          "quantity": {
+            "type": "number",
+            "example": 10
+          },
+          "unitCost": {
+            "type": "number",
+            "example": 650
+          },
+          "costSource": {
+            "type": "string",
+            "default": "CATALOG",
+            "enum": ["CATALOG", "MANUAL", "QUOTE"]
+          },
+          "isOptional": {
+            "type": "boolean",
+            "default": false
+          },
+          "justification": {
+            "type": "string"
+          }
+        },
+        "required": ["kind", "category", "description", "unitOfMeasure", "quantity", "unitCost"]
+      },
+      "AdditionalCostInputDto": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "LABOR",
+              "FREIGHT",
+              "ENGINEERING_ART",
+              "EQUIPMENT_RENTAL",
+              "ELECTRICAL_ADEQUACY",
+              "TAXES",
+              "COMMISSION",
+              "CONTINGENCY",
+              "OTHER"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "example": "Homologação e ART do projeto elétrico"
+          },
+          "amount": {
+            "type": "number",
+            "example": 1200
+          },
+          "commercialTreatment": {
+            "type": "string",
+            "default": "INCLUDED_IN_PRICE",
+            "enum": ["INCLUDED_IN_PRICE", "BILLED_SEPARATELY", "INTERNAL_MONITORING"]
+          },
+          "justification": {
+            "type": "string"
+          }
+        },
+        "required": ["category", "description", "amount"]
+      },
+      "UpdateDesignVersionDto": {
+        "type": "object",
+        "properties": {
+          "targetMonthlyGenerationKwh": {
+            "type": "number"
+          },
+          "targetConsumptionKwh": {
+            "type": "number"
+          },
+          "specificYield": {
+            "type": "number"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DesignItemInputDto"
+            }
+          },
+          "additionalCosts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdditionalCostInputDto"
+            }
+          },
+          "contingencyAmount": {
+            "type": "number",
+            "default": 0
+          },
+          "markupPercent": {
+            "type": "number",
+            "example": 35,
+            "description": "Markup percentual sobre o custo total estimado"
+          },
+          "discountAmount": {
+            "type": "number",
+            "default": 0,
+            "description": "Desconto absoluto em moeda"
+          }
+        },
+        "required": ["items", "markupPercent"]
+      },
+      "ApproveDesignVersionDto": {
+        "type": "object",
+        "properties": {
+          "justification": {
+            "type": "string"
+          },
+          "overrideLowMarginReason": {
+            "type": "string",
+            "description": "Obrigatório se a margem for inferior à alçada mínima (20%)"
+          }
+        }
       }
     }
   }

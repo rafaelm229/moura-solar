@@ -12,6 +12,7 @@ const schema = `test_${randomUUID().replaceAll('-', '')}`;
 url.searchParams.set('schema', schema);
 const env = {
   ...process.env,
+  PATH: `${process.cwd()}/.bin:/tmp/moura-solar-tools:${process.env.PATH}`,
   DATABASE_URL: url.toString(),
   NODE_ENV: 'test',
   API_PORT: '3319',

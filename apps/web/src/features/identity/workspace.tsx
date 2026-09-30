@@ -18,6 +18,7 @@ import { Feedback } from './feedback';
 import { Customers } from '../commercial/customers';
 import { Opportunities } from '../commercial/opportunities';
 import { Activities } from '../commercial/activities';
+import { Catalog } from '../design/catalog';
 
 const destinations = [
   { id: 'sessions', label: 'Minhas sessões', permission: 'sessions:read_own', organization: false },
@@ -32,6 +33,7 @@ const destinations = [
     organization: false,
   },
   { id: 'activities', label: 'Atividades', permission: 'activities:manage', organization: false },
+  { id: 'catalog', label: 'Catálogo', permission: 'catalog:read', organization: false },
   { id: 'roles', label: 'Papéis', permission: 'roles:manage', organization: true },
 ];
 function Application() {
@@ -201,6 +203,7 @@ function Application() {
               />
             )}
             {tab === 'activities' && <Activities />}
+            {tab === 'catalog' && <Catalog />}
             {tab === 'sessions' && <Sessions onLogout={logoutLocal} />}
             {tab === 'members' && <Members />}
             {tab === 'roles' && <Roles />}

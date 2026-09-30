@@ -15,7 +15,7 @@ url.searchParams.set('schema', schema);
 
 const env = {
   ...process.env,
-  PATH: `/tmp/moura-solar-tools:${process.env.PATH}`,
+  PATH: `${process.cwd()}/.bin:/tmp/moura-solar-tools:${process.env.PATH}`,
   DATABASE_URL: url.toString(),
   NODE_ENV: 'test',
   API_PORT: '3321',

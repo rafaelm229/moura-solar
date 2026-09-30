@@ -660,6 +660,198 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/utility-units/{id}/readings': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['DesignController_getReadings'];
+    put?: never;
+    post: operations['DesignController_createOrUpdateReading'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/utility-units/{id}/readings/{readingId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete: operations['DesignController_deleteReading'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/opportunities/{id}/surveys': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['DesignController_getSurveys'];
+    put?: never;
+    post: operations['DesignController_createOrUpdateSurvey'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/surveys/{id}/complete': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['DesignController_completeSurvey'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/catalog': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['DesignController_listCatalog'];
+    put?: never;
+    post: operations['DesignController_createCatalogItem'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/catalog/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put: operations['DesignController_updateCatalogItem'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/designs/suggest': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['DesignController_suggestDesign'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/opportunities/{id}/designs': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['DesignController_getDesigns'];
+    put?: never;
+    post: operations['DesignController_createDesign'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/designs/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['DesignController_getDesign'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/designs/{id}/versions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['DesignController_createDesignVersion'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/design-versions/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put: operations['DesignController_updateDesignVersion'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/design-versions/{id}/approve': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['DesignController_approveDesignVersion'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1060,6 +1252,320 @@ export interface components {
       expectedVersion: number;
       dueAt: string;
       notes?: string;
+    };
+    EnergyReadingViewDto: {
+      id: string;
+      utilityUnitId: string;
+      referenceMonth: string;
+      consumptionKwh: number;
+      injectedKwh?: number | null;
+      billedAmount?: number | null;
+      source: string;
+      status: string;
+      notes?: string | null;
+      createdAt: string;
+    };
+    ConsumptionSummaryViewDto: {
+      readings: components['schemas']['EnergyReadingViewDto'][];
+      validMonthsCount: number;
+      hasIncompleteHistory: boolean;
+      averageMonthlyConsumptionKwh: number;
+      annualizedConsumptionKwh: number;
+      targetConsumptionKwh: number;
+    };
+    CreateEnergyReadingDto: {
+      /** @example 2026-08 */
+      referenceMonth: string;
+      /** @example 450.5 */
+      consumptionKwh: number;
+      /** @example 0 */
+      injectedKwh?: number;
+      /** @example 425.8 */
+      billedAmount?: number;
+      /**
+       * @default MANUAL
+       * @enum {string}
+       */
+      source: 'MANUAL' | 'BILL' | 'IMPORT';
+      notes?: string;
+    };
+    SurveyViewDto: {
+      id: string;
+      opportunityId: string;
+      utilityUnitId?: string | null;
+      type: string;
+      status: string;
+      tariffPerKwh: number;
+      connectionType: string;
+      voltage: string;
+      roofType?: string | null;
+      shadingKnown: boolean;
+      notes?: string | null;
+      assumptions?: Record<string, never> | null;
+      completedById?: string | null;
+      completedAt?: string | null;
+      version: number;
+      createdAt: string;
+    };
+    CreateSurveyDto: {
+      utilityUnitId?: string;
+      /**
+       * @default REMOTE
+       * @enum {string}
+       */
+      type: 'REMOTE' | 'ONSITE' | 'HYBRID';
+      /** @default 0.95 */
+      tariffPerKwh: number;
+      /**
+       * @default BIPHASIC
+       * @enum {string}
+       */
+      connectionType: 'MONOPHASIC' | 'BIPHASIC' | 'TRIPHASIC';
+      /** @default 220V */
+      voltage: string;
+      roofType?: string;
+      /** @default false */
+      shadingKnown: boolean;
+      notes?: string;
+      plannedAdditionalLoadKwh?: number;
+    };
+    CatalogItemViewDto: {
+      id: string;
+      sku: string;
+      kind: string;
+      category: string;
+      name: string;
+      manufacturer?: string | null;
+      model?: string | null;
+      unitOfMeasure: string;
+      powerRatingWp?: number | null;
+      powerRatingKw?: number | null;
+      referenceCost: number;
+      referencePrice?: number | null;
+      status: string;
+      version: number;
+    };
+    CreateCatalogItemDto: {
+      /** @example MOD-LONGI-630W */
+      sku: string;
+      /** @enum {string} */
+      kind: 'MATERIAL' | 'SERVICE';
+      /** @enum {string} */
+      category:
+        | 'MODULE'
+        | 'INVERTER'
+        | 'STRUCTURE'
+        | 'CABLE_ELECTRICAL'
+        | 'BATTERY'
+        | 'SERVICE_INSTALLATION'
+        | 'SERVICE_ENGINEERING'
+        | 'OTHER';
+      /** @example Módulo Fotovoltaico Longi 630W N-Type */
+      name: string;
+      /** @example Longi Solar */
+      manufacturer?: string;
+      /** @example Hi-MO X6 */
+      model?: string;
+      /** @default UN */
+      unitOfMeasure: string;
+      /** @example 630 */
+      powerRatingWp?: number;
+      /** @example 0 */
+      powerRatingKw?: number;
+      /** @example 650 */
+      referenceCost: number;
+      /** @example 850 */
+      referencePrice?: number;
+    };
+    UpdateCatalogItemDto: {
+      name?: string;
+      manufacturer?: string;
+      model?: string;
+      powerRatingWp?: number;
+      powerRatingKw?: number;
+      referenceCost?: number;
+      referencePrice?: number;
+      /** @enum {string} */
+      status?: 'ACTIVE' | 'INACTIVE';
+      /** @example 1 */
+      expectedVersion: number;
+    };
+    SuggestDesignDto: {
+      /** @example 600 */
+      targetMonthlyGenerationKwh: number;
+      /** @default 135 */
+      specificYield: number;
+      /** @default 630 */
+      preferredModulePowerWp: number;
+    };
+    DesignSuggestionViewDto: {
+      targetMonthlyGenerationKwh: number;
+      specificYield: number;
+      suggestedDcPowerKwp: number;
+      suggestedModuleQuantity: number;
+      suggestedModulePowerWp: number;
+      suggestedModuleSku?: string | null;
+      suggestedInverterPowerKw: number;
+      suggestedInverterQuantity: number;
+      suggestedInverterSku?: string | null;
+      dcAcRatio: number;
+      estimatedMonthlyGenerationKwh: number;
+      estimatedAnnualGenerationKwh: number;
+      classification: string;
+    };
+    DesignItemViewDto: {
+      id: string;
+      catalogItemId?: string | null;
+      kind: string;
+      category: string;
+      description: string;
+      unitOfMeasure: string;
+      quantity: number;
+      unitCost: number;
+      totalCost: number;
+      costSource: string;
+      isOptional: boolean;
+      justification?: string | null;
+    };
+    AdditionalCostViewDto: {
+      id: string;
+      category: string;
+      description: string;
+      amount: number;
+      commercialTreatment: string;
+      justification?: string | null;
+    };
+    PricingViewDto: {
+      directMaterialCost: number;
+      directServiceCost: number;
+      additionalCost: number;
+      contingencyAmount: number;
+      totalEstimatedCost: number;
+      markupPercent: number;
+      priceBeforeDiscount: number;
+      discountAmount: number;
+      finalPrice: number;
+      grossMarginAmount: number;
+      grossMarginPercent: number;
+      status: string;
+    };
+    DesignVersionViewDto: {
+      id: string;
+      designId: string;
+      versionNumber: number;
+      basedOnVersionId?: string | null;
+      status: string;
+      systemType: string;
+      targetMonthlyGenerationKwh: number;
+      targetConsumptionKwh: number;
+      dcPowerKwp: number;
+      acPowerKw: number;
+      estimatedMonthlyGenerationKwh: number;
+      estimatedAnnualGenerationKwh: number;
+      coveragePercent: number;
+      specificYield: number;
+      calculationVersion: string;
+      assumptionsSnapshot: Record<string, never>;
+      approvedById?: string | null;
+      approvedAt?: string | null;
+      justification?: string | null;
+      items: components['schemas']['DesignItemViewDto'][];
+      additionalCosts: components['schemas']['AdditionalCostViewDto'][];
+      pricing?: components['schemas']['PricingViewDto'] | null;
+      createdAt: string;
+    };
+    DesignViewDto: {
+      id: string;
+      opportunityId: string;
+      name: string;
+      currentVersionNumber: number;
+      versions: components['schemas']['DesignVersionViewDto'][];
+      createdAt: string;
+      updatedAt: string;
+    };
+    CreateDesignDto: {
+      /** @default Dimensionamento Padrão */
+      name: string;
+      /**
+       * @default ON_GRID
+       * @enum {string}
+       */
+      systemType: 'ON_GRID' | 'OFF_GRID' | 'HYBRID';
+      /** @example 600 */
+      targetMonthlyGenerationKwh: number;
+      /** @default 135 */
+      specificYield: number;
+    };
+    CreateDesignVersionDto: {
+      basedOnVersionId?: string;
+    };
+    DesignItemInputDto: {
+      catalogItemId?: string;
+      /** @enum {string} */
+      kind: 'MATERIAL' | 'SERVICE';
+      category: string;
+      description: string;
+      /** @default UN */
+      unitOfMeasure: string;
+      /** @example 10 */
+      quantity: number;
+      /** @example 650 */
+      unitCost: number;
+      /**
+       * @default CATALOG
+       * @enum {string}
+       */
+      costSource: 'CATALOG' | 'MANUAL' | 'QUOTE';
+      /** @default false */
+      isOptional: boolean;
+      justification?: string;
+    };
+    AdditionalCostInputDto: {
+      /** @enum {string} */
+      category:
+        | 'LABOR'
+        | 'FREIGHT'
+        | 'ENGINEERING_ART'
+        | 'EQUIPMENT_RENTAL'
+        | 'ELECTRICAL_ADEQUACY'
+        | 'TAXES'
+        | 'COMMISSION'
+        | 'CONTINGENCY'
+        | 'OTHER';
+      /** @example Homologação e ART do projeto elétrico */
+      description: string;
+      /** @example 1200 */
+      amount: number;
+      /**
+       * @default INCLUDED_IN_PRICE
+       * @enum {string}
+       */
+      commercialTreatment: 'INCLUDED_IN_PRICE' | 'BILLED_SEPARATELY' | 'INTERNAL_MONITORING';
+      justification?: string;
+    };
+    UpdateDesignVersionDto: {
+      targetMonthlyGenerationKwh?: number;
+      targetConsumptionKwh?: number;
+      specificYield?: number;
+      items: components['schemas']['DesignItemInputDto'][];
+      additionalCosts?: components['schemas']['AdditionalCostInputDto'][];
+      /** @default 0 */
+      contingencyAmount: number;
+      /**
+       * @description Markup percentual sobre o custo total estimado
+       * @example 35
+       */
+      markupPercent: number;
+      /**
+       * @description Desconto absoluto em moeda
+       * @default 0
+       */
+      discountAmount: number;
+    };
+    ApproveDesignVersionDto: {
+      justification?: string;
+      /** @description Obrigatório se a margem for inferior à alçada mínima (20%) */
+      overrideLowMarginReason?: string;
     };
   };
   responses: never;
@@ -2193,6 +2699,375 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['ActivityViewDto'];
+        };
+      };
+    };
+  };
+  DesignController_getReadings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ConsumptionSummaryViewDto'];
+        };
+      };
+    };
+  };
+  DesignController_createOrUpdateReading: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateEnergyReadingDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EnergyReadingViewDto'];
+        };
+      };
+    };
+  };
+  DesignController_deleteReading: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+        readingId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DesignController_getSurveys: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SurveyViewDto'][];
+        };
+      };
+    };
+  };
+  DesignController_createOrUpdateSurvey: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateSurveyDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SurveyViewDto'];
+        };
+      };
+    };
+  };
+  DesignController_completeSurvey: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SurveyViewDto'];
+        };
+      };
+    };
+  };
+  DesignController_listCatalog: {
+    parameters: {
+      query?: {
+        category?: string;
+        kind?: string;
+        status?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CatalogItemViewDto'][];
+        };
+      };
+    };
+  };
+  DesignController_createCatalogItem: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateCatalogItemDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CatalogItemViewDto'];
+        };
+      };
+    };
+  };
+  DesignController_updateCatalogItem: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateCatalogItemDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CatalogItemViewDto'];
+        };
+      };
+    };
+  };
+  DesignController_suggestDesign: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SuggestDesignDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DesignSuggestionViewDto'];
+        };
+      };
+    };
+  };
+  DesignController_getDesigns: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DesignViewDto'][];
+        };
+      };
+    };
+  };
+  DesignController_createDesign: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateDesignDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DesignViewDto'];
+        };
+      };
+    };
+  };
+  DesignController_getDesign: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DesignViewDto'];
+        };
+      };
+    };
+  };
+  DesignController_createDesignVersion: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['CreateDesignVersionDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DesignVersionViewDto'];
+        };
+      };
+    };
+  };
+  DesignController_updateDesignVersion: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateDesignVersionDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DesignVersionViewDto'];
+        };
+      };
+    };
+  };
+  DesignController_approveDesignVersion: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ApproveDesignVersionDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DesignVersionViewDto'];
         };
       };
     };
