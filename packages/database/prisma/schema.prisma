@@ -14,5 +14,162 @@ model Organization {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  memberships Membership[]
+  roles       Role[]
+  teams       Team[]
+
   @@map("organizations")
+}
+
+model User {
+  id           String       @id @default(uuid()) @db.Uuid
+  email        String       @unique
+  name         String
+  passwordHash String?      @map("password_hash")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  memberships  Membership[]
+
+  @@map("users")
+}
+
+model Membership {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  userId         String       @map("user_id") @db.Uuid
+  roleId         String       @map("role_id") @db.Uuid
+  status         String       @default("invited")
+  version        Int          @default(1)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  user           User         @relation(fields: [userId], references: [id])
+  role           Role         @relation(fields: [roleId], references: [id])
+  sessions       Session[]
+  links          AccessLink[]
+  teams          TeamMember[]
+
+  @@unique([organizationId, userId])
+  @@map("memberships")
+}
+
+model Role {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  name           String
+  version        Int          @default(1)
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  grants         RoleGrant[]
+  memberships    Membership[]
+
+  @@unique([organizationId, name])
+  @@map("roles")
+}
+
+model Permission {
+  key    String      @id
+  grants RoleGrant[]
+
+  @@map("permissions")
+}
+
+model RoleGrant {
+  roleId     String     @map("role_id") @db.Uuid
+  permission String
+  scope      String
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  capability Permission @relation(fields: [permission], references: [key])
+
+  @@id([roleId, permission])
+  @@map("role_grants")
+}
+
+model Team {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  name           String
+  version        Int          @default(1)
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  members        TeamMember[]
+
+  @@unique([organizationId, name])
+  @@map("teams")
+}
+
+model TeamMember {
+  teamId       String     @map("team_id") @db.Uuid
+  membershipId String     @map("membership_id") @db.Uuid
+  team         Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  membership   Membership @relation(fields: [membershipId], references: [id])
+
+  @@id([teamId, membershipId])
+  @@map("team_members")
+}
+
+model Session {
+  id              String         @id @default(uuid()) @db.Uuid
+  membershipId    String         @map("membership_id") @db.Uuid
+  accessHash      String         @unique @map("access_hash")
+  accessExpiresAt DateTime       @map("access_expires_at")
+  expiresAt       DateTime       @map("expires_at")
+  revokedAt       DateTime?      @map("revoked_at")
+  device          String
+  createdAt       DateTime       @default(now()) @map("created_at")
+  lastSeenAt      DateTime       @default(now()) @map("last_seen_at")
+  membership      Membership     @relation(fields: [membershipId], references: [id])
+  refreshTokens   RefreshToken[]
+
+  @@index([membershipId, revokedAt])
+  @@map("sessions")
+}
+
+model RefreshToken {
+  hash      String    @id
+  sessionId String    @map("session_id") @db.Uuid
+  usedAt    DateTime? @map("used_at")
+  session   Session   @relation(fields: [sessionId], references: [id])
+
+  @@map("refresh_tokens")
+}
+
+model AccessLink {
+  id           String     @id @default(uuid()) @db.Uuid
+  membershipId String     @map("membership_id") @db.Uuid
+  hash         String     @unique
+  kind         String
+  expiresAt    DateTime   @map("expires_at")
+  usedAt       DateTime?  @map("used_at")
+  membership   Membership @relation(fields: [membershipId], references: [id])
+
+  @@index([membershipId, kind])
+  @@map("access_links")
+}
+
+model AuditEvent {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String?  @map("organization_id") @db.Uuid
+  actorId        String?  @map("actor_id") @db.Uuid
+  action         String
+  entityId       String?  @map("entity_id")
+  traceId        String   @map("trace_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([organizationId, createdAt])
+  @@map("audit_events")
+}
+
+model IdentityCommand {
+  key         String   @id
+  actorId     String   @map("actor_id") @db.Uuid
+  fingerprint String
+  result      Json
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("identity_commands")
+}
+
+model LoginThrottle {
+  key      String   @id
+  attempts Int      @default(0)
+  resetAt  DateTime @map("reset_at")
+
+  @@map("login_throttles")
 }

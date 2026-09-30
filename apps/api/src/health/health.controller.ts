@@ -1,8 +1,10 @@
+import { Public } from '../identity/identity.guard';
 import { Controller, Get, ServiceUnavailableException } from '@nestjs/common';
 import type { HealthResponse } from '@moura-solar/contracts';
 
 import { PrismaService } from '../database/prisma.service';
 
+@Public()
 @Controller('health')
 export class HealthController {
   constructor(private readonly prisma: PrismaService) {}

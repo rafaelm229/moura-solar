@@ -1,6 +1,7 @@
 # SPEC-002 — Identidade, sessões e permissões
 
-**Status:** Proposta para validação  
+**Status:** Aprovada para M1 interno em 29/09/2026
+
 **Versão:** 0.1.0
 
 ## 1. Objetivo
@@ -150,9 +151,18 @@ da produção pública.
 
 ## 11. Critérios de aprovação
 
-- [ ] Papéis iniciais confirmados.
-- [ ] Matriz de permissões validada.
-- [ ] Escopos próprio/equipe/organização definidos.
+- [x] Papéis iniciais confirmados.
+- [x] Matriz de permissões validada.
+- [x] Escopos próprio/equipe/organização definidos.
 - [ ] Política de sessão e revogação aprovada.
 - [ ] Recuperação de senha e MFA detalhados antes da implementação pública.
 - [ ] Casos negativos de autorização incluídos nos testes.
+
+## 12. Decisões de implementação aprovadas
+
+- Matriz completa e escopos: [catálogo aprovado](matriz-proposta.md).
+- Convites entregues por link pelo administrador, sem envio automático.
+- Recuperação mediada por administrador com link de uso único; usuário define a senha.
+- Sete papéis iniciais; suporte delegado ao gerente, conforme matriz.
+- Política técnica e roteiro: [operação do M1](../../docs/m1-operacao.md).
+- Aprovação não inclui alçadas numéricas ou gates pendentes de módulos futuros.

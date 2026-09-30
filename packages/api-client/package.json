@@ -1,0 +1,19 @@
+{
+  "name": "@moura-solar/api-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.15.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit --strict --skipLibCheck --moduleResolution bundler --module esnext --target es2022 src/index.ts",
+    "lint": "pnpm typecheck"
+  }
+}

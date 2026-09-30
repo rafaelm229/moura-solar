@@ -26,6 +26,10 @@ export class ApiExceptionFilter implements ExceptionFilter {
   }
 
   private codeFor(exception: unknown, status: number): string {
+    if (exception instanceof HttpException) {
+      const body = exception.getResponse();
+      if (typeof body === 'object' && 'code' in body) return String(body.code);
+    }
     if (exception instanceof HttpException && status === HttpStatus.SERVICE_UNAVAILABLE) {
       return 'SERVICE_NOT_READY';
     }

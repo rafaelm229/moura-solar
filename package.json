@@ -16,11 +16,19 @@
     "format": "prettier --write .",
     "db:generate": "pnpm --filter @moura-solar/database generate",
     "db:migrate": "pnpm --filter @moura-solar/database migrate",
-    "db:deploy": "pnpm --filter @moura-solar/database deploy",
+    "db:deploy": "pnpm --filter @moura-solar/database run deploy",
     "db:studio": "pnpm --filter @moura-solar/database studio",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "api:generate": "node scripts/generate-api.mjs",
+    "test:integration": "pnpm --filter @moura-solar/api build && node --test tests/identity.integration.mjs",
+    "test:e2e": "pnpm --filter @moura-solar/api build && playwright test",
+    "test:migrations": "node tests/migrations.mjs",
+    "identity:bootstrap": "node --env-file=.env scripts/bootstrap.mjs",
+    "db:seed": "node --env-file=.env scripts/seed-development.mjs"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "openapi-typescript": "^7.13.0",
     "prettier": "^3.6.2",
     "turbo": "^2.5.6",
     "typescript": "^5.9.2"
