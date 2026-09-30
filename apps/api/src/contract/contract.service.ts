@@ -5,7 +5,9 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { basename } from 'node:path';
 import { PrismaService } from '../database/prisma.service';
+import { AuditService } from '../database/audit.service';
 import { StorageService } from '../proposal/storage.service';
 import { ContractGeneratorService, type ContractTemplateData } from './contract-generator.service';
 import {
@@ -27,6 +29,7 @@ export class ContractService {
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
     private readonly generator: ContractGeneratorService,
+    private readonly audit: AuditService,
   ) {}
 
   async createContract(organizationId: string, userId: string, dto: CreateContractDto) {
@@ -334,111 +337,159 @@ export class ContractService {
     const docxHash = this.generator.computeHash(docxBuffer);
     const pdfHash = this.generator.computeHash(pdfBuffer);
 
-    // Save in Database
-    const contract = await this.prisma.$transaction(async (tx) => {
-      const createdContract = await tx.contract.create({
-        data: {
-          organizationId,
-          opportunityId: opp.id,
-          acceptedProposalVersionId: acceptedProposalVersion.id,
-          code,
-          state: 'READY',
-          notes: dto.notes,
-        },
-      });
+    // Save in Database with concurrency protection, idempotent check and audit
+    let attempts = 0;
+    let contract: any;
 
-      const createdVersion = await tx.contractVersion.create({
-        data: {
-          organizationId,
-          contractId: createdContract.id,
-          versionNumber: 1,
-          status: 'READY',
-          partySnapshot,
-          technicalSnapshot,
-          commercialSnapshot,
-          scopeSnapshot,
-          clausesSnapshot,
-          contentHash: pdfHash,
-          createdById: userId,
-        },
-      });
+    while (true) {
+      try {
+        contract = await this.prisma.$transaction(async (tx) => {
+          const alreadyExists = await tx.contract.findFirst({
+            where: {
+              opportunityId: opp.id,
+              state: { notIn: ['CANCELED', 'TERMINATED'] },
+            },
+            include: {
+              versions: {
+                include: { documents: true },
+              },
+              deliveries: true,
+              signedReviews: true,
+              projectGates: true,
+            },
+          });
 
-      await tx.contract.update({
-        where: { id: createdContract.id },
-        data: { activeVersionId: createdVersion.id },
-      });
+          if (alreadyExists) {
+            return alreadyExists;
+          }
 
-      // Save document records
-      const docxKey = `contracts/${createdContract.id}/v1/contrato-${code}.docx`;
-      const pdfKey = `contracts/${createdContract.id}/v1/contrato-${code}.pdf`;
+          const currentCount = await tx.contract.count({
+            where: { organizationId },
+          });
+          const currentCode = `CTR-${year}-${String(currentCount + 1).padStart(4, '0')}`;
 
-      await this.storage.upload(
-        'moura-solar-contracts',
-        docxKey,
-        docxBuffer,
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      );
-      await this.storage.upload('moura-solar-contracts', pdfKey, pdfBuffer, 'application/pdf');
+          const createdContract = await tx.contract.create({
+            data: {
+              organizationId,
+              opportunityId: opp.id,
+              acceptedProposalVersionId: acceptedProposalVersion.id,
+              code: currentCode,
+              state: 'READY',
+              notes: dto.notes,
+            },
+          });
 
-      await tx.contractDocument.create({
-        data: {
-          organizationId,
-          contractVersionId: createdVersion.id,
-          type: 'DOCX_CONTRACT',
-          fileName: `contrato-${code}.docx`,
-          fileSize: docxBuffer.length,
-          mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          s3Bucket: 'moura-solar-contracts',
-          s3Key: docxKey,
-          contentHash: docxHash,
-          generationStatus: 'READY',
-        },
-      });
+          const createdVersion = await tx.contractVersion.create({
+            data: {
+              organizationId,
+              contractId: createdContract.id,
+              versionNumber: 1,
+              status: 'READY',
+              partySnapshot,
+              technicalSnapshot,
+              commercialSnapshot,
+              scopeSnapshot,
+              clausesSnapshot,
+              contentHash: pdfHash,
+              createdById: userId,
+            },
+          });
 
-      await tx.contractDocument.create({
-        data: {
-          organizationId,
-          contractVersionId: createdVersion.id,
-          type: 'PDF_CONTRACT',
-          fileName: `contrato-${code}.pdf`,
-          fileSize: pdfBuffer.length,
-          mimeType: 'application/pdf',
-          s3Bucket: 'moura-solar-contracts',
-          s3Key: pdfKey,
-          contentHash: pdfHash,
-          generationStatus: 'READY',
-        },
-      });
+          await tx.contract.update({
+            where: { id: createdContract.id },
+            data: { activeVersionId: createdVersion.id },
+          });
 
-      // Initialize ProjectGate for Contract (Pending Gate C)
-      await tx.projectGate.create({
-        data: {
-          organizationId,
-          opportunityId: opp.id,
-          contractId: createdContract.id,
-          gateType: 'CONTRACT',
-          status: 'PENDING',
-          evidenceSummary: `Contrato ${code} emitido e aguardando assinatura formal`,
-        },
-      });
+          // Save document records
+          const docxKey = `contracts/${createdContract.id}/v1/contrato-${currentCode}.docx`;
+          const pdfKey = `contracts/${createdContract.id}/v1/contrato-${currentCode}.pdf`;
 
-      // Create activity for contract review & signature collection
-      await tx.activity.create({
-        data: {
-          organizationId,
-          opportunityId: opp.id,
-          customerId: opp.customerId,
-          type: 'MEETING',
-          subject: `Assinatura de Contrato: ${code}`,
-          description: `Minuta contratual gerada (DOCX e PDF) a partir da proposta ${parentProposal?.code || ''}. Coletar assinaturas das partes e testemunhas.`,
-          assigneeUserId: opp.ownerUserId,
-          dueAt: new Date(Date.now() + 3 * 86400000),
-          status: 'OPEN',
-        },
-      });
+          await this.storage.upload(
+            'moura-solar-contracts',
+            docxKey,
+            docxBuffer,
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          );
+          await this.storage.upload('moura-solar-contracts', pdfKey, pdfBuffer, 'application/pdf');
 
-      return createdContract;
-    });
+          await tx.contractDocument.create({
+            data: {
+              organizationId,
+              contractVersionId: createdVersion.id,
+              type: 'DOCX_CONTRACT',
+              fileName: `contrato-${currentCode}.docx`,
+              fileSize: docxBuffer.length,
+              mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+              s3Bucket: 'moura-solar-contracts',
+              s3Key: docxKey,
+              contentHash: docxHash,
+              generationStatus: 'READY',
+            },
+          });
+
+          await tx.contractDocument.create({
+            data: {
+              organizationId,
+              contractVersionId: createdVersion.id,
+              type: 'PDF_CONTRACT',
+              fileName: `contrato-${currentCode}.pdf`,
+              fileSize: pdfBuffer.length,
+              mimeType: 'application/pdf',
+              s3Bucket: 'moura-solar-contracts',
+              s3Key: pdfKey,
+              contentHash: pdfHash,
+              generationStatus: 'READY',
+            },
+          });
+
+          // Initialize ProjectGate for Contract (Pending Gate C)
+          await tx.projectGate.create({
+            data: {
+              organizationId,
+              opportunityId: opp.id,
+              contractId: createdContract.id,
+              gateType: 'CONTRACT',
+              status: 'PENDING',
+              evidenceSummary: `Contrato ${currentCode} emitido e aguardando assinatura formal`,
+            },
+          });
+
+          // Create activity for contract review & signature collection
+          await tx.activity.create({
+            data: {
+              organizationId,
+              opportunityId: opp.id,
+              customerId: opp.customerId,
+              type: 'MEETING',
+              subject: `Assinatura de Contrato: ${currentCode}`,
+              description: `Minuta contratual gerada (DOCX e PDF) a partir da proposta ${parentProposal?.code || ''}. Coletar assinaturas das partes e testemunhas.`,
+              assigneeUserId: opp.ownerUserId,
+              dueAt: new Date(Date.now() + 3 * 86400000),
+              status: 'OPEN',
+            },
+          });
+
+          await this.audit.record(
+            {
+              organizationId,
+              actorId: userId,
+              action: 'CONTRACT_CREATED',
+              entityId: createdContract.id,
+            },
+            tx,
+          );
+
+          return createdContract;
+        });
+        break;
+      } catch (err: any) {
+        if (err.code === 'P2002' && attempts < 5) {
+          attempts++;
+          continue;
+        }
+        throw err;
+      }
+    }
 
     return this.getContract(organizationId, contract.id);
   }
@@ -650,6 +701,16 @@ export class ContractService {
         },
       });
 
+      await this.audit.record(
+        {
+          organizationId,
+          actorId: userId,
+          action: 'CONTRACT_DELIVERED',
+          entityId: contract.id,
+        },
+        tx,
+      );
+
       return del;
     });
 
@@ -663,6 +724,12 @@ export class ContractService {
     dto: UploadSignedContractDto,
   ) {
     const contract = await this.getContract(organizationId, contractId);
+    if (['CANCELED', 'TERMINATED', 'ACTIVE'].includes(contract.state)) {
+      throw new BadRequestException(
+        `Não é possível enviar contrato assinado para um contrato no estado ${contract.state}.`,
+      );
+    }
+
     const activeVersion = contract.versions[0];
     if (!activeVersion) {
       throw new NotFoundException('Versão do contrato não encontrada');
@@ -670,11 +737,24 @@ export class ContractService {
 
     const buffer = Buffer.from(dto.fileBase64, 'base64');
     if (buffer.length === 0) {
-      throw new BadRequestException('O arquivo enviado está vazio');
+      throw new BadRequestException('O arquivo enviado está vazio.');
     }
     if (buffer.length > 25 * 1024 * 1024) {
-      throw new BadRequestException('O arquivo enviado excede o limite máximo permitido de 25MB');
+      throw new BadRequestException('O arquivo enviado excede o limite máximo permitido de 25MB.');
     }
+
+    // PDF Magic Bytes: deve começar com %PDF- (0x25 0x50 0x44 0x46 0x2D)
+    const magicHeader = buffer.subarray(0, 5).toString('ascii');
+    if (!magicHeader.startsWith('%PDF-')) {
+      throw new BadRequestException(
+        'O arquivo enviado não possui uma assinatura binária de PDF válida (%PDF-).',
+      );
+    }
+
+    const sanitizedBase = basename(dto.fileName).replace(/[^a-zA-Z0-9._-]/g, '_');
+    const safeFileName = sanitizedBase.toLowerCase().endsWith('.pdf')
+      ? sanitizedBase
+      : `${sanitizedBase}.pdf`;
 
     const contentHash = this.generator.computeHash(buffer);
     const s3Key = `contracts/${contract.id}/signed/contrato-assinado-${Date.now()}.pdf`;
@@ -692,7 +772,7 @@ export class ContractService {
           organizationId,
           contractVersionId: activeVersion.id,
           type: 'SIGNED_UPLOAD',
-          fileName: dto.fileName,
+          fileName: safeFileName,
           fileSize: buffer.length,
           mimeType: dto.mimeType || 'application/pdf',
           s3Bucket: 'moura-solar-contracts',
@@ -716,12 +796,22 @@ export class ContractService {
           customerId: contract.opportunity.customer.id,
           type: 'TASK',
           subject: `Conferência de Assinatura: ${contract.code}`,
-          description: `Novo arquivo assinado "${dto.fileName}" anexado. Realizar conferência das partes, páginas completas, correspondência da versão e legibilidade antes de liberar o Gate C.`,
+          description: `Novo arquivo assinado "${safeFileName}" anexado. Realizar conferência das partes, páginas completas, correspondência da versão e legibilidade antes de liberar o Gate C.`,
           assigneeUserId: userId,
           dueAt: new Date(Date.now() + 24 * 3600000),
           status: 'OPEN',
         },
       });
+
+      await this.audit.record(
+        {
+          organizationId,
+          actorId: userId,
+          action: 'CONTRACT_SIGNED_UPLOADED',
+          entityId: contract.id,
+        },
+        tx,
+      );
 
       return document;
     });
@@ -736,6 +826,12 @@ export class ContractService {
     dto: VerifySignedContractDto,
   ) {
     const contract = await this.getContract(organizationId, contractId);
+
+    if (contract.state !== 'SIGNED_UPLOADED') {
+      throw new BadRequestException(
+        `Para realizar a conferência formal, o contrato deve estar no estado SIGNED_UPLOADED. Estado atual: ${contract.state}`,
+      );
+    }
 
     if (dto.decision === SignedReviewDecision.VERIFIED) {
       // SPEC-007 Item 10: all checklist criteria must pass
@@ -877,6 +973,19 @@ export class ContractService {
         });
       }
 
+      await this.audit.record(
+        {
+          organizationId,
+          actorId: userId,
+          action:
+            dto.decision === SignedReviewDecision.VERIFIED
+              ? 'CONTRACT_VERIFIED_GATE_C'
+              : 'CONTRACT_SIGNED_REJECTED',
+          entityId: contract.id,
+        },
+        tx,
+      );
+
       return review;
     });
 
@@ -890,12 +999,28 @@ export class ContractService {
     dto: CreateAmendmentDto,
   ) {
     const contract = await this.getContract(organizationId, contractId);
-    await this.prisma.contract.update({
-      where: { id: contract.id },
-      data: {
-        state: 'AMENDED',
-        notes: `${contract.notes ? `${contract.notes}\n` : ''}Aditivo: ${dto.reason}`,
-      },
+    if (['CANCELED', 'TERMINATED'].includes(contract.state)) {
+      throw new BadRequestException(
+        `Não é possível criar aditivo para um contrato no estado ${contract.state}.`,
+      );
+    }
+    await this.prisma.$transaction(async (tx) => {
+      await tx.contract.update({
+        where: { id: contract.id },
+        data: {
+          state: 'AMENDED',
+          notes: `${contract.notes ? `${contract.notes}\n` : ''}Aditivo: ${dto.reason}`,
+        },
+      });
+      await this.audit.record(
+        {
+          organizationId,
+          actorId: userId,
+          action: 'CONTRACT_AMENDMENT_CREATED',
+          entityId: contract.id,
+        },
+        tx,
+      );
     });
     return this.getContract(organizationId, contractId);
   }
@@ -907,12 +1032,28 @@ export class ContractService {
     dto: CancelContractDto,
   ) {
     const contract = await this.getContract(organizationId, contractId);
-    await this.prisma.contract.update({
-      where: { id: contract.id },
-      data: {
-        state: 'CANCELED',
-        notes: `${contract.notes ? `${contract.notes}\n` : ''}Cancelado: ${dto.reason}`,
-      },
+    if (['CANCELED', 'TERMINATED'].includes(contract.state)) {
+      throw new BadRequestException(
+        `O contrato já está no estado ${contract.state} e não pode ser cancelado novamente.`,
+      );
+    }
+    await this.prisma.$transaction(async (tx) => {
+      await tx.contract.update({
+        where: { id: contract.id },
+        data: {
+          state: 'CANCELED',
+          notes: `${contract.notes ? `${contract.notes}\n` : ''}Cancelado: ${dto.reason}`,
+        },
+      });
+      await this.audit.record(
+        {
+          organizationId,
+          actorId: userId,
+          action: 'CONTRACT_CANCELED',
+          entityId: contract.id,
+        },
+        tx,
+      );
     });
     return this.getContract(organizationId, contractId);
   }

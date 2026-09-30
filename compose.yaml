@@ -40,7 +40,9 @@ services:
       - >-
         until mc alias set local http://minio:9000 "$${S3_ACCESS_KEY}" "$${S3_SECRET_KEY}"; do sleep 2; done;
         mc mb --ignore-existing "local/$${S3_BUCKET}";
-        mc anonymous set none "local/$${S3_BUCKET}"
+        mc anonymous set none "local/$${S3_BUCKET}";
+        mc mb --ignore-existing "local/moura-solar-contracts";
+        mc anonymous set none "local/moura-solar-contracts"
     environment:
       S3_ACCESS_KEY: ${S3_ACCESS_KEY:-moura-local}
       S3_SECRET_KEY: ${S3_SECRET_KEY:-change-me-minio}
@@ -75,6 +77,8 @@ services:
     environment: *app-environment
     ports:
       - '${API_PORT:-3001}:3001'
+    volumes:
+      - storage_data:/app/.storage
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -107,3 +111,4 @@ services:
 volumes:
   postgres_data:
   minio_data:
+  storage_data:

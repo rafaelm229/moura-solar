@@ -7,6 +7,7 @@ import { randomUUID } from 'node:crypto';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import type { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
 
@@ -14,11 +15,13 @@ import { AppModule } from './app.module';
 import { ApiExceptionFilter } from './shared/api-exception.filter';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
   const config = app.get(ConfigService);
 
   const log = pino();
   app.use(helmet());
+  app.useBodyParser('json', { limit: '25mb' });
+  app.useBodyParser('urlencoded', { limit: '25mb', extended: true });
   app.enableCors({ origin: config.getOrThrow<string>('WEB_ORIGIN'), credentials: true });
   app.use((request: Request, response: Response, next: NextFunction) => {
     const incoming = request.header('x-request-id');

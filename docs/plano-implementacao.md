@@ -22,19 +22,20 @@ O desenvolvimento começa validando os riscos que quebraram a versão anterior:
 
 ## Marcos
 
-| Marco | Entrega demonstrável                                   | Dependências                    |
-| ----- | ------------------------------------------------------ | ------------------------------- |
-| M0    | Monorepo, ambientes, banco, CI e convenções            | SPEC-000                        |
-| M1    | Login, equipe, sessões e permissões                    | M0, SPEC-002                    |
-| M2    | Cliente, unidade consumidora, oportunidade e atividade | M1, SPEC-004                    |
-| M3    | Consumo, dimensionamento, custos e proposta PDF        | M2, SPEC-005/006                |
-| M4    | Aceite, contrato, documentos e gates                   | M3, SPEC-007                    |
-| M5    | Contas, parcelas, recebimentos, comissões e margem     | M4, SPEC-008                    |
-| M6    | Materiais, depósitos, compras, reservas e custo médio  | M5, SPEC-009                    |
-| M7    | Engenharia, homologação, agenda e instalação           | M6, SPEC-010                    |
-| M8    | Pós-venda, garantia, monitoramento e desempenho        | M7, SPEC-011                    |
-| M9    | Automações, indicadores e operação assistida           | M2–M8, SPEC-012                 |
-| M10   | Aplicativo React Native complementar                   | Web operacional e APIs estáveis |
+| Marco | Entrega demonstrável                                    | Dependências                    | Status    |
+| ----- | ------------------------------------------------------- | ------------------------------- | --------- |
+| M0    | Monorepo, ambientes, banco, CI e convenções             | SPEC-000                        | Concluído |
+| M1    | Login, equipe, sessões e permissões                     | M0, SPEC-002                    | Concluído |
+| M2    | Cliente, unidade consumidora, oportunidade e atividade  | M1, SPEC-004                    | Concluído |
+| M3    | Consumo, dimensionamento solar e composição de custos   | M2, SPEC-005                    | Concluído |
+| M4    | Propostas comerciais, motor PDF institucional e aceite  | M3, SPEC-006                    | Concluído |
+| M5    | Contratos comerciais, minutas DOCX/PDF, upload e Gate C | M4, SPEC-007                    | Concluído |
+| M6    | Contas, parcelas, recebimentos, comissões e margem      | M5, SPEC-008                    | A iniciar |
+| M7    | Materiais, depósitos, compras, reservas e custo médio   | M6, SPEC-009                    | Planejado |
+| M8    | Engenharia, homologação, agenda e instalação            | M7, SPEC-010                    | Planejado |
+| M9    | Pós-venda, garantia, monitoramento e desempenho         | M8, SPEC-011                    | Planejado |
+| M10   | Automações, indicadores e operação assistida            | M2–M9, SPEC-012                 | Planejado |
+| M11   | Aplicativo React Native complementar                    | Web operacional e APIs estáveis | Planejado |
 
 ## M0 — Fundação executável
 

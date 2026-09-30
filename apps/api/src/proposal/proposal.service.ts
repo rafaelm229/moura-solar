@@ -17,6 +17,7 @@ import {
 } from './proposal.dto';
 import { createHash } from 'node:crypto';
 import { ConfigService } from '@nestjs/config';
+import { AuditService } from '../database/audit.service';
 
 @Injectable()
 export class ProposalService {
@@ -25,6 +26,7 @@ export class ProposalService {
     private readonly pdfService: PdfService,
     private readonly storageService: StorageService,
     private readonly config: ConfigService,
+    private readonly audit: AuditService,
   ) {}
 
   async createProposal(organizationId: string, userId: string, dto: CreateProposalDto) {
@@ -188,48 +190,71 @@ export class ProposalService {
       )
       .digest('hex');
 
-    // 6. Generate human readable code (e.g. PROP-0001)
-    const count = await this.prisma.proposal.count({ where: { organizationId } });
-    const code = `PROP-${(count + 1).toString().padStart(4, '0')}`;
-
-    // 7. Persist Proposal and ProposalVersion (v1)
+    // 6. Persist Proposal and ProposalVersion (v1) with transactional code generation and retry
     const validityDays = dto.validityDays ?? 10;
-    const created = await this.prisma.$transaction(async (tx) => {
-      const prop = await tx.proposal.create({
-        data: {
-          organizationId,
-          opportunityId: opportunity.id,
-          code,
-        },
-      });
+    let attempts = 0;
+    let created: { proposal: any; version: any };
 
-      const version = await tx.proposalVersion.create({
-        data: {
-          organizationId,
-          proposalId: prop.id,
-          versionNumber: 1,
-          designVersionId: designVersion.id,
-          status: 'DRAFT',
-          customerSnapshot,
-          utilityUnitSnapshot,
-          technicalSnapshot,
-          commercialSnapshot,
-          validityDays,
-          currency: 'BRL',
-          finalPrice: designVersion.pricing!.finalPrice,
-          paymentConditions: (dto.paymentConditions as any) ?? {
-            standard: 'À vista com 5% de desconto ou Financiamento Solar Bancário em até 84x',
-          },
-          observations: dto.observations,
-          contentHash,
-          createdById: userId,
-        },
-      });
+    while (true) {
+      try {
+        created = await this.prisma.$transaction(async (tx) => {
+          const count = await tx.proposal.count({ where: { organizationId } });
+          const code = `PROP-${(count + 1).toString().padStart(4, '0')}`;
 
-      return { proposal: prop, version };
-    });
+          const prop = await tx.proposal.create({
+            data: {
+              organizationId,
+              opportunityId: opportunity.id,
+              code,
+            },
+          });
 
-    // 8. Generate and store PDF immediately so the document is READY
+          const version = await tx.proposalVersion.create({
+            data: {
+              organizationId,
+              proposalId: prop.id,
+              versionNumber: 1,
+              designVersionId: designVersion.id,
+              status: 'DRAFT',
+              customerSnapshot,
+              utilityUnitSnapshot,
+              technicalSnapshot,
+              commercialSnapshot,
+              validityDays,
+              currency: 'BRL',
+              finalPrice: designVersion.pricing!.finalPrice,
+              paymentConditions: (dto.paymentConditions as any) ?? {
+                standard: 'À vista com 5% de desconto ou Financiamento Solar Bancário em até 84x',
+              },
+              observations: dto.observations,
+              contentHash,
+              createdById: userId,
+            },
+          });
+
+          await this.audit.record(
+            {
+              organizationId,
+              actorId: userId,
+              action: 'PROPOSAL_CREATED',
+              entityId: prop.id,
+            },
+            tx,
+          );
+
+          return { proposal: prop, version };
+        });
+        break;
+      } catch (err: any) {
+        if (err.code === 'P2002' && attempts < 5) {
+          attempts++;
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    // 7. Generate and store PDF immediately so the document is READY
     await this.generatePdf(organizationId, created.version.id);
 
     return this.getProposal(organizationId, created.proposal.id);
@@ -572,6 +597,17 @@ export class ProposalService {
         },
       });
 
+      // 5. Audit event
+      await this.audit.record(
+        {
+          organizationId,
+          actorId: userId,
+          action: 'PROPOSAL_DELIVERED',
+          entityId: version.proposal.id,
+        },
+        tx,
+      );
+
       return { delivery, version: updatedVersion };
     });
 
@@ -584,53 +620,54 @@ export class ProposalService {
     userId: string,
     dto: RecordProposalAcceptanceDto,
   ) {
-    const version = await this.prisma.proposalVersion.findFirst({
-      where: { id: versionId, organizationId },
-      include: {
-        proposal: {
-          include: {
-            opportunity: true,
-          },
-        },
-      },
-    });
-
-    if (!version) {
-      throw new NotFoundException('Versão de proposta não encontrada');
-    }
-
-    // SPEC-006 item 19: Only ONE version can be accepted per opportunity
-    const existingAccepted = await this.prisma.proposal.findFirst({
-      where: {
-        opportunityId: version.proposal.opportunityId,
-        acceptedVersionId: { not: null },
-      },
-    });
-
-    if (existingAccepted) {
-      throw new ConflictException(
-        'Esta oportunidade já possui uma proposta comercial aceita formalmente',
-      );
-    }
-
-    // SPEC-006: Version must be SENT or VIEWED to be accepted
-    if (version.status !== 'SENT' && version.status !== 'VIEWED') {
-      throw new UnprocessableEntityException(
-        `Apenas propostas enviadas (SENT) podem ser aceitas. Status atual: ${version.status}`,
-      );
-    }
-
-    // Check expiration
-    if (version.validUntil && new Date(version.validUntil).getTime() < Date.now()) {
-      throw new UnprocessableEntityException(
-        `Esta proposta expirou em ${new Intl.DateTimeFormat('pt-BR').format(new Date(version.validUntil))} e não pode ser aceita sem renovação`,
-      );
-    }
-
     const acceptedAt = new Date();
 
     const result = await this.prisma.$transaction(async (tx) => {
-      // 1. Record Acceptance
+      // 1. Fetch version and check inside transaction to prevent TOCTOU race conditions
+      const version = await tx.proposalVersion.findFirst({
+        where: { id: versionId, organizationId },
+        include: {
+          proposal: {
+            include: {
+              opportunity: true,
+            },
+          },
+        },
+      });
+
+      if (!version) {
+        throw new NotFoundException('Versão de proposta não encontrada');
+      }
+
+      // SPEC-006 item 19: Only ONE version can be accepted per opportunity
+      const existingAccepted = await tx.proposal.findFirst({
+        where: {
+          opportunityId: version.proposal.opportunityId,
+          acceptedVersionId: { not: null },
+        },
+      });
+
+      if (existingAccepted) {
+        throw new ConflictException(
+          'Esta oportunidade já possui uma proposta comercial aceita formalmente',
+        );
+      }
+
+      // SPEC-006: Version must be SENT or VIEWED to be accepted
+      if (version.status !== 'SENT' && version.status !== 'VIEWED') {
+        throw new UnprocessableEntityException(
+          `Apenas propostas enviadas (SENT) podem ser aceitas. Status atual: ${version.status}`,
+        );
+      }
+
+      // Check expiration
+      if (version.validUntil && new Date(version.validUntil).getTime() < Date.now()) {
+        throw new UnprocessableEntityException(
+          `Esta proposta expirou em ${new Intl.DateTimeFormat('pt-BR').format(new Date(version.validUntil))} e não pode ser aceita sem renovação`,
+        );
+      }
+
+      // 2. Record Acceptance
       const acceptance = await tx.proposalAcceptance.create({
         data: {
           organizationId,
@@ -643,19 +680,19 @@ export class ProposalService {
         },
       });
 
-      // 2. Mark this version ACCEPTED
+      // 3. Mark this version ACCEPTED
       await tx.proposalVersion.update({
         where: { id: version.id },
         data: { status: 'ACCEPTED' },
       });
 
-      // 3. Update proposal acceptedVersionId
+      // 4. Update proposal acceptedVersionId
       await tx.proposal.update({
         where: { id: version.proposalId },
         data: { acceptedVersionId: version.id },
       });
 
-      // 4. Mark all other open versions of the proposal as SUPERSEDED
+      // 5. Mark all other open versions of the proposal as SUPERSEDED
       await tx.proposalVersion.updateMany({
         where: {
           proposalId: version.proposalId,
@@ -665,7 +702,7 @@ export class ProposalService {
         data: { status: 'SUPERSEDED' },
       });
 
-      // 5. Advance Opportunity state to CONTRATACAO
+      // 6. Advance Opportunity state to CONTRATACAO
       const opp = version.proposal.opportunity;
       await tx.opportunity.update({
         where: { id: opp.id },
@@ -686,7 +723,7 @@ export class ProposalService {
         },
       });
 
-      // 6. Create contract formalization activity
+      // 7. Create contract formalization activity
       await tx.activity.create({
         data: {
           organizationId,
@@ -700,6 +737,17 @@ export class ProposalService {
           status: 'OPEN',
         },
       });
+
+      // 8. Audit event
+      await this.audit.record(
+        {
+          organizationId,
+          actorId: userId,
+          action: 'PROPOSAL_ACCEPTED',
+          entityId: version.proposalId,
+        },
+        tx,
+      );
 
       return acceptance;
     });
@@ -721,15 +769,31 @@ export class ProposalService {
       throw new NotFoundException('Versão de proposta não encontrada');
     }
 
-    return this.prisma.proposalVersion.update({
-      where: { id: version.id },
-      data: {
-        status: 'REJECTED',
-        observations: version.observations
-          ? `${version.observations} | Recusa: ${dto.reason}`
-          : `Recusa: ${dto.reason}`,
-      },
+    const result = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.proposalVersion.update({
+        where: { id: version.id },
+        data: {
+          status: 'REJECTED',
+          observations: version.observations
+            ? `${version.observations} | Recusa: ${dto.reason}`
+            : `Recusa: ${dto.reason}`,
+        },
+      });
+
+      await this.audit.record(
+        {
+          organizationId,
+          actorId: userId,
+          action: 'PROPOSAL_REJECTED',
+          entityId: version.proposalId,
+        },
+        tx,
+      );
+
+      return updated;
     });
+
+    return result;
   }
 
   async createNextVersion(organizationId: string, versionId: string, userId: string) {
@@ -742,29 +806,61 @@ export class ProposalService {
       throw new NotFoundException('Versão base da proposta não encontrada');
     }
 
-    const nextNumber = baseVersion.versionNumber + 1;
+    let attempts = 0;
+    let nextVersion: any;
 
-    const nextVersion = await this.prisma.proposalVersion.create({
-      data: {
-        organizationId,
-        proposalId: baseVersion.proposalId,
-        versionNumber: nextNumber,
-        designVersionId: baseVersion.designVersionId,
-        basedOnVersionId: baseVersion.id,
-        status: 'DRAFT',
-        customerSnapshot: baseVersion.customerSnapshot as any,
-        utilityUnitSnapshot: baseVersion.utilityUnitSnapshot as any,
-        technicalSnapshot: baseVersion.technicalSnapshot as any,
-        commercialSnapshot: baseVersion.commercialSnapshot as any,
-        validityDays: baseVersion.validityDays,
-        currency: baseVersion.currency,
-        finalPrice: baseVersion.finalPrice,
-        paymentConditions: baseVersion.paymentConditions as any,
-        observations: baseVersion.observations,
-        contentHash: baseVersion.contentHash,
-        createdById: userId,
-      },
-    });
+    while (true) {
+      try {
+        nextVersion = await this.prisma.$transaction(async (tx) => {
+          const maxVersion = await tx.proposalVersion.findFirst({
+            where: { proposalId: baseVersion.proposalId },
+            orderBy: { versionNumber: 'desc' },
+          });
+          const nextNumber = (maxVersion?.versionNumber ?? baseVersion.versionNumber) + 1;
+
+          const created = await tx.proposalVersion.create({
+            data: {
+              organizationId,
+              proposalId: baseVersion.proposalId,
+              versionNumber: nextNumber,
+              designVersionId: baseVersion.designVersionId,
+              basedOnVersionId: baseVersion.id,
+              status: 'DRAFT',
+              customerSnapshot: baseVersion.customerSnapshot as any,
+              utilityUnitSnapshot: baseVersion.utilityUnitSnapshot as any,
+              technicalSnapshot: baseVersion.technicalSnapshot as any,
+              commercialSnapshot: baseVersion.commercialSnapshot as any,
+              validityDays: baseVersion.validityDays,
+              currency: baseVersion.currency,
+              finalPrice: baseVersion.finalPrice,
+              paymentConditions: baseVersion.paymentConditions as any,
+              observations: baseVersion.observations,
+              contentHash: baseVersion.contentHash,
+              createdById: userId,
+            },
+          });
+
+          await this.audit.record(
+            {
+              organizationId,
+              actorId: userId,
+              action: 'PROPOSAL_VERSION_CREATED',
+              entityId: baseVersion.proposalId,
+            },
+            tx,
+          );
+
+          return created;
+        });
+        break;
+      } catch (err: any) {
+        if (err.code === 'P2002' && attempts < 5) {
+          attempts++;
+          continue;
+        }
+        throw err;
+      }
+    }
 
     // Generate PDF for the new version
     await this.generatePdf(organizationId, nextVersion.id);

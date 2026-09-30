@@ -419,7 +419,17 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
               type="button"
               className="btn btn--primary"
               onClick={() => setIsCreating(true)}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                backgroundColor: '#087443',
+                color: '#ffffff',
+                fontWeight: 700,
+                padding: '0.6rem 1.25rem',
+                borderRadius: 'var(--radius-sm, 6px)',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
+              }}
             >
               + Gerar Contrato Comercial
             </button>
@@ -478,9 +488,18 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
               type="button"
               className="btn btn--primary"
               onClick={() => setIsCreating(true)}
-              style={{ marginTop: '0.5rem' }}
+              style={{
+                marginTop: '0.75rem',
+                backgroundColor: '#087443',
+                color: '#ffffff',
+                fontWeight: 700,
+                padding: '0.75rem 1.5rem',
+                fontSize: '1rem',
+                borderRadius: 'var(--radius-sm, 6px)',
+                boxShadow: '0 2px 5px rgba(0, 0, 0, 0.18)',
+              }}
             >
-              + Gerar Minuta Contratual
+              + Gerar Minuta Contratual (DOCX & PDF)
             </button>
           )}
         </div>
@@ -537,7 +556,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
               </div>
 
               {/* Action buttons */}
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '0.625rem', flexWrap: 'wrap' }}>
                 {!readonly &&
                   (contract.state === 'READY' || contract.state === 'SENT') &&
                   canSend && (
@@ -545,6 +564,14 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                       type="button"
                       className="btn btn--secondary"
                       onClick={() => setIsDelivering(true)}
+                      style={{
+                        backgroundColor: '#ffffff',
+                        color: '#087443',
+                        border: '1.5px solid #087443',
+                        fontWeight: 600,
+                        padding: '0.5rem 1rem',
+                        fontSize: '0.875rem',
+                      }}
                     >
                       📤 Registrar Envio
                     </button>
@@ -557,8 +584,17 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                   canUpload && (
                     <button
                       type="button"
-                      className="btn btn--secondary"
+                      className="btn btn--primary"
                       onClick={() => setIsUploading(true)}
+                      style={{
+                        backgroundColor: '#0284c7',
+                        color: '#ffffff',
+                        border: '1.5px solid #0369a1',
+                        fontWeight: 600,
+                        padding: '0.5rem 1rem',
+                        fontSize: '0.875rem',
+                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.12)',
+                      }}
                     >
                       📥 Anexar Via Assinada
                     </button>
@@ -567,7 +603,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 {!readonly && contract.state === 'SIGNED_UPLOADED' && canVerify && (
                   <button
                     type="button"
-                    className="btn btn--primary"
+                    className="btn btn--success"
                     onClick={() => {
                       setCheckParties(false);
                       setCheckPages(false);
@@ -576,8 +612,17 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                       setReviewDecision('VERIFIED');
                       setIsReviewing(true);
                     }}
+                    style={{
+                      backgroundColor: '#15803d',
+                      color: '#ffffff',
+                      border: '1.5px solid #166534',
+                      fontWeight: 700,
+                      padding: '0.5rem 1.1rem',
+                      fontSize: '0.875rem',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.18)',
+                    }}
                   >
-                    🔍 Conferência de Assinatura
+                    🔍 Conferência de Assinatura (Gate C)
                   </button>
                 )}
               </div>
@@ -611,8 +656,15 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 {docxDoc && canDownload && (
                   <a
                     href={`/api/v1/contracts/${contract.id}/docx`}
-                    className="btn btn--secondary"
-                    style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
+                    className="btn btn--subtle"
+                    style={{
+                      fontSize: '0.8125rem',
+                      padding: '0.4rem 0.85rem',
+                      fontWeight: 600,
+                      backgroundColor: '#f1f5f9',
+                      color: '#0f172a',
+                      border: '1px solid #cbd5e1',
+                    }}
                     download
                   >
                     Baixar DOCX
@@ -637,8 +689,15 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 {pdfDoc && canDownload && (
                   <a
                     href={`/api/v1/contracts/${contract.id}/pdf`}
-                    className="btn btn--secondary"
-                    style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
+                    className="btn btn--primary"
+                    style={{
+                      fontSize: '0.8125rem',
+                      padding: '0.4rem 0.85rem',
+                      fontWeight: 600,
+                      backgroundColor: '#0284c7',
+                      color: '#ffffff',
+                      border: '1px solid #0369a1',
+                    }}
                     download
                   >
                     Baixar PDF
@@ -662,8 +721,15 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                   {canDownload && (
                     <a
                       href={`/api/v1/contracts/${contract.id}/signed`}
-                      className="btn btn--secondary"
-                      style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
+                      className="btn btn--success"
+                      style={{
+                        fontSize: '0.8125rem',
+                        padding: '0.4rem 0.85rem',
+                        fontWeight: 600,
+                        backgroundColor: '#15803d',
+                        color: '#ffffff',
+                        border: '1px solid #166534',
+                      }}
                       download
                     >
                       Baixar Assinado
@@ -671,6 +737,416 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                   )}
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Contract Stage Pipeline & Action Hub (Gate C) */}
+          <div
+            className="card"
+            style={{
+              padding: '1.25rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem',
+              backgroundColor: 'var(--color-surface)',
+              border: '1px solid var(--border-subtle)',
+            }}
+          >
+            <div>
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: '1.125rem',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                }}
+              >
+                🎯 Etapas e Ações do Contrato (Gate C)
+              </h3>
+              <p
+                style={{
+                  margin: '0.25rem 0 0 0',
+                  fontSize: '0.875rem',
+                  color: 'var(--text-muted)',
+                }}
+              >
+                Acompanhe as 4 etapas necessárias para homologar o contrato com validade jurídica e
+                liberar a oportunidade.
+              </p>
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                gap: '1rem',
+              }}
+            >
+              {/* Step 1: Minutas */}
+              <div
+                style={{
+                  padding: '1rem',
+                  borderRadius: 'var(--radius-sm, 6px)',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#f8fafc',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.75rem',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '0.5rem',
+                    }}
+                  >
+                    <span style={{ fontWeight: 700, fontSize: '0.875rem' }}>
+                      1. Minutas do Contrato
+                    </span>
+                    <span
+                      style={{
+                        padding: '0.2rem 0.5rem',
+                        borderRadius: '9999px',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        color: '#15803d',
+                        backgroundColor: '#dcfce7',
+                      }}
+                    >
+                      ✓ Concluído
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.8125rem', color: '#475569' }}>
+                    Documentos gerados com as cláusulas padrão Moura Solar e dados técnicos.
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  {pdfDoc && canDownload && (
+                    <a
+                      href={`/api/v1/contracts/${contract.id}/pdf`}
+                      download
+                      className="btn btn--primary"
+                      style={{
+                        fontSize: '0.8125rem',
+                        padding: '0.45rem 0.8rem',
+                        backgroundColor: '#0284c7',
+                        color: '#ffffff',
+                        border: '1px solid #0369a1',
+                        fontWeight: 600,
+                        textDecoration: 'none',
+                      }}
+                    >
+                      📄 Baixar PDF
+                    </a>
+                  )}
+                  {docxDoc && canDownload && (
+                    <a
+                      href={`/api/v1/contracts/${contract.id}/docx`}
+                      download
+                      className="btn btn--subtle"
+                      style={{
+                        fontSize: '0.8125rem',
+                        padding: '0.45rem 0.8rem',
+                        backgroundColor: '#ffffff',
+                        color: '#334155',
+                        border: '1px solid #cbd5e1',
+                        fontWeight: 600,
+                        textDecoration: 'none',
+                      }}
+                    >
+                      📝 Baixar DOCX
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {/* Step 2: Envio */}
+              {(() => {
+                const isSent =
+                  contract.state !== 'READY' &&
+                  contract.deliveries &&
+                  contract.deliveries.length > 0;
+                const isCurrent = contract.state === 'READY';
+                return (
+                  <div
+                    style={{
+                      padding: '1rem',
+                      borderRadius: 'var(--radius-sm, 6px)',
+                      border: isCurrent
+                        ? '2px solid #087443'
+                        : isSent
+                          ? '1px solid #cbd5e1'
+                          : '1px solid #e2e8f0',
+                      backgroundColor: isCurrent
+                        ? 'rgba(8, 116, 67, 0.05)'
+                        : isSent
+                          ? '#f8fafc'
+                          : '#ffffff',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.75rem',
+                      justifyContent: 'space-between',
+                      boxShadow: isCurrent ? '0 2px 6px rgba(8, 116, 67, 0.12)' : 'none',
+                    }}
+                  >
+                    <div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          marginBottom: '0.5rem',
+                        }}
+                      >
+                        <span style={{ fontWeight: 700, fontSize: '0.875rem' }}>
+                          2. Envio da Minuta
+                        </span>
+                        <span
+                          style={{
+                            padding: '0.2rem 0.5rem',
+                            borderRadius: '9999px',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            color: isSent ? '#15803d' : isCurrent ? '#087443' : '#64748b',
+                            backgroundColor: isSent ? '#dcfce7' : isCurrent ? '#e2f3e9' : '#f1f5f9',
+                          }}
+                        >
+                          {isSent ? '✓ Enviado' : isCurrent ? '👉 Ação Pendente' : 'Pendente'}
+                        </span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '0.8125rem', color: '#475569' }}>
+                        {isSent
+                          ? `Enviado via ${contract.deliveries[0]?.channel} para ${contract.deliveries[0]?.recipient}.`
+                          : 'Envie a minuta ao cliente e registre o canal (WhatsApp/E-mail) para controle de prazos.'}
+                      </p>
+                    </div>
+
+                    {!readonly && canSend && (
+                      <button
+                        type="button"
+                        className={isCurrent ? 'btn btn--primary' : 'btn btn--secondary'}
+                        onClick={() => setIsDelivering(true)}
+                        style={{
+                          fontSize: '0.8125rem',
+                          padding: '0.5rem 0.9rem',
+                          fontWeight: 700,
+                          backgroundColor: isCurrent ? '#087443' : '#ffffff',
+                          color: isCurrent ? '#ffffff' : '#087443',
+                          border: isCurrent ? '1px solid #045c34' : '1.5px solid #087443',
+                          boxShadow: isCurrent ? '0 2px 4px rgba(0, 0, 0, 0.15)' : 'none',
+                        }}
+                      >
+                        📤 {isSent ? 'Registrar Novo Envio' : 'Registrar Envio da Minuta'}
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Step 3: Assinatura */}
+              {(() => {
+                const hasUploaded = Boolean(signedDoc);
+                const isCurrent =
+                  !hasUploaded && (contract.state === 'SENT' || contract.state === 'READY');
+                return (
+                  <div
+                    style={{
+                      padding: '1rem',
+                      borderRadius: 'var(--radius-sm, 6px)',
+                      border: isCurrent
+                        ? '2px solid #0284c7'
+                        : hasUploaded
+                          ? '1px solid #cbd5e1'
+                          : '1px solid #e2e8f0',
+                      backgroundColor: isCurrent
+                        ? 'rgba(2, 132, 199, 0.05)'
+                        : hasUploaded
+                          ? '#f8fafc'
+                          : '#ffffff',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.75rem',
+                      justifyContent: 'space-between',
+                      boxShadow: isCurrent ? '0 2px 6px rgba(2, 132, 199, 0.12)' : 'none',
+                    }}
+                  >
+                    <div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          marginBottom: '0.5rem',
+                        }}
+                      >
+                        <span style={{ fontWeight: 700, fontSize: '0.875rem' }}>
+                          3. Assinatura do Cliente
+                        </span>
+                        <span
+                          style={{
+                            padding: '0.2rem 0.5rem',
+                            borderRadius: '9999px',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            color: hasUploaded ? '#15803d' : isCurrent ? '#0369a1' : '#64748b',
+                            backgroundColor: hasUploaded
+                              ? '#dcfce7'
+                              : isCurrent
+                                ? '#e0f2fe'
+                                : '#f1f5f9',
+                          }}
+                        >
+                          {hasUploaded
+                            ? '✓ Anexado'
+                            : isCurrent
+                              ? '👉 Ação Pendente'
+                              : 'Aguardando'}
+                        </span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '0.8125rem', color: '#475569' }}>
+                        {signedDoc
+                          ? `Via assinada anexada (${Math.round(signedDoc.fileSize / 1024)} KB) pronta para conferência.`
+                          : 'Colete a assinatura física ou eletrônica (DocuSign/Gov.br) e faça o upload do PDF assinado.'}
+                      </p>
+                    </div>
+
+                    {!readonly && canUpload && (
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          className={hasUploaded ? 'btn btn--secondary' : 'btn btn--primary'}
+                          onClick={() => setIsUploading(true)}
+                          style={{
+                            fontSize: '0.8125rem',
+                            padding: '0.5rem 0.9rem',
+                            fontWeight: 700,
+                            backgroundColor: hasUploaded ? '#ffffff' : '#0284c7',
+                            color: hasUploaded ? '#0284c7' : '#ffffff',
+                            border: hasUploaded ? '1.5px solid #0284c7' : '1px solid #0369a1',
+                            boxShadow: hasUploaded ? 'none' : '0 2px 4px rgba(0, 0, 0, 0.15)',
+                          }}
+                        >
+                          📥 {hasUploaded ? 'Substituir Via Assinada' : 'Anexar Contrato Assinado'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Step 4: Conferência Gate C */}
+              {(() => {
+                const isSatisfied = gate?.status === 'SATISFIED';
+                const isReadyForReview = contract.state === 'SIGNED_UPLOADED';
+                return (
+                  <div
+                    style={{
+                      padding: '1rem',
+                      borderRadius: 'var(--radius-sm, 6px)',
+                      border: isReadyForReview
+                        ? '2px solid #16a34a'
+                        : isSatisfied
+                          ? '1px solid #16a34a'
+                          : '1px solid #e2e8f0',
+                      backgroundColor: isReadyForReview
+                        ? 'rgba(22, 163, 74, 0.08)'
+                        : isSatisfied
+                          ? '#f0fdf4'
+                          : '#ffffff',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.75rem',
+                      justifyContent: 'space-between',
+                      boxShadow: isReadyForReview ? '0 2px 8px rgba(22, 163, 74, 0.2)' : 'none',
+                    }}
+                  >
+                    <div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          marginBottom: '0.5rem',
+                        }}
+                      >
+                        <span style={{ fontWeight: 700, fontSize: '0.875rem' }}>
+                          4. Conferência Gate C
+                        </span>
+                        <span
+                          style={{
+                            padding: '0.2rem 0.5rem',
+                            borderRadius: '9999px',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            color: isSatisfied
+                              ? '#15803d'
+                              : isReadyForReview
+                                ? '#15803d'
+                                : '#64748b',
+                            backgroundColor: isSatisfied
+                              ? '#dcfce7'
+                              : isReadyForReview
+                                ? '#dcfce7'
+                                : '#f1f5f9',
+                          }}
+                        >
+                          {isSatisfied
+                            ? '✅ Gate C Liberado'
+                            : isReadyForReview
+                              ? '⭐ Pronto p/ Conferência'
+                              : '🔒 Bloqueado'}
+                        </span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '0.8125rem', color: '#475569' }}>
+                        {isSatisfied
+                          ? 'Contrato conferido e homologado. As 4 regras de governança foram atendidas.'
+                          : isReadyForReview
+                            ? 'Valide partes, páginas, versão e assinaturas para ativar o contrato e liberar o Gate C.'
+                            : 'Disponível após o anexo da via assinada pelo cliente.'}
+                      </p>
+                    </div>
+
+                    {!readonly && isReadyForReview && canVerify && (
+                      <button
+                        type="button"
+                        className="btn btn--success"
+                        onClick={() => {
+                          setCheckParties(false);
+                          setCheckPages(false);
+                          setCheckVersion(false);
+                          setCheckSignatures(false);
+                          setReviewDecision('VERIFIED');
+                          setIsReviewing(true);
+                        }}
+                        style={{
+                          fontSize: '0.875rem',
+                          padding: '0.6rem 1.1rem',
+                          fontWeight: 700,
+                          backgroundColor: '#15803d',
+                          color: '#ffffff',
+                          border: '1px solid #166534',
+                          boxShadow: '0 2px 6px rgba(0, 0, 0, 0.18)',
+                        }}
+                      >
+                        🔍 Realizar Conferência Gate C
+                      </button>
+                    )}
+
+                    {isSatisfied && (
+                      <div style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: 600 }}>
+                        ✓ Homologado com sucesso
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
 

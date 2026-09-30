@@ -20,7 +20,7 @@
     "db:studio": "pnpm --filter @moura-solar/database studio",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "api:generate": "node scripts/generate-api.mjs",
-    "test:integration": "pnpm --filter @moura-solar/api build && node --test tests/identity.integration.mjs tests/commercial.integration.mjs tests/design.integration.mjs tests/proposal.integration.mjs tests/contract.integration.mjs",
+    "test:integration": "pnpm --filter @moura-solar/api build && node --test --test-concurrency=1 tests/identity.integration.mjs tests/commercial.integration.mjs tests/design.integration.mjs tests/proposal.integration.mjs tests/contract.integration.mjs",
     "test:e2e": "pnpm --filter @moura-solar/api build && playwright test",
     "test:migrations": "node tests/migrations.mjs",
     "identity:bootstrap": "node --env-file=.env scripts/bootstrap.mjs",
