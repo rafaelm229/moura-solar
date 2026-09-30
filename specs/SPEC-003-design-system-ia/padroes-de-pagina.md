@@ -78,4 +78,3 @@ abrem rota de detalhe. O estado selecionado deve ser restaurável por URL quando
 
 Listas de documentos mostram tipo, versão, status, hash/identidade quando relevante,
 autor, data e ações. Upload diferencia envio, processamento, confirmação e falha.
-

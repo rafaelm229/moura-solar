@@ -61,4 +61,3 @@ Atender WCAG 2.2 nível AA nas jornadas críticas e componentes compartilhados.
 - leitor de tela em login, formulário, modal, tabela/cartão e upload;
 - contraste automatizado e inspeção dos estados reais;
 - critérios incluídos nos testes de componentes e E2E.
-

@@ -1,7 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  IconMenu, IconSearch, IconBell, IconPlus, IconChevronDown,
-  IconUser, IconSettings, IconLogOut, IconHelpCircle,
+  IconMenu,
+  IconSearch,
+  IconBell,
+  IconPlus,
+  IconChevronDown,
+  IconUser,
+  IconSettings,
+  IconLogOut,
+  IconHelpCircle,
 } from './Icons';
 
 interface TopbarProps {
@@ -38,13 +45,7 @@ const PAGE_SECTIONS: Record<string, string> = {
   configuracoes: 'Administração',
 };
 
-const QUICK_CREATE_ITEMS = [
-  'Cliente',
-  'Oportunidade',
-  'Proposta',
-  'Projeto',
-  'Atividade',
-];
+const QUICK_CREATE_ITEMS = ['Cliente', 'Oportunidade', 'Proposta', 'Projeto', 'Atividade'];
 
 const USER_MENU_ITEMS = [
   { label: 'Meu Perfil', icon: IconUser },
@@ -150,14 +151,16 @@ export const Topbar: React.FC<TopbarProps> = ({ onMenuToggle, currentPage, pageT
       >
         <IconSearch
           size={16}
-          style={{
-            position: 'absolute',
-            left: 12,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            color: '#626A65',
-            pointerEvents: 'none',
-          } as React.CSSProperties}
+          style={
+            {
+              position: 'absolute',
+              left: 12,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: '#626A65',
+              pointerEvents: 'none',
+            } as React.CSSProperties
+          }
         />
         <input
           type="text"

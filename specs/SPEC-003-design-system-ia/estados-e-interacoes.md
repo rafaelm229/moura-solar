@@ -2,20 +2,20 @@
 
 ## 1. Estados de página
 
-| Estado | Requisito |
-|---|---|
-| carregando | skeleton proporcional, sem layout jump excessivo |
-| atualizando | conteúdo anterior permanece com indicador discreto |
-| vazio | explica o estado e oferece próxima ação autorizada |
-| vazio por filtro | mostra filtros ativos e ação para limpar |
-| erro recuperável | mensagem, trace ID quando útil e tentar novamente |
-| validação | resumo e foco no primeiro campo inválido |
-| sem permissão | não revela dados e oferece destino seguro |
-| sessão expirada | preserva destino e diferencia falha de rede |
-| conflito | mostra que o registro mudou e permite recarregar/comparar |
-| sucesso | confirma o efeito e apresenta próximo passo |
-| arquivado | estado inequívoco e ações compatíveis |
-| degradado/offline | diferencia local, pendente e sincronizado |
+| Estado            | Requisito                                                 |
+| ----------------- | --------------------------------------------------------- |
+| carregando        | skeleton proporcional, sem layout jump excessivo          |
+| atualizando       | conteúdo anterior permanece com indicador discreto        |
+| vazio             | explica o estado e oferece próxima ação autorizada        |
+| vazio por filtro  | mostra filtros ativos e ação para limpar                  |
+| erro recuperável  | mensagem, trace ID quando útil e tentar novamente         |
+| validação         | resumo e foco no primeiro campo inválido                  |
+| sem permissão     | não revela dados e oferece destino seguro                 |
+| sessão expirada   | preserva destino e diferencia falha de rede               |
+| conflito          | mostra que o registro mudou e permite recarregar/comparar |
+| sucesso           | confirma o efeito e apresenta próximo passo               |
+| arquivado         | estado inequívoco e ações compatíveis                     |
+| degradado/offline | diferencia local, pendente e sincronizado                 |
 
 ## 2. Comandos de negócio
 
@@ -55,4 +55,3 @@ materiais, iniciar instalação e concluir etapas.
 
 Movimento explica transição e hierarquia, não serve como decoração excessiva.
 Reduzir ou remover animação quando o sistema indicar preferência reduzida.
-

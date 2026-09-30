@@ -8,17 +8,17 @@ Escopo observado: 36 arquivos, aproximadamente 3.810 linhas de UI.
 
 ## 2. Reuso permitido
 
-| Elemento | Tratamento |
-|---|---|
-| paleta e tipografia | converter em tokens oficiais |
-| ícones SVG | revisar licença, semântica e acessibilidade; portar |
-| sidebar/topbar | decompor e integrar ao App Router/RBAC |
-| navegação mobile | tornar destinos dependentes do perfil |
-| cards e métricas | transformar em componentes compartilhados |
-| gráficos | conectar a dados reais e oferecer alternativa textual |
-| Kanban | refletir estados/gates reais e oferecer lista acessível |
-| tabelas/filtros | integrar query, paginação e permissões reais |
-| composições de página | usar como referência visual |
+| Elemento              | Tratamento                                              |
+| --------------------- | ------------------------------------------------------- |
+| paleta e tipografia   | converter em tokens oficiais                            |
+| ícones SVG            | revisar licença, semântica e acessibilidade; portar     |
+| sidebar/topbar        | decompor e integrar ao App Router/RBAC                  |
+| navegação mobile      | tornar destinos dependentes do perfil                   |
+| cards e métricas      | transformar em componentes compartilhados               |
+| gráficos              | conectar a dados reais e oferecer alternativa textual   |
+| Kanban                | refletir estados/gates reais e oferecer lista acessível |
+| tabelas/filtros       | integrar query, paginação e permissões reais            |
+| composições de página | usar como referência visual                             |
 
 ## 3. Elementos que não entram diretamente
 
@@ -35,16 +35,16 @@ Escopo observado: 36 arquivos, aproximadamente 3.810 linhas de UI.
 
 ## 4. Diferenças arquiteturais
 
-| Figma Make | Aplicação final |
-|---|---|
-| Vite SPA | Next.js App Router |
-| estado local de página | rotas reais e layouts aninhados |
-| dados simulados | API NestJS e PostgreSQL |
-| menu fixo | menu filtrado por permissões efetivas |
-| dois modos de viewport | mobile, tablet, notebook e desktop |
-| estilos literais | design tokens e componentes |
-| ações demonstrativas | comandos idempotentes e auditáveis |
-| gráficos decorativos | métricas rastreáveis e acessíveis |
+| Figma Make             | Aplicação final                       |
+| ---------------------- | ------------------------------------- |
+| Vite SPA               | Next.js App Router                    |
+| estado local de página | rotas reais e layouts aninhados       |
+| dados simulados        | API NestJS e PostgreSQL               |
+| menu fixo              | menu filtrado por permissões efetivas |
+| dois modos de viewport | mobile, tablet, notebook e desktop    |
+| estilos literais       | design tokens e componentes           |
+| ações demonstrativas   | comandos idempotentes e auditáveis    |
+| gráficos decorativos   | métricas rastreáveis e acessíveis     |
 
 ## 5. Critérios de fidelidade
 
@@ -66,4 +66,3 @@ Pode divergir para cumprir acessibilidade, responsividade, domínio ou desempenh
 
 Capturas aprovadas devem ser versionadas como baseline visual. O código exportado
 permanece isolado em `references/figma-make/v1` e não é dependência de produção.
-

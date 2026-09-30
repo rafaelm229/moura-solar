@@ -203,7 +203,7 @@ Consulte [mapeamento-figma-aplicacao.md](mapeamento-figma-aplicacao.md).
 - [ ] Permissões aplicadas no menu e obrigatoriamente na API.
 - [ ] Componentes reutilizáveis documentados e testados.
 - [ ] Estados de loading, vazio, erro, conflito e acesso negado.
-- [ ] Fluxos M1–M5 continuam funcionais após a migração.
+- [ ] Fluxos M1–M6 continuam funcionais após a migração.
 - [ ] Sem overflow acidental nos viewports suportados.
 - [ ] Teclado, toque, zoom e contraste validados.
 - [ ] Screenshots de regressão aprovadas.
@@ -222,4 +222,3 @@ Consulte [mapeamento-figma-aplicacao.md](mapeamento-figma-aplicacao.md).
 - [acessibilidade.md](acessibilidade.md)
 - [mapeamento-figma-aplicacao.md](mapeamento-figma-aplicacao.md)
 - [plano-migracao.md](plano-migracao.md)
-

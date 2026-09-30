@@ -10,17 +10,17 @@ Cada componente documenta variantes, tamanhos, estados, acessibilidade e comport
 
 ## 2. Fundação
 
-| Componente | Variantes e requisitos |
-|---|---|
-| `Button` | primary, secondary, ghost, danger; loading; ícone opcional |
-| `IconButton` | label acessível obrigatório; tooltip quando necessário |
-| `Link` | externo, interno e download; foco visível |
-| `ButtonGroup` | ações relacionadas sem esconder a ação principal |
-| `Badge` | neutral, info, success, warning, danger; texto obrigatório |
-| `Avatar` | imagem ou iniciais; nome acessível |
-| `Tooltip` | nunca contém informação indispensável |
-| `Separator` | semântico ou decorativo |
-| `Skeleton` | respeita movimento reduzido |
+| Componente    | Variantes e requisitos                                     |
+| ------------- | ---------------------------------------------------------- |
+| `Button`      | primary, secondary, ghost, danger; loading; ícone opcional |
+| `IconButton`  | label acessível obrigatório; tooltip quando necessário     |
+| `Link`        | externo, interno e download; foco visível                  |
+| `ButtonGroup` | ações relacionadas sem esconder a ação principal           |
+| `Badge`       | neutral, info, success, warning, danger; texto obrigatório |
+| `Avatar`      | imagem ou iniciais; nome acessível                         |
+| `Tooltip`     | nunca contém informação indispensável                      |
+| `Separator`   | semântico ou decorativo                                    |
+| `Skeleton`    | respeita movimento reduzido                                |
 
 ## 3. Formulários
 
@@ -107,4 +107,3 @@ Todos os componentes interativos aplicáveis tratam:
 - ação apenas por ícone sem nome acessível;
 - estilos inline repetidos para tokens já existentes;
 - armazenar dados de negócio no componente como fonte definitiva.
-

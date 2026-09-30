@@ -58,14 +58,14 @@ derivados das permissões efetivas obtidas da API.
 
 Quatro destinos prioritários são derivados do perfil; `Mais` sempre abre o menu completo.
 
-| Perfil | 1 | 2 | 3 | 4 | 5 |
-|---|---|---|---|---|---|
-| Gerente/Admin | Início | Funil | Projetos | Pendências | Mais |
-| Vendedor | Início | Atividades | Clientes | Propostas | Mais |
-| Financeiro | Início | Receber | Atrasos | Fluxo | Mais |
-| Estoquista | Início | Separações | Estoque | Movimentos | Mais |
-| Instalador | Hoje | Agenda | Instalações | Pendências | Mais |
-| Engenharia | Início | Fila técnica | Projetos | Pendências | Mais |
+| Perfil        | 1      | 2            | 3           | 4          | 5    |
+| ------------- | ------ | ------------ | ----------- | ---------- | ---- |
+| Gerente/Admin | Início | Funil        | Projetos    | Pendências | Mais |
+| Vendedor      | Início | Atividades   | Clientes    | Propostas  | Mais |
+| Financeiro    | Início | Receber      | Atrasos     | Fluxo      | Mais |
+| Estoquista    | Início | Separações   | Estoque     | Movimentos | Mais |
+| Instalador    | Hoje   | Agenda       | Instalações | Pendências | Mais |
+| Engenharia    | Início | Fila técnica | Projetos    | Pendências | Mais |
 
 O protótipo do Figma usa destinos fixos; a implementação final deve respeitar o perfil.
 
@@ -92,4 +92,3 @@ do projeto, responsável, etapa, bloqueios e próxima ação.
 A busca encontra somente itens autorizados e informa tipo, código, estado e contexto.
 Resultados suportados: clientes, oportunidades, propostas, contratos, projetos,
 instalações, materiais e documentos.
-

@@ -1,10 +1,28 @@
 import React, { useState } from 'react';
 import {
-  IconHome, IconUsers, IconTrendingUp, IconActivity, IconFileText,
-  IconFolder, IconTool, IconCalendar, IconPackage, IconShoppingCart,
-  IconBarChart2, IconSettings, IconArrowUp, IconArrowDown, IconAward,
-  IconTarget, IconMapPin, IconStar, IconShield, IconClipboard,
-  IconChevronDown, IconChevronRight, IconLayers,
+  IconHome,
+  IconUsers,
+  IconTrendingUp,
+  IconActivity,
+  IconFileText,
+  IconFolder,
+  IconTool,
+  IconCalendar,
+  IconPackage,
+  IconShoppingCart,
+  IconBarChart2,
+  IconSettings,
+  IconArrowUp,
+  IconArrowDown,
+  IconAward,
+  IconTarget,
+  IconMapPin,
+  IconStar,
+  IconShield,
+  IconClipboard,
+  IconChevronDown,
+  IconChevronRight,
+  IconLayers,
 } from './Icons';
 
 interface SidebarProps {
@@ -78,7 +96,7 @@ const GROUPS: NavGroup[] = [
 
 export const Sidebar: React.FC<SidebarProps> = ({ collapsed, currentPage, onNavigate }) => {
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(
-    Object.fromEntries(GROUPS.map((g) => [g.title, true]))
+    Object.fromEntries(GROUPS.map((g) => [g.title, true])),
   );
 
   const toggleGroup = (title: string) => {
@@ -127,7 +145,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, currentPage, onNavi
         }}
       >
         <Icon size={18} />
-        {!collapsed && <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>}
+        {!collapsed && (
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>
+        )}
       </button>
     );
   };
@@ -189,7 +209,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, currentPage, onNavi
       </div>
 
       {/* Nav area */}
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingTop: 8, paddingBottom: 8 }}>
+      <div
+        style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingTop: 8, paddingBottom: 8 }}
+      >
         {/* Dashboard */}
         <div style={{ marginBottom: 4 }}>
           <button
@@ -206,7 +228,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, currentPage, onNavi
               width: collapsed ? 48 : 'calc(100% - 16px)',
               background: currentPage === 'dashboard' ? '#3A3200' : 'transparent',
               color: currentPage === 'dashboard' ? '#FFD400' : '#9BA49E',
-              borderLeft: currentPage === 'dashboard' ? '2px solid #FFD400' : '2px solid transparent',
+              borderLeft:
+                currentPage === 'dashboard' ? '2px solid #FFD400' : '2px solid transparent',
               border: 'none',
               cursor: 'pointer',
               fontSize: 14,

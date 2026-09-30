@@ -2,43 +2,46 @@
 @import 'tailwindcss';
 
 @theme inline {
-  --color-bg-base: #090B0A;
+  --color-bg-base: #090b0a;
   --color-surface: #111412;
-  --color-card: #161A17;
-  --color-elevated: #1C211D;
-  --color-border: #29302B;
-  --color-border-subtle: #1E2420;
+  --color-card: #161a17;
+  --color-elevated: #1c211d;
+  --color-border: #29302b;
+  --color-border-subtle: #1e2420;
 
-  --color-solar: #FFD400;
-  --color-solar-hover: #E6BE00;
-  --color-solar-muted: #3A3200;
-  --color-solar-text: #FFD400;
+  --color-solar: #ffd400;
+  --color-solar-hover: #e6be00;
+  --color-solar-muted: #3a3200;
+  --color-solar-text: #ffd400;
 
-  --color-green: #26D866;
+  --color-green: #26d866;
   --color-green-inst: #087443;
   --color-green-muted: #113522;
 
-  --color-red: #FF4D57;
-  --color-orange: #FF9F1C;
-  --color-blue: #3B82F6;
+  --color-red: #ff4d57;
+  --color-orange: #ff9f1c;
+  --color-blue: #3b82f6;
 
-  --color-text: #F5F7F5;
-  --color-text-secondary: #9BA49E;
-  --color-text-disabled: #626A65;
+  --color-text: #f5f7f5;
+  --color-text-secondary: #9ba49e;
+  --color-text-disabled: #626a65;
 
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Courier New', monospace;
 }
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
-  background: #090B0A;
-  color: #F5F7F5;
+  background: #090b0a;
+  color: #f5f7f5;
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 16px;
   line-height: 1.5;
@@ -48,7 +51,7 @@ html, body {
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #29302B transparent;
+  scrollbar-color: #29302b transparent;
 }
 
 *::-webkit-scrollbar {
@@ -61,7 +64,7 @@ html, body {
 }
 
 *::-webkit-scrollbar-thumb {
-  background: #29302B;
+  background: #29302b;
   border-radius: 3px;
 }
 
@@ -74,7 +77,10 @@ html, body {
   font-variant-numeric: tabular-nums;
 }
 
-input, textarea, select, button {
+input,
+textarea,
+select,
+button {
   font-family: inherit;
 }
 
@@ -87,8 +93,14 @@ input, textarea, select, button {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .slide-up {
@@ -96,20 +108,26 @@ input, textarea, select, button {
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .chart-gradient-yellow {
-  background: linear-gradient(180deg, rgba(255,212,0,0.18) 0%, rgba(255,212,0,0) 100%);
+  background: linear-gradient(180deg, rgba(255, 212, 0, 0.18) 0%, rgba(255, 212, 0, 0) 100%);
 }
 
 .chart-gradient-green {
-  background: linear-gradient(180deg, rgba(38,216,102,0.18) 0%, rgba(38,216,102,0) 100%);
+  background: linear-gradient(180deg, rgba(38, 216, 102, 0.18) 0%, rgba(38, 216, 102, 0) 100%);
 }
 
 .chart-gradient-blue {
-  background: linear-gradient(180deg, rgba(59,130,246,0.18) 0%, rgba(59,130,246,0) 100%);
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.18) 0%, rgba(59, 130, 246, 0) 100%);
 }
 
 .solar-glow {
@@ -117,57 +135,69 @@ input, textarea, select, button {
 }
 
 .card-hover {
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .card-hover:hover {
-  border-color: #3A3600;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.35);
+  border-color: #3a3600;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
 }
 
 .btn-solar {
-  background: #FFD400;
-  color: #0A0800;
+  background: #ffd400;
+  color: #0a0800;
   font-weight: 600;
-  transition: background 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .btn-solar:hover {
-  background: #E6BE00;
-  box-shadow: 0 0 16px rgba(255,212,0,0.2);
+  background: #e6be00;
+  box-shadow: 0 0 16px rgba(255, 212, 0, 0.2);
 }
 
 .btn-solar:active {
-  background: #C9A800;
+  background: #c9a800;
 }
 
 .nav-item {
-  transition: background 0.1s ease, color 0.1s ease;
+  transition:
+    background 0.1s ease,
+    color 0.1s ease;
 }
 
 .nav-item:hover {
-  background: #1C211D;
-  color: #F5F7F5;
+  background: #1c211d;
+  color: #f5f7f5;
 }
 
 .nav-item.active {
-  background: #3A3200;
-  color: #FFD400;
+  background: #3a3200;
+  color: #ffd400;
 }
 
 .kanban-card {
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .kanban-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
 @media (max-width: 768px) {
-  .desktop-only { display: none !important; }
+  .desktop-only {
+    display: none !important;
+  }
 }
 
 @media (min-width: 769px) {
-  .mobile-only { display: none !important; }
+  .mobile-only {
+    display: none !important;
+  }
 }

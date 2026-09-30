@@ -2,14 +2,14 @@
 
 ## 1. Faixas de referência
 
-| Faixa | Largura | Comportamento |
-|---|---:|---|
-| Mobile compacto | 360–389 px | uma coluna, navegação inferior |
-| Mobile amplo | 390–767 px | uma coluna, maior respiro |
-| Tablet | 768–1023 px | uma ou duas colunas, drawer/rail |
-| Notebook | 1024–1439 px | sidebar compacta, maior densidade |
-| Desktop | 1440–1919 px | sidebar persistente, 12 colunas |
-| Desktop amplo | ≥1920 px | conteúdo limitado por legibilidade |
+| Faixa           |      Largura | Comportamento                      |
+| --------------- | -----------: | ---------------------------------- |
+| Mobile compacto |   360–389 px | uma coluna, navegação inferior     |
+| Mobile amplo    |   390–767 px | uma coluna, maior respiro          |
+| Tablet          |  768–1023 px | uma ou duas colunas, drawer/rail   |
+| Notebook        | 1024–1439 px | sidebar compacta, maior densidade  |
+| Desktop         | 1440–1919 px | sidebar persistente, 12 colunas    |
+| Desktop amplo   |     ≥1920 px | conteúdo limitado por legibilidade |
 
 Breakpoints são referências, não detecção JavaScript de dispositivo. Preferir CSS,
 container queries e composição responsiva. JavaScript só quando o comportamento não
@@ -24,7 +24,9 @@ puder ser expresso de forma segura em CSS.
 - formulários em uma coluna;
 - filtros em tela cheia ou sheet;
 - cards com ação primária visível;
-- tabelas convertidas em cartões;
+- tabelas convertidas obrigatoriamente em cartões (`MobileCardList`);
+- proibição estrita de larguras fixas em pixels (ex: `width: 450px/460px`): painéis laterais de detalhe e drawers ocupam 100% da largura ou utilizam `BottomSheet`;
+- grids responsivos não podem utilizar `minmax` com valor mínimo fixo superior a 360 px; no mobile, utilizar `minmax(0, 1fr)` ou `100%` para impedir overflow;
 - Kanban com lista por padrão e quadro opcional rolável;
 - nenhuma interação depende de hover.
 
@@ -74,4 +76,3 @@ Também validar zoom 80%, 100%, 125%, 150% e 200% conforme aplicável.
 O protótipo alterna mobile/desktop em 768 px via `window.innerWidth`. A aplicação final
 deve implementar tablet deliberadamente e evitar renderizações divergentes por medição
 imperativa sempre que CSS resolver o problema.
-

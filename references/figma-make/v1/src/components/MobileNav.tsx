@@ -1,10 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import {
-  IconHome, IconTrendingUp, IconUsers, IconFolder, IconGrid,
-  IconTarget, IconActivity, IconFileText, IconTool, IconCalendar,
-  IconMapPin, IconStar, IconPackage, IconLayers, IconShoppingCart,
-  IconBarChart2, IconArrowDown, IconArrowUp, IconAward, IconShield,
-  IconClipboard, IconSettings, IconX,
+  IconHome,
+  IconTrendingUp,
+  IconUsers,
+  IconFolder,
+  IconGrid,
+  IconTarget,
+  IconActivity,
+  IconFileText,
+  IconTool,
+  IconCalendar,
+  IconMapPin,
+  IconStar,
+  IconPackage,
+  IconLayers,
+  IconShoppingCart,
+  IconBarChart2,
+  IconArrowDown,
+  IconArrowUp,
+  IconAward,
+  IconShield,
+  IconClipboard,
+  IconSettings,
+  IconX,
 } from './Icons';
 
 interface MobileNavProps {
@@ -121,8 +139,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentPage, onNavigate })
     return () => document.removeEventListener('keydown', handler);
   }, [sheetOpen]);
 
-  const isMoreActive =
-    !TAB_ITEMS.slice(0, 4).some((t) => t.page === currentPage);
+  const isMoreActive = !TAB_ITEMS.slice(0, 4).some((t) => t.page === currentPage);
 
   return (
     <>
@@ -239,7 +256,12 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentPage, onNavigate })
           </div>
 
           {/* Sheet nav list */}
-          <div style={{ overflowY: 'auto', padding: '8px 0 calc(80px + env(safe-area-inset-bottom, 0px))' }}>
+          <div
+            style={{
+              overflowY: 'auto',
+              padding: '8px 0 calc(80px + env(safe-area-inset-bottom, 0px))',
+            }}
+          >
             {ALL_SECTIONS.map((section) => (
               <div key={section.title}>
                 <div

@@ -76,4 +76,3 @@ Antes de portar qualquer trecho:
 - mocks e listas estáticas;
 - `App.tsx` como roteador;
 - dependências exclusivas do protótipo sem avaliação.
-

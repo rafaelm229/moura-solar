@@ -65,4 +65,3 @@ ações demonstrativas incompatíveis com Next.js, RBAC, API e PostgreSQL.
 
 Rejeitado porque produziria duas autoridades concorrentes sobre o mesmo domínio.
 A decisão é versionar e especializar a SPEC-003.
-

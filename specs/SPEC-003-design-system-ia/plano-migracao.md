@@ -8,7 +8,7 @@ e testes. Não substituir o frontend inteiro em uma única alteração.
 ## 2. Pré-condições
 
 - armazenamento de documentos validado e persistente;
-- riscos críticos M1–M5 avaliados;
+- riscos críticos M1–M6 avaliados;
 - CI obrigatório e verde;
 - branch própria;
 - baseline E2E e screenshots atuais;
@@ -67,7 +67,14 @@ e testes. Não substituir o frontend inteiro em uma única alteração.
 - propostas, versões, PDF, envio e aceite;
 - contratos, DOCX/PDF, documentos, conferência e Gate C.
 
-### Lote 7 — dashboard
+### Lote 7 — M6
+
+- planos de pagamento, parcelas e títulos a receber;
+- recebimentos, alocações e Gate Financeiro (Gate FINANCIAL);
+- contas a pagar, liquidações e comissões;
+- margem realizada vs. projetada e fluxo de caixa consolidado.
+
+### Lote 8 — dashboard
 
 Conectar o dashboard somente após métricas possuírem origem real e autorização.
 
@@ -94,7 +101,6 @@ necessário, usar feature flag ou migração por rota para permitir retorno segu
 - sem mocks em produção;
 - dados persistidos e sincronizados;
 - rotas restauráveis;
-- sem regressões M1–M5;
+- sem regressões M1–M6;
 - responsividade e acessibilidade aprovadas;
 - diff visual revisado conscientemente.
-
