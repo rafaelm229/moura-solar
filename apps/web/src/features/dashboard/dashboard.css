@@ -1,0 +1,361 @@
+/* ==========================================================================
+   MOURA SOLAR — DESIGN SYSTEM SPEC-003 v0.2
+   DASHBOARD FEATURE STYLES (LOTE 8)
+   ========================================================================== */
+
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 0.5rem;
+  color: var(--text-primary, #f5f7f5);
+}
+
+/* Header */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.dashboard-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary, #f5f7f5);
+  letter-spacing: -0.02em;
+}
+
+.dashboard-subtitle {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary, #9ba49e);
+}
+
+/* Period filter selector */
+.dashboard-period-filter {
+  display: flex;
+  background: var(--surface-card, #161a17);
+  border: 1px solid var(--border-default, #29302b);
+  border-radius: var(--radius-md, 8px);
+  padding: 3px;
+  gap: 2px;
+}
+
+.dashboard-period-btn {
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--radius-sm, 6px);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #9ba49e);
+  transition: all 0.15s ease;
+}
+
+.dashboard-period-btn:hover {
+  color: var(--text-primary, #f5f7f5);
+}
+
+.dashboard-period-btn--active {
+  background: var(--brand-solar, #ffd400);
+  color: #090b0a;
+}
+
+/* Alert Banner */
+.dashboard-alert-banner {
+  background: linear-gradient(90deg, rgba(255, 212, 0, 0.1) 0%, var(--surface-card, #161a17) 100%);
+  border: 1px solid rgba(255, 212, 0, 0.4);
+  border-left: 5px solid var(--brand-solar, #ffd400);
+  border-radius: var(--radius-lg, 12px);
+  padding: 0.875rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.dashboard-alert-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--brand-solar, #ffd400);
+}
+
+.dashboard-alert-close {
+  background: none;
+  border: none;
+  color: var(--brand-solar, #ffd400);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0.25rem;
+  opacity: 0.8;
+  transition: opacity 0.15s ease;
+}
+
+.dashboard-alert-close:hover {
+  opacity: 1;
+}
+
+/* KPI Cards Grid */
+.dashboard-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.dashboard-kpi-card {
+  background: var(--surface-card, #161a17);
+  border: 1px solid var(--border-default, #29302b);
+  border-radius: var(--radius-lg, 12px);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition:
+    border-color 0.2s ease,
+    transform 0.15s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.dashboard-kpi-card:hover {
+  border-color: #3e4841;
+}
+
+.dashboard-kpi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dashboard-kpi-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md, 8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+}
+
+.dashboard-kpi-tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+
+.dashboard-kpi-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--text-primary, #f5f7f5);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard-kpi-label {
+  font-size: 0.8125rem;
+  color: var(--text-secondary, #9ba49e);
+  font-weight: 500;
+}
+
+/* 2-Column Section Grids */
+.dashboard-section-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+
+@media (min-width: 1024px) {
+  .dashboard-section-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Panels */
+.dashboard-panel {
+  background: var(--surface-card, #161a17);
+  border: 1px solid var(--border-default, #29302b);
+  border-radius: var(--radius-lg, 12px);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.dashboard-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.dashboard-panel-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary, #f5f7f5);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Funnel bars */
+.dashboard-funnel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dashboard-funnel-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.dashboard-funnel-label {
+  font-size: 0.8125rem;
+  color: var(--text-secondary, #9ba49e);
+  width: 130px;
+  text-align: right;
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.dashboard-funnel-track {
+  flex: 1;
+  height: 10px;
+  background: var(--surface-sunken, #111412);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--border-default, #29302b);
+}
+
+.dashboard-funnel-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.dashboard-funnel-count {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary, #f5f7f5);
+  width: 32px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Quick Actions */
+.dashboard-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.dashboard-action-btn {
+  background: var(--surface-elevated, #1c211d);
+  border: 1px solid var(--border-default, #29302b);
+  border-radius: var(--radius-md, 8px);
+  padding: 0.85rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--text-primary, #f5f7f5);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.dashboard-action-btn:hover {
+  background: var(--surface-card, #161a17);
+  border-color: var(--brand-solar, #ffd400);
+  color: var(--brand-solar, #ffd400);
+}
+
+/* Table */
+.dashboard-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--border-default, #29302b);
+  border-radius: var(--radius-md, 8px);
+  background: var(--surface-sunken, #111412);
+}
+
+.dashboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.dashboard-table th {
+  padding: 0.65rem 0.85rem;
+  background: var(--surface-elevated, #1c211d);
+  border-bottom: 1px solid var(--border-default, #29302b);
+  font-weight: 600;
+  color: var(--text-secondary, #9ba49e);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.dashboard-table td {
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid var(--border-default, #29302b);
+  color: var(--text-primary, #f5f7f5);
+  white-space: nowrap;
+}
+
+.dashboard-table tr:hover td {
+  background: rgba(255, 212, 0, 0.03);
+}
+
+/* Timeline */
+.dashboard-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.dashboard-timeline-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.dashboard-timeline-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+
+.dashboard-timeline-content {
+  flex: 1;
+}
+
+.dashboard-timeline-text {
+  font-size: 0.85rem;
+  color: var(--text-primary, #f5f7f5);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.dashboard-timeline-time {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #9ba49e);
+  margin: 0.2rem 0 0 0;
+}

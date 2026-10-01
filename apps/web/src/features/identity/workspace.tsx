@@ -20,12 +20,12 @@ import { Opportunities } from '../commercial/opportunities';
 import { Activities } from '../commercial/activities';
 import { Catalog } from '../design/catalog';
 import { GlobalFinancialDashboard } from '../financial/financial';
+import { Dashboard } from '../dashboard/dashboard';
 
 import { AppShell } from '@/ui/shell/AppShell';
 import { PlaceholderPage } from '@/ui/shell/PlaceholderPage';
 import { NavGroupConfig, ShellUser } from '@/ui/shell/types';
 import {
-  IconHome,
   IconUsers,
   IconTrendingUp,
   IconActivity,
@@ -587,13 +587,7 @@ function Application() {
         </section>
       ) : (
         <>
-          {tab === 'dashboard' && (
-            <PlaceholderPage
-              title="Visão Geral da Plataforma"
-              description="Painel executivo com métricas consolidadas de vendas, projetos, suprimentos e finanças."
-              icon={<IconHome size={32} />}
-            />
-          )}
+          {tab === 'dashboard' && <Dashboard onNavigate={switchTab} />}
 
           {tab === 'customers' && (
             <Customers
