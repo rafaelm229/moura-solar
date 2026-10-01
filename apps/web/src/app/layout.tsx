@@ -5,6 +5,7 @@ import '../features/commercial/commercial.css';
 import '../features/design/design.css';
 import '../features/proposal/proposal.css';
 import '../features/contract/contract.css';
+import '../features/financial/financial.css';
 import './styles.css';
 
 import type { Metadata, Viewport } from 'next';

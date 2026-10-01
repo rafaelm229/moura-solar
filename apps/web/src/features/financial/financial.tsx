@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, result } from '../identity/client';
 import { Feedback } from '../identity/feedback';
+import { Button } from '../../ui/Button';
 
 export interface ReceivableView {
   id: string;
@@ -387,10 +388,7 @@ export function OpportunityFinancial({
   const commissions = summary?.commissions || [];
 
   return (
-    <div
-      className="financial-opportunity-view"
-      style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}
-    >
+    <div className="financial-container">
       <Feedback
         error={
           generatePlanMutation.error ||
@@ -404,29 +402,13 @@ export function OpportunityFinancial({
 
       {/* Gate Financeiro Status Banner */}
       <div
-        className="gate-banner"
-        style={{
-          padding: '1rem 1.25rem',
-          borderRadius: '8px',
-          border: '1px solid',
-          borderColor:
-            financialGate?.status === 'SATISFIED'
-              ? '#22c55e'
-              : financialGate?.status === 'BLOCKED'
-                ? '#ef4444'
-                : '#f59e0b',
-          backgroundColor:
-            financialGate?.status === 'SATISFIED'
-              ? '#f0fdf4'
-              : financialGate?.status === 'BLOCKED'
-                ? '#fef2f2'
-                : '#fffbeb',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '1rem',
-        }}
+        className={`financial-gate-banner ${
+          financialGate?.status === 'SATISFIED'
+            ? 'financial-gate-banner--satisfied'
+            : financialGate?.status === 'BLOCKED'
+              ? 'financial-gate-banner--blocked'
+              : 'financial-gate-banner--pending'
+        }`}
       >
         <div>
           <div
@@ -434,53 +416,39 @@ export function OpportunityFinancial({
               display: 'flex',
               alignItems: 'center',
               gap: '0.6rem',
-              marginBottom: '0.25rem',
+              marginBottom: '0.35rem',
             }}
           >
             <span style={{ fontSize: '1.25rem' }}>
               {financialGate?.status === 'SATISFIED' ? '🛡️' : '⏳'}
             </span>
-            <strong style={{ fontSize: '1.05rem', color: '#1e293b' }}>
+            <strong style={{ fontSize: '1.05rem', color: 'var(--text-primary, #f5f7f5)' }}>
               Gate Financeiro {opportunityCode ? `[${opportunityCode}]` : ''} (Down Payment / Sinal)
             </strong>
             <span
-              style={{
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                padding: '0.2rem 0.6rem',
-                borderRadius: '999px',
-                color: '#fff',
-                backgroundColor:
-                  financialGate?.status === 'SATISFIED'
-                    ? '#16a34a'
-                    : financialGate?.status === 'BLOCKED'
-                      ? '#dc2626'
-                      : '#d97706',
-              }}
+              className={`financial-badge ${
+                financialGate?.status === 'SATISFIED'
+                  ? 'financial-badge--success'
+                  : financialGate?.status === 'BLOCKED'
+                    ? 'financial-badge--danger'
+                    : 'financial-badge--warning'
+              }`}
             >
               {financialGate?.status === 'SATISFIED'
                 ? '✓ LIBERADO / SATISFEITO'
                 : 'AGUARDANDO ENTRADA'}
             </span>
           </div>
-          <p style={{ margin: 0, fontSize: '0.9rem', color: '#475569' }}>
+          <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary, #9ba49e)' }}>
             {financialGate?.evidenceSummary ||
               'Aguardando confirmação do pagamento do sinal/entrada para liberação dos suprimentos e compras.'}
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <button
+        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+          <Button
             type="button"
-            style={{
-              backgroundColor: '#16a34a',
-              color: '#ffffff',
-              fontWeight: 600,
-              padding: '0.5rem 1rem',
-              borderRadius: '6px',
-              border: 'none',
-              cursor: 'pointer',
-            }}
+            variant="primary"
             onClick={() => {
               // Pre-select first open receivable (typically down payment)
               const firstOpen = receivables.find((r) =>
@@ -494,19 +462,11 @@ export function OpportunityFinancial({
             }}
           >
             💵 Registrar Recebimento
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
-            style={{
-              backgroundColor: '#0284c7',
-              color: '#ffffff',
-              fontWeight: 600,
-              padding: '0.5rem 0.85rem',
-              borderRadius: '6px',
-              border: 'none',
-              cursor: 'pointer',
-            }}
+            variant="secondary"
             onClick={() => {
               if (summary?.activePaymentPlan) {
                 setPlanTotal(Number(summary.activePaymentPlan.totalAmount));
@@ -516,55 +476,26 @@ export function OpportunityFinancial({
             }}
           >
             ⚙️ {summary?.activePaymentPlan ? 'Repactuar Plano' : 'Gerar Plano de Parcelas'}
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* KPI Cards: Indicators & Margins */}
-      <div
-        className="kpi-grid"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '1rem',
-        }}
-      >
-        <div
-          style={{
-            background: '#f8fafc',
-            padding: '1rem',
-            borderRadius: '8px',
-            border: '1px solid #e2e8f0',
-          }}
-        >
-          <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
-            RECEITA CONTRATADA
-          </span>
-          <div
-            style={{ fontSize: '1.35rem', fontWeight: 700, color: '#0f172a', marginTop: '0.25rem' }}
-          >
-            {formatBRL(indicators?.contractedRevenue)}
-          </div>
-          <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Total comercial aprovado</span>
+      <div className="financial-kpi-grid">
+        <div className="financial-kpi-card">
+          <span className="financial-kpi-label">RECEITA CONTRATADA</span>
+          <div className="financial-kpi-value">{formatBRL(indicators?.contractedRevenue)}</div>
+          <span className="financial-kpi-sub">Total comercial aprovado</span>
         </div>
 
-        <div
-          style={{
-            background: '#f0fdf4',
-            padding: '1rem',
-            borderRadius: '8px',
-            border: '1px solid #bbf7d0',
-          }}
-        >
-          <span style={{ fontSize: '0.8rem', color: '#166534', fontWeight: 600 }}>
+        <div className="financial-kpi-card financial-kpi-card--success">
+          <span className="financial-kpi-label" style={{ color: 'var(--status-success, #26d866)' }}>
             RECEBIDO (REALIZADO)
           </span>
-          <div
-            style={{ fontSize: '1.35rem', fontWeight: 700, color: '#15803d', marginTop: '0.25rem' }}
-          >
+          <div className="financial-kpi-value" style={{ color: 'var(--status-success, #26d866)' }}>
             {formatBRL(indicators?.receivedRevenue)}
           </div>
-          <span style={{ fontSize: '0.75rem', color: '#16a34a' }}>
+          <span className="financial-kpi-sub" style={{ color: 'var(--status-success, #26d866)' }}>
             {indicators?.contractedRevenue
               ? `${Math.round(((indicators.receivedRevenue || 0) / indicators.contractedRevenue) * 100)}% liquidado`
               : '0% liquidado'}
@@ -572,83 +503,79 @@ export function OpportunityFinancial({
         </div>
 
         <div
-          style={{
-            background: '#fffbeb',
-            padding: '1rem',
-            borderRadius: '8px',
-            border: '1px solid #fde68a',
-          }}
+          className={`financial-kpi-card ${
+            indicators?.overdueReceivables
+              ? 'financial-kpi-card--danger'
+              : 'financial-kpi-card--warning'
+          }`}
         >
-          <span style={{ fontSize: '0.8rem', color: '#92400e', fontWeight: 600 }}>
+          <span className="financial-kpi-label" style={{ color: 'var(--status-warning, #ff9f1c)' }}>
             SALDO A RECEBER
           </span>
-          <div
-            style={{ fontSize: '1.35rem', fontWeight: 700, color: '#b45309', marginTop: '0.25rem' }}
-          >
+          <div className="financial-kpi-value" style={{ color: 'var(--status-warning, #ff9f1c)' }}>
             {formatBRL(indicators?.openReceivables)}
           </div>
           {indicators?.overdueReceivables ? (
-            <span style={{ fontSize: '0.75rem', color: '#dc2626', fontWeight: 600 }}>
+            <span
+              className="financial-kpi-sub"
+              style={{ color: 'var(--status-danger, #ff4d57)', fontWeight: 600 }}
+            >
               ⚠️ {formatBRL(indicators.overdueReceivables)} vencido
             </span>
           ) : (
-            <span style={{ fontSize: '0.75rem', color: '#16a34a' }}>Sem parcelas vencidas</span>
+            <span className="financial-kpi-sub" style={{ color: 'var(--status-success, #26d866)' }}>
+              Sem parcelas vencidas
+            </span>
           )}
         </div>
 
-        <div
-          style={{
-            background: '#f8fafc',
-            padding: '1rem',
-            borderRadius: '8px',
-            border: '1px solid #e2e8f0',
-          }}
-        >
-          <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
-            CUSTOS PAGOS / ORÇADOS
-          </span>
-          <div
-            style={{ fontSize: '1.25rem', fontWeight: 700, color: '#334155', marginTop: '0.25rem' }}
-          >
+        <div className="financial-kpi-card">
+          <span className="financial-kpi-label">CUSTOS PAGOS / ORÇADOS</span>
+          <div className="financial-kpi-value" style={{ fontSize: '1.25rem' }}>
             {formatBRL(indicators?.paidCost)}{' '}
-            <span style={{ fontSize: '0.85rem', fontWeight: 400, color: '#64748b' }}>
+            <span
+              style={{
+                fontSize: '0.85rem',
+                fontWeight: 400,
+                color: 'var(--text-secondary, #9ba49e)',
+              }}
+            >
               / {formatBRL(indicators?.recognizedCost)}
             </span>
           </div>
-          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-            Equipamentos, frete e comissões
-          </span>
+          <span className="financial-kpi-sub">Equipamentos, frete e comissões</span>
         </div>
 
         <div
-          style={{
-            background: (indicators?.actualGrossResult ?? 0) >= 0 ? '#f0fdf4' : '#fef2f2',
-            padding: '1rem',
-            borderRadius: '8px',
-            border: '1px solid',
-            borderColor: (indicators?.actualGrossResult ?? 0) >= 0 ? '#86efac' : '#fca5a5',
-          }}
+          className={`financial-kpi-card ${
+            (indicators?.actualGrossResult ?? 0) >= 0
+              ? 'financial-kpi-card--success'
+              : 'financial-kpi-card--danger'
+          }`}
         >
           <span
+            className="financial-kpi-label"
             style={{
-              fontSize: '0.8rem',
-              fontWeight: 600,
-              color: (indicators?.actualGrossResult ?? 0) >= 0 ? '#166534' : '#991b1b',
+              color:
+                (indicators?.actualGrossResult ?? 0) >= 0
+                  ? 'var(--status-success, #26d866)'
+                  : 'var(--status-danger, #ff4d57)',
             }}
           >
             RESULTADO & MARGEM
           </span>
           <div
+            className="financial-kpi-value"
             style={{
-              fontSize: '1.35rem',
-              fontWeight: 700,
-              color: (indicators?.actualGrossResult ?? 0) >= 0 ? '#15803d' : '#b91c1c',
-              marginTop: '0.25rem',
+              color:
+                (indicators?.actualGrossResult ?? 0) >= 0
+                  ? 'var(--status-success, #26d866)'
+                  : 'var(--status-danger, #ff4d57)',
             }}
           >
             {formatBRL(indicators?.actualGrossResult)}
           </div>
-          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569' }}>
+          <span className="financial-kpi-sub" style={{ fontWeight: 600 }}>
             Margem Realizada: {indicators?.actualMarginPercent}% | Projetada:{' '}
             {indicators?.projectedMarginPercent}%
           </span>
@@ -656,25 +583,12 @@ export function OpportunityFinancial({
       </div>
 
       {/* Subtabs for Detail Tables */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '0.5rem',
-          borderBottom: '2px solid #e2e8f0',
-          paddingBottom: '0.5rem',
-        }}
-      >
+      <div className="financial-subtabs">
         <button
           type="button"
-          style={{
-            background: activeTab === 'receivables' ? '#0284c7' : 'transparent',
-            color: activeTab === 'receivables' ? '#ffffff' : '#475569',
-            border: 'none',
-            padding: '0.5rem 1rem',
-            borderRadius: '6px',
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
+          className={`financial-subtab-btn ${
+            activeTab === 'receivables' ? 'financial-subtab-btn--active' : ''
+          }`}
           onClick={() => setActiveTab('receivables')}
         >
           📑 Contas a Receber ({receivables.length})
@@ -682,15 +596,9 @@ export function OpportunityFinancial({
 
         <button
           type="button"
-          style={{
-            background: activeTab === 'payables' ? '#0284c7' : 'transparent',
-            color: activeTab === 'payables' ? '#ffffff' : '#475569',
-            border: 'none',
-            padding: '0.5rem 1rem',
-            borderRadius: '6px',
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
+          className={`financial-subtab-btn ${
+            activeTab === 'payables' ? 'financial-subtab-btn--active' : ''
+          }`}
           onClick={() => setActiveTab('payables')}
         >
           📤 Custos & Contas a Pagar ({payables.length})
@@ -698,15 +606,9 @@ export function OpportunityFinancial({
 
         <button
           type="button"
-          style={{
-            background: activeTab === 'commissions' ? '#0284c7' : 'transparent',
-            color: activeTab === 'commissions' ? '#ffffff' : '#475569',
-            border: 'none',
-            padding: '0.5rem 1rem',
-            borderRadius: '6px',
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
+          className={`financial-subtab-btn ${
+            activeTab === 'commissions' ? 'financial-subtab-btn--active' : ''
+          }`}
           onClick={() => setActiveTab('commissions')}
         >
           🤝 Comissões ({commissions.length})
@@ -715,516 +617,393 @@ export function OpportunityFinancial({
 
       {/* TAB 1: RECEIVABLES */}
       {activeTab === 'receivables' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h4 style={{ margin: 0 }}>Cronograma de Parcelas & Recebimentos</h4>
-            <button
+        <div className="financial-panel">
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '0.75rem',
+            }}
+          >
+            <h4 style={{ margin: 0, color: 'var(--text-primary, #f5f7f5)' }}>
+              Cronograma de Parcelas & Recebimentos
+            </h4>
+            <Button
               type="button"
-              style={{
-                backgroundColor: '#16a34a',
-                color: '#fff',
-                padding: '0.4rem 0.8rem',
-                borderRadius: '6px',
-                border: 'none',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
+              variant="primary"
+              size="compact"
               onClick={() => {
                 setReceiptTargetReceivable('');
                 setShowReceiptModal(true);
               }}
             >
               + Novo Recebimento
-            </button>
+            </Button>
           </div>
 
           {receivables.length === 0 ? (
-            <div
-              style={{
-                padding: '2rem',
-                textAlign: 'center',
-                background: '#f8fafc',
-                borderRadius: '8px',
-              }}
-            >
-              <p style={{ color: '#64748b' }}>
-                Nenhum plano de pagamento gerado ainda para esta oportunidade.
-              </p>
-              <button
+            <div className="financial-empty-state">
+              <p>Nenhum plano de pagamento gerado ainda para esta oportunidade.</p>
+              <Button
                 type="button"
-                style={{
-                  backgroundColor: '#0284c7',
-                  color: '#fff',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '6px',
-                  border: 'none',
-                  cursor: 'pointer',
-                }}
+                variant="primary"
                 onClick={() => setShowGeneratePlanModal(true)}
               >
                 Gerar Plano de Parcelas Automaticamente
-              </button>
+              </Button>
             </div>
           ) : (
-            <table
-              style={{
-                width: '100%',
-                borderCollapse: 'collapse',
-                textAlign: 'left',
-                fontSize: '0.9rem',
-              }}
-            >
-              <thead>
-                <tr style={{ borderBottom: '2px solid #cbd5e1', color: '#475569' }}>
-                  <th style={{ padding: '0.5rem' }}>#</th>
-                  <th style={{ padding: '0.5rem' }}>Identificação</th>
-                  <th style={{ padding: '0.5rem' }}>Valor Original</th>
-                  <th style={{ padding: '0.5rem' }}>Valor Pago</th>
-                  <th style={{ padding: '0.5rem' }}>Saldo em Aberto</th>
-                  <th style={{ padding: '0.5rem' }}>Vencimento</th>
-                  <th style={{ padding: '0.5rem' }}>Status</th>
-                  <th style={{ padding: '0.5rem', textAlign: 'right' }}>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {receivables.map((rec) => {
-                  const isPaid = rec.status === 'PAID';
-                  const isOverdue =
-                    rec.status === 'OVERDUE' || (new Date(rec.dueDate) < new Date() && !isPaid);
-                  return (
-                    <tr
-                      key={rec.id}
-                      style={{
-                        borderBottom: '1px solid #e2e8f0',
-                        background: isPaid ? '#f0fdf4' : undefined,
-                      }}
-                    >
-                      <td style={{ padding: '0.6rem 0.5rem', fontWeight: 600 }}>
-                        {rec.installmentNumber}
-                      </td>
-                      <td style={{ padding: '0.6rem 0.5rem' }}>
-                        <strong>{rec.title}</strong>
-                        {rec.notes && (
-                          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{rec.notes}</div>
-                        )}
-                      </td>
-                      <td style={{ padding: '0.6rem 0.5rem' }}>{formatBRL(rec.originalAmount)}</td>
-                      <td style={{ padding: '0.6rem 0.5rem', color: '#16a34a', fontWeight: 600 }}>
-                        {formatBRL(rec.paidAmount)}
-                      </td>
-                      <td style={{ padding: '0.6rem 0.5rem', fontWeight: 600 }}>
-                        {formatBRL(rec.outstandingAmount)}
-                      </td>
-                      <td
-                        style={{
-                          padding: '0.6rem 0.5rem',
-                          color: isOverdue ? '#dc2626' : undefined,
-                          fontWeight: isOverdue ? 700 : 400,
-                        }}
-                      >
-                        {formatDate(rec.dueDate)}
-                      </td>
-                      <td style={{ padding: '0.6rem 0.5rem' }}>
-                        <span
+            <div className="financial-table-wrapper">
+              <table className="financial-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Identificação</th>
+                    <th>Valor Original</th>
+                    <th>Valor Pago</th>
+                    <th>Saldo em Aberto</th>
+                    <th>Vencimento</th>
+                    <th>Status</th>
+                    <th style={{ textAlign: 'right' }}>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {receivables.map((rec) => {
+                    const isPaid = rec.status === 'PAID';
+                    const isOverdue =
+                      rec.status === 'OVERDUE' || (new Date(rec.dueDate) < new Date() && !isPaid);
+                    return (
+                      <tr key={rec.id}>
+                        <td style={{ fontWeight: 600 }}>{rec.installmentNumber}</td>
+                        <td>
+                          <strong>{rec.title}</strong>
+                          {rec.notes && (
+                            <div
+                              style={{
+                                fontSize: '0.75rem',
+                                color: 'var(--text-secondary, #9ba49e)',
+                              }}
+                            >
+                              {rec.notes}
+                            </div>
+                          )}
+                        </td>
+                        <td>{formatBRL(rec.originalAmount)}</td>
+                        <td
                           style={{
-                            padding: '0.2rem 0.5rem',
-                            borderRadius: '4px',
-                            fontSize: '0.75rem',
-                            fontWeight: 700,
-                            backgroundColor:
-                              rec.status === 'PAID'
-                                ? '#bbf7d0'
-                                : rec.status === 'PARTIALLY_PAID'
-                                  ? '#fed7aa'
-                                  : isOverdue
-                                    ? '#fecaca'
-                                    : '#e2e8f0',
-                            color:
-                              rec.status === 'PAID'
-                                ? '#166534'
-                                : rec.status === 'PARTIALLY_PAID'
-                                  ? '#9a3412'
-                                  : isOverdue
-                                    ? '#991b1b'
-                                    : '#334155',
+                            color: 'var(--status-success, #26d866)',
+                            fontWeight: 600,
                           }}
                         >
-                          {rec.status === 'PAID'
-                            ? 'LIQUIDADO'
-                            : rec.status === 'PARTIALLY_PAID'
-                              ? 'PARCIAL'
-                              : isOverdue
-                                ? 'VENCIDO'
-                                : 'EM ABERTO'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '0.6rem 0.5rem', textAlign: 'right' }}>
-                        <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
-                          {!isPaid && (
-                            <button
-                              type="button"
-                              style={{
-                                backgroundColor: '#16a34a',
-                                color: '#fff',
-                                border: 'none',
-                                padding: '0.25rem 0.6rem',
-                                borderRadius: '4px',
-                                fontSize: '0.8rem',
-                                cursor: 'pointer',
-                              }}
-                              onClick={() => {
-                                setReceiptTargetReceivable(rec.id);
-                                setReceiptAmount(Number(rec.outstandingAmount));
-                                setShowReceiptModal(true);
-                              }}
-                            >
-                              Receber
-                            </button>
-                          )}
-                          {rec.allocations && rec.allocations.length > 0 && (
-                            <button
-                              type="button"
-                              style={{
-                                backgroundColor: '#fee2e2',
-                                color: '#991b1b',
-                                border: '1px solid #f87171',
-                                padding: '0.25rem 0.5rem',
-                                borderRadius: '4px',
-                                fontSize: '0.75rem',
-                                cursor: 'pointer',
-                              }}
-                              onClick={() => {
-                                const lastAlloc = rec.allocations?.[rec.allocations.length - 1];
-                                if (lastAlloc) {
-                                  setShowReverseModal({ receiptId: lastAlloc.receiptId });
-                                }
-                              }}
-                            >
-                              Estornar
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                          {formatBRL(rec.paidAmount)}
+                        </td>
+                        <td style={{ fontWeight: 600 }}>{formatBRL(rec.outstandingAmount)}</td>
+                        <td
+                          style={{
+                            color: isOverdue ? 'var(--status-danger, #ff4d57)' : undefined,
+                            fontWeight: isOverdue ? 700 : 400,
+                          }}
+                        >
+                          {formatDate(rec.dueDate)}
+                        </td>
+                        <td>
+                          <span
+                            className={`financial-badge ${
+                              rec.status === 'PAID'
+                                ? 'financial-badge--success'
+                                : rec.status === 'PARTIALLY_PAID'
+                                  ? 'financial-badge--warning'
+                                  : isOverdue
+                                    ? 'financial-badge--danger'
+                                    : 'financial-badge--neutral'
+                            }`}
+                          >
+                            {rec.status === 'PAID'
+                              ? 'LIQUIDADO'
+                              : rec.status === 'PARTIALLY_PAID'
+                                ? 'PARCIAL'
+                                : isOverdue
+                                  ? 'VENCIDO'
+                                  : 'EM ABERTO'}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <div
+                            style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}
+                          >
+                            {!isPaid && (
+                              <Button
+                                type="button"
+                                variant="primary"
+                                size="compact"
+                                onClick={() => {
+                                  setReceiptTargetReceivable(rec.id);
+                                  setReceiptAmount(Number(rec.outstandingAmount));
+                                  setShowReceiptModal(true);
+                                }}
+                              >
+                                Receber
+                              </Button>
+                            )}
+                            {rec.allocations && rec.allocations.length > 0 && (
+                              <Button
+                                type="button"
+                                variant="danger"
+                                size="compact"
+                                onClick={() => {
+                                  const lastAlloc = rec.allocations?.[rec.allocations.length - 1];
+                                  if (lastAlloc) {
+                                    setShowReverseModal({ receiptId: lastAlloc.receiptId });
+                                  }
+                                }}
+                              >
+                                Estornar
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}
 
       {/* TAB 2: PAYABLES */}
       {activeTab === 'payables' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h4 style={{ margin: 0 }}>Obrigações a Pagar do Projeto</h4>
-            <button
+        <div className="financial-panel">
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '0.75rem',
+            }}
+          >
+            <h4 style={{ margin: 0, color: 'var(--text-primary, #f5f7f5)' }}>
+              Obrigações a Pagar do Projeto
+            </h4>
+            <Button
               type="button"
-              style={{
-                backgroundColor: '#0284c7',
-                color: '#fff',
-                padding: '0.4rem 0.8rem',
-                borderRadius: '6px',
-                border: 'none',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
+              variant="secondary"
+              size="compact"
               onClick={() => setShowPayableModal(true)}
             >
               + Adicionar Custo / Despesa
-            </button>
+            </Button>
           </div>
 
           {payables.length === 0 ? (
-            <div
-              style={{
-                padding: '2rem',
-                textAlign: 'center',
-                background: '#f8fafc',
-                borderRadius: '8px',
-              }}
-            >
-              <p style={{ color: '#64748b' }}>
-                Nenhum custo ou obrigação a pagar cadastrada para este projeto.
-              </p>
-              <button
-                type="button"
-                style={{
-                  backgroundColor: '#0284c7',
-                  color: '#fff',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '6px',
-                  border: 'none',
-                  cursor: 'pointer',
-                }}
-                onClick={() => setShowPayableModal(true)}
-              >
+            <div className="financial-empty-state">
+              <p>Nenhum custo ou obrigação a pagar cadastrada para este projeto.</p>
+              <Button type="button" variant="secondary" onClick={() => setShowPayableModal(true)}>
                 Cadastrar Custo de Equipamento ou Serviço
-              </button>
+              </Button>
             </div>
           ) : (
-            <table
-              style={{
-                width: '100%',
-                borderCollapse: 'collapse',
-                textAlign: 'left',
-                fontSize: '0.9rem',
-              }}
-            >
-              <thead>
-                <tr style={{ borderBottom: '2px solid #cbd5e1', color: '#475569' }}>
-                  <th style={{ padding: '0.5rem' }}>Categoria</th>
-                  <th style={{ padding: '0.5rem' }}>Descrição / Fornecedor</th>
-                  <th style={{ padding: '0.5rem' }}>Valor Original</th>
-                  <th style={{ padding: '0.5rem' }}>Pago</th>
-                  <th style={{ padding: '0.5rem' }}>Saldo</th>
-                  <th style={{ padding: '0.5rem' }}>Vencimento</th>
-                  <th style={{ padding: '0.5rem' }}>Status</th>
-                  <th style={{ padding: '0.5rem', textAlign: 'right' }}>Ação</th>
-                </tr>
-              </thead>
-              <tbody>
-                {payables.map((p) => {
-                  const isPaid = p.status === 'PAID';
-                  return (
-                    <tr
-                      key={p.id}
-                      style={{
-                        borderBottom: '1px solid #e2e8f0',
-                        background: isPaid ? '#f0fdf4' : undefined,
-                      }}
-                    >
-                      <td style={{ padding: '0.6rem 0.5rem', fontWeight: 600 }}>{p.category}</td>
-                      <td style={{ padding: '0.6rem 0.5rem' }}>
-                        <div>
-                          <strong>{p.description}</strong>
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{p.recipient}</div>
-                      </td>
-                      <td style={{ padding: '0.6rem 0.5rem' }}>{formatBRL(p.originalAmount)}</td>
-                      <td style={{ padding: '0.6rem 0.5rem', color: '#16a34a' }}>
-                        {formatBRL(p.paidAmount)}
-                      </td>
-                      <td style={{ padding: '0.6rem 0.5rem', fontWeight: 600 }}>
-                        {formatBRL(p.outstandingAmount)}
-                      </td>
-                      <td style={{ padding: '0.6rem 0.5rem' }}>{formatDate(p.dueDate)}</td>
-                      <td style={{ padding: '0.6rem 0.5rem' }}>
-                        <span
-                          style={{
-                            padding: '0.2rem 0.5rem',
-                            borderRadius: '4px',
-                            fontSize: '0.75rem',
-                            fontWeight: 700,
-                            backgroundColor: isPaid ? '#bbf7d0' : '#fed7aa',
-                            color: isPaid ? '#166534' : '#9a3412',
-                          }}
-                        >
-                          {p.status}
-                        </span>
-                      </td>
-                      <td style={{ padding: '0.6rem 0.5rem', textAlign: 'right' }}>
-                        {!isPaid && (
-                          <button
-                            type="button"
+            <div className="financial-table-wrapper">
+              <table className="financial-table">
+                <thead>
+                  <tr>
+                    <th>Categoria</th>
+                    <th>Descrição / Fornecedor</th>
+                    <th>Valor Original</th>
+                    <th>Pago</th>
+                    <th>Saldo</th>
+                    <th>Vencimento</th>
+                    <th>Status</th>
+                    <th style={{ textAlign: 'right' }}>Ação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {payables.map((p) => {
+                    const isPaid = p.status === 'PAID';
+                    return (
+                      <tr key={p.id}>
+                        <td style={{ fontWeight: 600 }}>{p.category}</td>
+                        <td>
+                          <div>
+                            <strong>{p.description}</strong>
+                          </div>
+                          <div
                             style={{
-                              backgroundColor: '#0284c7',
-                              color: '#fff',
-                              border: 'none',
-                              padding: '0.25rem 0.6rem',
-                              borderRadius: '4px',
-                              fontSize: '0.8rem',
-                              cursor: 'pointer',
-                            }}
-                            onClick={() => {
-                              setPaymentTargetPayable(p.id);
-                              setPaymentAmount(Number(p.outstandingAmount));
-                              setShowPaymentModal(true);
+                              fontSize: '0.75rem',
+                              color: 'var(--text-secondary, #9ba49e)',
                             }}
                           >
-                            Pagar
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                            {p.recipient}
+                          </div>
+                        </td>
+                        <td>{formatBRL(p.originalAmount)}</td>
+                        <td
+                          style={{
+                            color: 'var(--status-success, #26d866)',
+                            fontWeight: 600,
+                          }}
+                        >
+                          {formatBRL(p.paidAmount)}
+                        </td>
+                        <td style={{ fontWeight: 600 }}>{formatBRL(p.outstandingAmount)}</td>
+                        <td>{formatDate(p.dueDate)}</td>
+                        <td>
+                          <span
+                            className={`financial-badge ${
+                              isPaid ? 'financial-badge--success' : 'financial-badge--warning'
+                            }`}
+                          >
+                            {p.status}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          {!isPaid && (
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="compact"
+                              onClick={() => {
+                                setPaymentTargetPayable(p.id);
+                                setPaymentAmount(Number(p.outstandingAmount));
+                                setShowPaymentModal(true);
+                              }}
+                            >
+                              Pagar
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}
 
       {/* TAB 3: COMMISSIONS */}
       {activeTab === 'commissions' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h4 style={{ margin: 0 }}>Comissões da Oportunidade</h4>
-            <button
+        <div className="financial-panel">
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '0.75rem',
+            }}
+          >
+            <h4 style={{ margin: 0, color: 'var(--text-primary, #f5f7f5)' }}>
+              Comissões da Oportunidade
+            </h4>
+            <Button
               type="button"
-              style={{
-                backgroundColor: '#0284c7',
-                color: '#fff',
-                padding: '0.4rem 0.8rem',
-                borderRadius: '6px',
-                border: 'none',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
+              variant="secondary"
+              size="compact"
               onClick={() => setShowCommissionModal(true)}
             >
               + Nova Comissão
-            </button>
+            </Button>
           </div>
 
           {commissions.length === 0 ? (
-            <p style={{ color: '#64748b' }}>Nenhuma comissão configurada.</p>
+            <div className="financial-empty-state">
+              <p>Nenhuma comissão configurada.</p>
+            </div>
           ) : (
-            <table
-              style={{
-                width: '100%',
-                borderCollapse: 'collapse',
-                textAlign: 'left',
-                fontSize: '0.9rem',
-              }}
-            >
-              <thead>
-                <tr style={{ borderBottom: '2px solid #cbd5e1', color: '#475569' }}>
-                  <th style={{ padding: '0.5rem' }}>Beneficiário</th>
-                  <th style={{ padding: '0.5rem' }}>Papel</th>
-                  <th style={{ padding: '0.5rem' }}>%</th>
-                  <th style={{ padding: '0.5rem' }}>Valor Base</th>
-                  <th style={{ padding: '0.5rem' }}>Comissão</th>
-                  <th style={{ padding: '0.5rem' }}>Gatilho de Aquisição</th>
-                  <th style={{ padding: '0.5rem' }}>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {commissions.map((c) => (
-                  <tr key={c.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                    <td style={{ padding: '0.6rem 0.5rem', fontWeight: 600 }}>
-                      {c.beneficiaryName}
-                    </td>
-                    <td style={{ padding: '0.6rem 0.5rem' }}>{c.role}</td>
-                    <td style={{ padding: '0.6rem 0.5rem' }}>{c.percentage}%</td>
-                    <td style={{ padding: '0.6rem 0.5rem' }}>{formatBRL(c.baseAmount)}</td>
-                    <td style={{ padding: '0.6rem 0.5rem', color: '#16a34a', fontWeight: 700 }}>
-                      {formatBRL(c.commissionAmount)}
-                    </td>
-                    <td style={{ padding: '0.6rem 0.5rem' }}>Gate {c.triggerGate}</td>
-                    <td style={{ padding: '0.6rem 0.5rem' }}>
-                      <span
+            <div className="financial-table-wrapper">
+              <table className="financial-table">
+                <thead>
+                  <tr>
+                    <th>Beneficiário</th>
+                    <th>Papel</th>
+                    <th>%</th>
+                    <th>Valor Base</th>
+                    <th>Comissão</th>
+                    <th>Gatilho de Aquisição</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {commissions.map((c) => (
+                    <tr key={c.id}>
+                      <td style={{ fontWeight: 600 }}>{c.beneficiaryName}</td>
+                      <td>{c.role}</td>
+                      <td>{c.percentage}%</td>
+                      <td>{formatBRL(c.baseAmount)}</td>
+                      <td
                         style={{
-                          padding: '0.2rem 0.5rem',
-                          borderRadius: '4px',
-                          fontSize: '0.75rem',
+                          color: 'var(--status-success, #26d866)',
                           fontWeight: 700,
-                          backgroundColor:
-                            c.status === 'PAID'
-                              ? '#bbf7d0'
-                              : c.status === 'ACQUIRED'
-                                ? '#dbeafe'
-                                : '#fef3c7',
-                          color:
-                            c.status === 'PAID'
-                              ? '#166534'
-                              : c.status === 'ACQUIRED'
-                                ? '#1e40af'
-                                : '#92400e',
                         }}
                       >
-                        {c.status === 'ESTIMATED'
-                          ? 'ESTIMADA (Aguardando Gate)'
-                          : c.status === 'ACQUIRED'
-                            ? 'ADQUIRIDA (Gerado a Pagar)'
-                            : 'PAGA'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                        {formatBRL(c.commissionAmount)}
+                      </td>
+                      <td>Gate {c.triggerGate}</td>
+                      <td>
+                        <span
+                          className={`financial-badge ${
+                            c.status === 'PAID'
+                              ? 'financial-badge--success'
+                              : c.status === 'ACQUIRED'
+                                ? 'financial-badge--info'
+                                : 'financial-badge--warning'
+                          }`}
+                        >
+                          {c.status === 'ESTIMATED'
+                            ? 'ESTIMADA (Aguardando Gate)'
+                            : c.status === 'ACQUIRED'
+                              ? 'ADQUIRIDA (Gerado a Pagar)'
+                              : 'PAGA'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}
 
       {/* MODAL 1: GENERATE / ADJUST PAYMENT PLAN */}
       {showGeneratePlanModal && (
-        <div
-          className="modal-overlay"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: '#fff',
-              padding: '1.5rem',
-              borderRadius: '8px',
-              maxWidth: '480px',
-              width: '90%',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1rem',
-            }}
-          >
-            <h3 style={{ margin: 0 }}>Gerar / Repactuar Plano de Pagamento</h3>
-            <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>
+        <div className="financial-modal-backdrop">
+          <div className="financial-modal-card">
+            <h3 className="financial-modal-title">Gerar / Repactuar Plano de Pagamento</h3>
+            <p className="financial-modal-desc">
               Define a entrada e a quantidade de parcelas. O Gate Financeiro exigirá a liquidação da
               entrada para liberação do projeto.
             </p>
 
-            <label
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem',
-                fontSize: '0.85rem',
-              }}
-            >
+            <label className="financial-form-group">
               Valor Total Contratado (R$)
               <input
                 type="number"
                 value={planTotal}
                 placeholder="ex: 50000"
                 onChange={(e) => setPlanTotal(e.target.value === '' ? '' : Number(e.target.value))}
-                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                className="financial-input"
               />
             </label>
 
-            <label
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem',
-                fontSize: '0.85rem',
-              }}
-            >
+            <label className="financial-form-group">
               Valor de Entrada / Sinal (R$)
               <input
                 type="number"
                 value={planDown}
                 placeholder="ex: 10000 (20%)"
                 onChange={(e) => setPlanDown(e.target.value === '' ? '' : Number(e.target.value))}
-                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                className="financial-input"
               />
             </label>
 
-            <label
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem',
-                fontSize: '0.85rem',
-              }}
-            >
+            <label className="financial-form-group">
               Quantidade de Parcelas do Saldo
               <input
                 type="number"
@@ -1232,23 +1011,16 @@ export function OpportunityFinancial({
                 max="36"
                 value={planInstallments}
                 onChange={(e) => setPlanInstallments(Number(e.target.value))}
-                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                className="financial-input"
               />
             </label>
 
-            <label
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem',
-                fontSize: '0.85rem',
-              }}
-            >
+            <label className="financial-form-group">
               Método de Pagamento Esperado
               <select
                 value={planMethod}
                 onChange={(e) => setPlanMethod(e.target.value as PaymentMethodType)}
-                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                className="financial-select"
               >
                 <option value="PIX">PIX</option>
                 <option value="FINANCING">Financiamento Bancário / Solar</option>
@@ -1258,43 +1030,22 @@ export function OpportunityFinancial({
               </select>
             </label>
 
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'flex-end',
-                gap: '0.5rem',
-                marginTop: '0.5rem',
-              }}
-            >
-              <button
+            <div className="financial-modal-actions">
+              <Button
                 type="button"
+                variant="secondary"
                 onClick={() => setShowGeneratePlanModal(false)}
-                style={{
-                  background: '#f1f5f9',
-                  border: 'none',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                }}
               >
                 Cancelar
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="primary"
                 disabled={generatePlanMutation.isPending}
                 onClick={() => generatePlanMutation.mutate()}
-                style={{
-                  background: '#0284c7',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                }}
               >
                 {generatePlanMutation.isPending ? 'Gerando…' : 'Confirmar e Gerar Parcelas'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1302,45 +1053,16 @@ export function OpportunityFinancial({
 
       {/* MODAL 2: RECORD RECEIPT */}
       {showReceiptModal && (
-        <div
-          className="modal-overlay"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: '#fff',
-              padding: '1.5rem',
-              borderRadius: '8px',
-              maxWidth: '480px',
-              width: '90%',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1rem',
-            }}
-          >
-            <h3 style={{ margin: 0 }}>Registrar Recebimento de Cliente</h3>
+        <div className="financial-modal-backdrop">
+          <div className="financial-modal-card">
+            <h3 className="financial-modal-title">Registrar Recebimento de Cliente</h3>
 
-            <label
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem',
-                fontSize: '0.85rem',
-              }}
-            >
+            <label className="financial-form-group">
               Conta Bancária de Destino
               <select
                 value={receiptAccount || accountsQuery.data?.[0]?.id}
                 onChange={(e) => setReceiptAccount(e.target.value)}
-                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                className="financial-select"
               >
                 {accountsQuery.data?.map((acc) => (
                   <option key={acc.id} value={acc.id}>
@@ -1350,14 +1072,7 @@ export function OpportunityFinancial({
               </select>
             </label>
 
-            <label
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem',
-                fontSize: '0.85rem',
-              }}
-            >
+            <label className="financial-form-group">
               Valor Recebido (R$) *
               <input
                 type="number"
@@ -1367,23 +1082,16 @@ export function OpportunityFinancial({
                 onChange={(e) =>
                   setReceiptAmount(e.target.value === '' ? '' : Number(e.target.value))
                 }
-                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                className="financial-input"
               />
             </label>
 
-            <label
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem',
-                fontSize: '0.85rem',
-              }}
-            >
+            <label className="financial-form-group">
               Método de Pagamento
               <select
                 value={receiptMethod}
                 onChange={(e) => setReceiptMethod(e.target.value as PaymentMethodType)}
-                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                className="financial-select"
               >
                 <option value="PIX">PIX</option>
                 <option value="TED">Transferência TED</option>
@@ -1393,37 +1101,23 @@ export function OpportunityFinancial({
               </select>
             </label>
 
-            <label
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem',
-                fontSize: '0.85rem',
-              }}
-            >
+            <label className="financial-form-group">
               Nome do Pagador / Referência
               <input
                 type="text"
                 value={receiptPayer}
                 placeholder="ex: Carlos Silva"
                 onChange={(e) => setReceiptPayer(e.target.value)}
-                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                className="financial-input"
               />
             </label>
 
-            <label
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem',
-                fontSize: '0.85rem',
-              }}
-            >
+            <label className="financial-form-group">
               Alocar em Parcela Específica (Opcional - se vazio, aloca na mais antiga)
               <select
                 value={receiptTargetReceivable}
                 onChange={(e) => setReceiptTargetReceivable(e.target.value)}
-                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                className="financial-select"
               >
                 <option value="">Automático (ordem cronológica de vencimento)</option>
                 {receivables.map((r) => (
@@ -1434,43 +1128,18 @@ export function OpportunityFinancial({
               </select>
             </label>
 
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'flex-end',
-                gap: '0.5rem',
-                marginTop: '0.5rem',
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => setShowReceiptModal(false)}
-                style={{
-                  background: '#f1f5f9',
-                  border: 'none',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                }}
-              >
+            <div className="financial-modal-actions">
+              <Button type="button" variant="secondary" onClick={() => setShowReceiptModal(false)}>
                 Cancelar
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="primary"
                 disabled={recordReceiptMutation.isPending || !receiptAmount}
                 onClick={() => recordReceiptMutation.mutate()}
-                style={{
-                  background: '#16a34a',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                }}
               >
                 {recordReceiptMutation.isPending ? 'Gravando…' : 'Confirmar Recebimento'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1478,44 +1147,20 @@ export function OpportunityFinancial({
 
       {/* MODAL 3: REVERSE RECEIPT */}
       {showReverseModal && (
-        <div
-          className="modal-overlay"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: '#fff',
-              padding: '1.5rem',
-              borderRadius: '8px',
-              maxWidth: '420px',
-              width: '90%',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1rem',
-            }}
-          >
-            <h3 style={{ margin: 0, color: '#991b1b' }}>Estornar Recebimento</h3>
-            <p style={{ margin: 0, fontSize: '0.85rem', color: '#475569' }}>
+        <div className="financial-modal-backdrop">
+          <div className="financial-modal-card" style={{ maxWidth: '420px' }}>
+            <h3
+              className="financial-modal-title"
+              style={{ color: 'var(--status-danger, #ff4d57)' }}
+            >
+              Estornar Recebimento
+            </h3>
+            <p className="financial-modal-desc">
               O estorno reabrirá os saldos das parcelas afetadas e gerará um movimento compensatório
               de saída no caixa operacional.
             </p>
 
-            <label
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem',
-                fontSize: '0.85rem',
-              }}
-            >
+            <label className="financial-form-group">
               Justificativa / Motivo do Estorno *
               <input
                 type="text"
@@ -1523,40 +1168,22 @@ export function OpportunityFinancial({
                 value={reverseReason}
                 placeholder="ex: Comprovante cancelado pelo banco"
                 onChange={(e) => setReverseReason(e.target.value)}
-                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                className="financial-input"
               />
             </label>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-              <button
-                type="button"
-                onClick={() => setShowReverseModal(null)}
-                style={{
-                  background: '#f1f5f9',
-                  border: 'none',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                }}
-              >
+            <div className="financial-modal-actions">
+              <Button type="button" variant="secondary" onClick={() => setShowReverseModal(null)}>
                 Voltar
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="danger"
                 disabled={reverseReceiptMutation.isPending || !reverseReason.trim()}
                 onClick={() => reverseReceiptMutation.mutate(showReverseModal.receiptId)}
-                style={{
-                  background: '#dc2626',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                }}
               >
                 {reverseReceiptMutation.isPending ? 'Estornando…' : 'Confirmar Estorno'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1564,45 +1191,16 @@ export function OpportunityFinancial({
 
       {/* MODAL 4: CREATE PAYABLE */}
       {showPayableModal && (
-        <div
-          className="modal-overlay"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: '#fff',
-              padding: '1.5rem',
-              borderRadius: '8px',
-              maxWidth: '480px',
-              width: '90%',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1rem',
-            }}
-          >
-            <h3 style={{ margin: 0 }}>Cadastrar Custo ou Conta a Pagar</h3>
+        <div className="financial-modal-backdrop">
+          <div className="financial-modal-card">
+            <h3 className="financial-modal-title">Cadastrar Custo ou Conta a Pagar</h3>
 
-            <label
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem',
-                fontSize: '0.85rem',
-              }}
-            >
+            <label className="financial-form-group">
               Categoria do Custo
               <select
                 value={payableCategory}
                 onChange={(e) => setPayableCategory(e.target.value as PayableCategoryType)}
-                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                className="financial-select"
               >
                 <option value="EQUIPMENT">Equipamentos (Módulos / Inversor / Estrutura)</option>
                 <option value="INSTALLATION_LABOR">Mão de Obra de Instalação</option>
@@ -1613,14 +1211,7 @@ export function OpportunityFinancial({
               </select>
             </label>
 
-            <label
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem',
-                fontSize: '0.85rem',
-              }}
-            >
+            <label className="financial-form-group">
               Descrição da Despesa *
               <input
                 type="text"
@@ -1628,18 +1219,11 @@ export function OpportunityFinancial({
                 value={payableDesc}
                 placeholder="ex: Módulos Fotovoltaicos Canadian 550W (14 un)"
                 onChange={(e) => setPayableDesc(e.target.value)}
-                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                className="financial-input"
               />
             </label>
 
-            <label
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem',
-                fontSize: '0.85rem',
-              }}
-            >
+            <label className="financial-form-group">
               Fornecedor / Beneficiário *
               <input
                 type="text"
@@ -1647,19 +1231,12 @@ export function OpportunityFinancial({
                 value={payableRecipient}
                 placeholder="ex: Distribuidora Solar PE"
                 onChange={(e) => setPayableRecipient(e.target.value)}
-                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                className="financial-input"
               />
             </label>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-              <label
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.25rem',
-                  fontSize: '0.85rem',
-                }}
-              >
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              <label className="financial-form-group">
                 Valor da Obrigação (R$) *
                 <input
                   type="number"
@@ -1669,52 +1246,29 @@ export function OpportunityFinancial({
                   onChange={(e) =>
                     setPayableAmount(e.target.value === '' ? '' : Number(e.target.value))
                   }
-                  style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                  className="financial-input"
                 />
               </label>
 
-              <label
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.25rem',
-                  fontSize: '0.85rem',
-                }}
-              >
+              <label className="financial-form-group">
                 Data de Vencimento *
                 <input
                   type="date"
                   required
                   value={payableDueDate}
                   onChange={(e) => setPayableDueDate(e.target.value)}
-                  style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                  className="financial-input"
                 />
               </label>
             </div>
 
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'flex-end',
-                gap: '0.5rem',
-                marginTop: '0.5rem',
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => setShowPayableModal(false)}
-                style={{
-                  background: '#f1f5f9',
-                  border: 'none',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                }}
-              >
+            <div className="financial-modal-actions">
+              <Button type="button" variant="secondary" onClick={() => setShowPayableModal(false)}>
                 Cancelar
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="primary"
                 disabled={
                   createPayableMutation.isPending ||
                   !payableDesc ||
@@ -1722,18 +1276,9 @@ export function OpportunityFinancial({
                   !payableDueDate
                 }
                 onClick={() => createPayableMutation.mutate()}
-                style={{
-                  background: '#0284c7',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                }}
               >
                 {createPayableMutation.isPending ? 'Salvando…' : 'Cadastrar Obrigação'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1741,45 +1286,16 @@ export function OpportunityFinancial({
 
       {/* MODAL 5: RECORD PAYMENT */}
       {showPaymentModal && (
-        <div
-          className="modal-overlay"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: '#fff',
-              padding: '1.5rem',
-              borderRadius: '8px',
-              maxWidth: '480px',
-              width: '90%',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1rem',
-            }}
-          >
-            <h3 style={{ margin: 0 }}>Registrar Pagamento de Despesa</h3>
+        <div className="financial-modal-backdrop">
+          <div className="financial-modal-card">
+            <h3 className="financial-modal-title">Registrar Pagamento de Despesa</h3>
 
-            <label
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem',
-                fontSize: '0.85rem',
-              }}
-            >
+            <label className="financial-form-group">
               Conta Bancária de Origem
               <select
                 value={paymentAccount || accountsQuery.data?.[0]?.id}
                 onChange={(e) => setPaymentAccount(e.target.value)}
-                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                className="financial-select"
               >
                 {accountsQuery.data?.map((acc) => (
                   <option key={acc.id} value={acc.id}>
@@ -1789,14 +1305,7 @@ export function OpportunityFinancial({
               </select>
             </label>
 
-            <label
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem',
-                fontSize: '0.85rem',
-              }}
-            >
+            <label className="financial-form-group">
               Valor a Pagar (R$) *
               <input
                 type="number"
@@ -1806,23 +1315,16 @@ export function OpportunityFinancial({
                 onChange={(e) =>
                   setPaymentAmount(e.target.value === '' ? '' : Number(e.target.value))
                 }
-                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                className="financial-input"
               />
             </label>
 
-            <label
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem',
-                fontSize: '0.85rem',
-              }}
-            >
+            <label className="financial-form-group">
               Método de Pagamento
               <select
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value as PaymentMethodType)}
-                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                className="financial-select"
               >
                 <option value="PIX">PIX</option>
                 <option value="TED">Transferência TED</option>
@@ -1830,61 +1332,29 @@ export function OpportunityFinancial({
               </select>
             </label>
 
-            <label
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem',
-                fontSize: '0.85rem',
-              }}
-            >
+            <label className="financial-form-group">
               Autenticação Bancária / Comprovante
               <input
                 type="text"
                 value={paymentDoc}
                 placeholder="ex: TED-2026-9900"
                 onChange={(e) => setPaymentDoc(e.target.value)}
-                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                className="financial-input"
               />
             </label>
 
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'flex-end',
-                gap: '0.5rem',
-                marginTop: '0.5rem',
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => setShowPaymentModal(false)}
-                style={{
-                  background: '#f1f5f9',
-                  border: 'none',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                }}
-              >
+            <div className="financial-modal-actions">
+              <Button type="button" variant="secondary" onClick={() => setShowPaymentModal(false)}>
                 Cancelar
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="primary"
                 disabled={recordPaymentMutation.isPending || !paymentAmount}
                 onClick={() => recordPaymentMutation.mutate()}
-                style={{
-                  background: '#0284c7',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                }}
               >
                 {recordPaymentMutation.isPending ? 'Liquidando…' : 'Confirmar Pagamento'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1892,40 +1362,11 @@ export function OpportunityFinancial({
 
       {/* MODAL 6: CONFIGURE COMMISSION */}
       {showCommissionModal && (
-        <div
-          className="modal-overlay"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: '#fff',
-              padding: '1.5rem',
-              borderRadius: '8px',
-              maxWidth: '420px',
-              width: '90%',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1rem',
-            }}
-          >
-            <h3 style={{ margin: 0 }}>Adicionar Comissão Comercial</h3>
+        <div className="financial-modal-backdrop">
+          <div className="financial-modal-card" style={{ maxWidth: '420px' }}>
+            <h3 className="financial-modal-title">Adicionar Comissão Comercial</h3>
 
-            <label
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem',
-                fontSize: '0.85rem',
-              }}
-            >
+            <label className="financial-form-group">
               Nome do Beneficiário *
               <input
                 type="text"
@@ -1933,23 +1374,16 @@ export function OpportunityFinancial({
                 value={commBeneficiary}
                 placeholder="ex: Rafael Silva (Consultor)"
                 onChange={(e) => setCommBeneficiary(e.target.value)}
-                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                className="financial-input"
               />
             </label>
 
-            <label
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem',
-                fontSize: '0.85rem',
-              }}
-            >
+            <label className="financial-form-group">
               Papel / Função
               <select
                 value={commRole}
                 onChange={(e) => setCommRole(e.target.value)}
-                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                className="financial-select"
               >
                 <option value="SALES_REP">Consultor / Vendedor</option>
                 <option value="TECHNICAL_PARTNER">Parceiro Técnico</option>
@@ -1957,14 +1391,7 @@ export function OpportunityFinancial({
               </select>
             </label>
 
-            <label
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem',
-                fontSize: '0.85rem',
-              }}
-            >
+            <label className="financial-form-group">
               Percentual (%) *
               <input
                 type="number"
@@ -1976,23 +1403,16 @@ export function OpportunityFinancial({
                 onChange={(e) =>
                   setCommPercent(e.target.value === '' ? '' : Number(e.target.value))
                 }
-                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                className="financial-input"
               />
             </label>
 
-            <label
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem',
-                fontSize: '0.85rem',
-              }}
-            >
+            <label className="financial-form-group">
               Gatilho de Aquisição
               <select
                 value={commGate}
                 onChange={(e) => setCommGate(e.target.value)}
-                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                className="financial-select"
               >
                 <option value="FINANCIAL">Gate Financeiro (Recebimento do Sinal)</option>
                 <option value="CONTRACT">Gate C (Assinatura do Contrato)</option>
@@ -2000,36 +1420,22 @@ export function OpportunityFinancial({
               </select>
             </label>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-              <button
+            <div className="financial-modal-actions">
+              <Button
                 type="button"
+                variant="secondary"
                 onClick={() => setShowCommissionModal(false)}
-                style={{
-                  background: '#f1f5f9',
-                  border: 'none',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                }}
               >
                 Cancelar
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="primary"
                 disabled={configureCommissionMutation.isPending || !commBeneficiary || !commPercent}
                 onClick={() => configureCommissionMutation.mutate()}
-                style={{
-                  background: '#0284c7',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                }}
               >
                 {configureCommissionMutation.isPending ? 'Salvando…' : 'Salvar Comissão'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -2091,9 +1497,14 @@ export function GlobalFinancialDashboard() {
   });
 
   const flow = cashFlowQuery.data;
+  const totalIn = flow?.summary.totalIn ?? 0;
+  const totalOut = flow?.summary.totalOut ?? 0;
+  const totalVolume = totalIn + totalOut;
+  const inPercent = totalVolume > 0 ? Math.round((totalIn / totalVolume) * 100) : 50;
+  const outPercent = totalVolume > 0 ? 100 - inPercent : 50;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '1rem' }}>
+    <div className="financial-container" style={{ padding: '0.5rem' }}>
       <div
         style={{
           display: 'flex',
@@ -2104,116 +1515,138 @@ export function GlobalFinancialDashboard() {
         }}
       >
         <div>
-          <h2 style={{ margin: 0 }}>Gestão Financeira & Fluxo de Caixa</h2>
-          <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>
+          <h2 style={{ margin: 0, color: 'var(--text-primary, #f5f7f5)' }}>
+            Gestão Financeira & Fluxo de Caixa
+          </h2>
+          <p
+            style={{
+              margin: '0.25rem 0 0 0',
+              color: 'var(--text-secondary, #9ba49e)',
+              fontSize: '0.9rem',
+            }}
+          >
             Visão gerencial consolidada de entradas, saídas, margens e contas bancárias (SPEC-008).
           </p>
         </div>
-        <button
-          type="button"
-          style={{
-            backgroundColor: '#0284c7',
-            color: '#fff',
-            border: 'none',
-            padding: '0.5rem 1rem',
-            borderRadius: '6px',
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
-          onClick={() => setShowAccountModal(true)}
-        >
+        <Button type="button" variant="primary" onClick={() => setShowAccountModal(true)}>
           + Nova Conta Bancária
-        </button>
+        </Button>
       </div>
 
       {/* Cash Flow Summary Cards */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: '1rem',
-        }}
-      >
-        <div
-          style={{
-            background: '#f0fdf4',
-            padding: '1.25rem',
-            borderRadius: '8px',
-            border: '1px solid #bbf7d0',
-          }}
-        >
-          <span style={{ fontSize: '0.8rem', color: '#166534', fontWeight: 600 }}>
+      <div className="financial-kpi-grid">
+        <div className="financial-kpi-card financial-kpi-card--success">
+          <span className="financial-kpi-label" style={{ color: 'var(--status-success, #26d866)' }}>
             ENTRADAS REALIZADAS
           </span>
-          <div
-            style={{ fontSize: '1.5rem', fontWeight: 700, color: '#15803d', marginTop: '0.25rem' }}
-          >
+          <div className="financial-kpi-value" style={{ color: 'var(--status-success, #26d866)' }}>
             {formatBRL(flow?.summary.totalIn)}
           </div>
-          <span style={{ fontSize: '0.75rem', color: '#16a34a' }}>Recebimentos de clientes</span>
+          <span className="financial-kpi-sub" style={{ color: 'var(--status-success, #26d866)' }}>
+            Recebimentos de clientes
+          </span>
         </div>
 
-        <div
-          style={{
-            background: '#fef2f2',
-            padding: '1.25rem',
-            borderRadius: '8px',
-            border: '1px solid #fecaca',
-          }}
-        >
-          <span style={{ fontSize: '0.8rem', color: '#991b1b', fontWeight: 600 }}>
+        <div className="financial-kpi-card financial-kpi-card--danger">
+          <span className="financial-kpi-label" style={{ color: 'var(--status-danger, #ff4d57)' }}>
             SAÍDAS REALIZADAS
           </span>
-          <div
-            style={{ fontSize: '1.5rem', fontWeight: 700, color: '#b91c1c', marginTop: '0.25rem' }}
-          >
+          <div className="financial-kpi-value" style={{ color: 'var(--status-danger, #ff4d57)' }}>
             {formatBRL(flow?.summary.totalOut)}
           </div>
-          <span style={{ fontSize: '0.75rem', color: '#dc2626' }}>Pagamentos & comissões</span>
+          <span className="financial-kpi-sub" style={{ color: 'var(--status-danger, #ff4d57)' }}>
+            Pagamentos & comissões
+          </span>
         </div>
 
         <div
-          style={{
-            background: (flow?.summary.netCash ?? 0) >= 0 ? '#f0fdf4' : '#fff1f2',
-            padding: '1.25rem',
-            borderRadius: '8px',
-            border: '1px solid',
-            borderColor: (flow?.summary.netCash ?? 0) >= 0 ? '#86efac' : '#fda4af',
-          }}
+          className={`financial-kpi-card ${
+            (flow?.summary.netCash ?? 0) >= 0
+              ? 'financial-kpi-card--solar'
+              : 'financial-kpi-card--danger'
+          }`}
         >
           <span
+            className="financial-kpi-label"
             style={{
-              fontSize: '0.8rem',
-              fontWeight: 600,
-              color: (flow?.summary.netCash ?? 0) >= 0 ? '#166534' : '#9f1239',
+              color:
+                (flow?.summary.netCash ?? 0) >= 0
+                  ? 'var(--brand-solar, #ffd400)'
+                  : 'var(--status-danger, #ff4d57)',
             }}
           >
             SALDO LÍQUIDO OPERACIONAL
           </span>
           <div
+            className="financial-kpi-value"
             style={{
-              fontSize: '1.5rem',
-              fontWeight: 700,
-              color: (flow?.summary.netCash ?? 0) >= 0 ? '#15803d' : '#e11d48',
-              marginTop: '0.25rem',
+              color:
+                (flow?.summary.netCash ?? 0) >= 0
+                  ? 'var(--brand-solar, #ffd400)'
+                  : 'var(--status-danger, #ff4d57)',
             }}
           >
             {formatBRL(flow?.summary.netCash)}
           </div>
-          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Posição financeira de caixa</span>
+          <span className="financial-kpi-sub">Posição financeira de caixa</span>
+        </div>
+      </div>
+
+      {/* Visual Cash Flow Representation */}
+      <div className="financial-chart-card">
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '0.5rem',
+          }}
+        >
+          <h4 style={{ margin: 0, color: 'var(--text-primary, #f5f7f5)' }}>
+            Composição do Fluxo Financeiro (Entradas vs Saídas)
+          </h4>
+          <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem' }}>
+            <span style={{ color: 'var(--status-success, #26d866)' }}>
+              ● Entradas ({inPercent}%)
+            </span>
+            <span style={{ color: 'var(--status-danger, #ff4d57)' }}>● Saídas ({outPercent}%)</span>
+          </div>
+        </div>
+
+        {/* Visual Progress Bar */}
+        <div
+          style={{
+            height: '14px',
+            backgroundColor: 'var(--surface-sunken, #111412)',
+            borderRadius: '999px',
+            overflow: 'hidden',
+            display: 'flex',
+            border: '1px solid var(--border-default, #29302b)',
+          }}
+        >
+          <div
+            style={{
+              width: `${inPercent}%`,
+              backgroundColor: 'var(--status-success, #26d866)',
+              transition: 'width 0.3s ease',
+            }}
+            title={`Entradas: ${formatBRL(totalIn)} (${inPercent}%)`}
+          />
+          <div
+            style={{
+              width: `${outPercent}%`,
+              backgroundColor: 'var(--status-danger, #ff4d57)',
+              transition: 'width 0.3s ease',
+            }}
+            title={`Saídas: ${formatBRL(totalOut)} (${outPercent}%)`}
+          />
         </div>
       </div>
 
       {/* Contas Bancárias */}
-      <div
-        style={{
-          background: '#ffffff',
-          borderRadius: '8px',
-          border: '1px solid #e2e8f0',
-          padding: '1.25rem',
-        }}
-      >
-        <h3 style={{ margin: '0 0 1rem 0' }}>Contas Financeiras</h3>
+      <div className="financial-panel">
+        <h3 style={{ margin: 0, color: 'var(--text-primary, #f5f7f5)' }}>Contas Financeiras</h3>
         <div
           style={{
             display: 'grid',
@@ -2222,21 +1655,13 @@ export function GlobalFinancialDashboard() {
           }}
         >
           {accountsQuery.data?.map((acc) => (
-            <div
-              key={acc.id}
-              style={{
-                padding: '1rem',
-                border: '1px solid #e2e8f0',
-                borderRadius: '6px',
-                background: '#f8fafc',
-              }}
-            >
-              <strong>{acc.name}</strong>
-              <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.25rem' }}>
+            <div key={acc.id} className="financial-account-card">
+              <strong className="financial-account-title">{acc.name}</strong>
+              <div className="financial-account-info">
                 Tipo: {acc.accountType} | Banco: {acc.bankCode || 'Padrão'}
               </div>
               {acc.agency && (
-                <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                <div className="financial-account-info">
                   Agência: {acc.agency} | Conta: {acc.accountNumber || '-'}
                 </div>
               )}
@@ -2246,113 +1671,72 @@ export function GlobalFinancialDashboard() {
       </div>
 
       {/* Extrato de Movimentações */}
-      <div
-        style={{
-          background: '#ffffff',
-          borderRadius: '8px',
-          border: '1px solid #e2e8f0',
-          padding: '1.25rem',
-        }}
-      >
-        <h3 style={{ margin: '0 0 1rem 0' }}>Extrato de Movimentações Recentes</h3>
+      <div className="financial-panel">
+        <h3 style={{ margin: 0, color: 'var(--text-primary, #f5f7f5)' }}>
+          Extrato de Movimentações Recentes
+        </h3>
         {flow?.movements.length === 0 ? (
-          <p style={{ color: '#64748b' }}>Nenhuma movimentação registrada.</p>
+          <div className="financial-empty-state">
+            <p>Nenhuma movimentação registrada.</p>
+          </div>
         ) : (
-          <table
-            style={{
-              width: '100%',
-              borderCollapse: 'collapse',
-              textAlign: 'left',
-              fontSize: '0.9rem',
-            }}
-          >
-            <thead>
-              <tr style={{ borderBottom: '2px solid #cbd5e1', color: '#475569' }}>
-                <th style={{ padding: '0.5rem' }}>Data</th>
-                <th style={{ padding: '0.5rem' }}>Descrição</th>
-                <th style={{ padding: '0.5rem' }}>Tipo</th>
-                <th style={{ padding: '0.5rem' }}>Conta</th>
-                <th style={{ padding: '0.5rem', textAlign: 'right' }}>Valor</th>
-              </tr>
-            </thead>
-            <tbody>
-              {flow?.movements.map((m) => {
-                const isIn = m.direction === 'IN';
-                return (
-                  <tr key={m.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                    <td style={{ padding: '0.6rem 0.5rem' }}>{formatDate(m.effectiveAt)}</td>
-                    <td style={{ padding: '0.6rem 0.5rem' }}>{m.description}</td>
-                    <td style={{ padding: '0.6rem 0.5rem' }}>
-                      <span
+          <div className="financial-table-wrapper">
+            <table className="financial-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Descrição</th>
+                  <th>Tipo</th>
+                  <th>Conta</th>
+                  <th style={{ textAlign: 'right' }}>Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {flow?.movements.map((m) => {
+                  const isIn = m.direction === 'IN';
+                  return (
+                    <tr key={m.id}>
+                      <td>{formatDate(m.effectiveAt)}</td>
+                      <td>{m.description}</td>
+                      <td>
+                        <span
+                          className={`financial-badge ${
+                            isIn ? 'financial-badge--success' : 'financial-badge--danger'
+                          }`}
+                        >
+                          {m.type}
+                        </span>
+                      </td>
+                      <td style={{ color: 'var(--text-secondary, #9ba49e)' }}>
+                        {m.account?.name || 'Conta Padrão'}
+                      </td>
+                      <td
                         style={{
-                          fontSize: '0.75rem',
-                          fontWeight: 600,
-                          padding: '0.2rem 0.5rem',
-                          borderRadius: '4px',
-                          background: isIn ? '#dcfce7' : '#fee2e2',
-                          color: isIn ? '#166534' : '#991b1b',
+                          textAlign: 'right',
+                          fontWeight: 700,
+                          color: isIn
+                            ? 'var(--status-success, #26d866)'
+                            : 'var(--status-danger, #ff4d57)',
                         }}
                       >
-                        {m.type}
-                      </span>
-                    </td>
-                    <td style={{ padding: '0.6rem 0.5rem', color: '#64748b' }}>
-                      {m.account?.name || 'Conta Padrão'}
-                    </td>
-                    <td
-                      style={{
-                        padding: '0.6rem 0.5rem',
-                        textAlign: 'right',
-                        fontWeight: 700,
-                        color: isIn ? '#16a34a' : '#dc2626',
-                      }}
-                    >
-                      {isIn ? '+' : '-'} {formatBRL(m.amount)}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                        {isIn ? '+' : '-'} {formatBRL(m.amount)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
       {/* MODAL: NOVA CONTA */}
       {showAccountModal && (
-        <div
-          className="modal-overlay"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: '#fff',
-              padding: '1.5rem',
-              borderRadius: '8px',
-              maxWidth: '420px',
-              width: '90%',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1rem',
-            }}
-          >
-            <h3 style={{ margin: 0 }}>Cadastrar Conta Financeira</h3>
+        <div className="financial-modal-backdrop">
+          <div className="financial-modal-card" style={{ maxWidth: '420px' }}>
+            <h3 className="financial-modal-title">Cadastrar Conta Financeira</h3>
 
-            <label
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem',
-                fontSize: '0.85rem',
-              }}
-            >
+            <label className="financial-form-group">
               Nome Identificador *
               <input
                 type="text"
@@ -2360,96 +1744,57 @@ export function GlobalFinancialDashboard() {
                 value={accountName}
                 placeholder="ex: Banco Cora - Moura Solar"
                 onChange={(e) => setAccountName(e.target.value)}
-                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                className="financial-input"
               />
             </label>
 
-            <label
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem',
-                fontSize: '0.85rem',
-              }}
-            >
+            <label className="financial-form-group">
               Código do Banco (ex: 403 Cora, 260 Nu, 001 BB)
               <input
                 type="text"
                 value={accountBank}
                 placeholder="ex: 403"
                 onChange={(e) => setAccountBank(e.target.value)}
-                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                className="financial-input"
               />
             </label>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-              <label
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.25rem',
-                  fontSize: '0.85rem',
-                }}
-              >
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              <label className="financial-form-group">
                 Agência
                 <input
                   type="text"
                   value={accountAgency}
                   placeholder="ex: 0001"
                   onChange={(e) => setAccountAgency(e.target.value)}
-                  style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                  className="financial-input"
                 />
               </label>
 
-              <label
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.25rem',
-                  fontSize: '0.85rem',
-                }}
-              >
+              <label className="financial-form-group">
                 Número da Conta
                 <input
                   type="text"
                   value={accountNum}
                   placeholder="ex: 1234567-8"
                   onChange={(e) => setAccountNum(e.target.value)}
-                  style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                  className="financial-input"
                 />
               </label>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-              <button
-                type="button"
-                onClick={() => setShowAccountModal(false)}
-                style={{
-                  background: '#f1f5f9',
-                  border: 'none',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                }}
-              >
+            <div className="financial-modal-actions">
+              <Button type="button" variant="secondary" onClick={() => setShowAccountModal(false)}>
                 Cancelar
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="primary"
                 disabled={createAccountMutation.isPending || !accountName}
                 onClick={() => createAccountMutation.mutate()}
-                style={{
-                  background: '#0284c7',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                }}
               >
                 {createAccountMutation.isPending ? 'Salvando…' : 'Salvar Conta'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

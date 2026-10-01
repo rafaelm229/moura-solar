@@ -1,0 +1,373 @@
+/* ==========================================================================
+   MOURA SOLAR — DESIGN SYSTEM SPEC-003 v0.2
+   FINANCIAL FEATURE STYLES (M6)
+   ========================================================================== */
+
+.financial-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Gate Financeiro Banner */
+.financial-gate-banner {
+  padding: 1.25rem 1.5rem;
+  border-radius: var(--radius-lg, 12px);
+  border: 1px solid var(--border-default, #29302b);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  background: var(--surface-card, #161a17);
+  transition: all 0.2s ease;
+}
+
+.financial-gate-banner--satisfied {
+  border-left: 6px solid var(--status-success, #26d866);
+  background: linear-gradient(
+    90deg,
+    rgba(38, 216, 102, 0.08) 0%,
+    var(--surface-card, #161a17) 100%
+  );
+}
+
+.financial-gate-banner--pending {
+  border-left: 6px solid var(--status-warning, #ff9f1c);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 159, 28, 0.08) 0%,
+    var(--surface-card, #161a17) 100%
+  );
+}
+
+.financial-gate-banner--blocked {
+  border-left: 6px solid var(--status-danger, #ff4d57);
+  background: linear-gradient(90deg, rgba(255, 77, 87, 0.08) 0%, var(--surface-card, #161a17) 100%);
+}
+
+/* Financial KPI Grid */
+.financial-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.financial-kpi-card {
+  background: var(--surface-card, #161a17);
+  border: 1px solid var(--border-default, #29302b);
+  border-radius: var(--radius-md, 8px);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.financial-kpi-card--success {
+  border-top: 3px solid var(--status-success, #26d866);
+  background: linear-gradient(
+    180deg,
+    rgba(38, 216, 102, 0.04) 0%,
+    var(--surface-card, #161a17) 100%
+  );
+}
+
+.financial-kpi-card--warning {
+  border-top: 3px solid var(--status-warning, #ff9f1c);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 159, 28, 0.04) 0%,
+    var(--surface-card, #161a17) 100%
+  );
+}
+
+.financial-kpi-card--danger {
+  border-top: 3px solid var(--status-danger, #ff4d57);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 77, 87, 0.04) 0%,
+    var(--surface-card, #161a17) 100%
+  );
+}
+
+.financial-kpi-card--solar {
+  border-top: 3px solid var(--brand-solar, #ffd400);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 212, 0, 0.04) 0%,
+    var(--surface-card, #161a17) 100%
+  );
+}
+
+.financial-kpi-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary, #9ba49e);
+}
+
+.financial-kpi-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-primary, #f5f7f5);
+  line-height: 1.2;
+}
+
+.financial-kpi-sub {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #9ba49e);
+}
+
+/* Subtabs bar */
+.financial-subtabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--border-default, #29302b);
+  padding-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.financial-subtab-btn {
+  padding: 0.5rem 1.1rem;
+  border-radius: var(--radius-sm, 6px);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  background: transparent;
+  color: var(--text-secondary, #9ba49e);
+}
+
+.financial-subtab-btn:hover {
+  color: var(--text-primary, #f5f7f5);
+  background: var(--surface-elevated, #1c211d);
+}
+
+.financial-subtab-btn--active {
+  background: var(--surface-elevated, #1c211d);
+  color: var(--brand-solar, #ffd400);
+  border-color: var(--border-default, #29302b);
+}
+
+/* Financial Panels & Tables */
+.financial-panel {
+  background: var(--surface-card, #161a17);
+  border: 1px solid var(--border-default, #29302b);
+  border-radius: var(--radius-lg, 12px);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.financial-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.financial-table th {
+  padding: 0.75rem 1rem;
+  background: var(--surface-elevated, #1c211d);
+  border-bottom: 1px solid var(--border-default, #29302b);
+  font-weight: 600;
+  color: var(--text-secondary, #9ba49e);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.financial-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-default, #29302b);
+  color: var(--text-primary, #f5f7f5);
+}
+
+.financial-table tr:hover td {
+  background: rgba(255, 212, 0, 0.02);
+}
+
+/* Financial Account Cards */
+.financial-account-card {
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--border-default, #29302b);
+  border-radius: var(--radius-md, 8px);
+  background: var(--surface-elevated, #1c211d);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.financial-account-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary, #f5f7f5);
+}
+
+.financial-account-info {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #9ba49e);
+}
+
+/* Financial Badges */
+.financial-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-sm, 6px);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.financial-badge--success {
+  background: rgba(38, 216, 102, 0.15);
+  color: var(--status-success, #26d866);
+  border: 1px solid rgba(38, 216, 102, 0.3);
+}
+
+.financial-badge--warning {
+  background: rgba(255, 159, 28, 0.15);
+  color: var(--status-warning, #ff9f1c);
+  border: 1px solid rgba(255, 159, 28, 0.3);
+}
+
+.financial-badge--danger {
+  background: rgba(255, 77, 87, 0.15);
+  color: var(--status-danger, #ff4d57);
+  border: 1px solid rgba(255, 77, 87, 0.3);
+}
+
+.financial-badge--info {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.financial-badge--neutral {
+  background: rgba(155, 164, 158, 0.12);
+  color: var(--text-secondary, #9ba49e);
+  border: 1px solid var(--border-default, #29302b);
+}
+
+/* Modals */
+.financial-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.financial-modal-card {
+  background: var(--surface-card, #161a17);
+  border: 1px solid var(--border-default, #29302b);
+  border-radius: var(--radius-lg, 12px);
+  padding: 1.5rem;
+  max-width: 480px;
+  width: 100%;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+  color: var(--text-primary, #f5f7f5);
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.financial-modal-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary, #f5f7f5);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.financial-modal-desc {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #9ba49e);
+  line-height: 1.4;
+}
+
+.financial-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--text-primary, #f5f7f5);
+}
+
+.financial-input,
+.financial-select {
+  background: var(--surface-sunken, #111412);
+  border: 1px solid var(--border-default, #29302b);
+  border-radius: var(--radius-sm, 6px);
+  padding: 0.55rem 0.75rem;
+  color: var(--text-primary, #f5f7f5);
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.financial-input:focus,
+.financial-select:focus {
+  border-color: var(--brand-solar, #ffd400);
+}
+
+.financial-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+/* Empty State */
+.financial-empty-state {
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  background: var(--surface-card, #161a17);
+  border: 1px dashed var(--border-default, #29302b);
+  border-radius: var(--radius-lg, 12px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.financial-empty-state p {
+  margin: 0;
+  color: var(--text-secondary, #9ba49e);
+  font-size: 0.9rem;
+}
+
+/* Table Responsive Container */
+.financial-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--border-default, #29302b);
+  border-radius: var(--radius-md, 8px);
+  background: var(--surface-card, #161a17);
+}
+
+/* Visual Cash Flow Chart */
+.financial-chart-card {
+  background: var(--surface-card, #161a17);
+  border: 1px solid var(--border-default, #29302b);
+  border-radius: var(--radius-lg, 12px);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
