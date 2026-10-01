@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, result, allows } from '../identity/client';
 import { Feedback } from '../identity/feedback';
+import { Button } from '../../ui/Button';
 import type { Schemas } from '@moura-solar/api-client';
 
 export interface ProposalDocumentView {
@@ -324,20 +325,27 @@ export function Proposals({
 
   const proposals = (proposalsQuery.data ?? []) as unknown as ProposalView[];
 
+  // KPI aggregates
+  const totalProposalsCount = proposals.length;
+  const totalVersionsCount = proposals.reduce((acc, p) => acc + (p.versions?.length ?? 0), 0);
+  const sentProposalsCount = proposals.filter((p) =>
+    p.versions?.some((v) => v.status === 'SENT'),
+  ).length;
+  const acceptedProposalsCount = proposals.filter((p) => Boolean(p.acceptedVersionId)).length;
+
   return (
-    <div className="proposals-container" style={{ display: 'grid', gap: '1.5rem' }}>
+    <div className="proposal-container proposals-container">
       {/* Header bar */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '1rem',
-        }}
-      >
+      <div className="proposal-header">
         <div>
-          <h3 style={{ margin: 0 }}>
+          <h3
+            style={{
+              margin: 0,
+              fontSize: '1.25rem',
+              fontWeight: 700,
+              color: 'var(--text-primary, #f5f7f5)',
+            }}
+          >
             Propostas Comerciais{opportunityTitle ? ` — ${opportunityTitle}` : ''}
           </h3>
           <div
@@ -345,11 +353,11 @@ export function Proposals({
               display: 'flex',
               gap: '0.5rem',
               alignItems: 'center',
-              marginTop: '0.25rem',
+              marginTop: '0.35rem',
               flexWrap: 'wrap',
             }}
           >
-            <span className="device">
+            <span className="device" style={{ color: 'var(--text-secondary, #9ba49e)' }}>
               Geração de PDFs padronizados, controle de versões, registro de envios e aceite formal.
             </span>
             {opportunityState && (
@@ -359,8 +367,10 @@ export function Proposals({
             )}
           </div>
         </div>
+
         {!readonly && canCreate && !isCreating && (
-          <button
+          <Button
+            variant="primary"
             onClick={() => {
               setIsCreating(true);
               if (approvedVersions.length > 0 && !selectedDesignVersionId) {
@@ -369,19 +379,43 @@ export function Proposals({
             }}
           >
             + Nova Proposta Comercial
-          </button>
+          </Button>
         )}
+      </div>
+
+      {/* Top KPI Summary Grid */}
+      <div className="proposal-kpi-grid">
+        <div className="proposal-kpi-card">
+          <span className="proposal-kpi-label">Propostas Emitidas</span>
+          <span className="proposal-kpi-value" style={{ color: 'var(--brand-solar, #ffd400)' }}>
+            {totalProposalsCount}
+          </span>
+        </div>
+        <div className="proposal-kpi-card">
+          <span className="proposal-kpi-label">Total de Versões</span>
+          <span className="proposal-kpi-value">{totalVersionsCount}</span>
+        </div>
+        <div className="proposal-kpi-card">
+          <span className="proposal-kpi-label">Envios Registrados</span>
+          <span className="proposal-kpi-value" style={{ color: 'var(--status-warning, #ff9f1c)' }}>
+            {sentProposalsCount}
+          </span>
+        </div>
+        <div className="proposal-kpi-card">
+          <span className="proposal-kpi-label">Aceites Formais</span>
+          <span className="proposal-kpi-value" style={{ color: 'var(--status-success, #26d866)' }}>
+            {acceptedProposalsCount}
+          </span>
+        </div>
       </div>
 
       {/* Proposal Creation Panel */}
       {isCreating && (
         <section
-          className="panel"
+          className="proposal-card"
           style={{
-            border: '1px solid var(--brand-primary)',
-            background: 'var(--color-surface)',
+            border: '1px solid var(--brand-solar, #ffd400)',
             padding: '1.25rem',
-            borderRadius: 'var(--radius-md)',
           }}
           aria-label="Criação de Proposta Comercial"
         >
@@ -391,17 +425,29 @@ export function Proposals({
               justifyContent: 'space-between',
               alignItems: 'center',
               marginBottom: '1rem',
+              borderBottom: '1px solid var(--border-default, #29302b)',
+              paddingBottom: '0.75rem',
             }}
           >
-            <h4 style={{ margin: 0 }}>Emitir Nova Proposta Comercial (PDF)</h4>
+            <h4
+              style={{
+                margin: 0,
+                fontSize: '1.1rem',
+                fontWeight: 700,
+                color: 'var(--text-primary, #f5f7f5)',
+              }}
+            >
+              Emitir Nova Proposta Comercial (PDF)
+            </h4>
             <button
               type="button"
               style={{
                 background: 'transparent',
-                color: 'var(--text-secondary)',
+                color: 'var(--text-secondary, #9ba49e)',
                 border: 'none',
                 cursor: 'pointer',
-                fontSize: '1rem',
+                fontSize: '1.1rem',
+                padding: '0.25rem 0.5rem',
               }}
               onClick={() => setIsCreating(false)}
             >
@@ -415,14 +461,22 @@ export function Proposals({
             <div
               className="notice error"
               style={{
-                background: 'var(--color-canvas)',
+                background: 'rgba(255, 77, 87, 0.1)',
                 padding: '1rem',
-                borderRadius: 'var(--radius-sm)',
-                border: '1px solid var(--status-danger)',
+                borderRadius: 'var(--radius-sm, 6px)',
+                border: '1px solid var(--status-danger, #ff4d57)',
               }}
             >
-              <strong>⚠️ Nenhum dimensionamento aprovado disponível</strong>
-              <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.875rem' }}>
+              <strong style={{ color: 'var(--status-danger, #ff4d57)' }}>
+                ⚠️ Nenhum dimensionamento aprovado disponível
+              </strong>
+              <p
+                style={{
+                  margin: '0.5rem 0 0 0',
+                  fontSize: '0.875rem',
+                  color: 'var(--text-primary, #f5f7f5)',
+                }}
+              >
                 Para emitir uma proposta comercial oficial com PDF, você precisa primeiro aprovar
                 uma versão de dimensionamento técnico na aba{' '}
                 <strong>&quot;☀️ Dimensionamento & Custos&quot;</strong>.
@@ -465,7 +519,9 @@ export function Proposals({
                     value={validityDays}
                     onChange={(e) => setValidityDays(parseInt(e.target.value, 10) || 10)}
                   />
-                  <small className="device">Padrão SPEC-006: 10 dias corridos</small>
+                  <small className="device" style={{ color: 'var(--text-secondary, #9ba49e)' }}>
+                    Padrão SPEC-006: 10 dias corridos
+                  </small>
                 </label>
 
                 <label style={{ gridColumn: '1 / -1' }}>
@@ -497,21 +553,18 @@ export function Proposals({
                   marginTop: '0.5rem',
                 }}
               >
-                <button
-                  type="button"
-                  style={{ background: 'var(--color-surface)', color: 'var(--text-primary)' }}
-                  onClick={() => setIsCreating(false)}
-                >
+                <Button type="button" variant="secondary" onClick={() => setIsCreating(false)}>
                   Cancelar
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
+                  variant="primary"
                   disabled={createProposalMutation.isPending || !selectedDesignVersionId}
                 >
                   {createProposalMutation.isPending
                     ? 'Gerando PDF…'
                     : 'Gerar Proposta e PDF Oficial'}
-                </button>
+                </Button>
               </div>
             </form>
           )}
@@ -520,29 +573,38 @@ export function Proposals({
 
       {/* Proposals List */}
       {proposalsQuery.isPending && (
-        <p className="device" role="status">
+        <p className="device" role="status" style={{ color: 'var(--text-secondary, #9ba49e)' }}>
           Carregando propostas comerciais…
         </p>
       )}
 
       {!proposalsQuery.isPending && proposals.length === 0 && !isCreating && (
-        <div
-          style={{
-            textAlign: 'center',
-            padding: '3rem 1.5rem',
-            border: '2px dashed var(--color-border)',
-            borderRadius: 'var(--radius-md)',
-            background: 'var(--color-surface)',
-          }}
-        >
+        <div className="proposal-empty-state">
           <span style={{ fontSize: '2.5rem' }}>📄</span>
-          <h4 style={{ margin: '0.5rem 0' }}>Nenhuma proposta emitida</h4>
-          <p className="device" style={{ maxWidth: '28rem', margin: '0 auto 1.5rem auto' }}>
+          <h4
+            style={{
+              margin: '0.25rem 0',
+              fontSize: '1.15rem',
+              fontWeight: 700,
+              color: 'var(--text-primary, #f5f7f5)',
+            }}
+          >
+            Nenhuma proposta emitida
+          </h4>
+          <p
+            className="device"
+            style={{
+              maxWidth: '30rem',
+              margin: '0 auto 1rem auto',
+              color: 'var(--text-secondary, #9ba49e)',
+            }}
+          >
             Converta dimensionamentos aprovados em propostas comerciais formais completas com PDF
             para envio ao cliente via WhatsApp ou E-mail.
           </p>
           {!readonly && canCreate && (
-            <button
+            <Button
+              variant="primary"
               onClick={() => {
                 setIsCreating(true);
                 if (approvedVersions.length > 0 && !selectedDesignVersionId) {
@@ -551,60 +613,40 @@ export function Proposals({
               }}
             >
               Criar Primeira Proposta
-            </button>
+            </Button>
           )}
         </div>
       )}
 
       {proposals.map((proposal) => {
-        const hasAcceptedVersion = !!proposal.acceptedVersionId;
+        const hasAcceptedVersion = Boolean(proposal.acceptedVersionId);
         const versions = (proposal.versions ?? []) as ProposalVersionView[];
 
         return (
           <div
             key={proposal.id}
-            className="panel"
-            style={{
-              border: hasAcceptedVersion
-                ? '2px solid var(--status-success)'
-                : '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-md)',
-              background: 'var(--color-surface)',
-              overflow: 'hidden',
-            }}
+            className={`proposal-card ${hasAcceptedVersion ? 'proposal-card--accepted' : ''}`}
           >
             {/* Proposal Header */}
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: '0.75rem',
-                padding: '1rem 1.25rem',
-                background: hasAcceptedVersion ? 'rgba(34, 197, 94, 0.08)' : 'var(--color-canvas)',
-                borderBottom: '1px solid var(--color-border)',
-              }}
-            >
+            <div className="proposal-card-header">
               <div
                 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}
               >
-                <span
-                  style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--brand-primary)' }}
-                >
-                  {proposal.code}
-                </span>
+                <span className="proposal-code">{proposal.code}</span>
                 {hasAcceptedVersion && (
                   <span className="badge badge-ativo" style={{ fontSize: '0.75rem' }}>
                     CONTRATADA (ACEITE FORMAL)
                   </span>
                 )}
-                <span className="device">
+                <span className="device" style={{ color: 'var(--text-secondary, #9ba49e)' }}>
                   Criada em {new Date(proposal.createdAt).toLocaleDateString('pt-BR')}
                 </span>
               </div>
 
-              <div className="device" style={{ fontSize: '0.875rem' }}>
+              <div
+                className="device"
+                style={{ fontSize: '0.875rem', color: 'var(--text-secondary, #9ba49e)' }}
+              >
                 {versions.length} {versions.length === 1 ? 'versão' : 'versões'}
               </div>
             </div>
@@ -625,14 +667,7 @@ export function Proposals({
                 return (
                   <div
                     key={version.id}
-                    style={{
-                      border: isAccepted
-                        ? '1px solid var(--status-success)'
-                        : '1px solid var(--color-border)',
-                      borderRadius: 'var(--radius-sm)',
-                      padding: '1rem',
-                      background: isAccepted ? 'rgba(34, 197, 94, 0.03)' : 'var(--color-surface)',
-                    }}
+                    className={`proposal-version-card ${isAccepted ? 'proposal-version-card--accepted' : ''}`}
                   >
                     {/* Version Top Bar */}
                     <div
@@ -642,11 +677,17 @@ export function Proposals({
                         alignItems: 'center',
                         flexWrap: 'wrap',
                         gap: '0.5rem',
-                        marginBottom: '0.75rem',
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <strong style={{ fontSize: '1rem' }}>Versão {version.versionNumber}</strong>
+                        <strong
+                          style={{
+                            fontSize: '1rem',
+                            color: 'var(--text-primary, #f5f7f5)',
+                          }}
+                        >
+                          Versão {version.versionNumber}
+                        </strong>
                         <span
                           className={`badge ${
                             isAccepted
@@ -654,7 +695,7 @@ export function Proposals({
                               : isRejected || isExpired
                                 ? 'badge-perdido'
                                 : isSent
-                                  ? 'badge-qualificado'
+                                  ? 'badge-sent'
                                   : 'badge-novo'
                           }`}
                         >
@@ -662,7 +703,10 @@ export function Proposals({
                         </span>
                       </div>
 
-                      <div className="device" style={{ fontSize: '0.8125rem' }}>
+                      <div
+                        className="device"
+                        style={{ fontSize: '0.8125rem', color: 'var(--text-secondary, #9ba49e)' }}
+                      >
                         {version.validUntil
                           ? `Válida até ${new Date(version.validUntil).toLocaleDateString('pt-BR')}`
                           : `Validade: ${version.validityDays} dias`}
@@ -670,25 +714,26 @@ export function Proposals({
                     </div>
 
                     {/* Technical & Commercial Summary Cards */}
-                    <div
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-                        gap: '0.75rem',
-                        marginBottom: '1rem',
-                      }}
-                    >
-                      <div
-                        style={{
-                          background: 'var(--color-canvas)',
-                          padding: '0.5rem 0.75rem',
-                          borderRadius: 'var(--radius-sm)',
-                        }}
-                      >
-                        <span className="device" style={{ fontSize: '0.75rem', display: 'block' }}>
+                    <div className="proposal-metrics-grid">
+                      <div className="proposal-metric-box">
+                        <span
+                          className="device"
+                          style={{
+                            fontSize: '0.75rem',
+                            display: 'block',
+                            color: 'var(--text-secondary, #9ba49e)',
+                          }}
+                        >
                           Potência Pico
                         </span>
-                        <strong style={{ fontSize: '1.1rem' }}>
+                        <strong
+                          style={{
+                            fontSize: '1.1rem',
+                            color: 'var(--text-primary, #f5f7f5)',
+                            display: 'block',
+                            marginTop: '2px',
+                          }}
+                        >
                           {Number(
                             version.systemPowerKwp ?? version.technicalSnapshot?.dcPowerKwp ?? 0,
                           ).toFixed(2)}{' '}
@@ -696,17 +741,25 @@ export function Proposals({
                         </strong>
                       </div>
 
-                      <div
-                        style={{
-                          background: 'var(--color-canvas)',
-                          padding: '0.5rem 0.75rem',
-                          borderRadius: 'var(--radius-sm)',
-                        }}
-                      >
-                        <span className="device" style={{ fontSize: '0.75rem', display: 'block' }}>
+                      <div className="proposal-metric-box">
+                        <span
+                          className="device"
+                          style={{
+                            fontSize: '0.75rem',
+                            display: 'block',
+                            color: 'var(--text-secondary, #9ba49e)',
+                          }}
+                        >
                           Geração Estimada
                         </span>
-                        <strong style={{ fontSize: '1.1rem' }}>
+                        <strong
+                          style={{
+                            fontSize: '1.1rem',
+                            color: 'var(--text-primary, #f5f7f5)',
+                            display: 'block',
+                            marginTop: '2px',
+                          }}
+                        >
                           {Number(
                             version.estimatedMonthlyGenerationKwh ??
                               version.technicalSnapshot?.estimatedMonthlyGenerationKwh ??
@@ -716,21 +769,23 @@ export function Proposals({
                         </strong>
                       </div>
 
-                      <div
-                        style={{
-                          background: 'var(--color-canvas)',
-                          padding: '0.5rem 0.75rem',
-                          borderRadius: 'var(--radius-sm)',
-                          gridColumn: 'span 2',
-                        }}
-                      >
-                        <span className="device" style={{ fontSize: '0.75rem', display: 'block' }}>
+                      <div className="proposal-metric-box proposal-metric-box--highlight">
+                        <span
+                          className="device"
+                          style={{
+                            fontSize: '0.75rem',
+                            display: 'block',
+                            color: 'var(--text-secondary, #9ba49e)',
+                          }}
+                        >
                           Valor do Investimento (Preço Final)
                         </span>
                         <strong
                           style={{
                             fontSize: '1.25rem',
-                            color: 'var(--brand-primary)',
+                            color: 'var(--brand-solar, #ffd400)',
+                            display: 'block',
+                            marginTop: '2px',
                           }}
                         >
                           R${' '}
@@ -749,51 +804,45 @@ export function Proposals({
                       <p
                         style={{
                           fontSize: '0.875rem',
-                          margin: '0 0 0.75rem 0',
-                          color: 'var(--text-secondary)',
+                          margin: '0',
+                          color: 'var(--text-secondary, #9ba49e)',
+                          background: 'var(--surface-sunken, #111412)',
+                          padding: '0.6rem 0.85rem',
+                          borderRadius: 'var(--radius-sm, 6px)',
+                          border: '1px solid var(--border-default, #29302b)',
                         }}
                       >
-                        <strong>Observações:</strong> {version.observations}
+                        <strong style={{ color: 'var(--text-primary, #f5f7f5)' }}>
+                          Observações:
+                        </strong>{' '}
+                        {version.observations}
                       </p>
                     )}
 
                     {/* PDF Document Status */}
                     {doc && (
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          flexWrap: 'wrap',
-                          gap: '0.5rem',
-                          padding: '0.5rem 0.75rem',
-                          background: 'var(--color-canvas)',
-                          borderRadius: 'var(--radius-sm)',
-                          marginBottom: '0.75rem',
-                          fontSize: '0.8125rem',
-                        }}
-                      >
+                      <div className="proposal-doc-row">
                         <div>
-                          <span>📄 {doc.fileName}</span>{' '}
-                          <span className="device">
+                          <span style={{ color: 'var(--text-primary, #f5f7f5)' }}>
+                            📄 {doc.fileName}
+                          </span>{' '}
+                          <span
+                            className="device"
+                            style={{ color: 'var(--text-secondary, #9ba49e)' }}
+                          >
                             ({Math.round(doc.fileSize / 1024)} KB | Hash:{' '}
                             {doc.contentHash.slice(0, 10)}…)
                           </span>
                         </div>
-                        <button
+                        <Button
                           type="button"
-                          style={{
-                            padding: '0.25rem 0.6rem',
-                            fontSize: '0.8125rem',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.35rem',
-                          }}
+                          variant="secondary"
+                          size="compact"
                           onClick={() => handleDownloadPdf(version)}
                           disabled={downloadingVersionId === version.id}
                         >
                           {downloadingVersionId === version.id ? 'Baixando…' : '📥 Baixar PDF'}
-                        </button>
+                        </Button>
                       </div>
                     )}
 
@@ -802,22 +851,34 @@ export function Proposals({
                       <div
                         className="notice"
                         style={{
-                          background: 'rgba(34, 197, 94, 0.1)',
-                          border: '1px solid var(--status-success)',
-                          padding: '0.75rem',
-                          borderRadius: 'var(--radius-sm)',
-                          marginBottom: '0.75rem',
+                          background: 'rgba(38, 216, 102, 0.1)',
+                          border: '1px solid var(--status-success, #26d866)',
+                          padding: '0.75rem 1rem',
+                          borderRadius: 'var(--radius-sm, 6px)',
                           fontSize: '0.875rem',
                         }}
                       >
-                        <strong>✅ Proposta Comercial Aceita Formalmente</strong>
-                        <div>
+                        <strong style={{ color: 'var(--status-success, #26d866)' }}>
+                          ✅ Proposta Comercial Aceita Formalmente
+                        </strong>
+                        <div
+                          style={{
+                            color: 'var(--text-primary, #f5f7f5)',
+                            marginTop: '0.2rem',
+                          }}
+                        >
                           Aceito por <strong>{acceptance.acceptedByName}</strong> em{' '}
                           {new Date(acceptance.acceptedAt).toLocaleString('pt-BR')} via{' '}
                           <strong>{acceptance.method}</strong>.
                         </div>
                         {acceptance.notes && (
-                          <div style={{ marginTop: '0.25rem' }} className="device">
+                          <div
+                            style={{
+                              marginTop: '0.25rem',
+                              color: 'var(--text-secondary, #9ba49e)',
+                            }}
+                            className="device"
+                          >
                             Notas: {acceptance.notes}
                           </div>
                         )}
@@ -829,27 +890,31 @@ export function Proposals({
                       <div
                         className="notice error"
                         style={{
-                          background: 'rgba(239, 68, 68, 0.1)',
-                          border: '1px solid var(--status-danger)',
-                          padding: '0.75rem',
-                          borderRadius: 'var(--radius-sm)',
-                          marginBottom: '0.75rem',
+                          background: 'rgba(255, 77, 87, 0.1)',
+                          border: '1px solid var(--status-danger, #ff4d57)',
+                          padding: '0.75rem 1rem',
+                          borderRadius: 'var(--radius-sm, 6px)',
                           fontSize: '0.875rem',
                         }}
                       >
-                        <strong>❌ Proposta Rejeitada</strong>
-                        <div>Motivo: {version.rejectionReason}</div>
+                        <strong style={{ color: 'var(--status-danger, #ff4d57)' }}>
+                          ❌ Proposta Rejeitada
+                        </strong>
+                        <div style={{ color: 'var(--text-primary, #f5f7f5)', marginTop: '0.2rem' }}>
+                          Motivo: {version.rejectionReason}
+                        </div>
                       </div>
                     )}
 
                     {/* Deliveries Timeline */}
                     {deliveries.length > 0 && (
-                      <div style={{ marginBottom: '0.75rem' }}>
+                      <div className="proposal-timeline-box">
                         <strong
                           style={{
                             fontSize: '0.8125rem',
                             display: 'block',
-                            marginBottom: '0.25rem',
+                            marginBottom: '0.35rem',
+                            color: 'var(--text-primary, #f5f7f5)',
                           }}
                         >
                           Histórico de Envios:
@@ -862,7 +927,8 @@ export function Proposals({
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '0.5rem',
-                                color: 'var(--text-secondary)',
+                                color: 'var(--text-secondary, #9ba49e)',
+                                flexWrap: 'wrap',
                               }}
                             >
                               <span>
@@ -872,8 +938,11 @@ export function Proposals({
                                   : del.channel === 'EMAIL'
                                     ? '✉️ E-mail'
                                     : '🤝 Presencial'}
-                                : <strong>{del.recipient}</strong> (
-                                {new Date(del.sentAt).toLocaleString('pt-BR')})
+                                :{' '}
+                                <strong style={{ color: 'var(--text-primary, #f5f7f5)' }}>
+                                  {del.recipient}
+                                </strong>{' '}
+                                ({new Date(del.sentAt).toLocaleString('pt-BR')})
                               </span>
                               {del.notes && <span className="device">— {del.notes}</span>}
                             </div>
@@ -891,13 +960,12 @@ export function Proposals({
                               display: 'flex',
                               alignItems: 'center',
                               gap: '0.75rem',
-                              backgroundColor: 'rgba(8, 116, 67, 0.08)',
-                              border: '1px solid var(--brand-primary, #087443)',
+                              backgroundColor: 'rgba(255, 212, 0, 0.08)',
+                              border: '1px solid var(--brand-solar, #ffd400)',
                               borderRadius: 'var(--radius-sm, 6px)',
                               padding: '0.75rem 1rem',
-                              marginTop: '0.75rem',
                               fontSize: '0.875rem',
-                              color: 'var(--brand-primary-strong, #045c34)',
+                              color: 'var(--brand-solar, #ffd400)',
                             }}
                           >
                             <span style={{ fontSize: '1.25rem' }}>👉</span>
@@ -915,13 +983,12 @@ export function Proposals({
                               display: 'flex',
                               alignItems: 'center',
                               gap: '0.75rem',
-                              backgroundColor: 'rgba(21, 128, 61, 0.1)',
-                              border: '1px solid #16a34a',
+                              backgroundColor: 'rgba(38, 216, 102, 0.08)',
+                              border: '1px solid var(--status-success, #26d866)',
                               borderRadius: 'var(--radius-sm, 6px)',
                               padding: '0.75rem 1rem',
-                              marginTop: '0.75rem',
                               fontSize: '0.875rem',
-                              color: '#15803d',
+                              color: 'var(--status-success, #26d866)',
                             }}
                           >
                             <span style={{ fontSize: '1.25rem' }}>🎯</span>
@@ -937,36 +1004,12 @@ export function Proposals({
 
                     {/* Action Buttons Toolbar */}
                     {!readonly && !hasAcceptedVersion && (
-                      <div
-                        style={{
-                          display: 'flex',
-                          flexWrap: 'wrap',
-                          alignItems: 'center',
-                          gap: '0.625rem',
-                          marginTop: '0.75rem',
-                          paddingTop: '0.75rem',
-                          borderTop: '1px dashed var(--color-border)',
-                        }}
-                      >
+                      <div className="proposal-actions-bar">
                         {canSend && (
-                          <button
+                          <Button
                             type="button"
                             aria-label="📤 Registrar Envio"
-                            className={isReady ? 'btn btn--primary' : 'btn btn--secondary'}
-                            style={{
-                              padding: '0.55rem 1.1rem',
-                              fontSize: '0.875rem',
-                              minHeight: 'auto',
-                              fontWeight: 600,
-                              backgroundColor: isReady
-                                ? 'var(--brand-primary, #087443)'
-                                : undefined,
-                              color: isReady ? '#ffffff' : undefined,
-                              border: isReady
-                                ? '1px solid var(--brand-primary-strong, #045c34)'
-                                : undefined,
-                              boxShadow: isReady ? '0 1px 3px rgba(0, 0, 0, 0.12)' : undefined,
-                            }}
+                            variant={isReady ? 'primary' : 'secondary'}
                             onClick={() => {
                               setDeliveryVersionId(version.id);
                               setAcceptVersionId(null);
@@ -977,27 +1020,19 @@ export function Proposals({
                             {isReady
                               ? '1. Registrar Envio ao Cliente (Gate B)'
                               : 'Registrar Novo Envio'}
-                          </button>
+                          </Button>
                         )}
 
                         {canAccept &&
                           (isSent ? (
-                            <button
+                            <Button
                               type="button"
                               aria-label="✓ Registrar Aceite Formal"
-                              className="btn btn--success"
+                              variant="primary"
                               style={{
-                                padding: '0.6rem 1.25rem',
-                                fontSize: '0.9375rem',
-                                minHeight: 'auto',
-                                backgroundColor: '#15803d',
-                                color: '#ffffff',
-                                border: '1px solid #166534',
+                                backgroundColor: 'var(--status-success, #26d866)',
+                                color: '#090B0A',
                                 fontWeight: 700,
-                                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.18)',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '0.5rem',
                               }}
                               onClick={() => {
                                 setAcceptVersionId(version.id);
@@ -1006,42 +1041,26 @@ export function Proposals({
                               }}
                             >
                               ✓ Registrar Aceite Formal do Cliente
-                            </button>
+                            </Button>
                           ) : (
-                            <button
+                            <Button
                               type="button"
-                              className="btn"
+                              variant="ghost"
                               disabled
                               title="O aceite formal requer o envio prévio da proposta ao cliente (Gate B)."
                               style={{
-                                padding: '0.55rem 1rem',
-                                fontSize: '0.875rem',
-                                minHeight: 'auto',
-                                backgroundColor: '#f1f5f9',
-                                color: '#64748b',
-                                border: '1px dashed #cbd5e1',
-                                fontWeight: 600,
-                                cursor: 'not-allowed',
-                                opacity: 0.65,
+                                border: '1px dashed var(--border-default, #29302b)',
+                                opacity: 0.6,
                               }}
                             >
                               ✓ Registrar Aceite Formal (Aguardando Envio)
-                            </button>
+                            </Button>
                           ))}
 
                         {canReject && isSent && (
-                          <button
+                          <Button
                             type="button"
-                            className="btn btn--danger"
-                            style={{
-                              padding: '0.55rem 1rem',
-                              fontSize: '0.875rem',
-                              minHeight: 'auto',
-                              backgroundColor: '#fee2e2',
-                              color: '#b91c1c',
-                              border: '1px solid #ef4444',
-                              fontWeight: 600,
-                            }}
+                            variant="danger"
                             onClick={() => {
                               setRejectVersionId(version.id);
                               setDeliveryVersionId(null);
@@ -1049,44 +1068,43 @@ export function Proposals({
                             }}
                           >
                             ✕ Registrar Rejeição
-                          </button>
+                          </Button>
                         )}
 
                         {canCreate && (
-                          <button
+                          <Button
                             type="button"
-                            className="btn btn--subtle"
-                            style={{
-                              padding: '0.55rem 1rem',
-                              fontSize: '0.875rem',
-                              minHeight: 'auto',
-                              fontWeight: 600,
-                            }}
+                            variant="secondary"
                             onClick={() => {
                               setNewVersionParentId(version.id);
                             }}
                           >
                             + Nova Versão
-                          </button>
+                          </Button>
                         )}
                       </div>
                     )}
 
                     {/* Inline Form: Register Delivery */}
                     {deliveryVersionId === version.id && (
-                      <div
-                        className="notice"
-                        style={{
-                          marginTop: '0.75rem',
-                          background: 'var(--color-canvas)',
-                          padding: '1rem',
-                          borderRadius: 'var(--radius-sm)',
-                        }}
-                      >
-                        <h4 style={{ margin: '0 0 0.5rem 0' }}>
+                      <div className="proposal-inline-form">
+                        <h4
+                          style={{
+                            margin: '0 0 0.5rem 0',
+                            color: 'var(--text-primary, #f5f7f5)',
+                            fontSize: '1rem',
+                            fontWeight: 700,
+                          }}
+                        >
                           Registrar Envio da Proposta (Gate B)
                         </h4>
-                        <p className="device" style={{ margin: '0 0 0.75rem 0' }}>
+                        <p
+                          className="device"
+                          style={{
+                            margin: '0 0 0.75rem 0',
+                            color: 'var(--text-secondary, #9ba49e)',
+                          }}
+                        >
                           O envio formal atualiza a oportunidade para
                           &quot;PROPOSTA_APRESENTADA&quot; e agenda atividade automática de
                           follow-up em 48h.
@@ -1142,22 +1160,20 @@ export function Proposals({
                           <div
                             style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}
                           >
-                            <button
+                            <Button
                               type="button"
-                              style={{
-                                background: 'var(--color-surface)',
-                                color: 'var(--text-primary)',
-                              }}
+                              variant="secondary"
                               onClick={() => setDeliveryVersionId(null)}
                             >
                               Cancelar
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                               type="submit"
+                              variant="primary"
                               disabled={deliverMutation.isPending || !deliveryRecipient}
                             >
                               {deliverMutation.isPending ? 'Registrando…' : 'Confirmar Envio'}
-                            </button>
+                            </Button>
                           </div>
                         </form>
                       </div>
@@ -1166,19 +1182,29 @@ export function Proposals({
                     {/* Inline Form: Register Acceptance */}
                     {acceptVersionId === version.id && (
                       <div
-                        className="notice"
+                        className="proposal-inline-form"
                         style={{
-                          marginTop: '0.75rem',
-                          background: 'rgba(34, 197, 94, 0.08)',
-                          border: '1px solid var(--status-success)',
-                          padding: '1rem',
-                          borderRadius: 'var(--radius-sm)',
+                          border: '1px solid var(--status-success, #26d866)',
+                          background: 'rgba(38, 216, 102, 0.05)',
                         }}
                       >
-                        <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--status-success)' }}>
+                        <h4
+                          style={{
+                            margin: '0 0 0.5rem 0',
+                            color: 'var(--status-success, #26d866)',
+                            fontSize: '1rem',
+                            fontWeight: 700,
+                          }}
+                        >
                           Registrar Aceite Formal do Cliente
                         </h4>
-                        <p className="device" style={{ margin: '0 0 0.75rem 0' }}>
+                        <p
+                          className="device"
+                          style={{
+                            margin: '0 0 0.75rem 0',
+                            color: 'var(--text-secondary, #9ba49e)',
+                          }}
+                        >
                           O aceite formal marca a proposta como vencedora, transita a oportunidade
                           para &quot;CONTRATACAO&quot; e cria a tarefa de formalização do contrato.
                         </p>
@@ -1236,28 +1262,27 @@ export function Proposals({
                           <div
                             style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}
                           >
-                            <button
+                            <Button
                               type="button"
-                              className="btn btn--subtle"
+                              variant="secondary"
                               onClick={() => setAcceptVersionId(null)}
                             >
                               Cancelar
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                               type="submit"
-                              className="btn btn--success"
+                              variant="primary"
                               style={{
-                                background: '#15803d',
-                                color: '#ffffff',
-                                border: '1px solid #166534',
-                                fontWeight: 600,
+                                backgroundColor: 'var(--status-success, #26d866)',
+                                color: '#090B0A',
+                                fontWeight: 700,
                               }}
                               disabled={acceptMutation.isPending || !acceptedByName}
                             >
                               {acceptMutation.isPending
                                 ? 'Confirmando…'
                                 : 'Confirmar Aceite Formal'}
-                            </button>
+                            </Button>
                           </div>
                         </form>
                       </div>
@@ -1266,16 +1291,20 @@ export function Proposals({
                     {/* Inline Form: Register Rejection */}
                     {rejectVersionId === version.id && (
                       <div
-                        className="notice error"
+                        className="proposal-inline-form"
                         style={{
-                          marginTop: '0.75rem',
-                          background: 'rgba(239, 68, 68, 0.08)',
-                          border: '1px solid var(--status-danger)',
-                          padding: '1rem',
-                          borderRadius: 'var(--radius-sm)',
+                          border: '1px solid var(--status-danger, #ff4d57)',
+                          background: 'rgba(255, 77, 87, 0.05)',
                         }}
                       >
-                        <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--status-danger)' }}>
+                        <h4
+                          style={{
+                            margin: '0 0 0.5rem 0',
+                            color: 'var(--status-danger, #ff4d57)',
+                            fontSize: '1rem',
+                            fontWeight: 700,
+                          }}
+                        >
                           Registrar Rejeição da Versão
                         </h4>
                         <Feedback error={rejectMutation.error} />
@@ -1317,26 +1346,20 @@ export function Proposals({
                           <div
                             style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}
                           >
-                            <button
+                            <Button
                               type="button"
-                              className="btn btn--subtle"
+                              variant="secondary"
                               onClick={() => setRejectVersionId(null)}
                             >
                               Cancelar
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                               type="submit"
-                              className="btn btn--danger"
-                              style={{
-                                background: '#b91c1c',
-                                color: '#ffffff',
-                                border: '1px solid #991b1b',
-                                fontWeight: 600,
-                              }}
+                              variant="danger"
                               disabled={rejectMutation.isPending}
                             >
                               {rejectMutation.isPending ? 'Registrando…' : 'Confirmar Rejeição'}
-                            </button>
+                            </Button>
                           </div>
                         </form>
                       </div>
@@ -1344,41 +1367,44 @@ export function Proposals({
 
                     {/* Inline Form: Create Next Version */}
                     {newVersionParentId === version.id && (
-                      <div
-                        className="notice"
-                        style={{
-                          marginTop: '0.75rem',
-                          background: 'var(--color-canvas)',
-                          padding: '1rem',
-                          borderRadius: 'var(--radius-sm)',
-                        }}
-                      >
-                        <h4 style={{ margin: '0 0 0.5rem 0' }}>
+                      <div className="proposal-inline-form">
+                        <h4
+                          style={{
+                            margin: '0 0 0.5rem 0',
+                            color: 'var(--text-primary, #f5f7f5)',
+                            fontSize: '1rem',
+                            fontWeight: 700,
+                          }}
+                        >
                           Emitir Próxima Versão da Proposta
                         </h4>
-                        <p className="device" style={{ margin: '0 0 0.75rem 0' }}>
+                        <p
+                          className="device"
+                          style={{
+                            margin: '0 0 0.75rem 0',
+                            color: 'var(--text-secondary, #9ba49e)',
+                          }}
+                        >
                           Será criada uma nova versão (v{version.versionNumber + 1}) para esta
                           proposta comercial, permitindo novas revisões e reenvio formal.
                         </p>
                         <Feedback error={newVersionMutation.error} />
                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                          <button
+                          <Button
                             type="button"
-                            style={{
-                              background: 'var(--color-surface)',
-                              color: 'var(--text-primary)',
-                            }}
+                            variant="secondary"
                             onClick={() => setNewVersionParentId(null)}
                           >
                             Cancelar
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             type="button"
+                            variant="primary"
                             onClick={() => newVersionMutation.mutate(version.id)}
                             disabled={newVersionMutation.isPending}
                           >
                             {newVersionMutation.isPending ? 'Emitindo…' : 'Confirmar Nova Versão'}
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     )}

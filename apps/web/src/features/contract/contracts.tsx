@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, result, allows } from '../identity/client';
 import { Feedback } from '../identity/feedback';
+import { Button } from '../../ui/Button';
 
 export interface ContractDocumentView {
   id: string;
@@ -316,29 +317,41 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
   const getStatusBadge = (state: string) => {
     switch (state) {
       case 'DRAFT':
-        return { label: 'Rascunho', color: 'var(--text-muted)', bg: 'var(--surface-sunken)' };
+        return {
+          label: 'Rascunho',
+          color: 'var(--text-secondary, #9ba49e)',
+          bg: 'rgba(155, 164, 158, 0.12)',
+        };
       case 'PENDING_REVIEW':
-        return { label: 'Em Revisão', color: '#b45309', bg: '#fef3c7' };
+        return { label: 'Em Revisão', color: '#ff9f1c', bg: 'rgba(255, 159, 28, 0.12)' };
       case 'APPROVED':
       case 'READY':
-        return { label: 'Pronto p/ Envio', color: '#1d4ed8', bg: '#dbeafe' };
+        return { label: 'Pronto p/ Envio', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.12)' };
       case 'SENT':
-        return { label: 'Enviado ao Cliente', color: '#6d28d9', bg: '#ede9fe' };
+        return { label: 'Enviado ao Cliente', color: '#a855f7', bg: 'rgba(168, 85, 247, 0.12)' };
       case 'SIGNED_UPLOADED':
         return {
           label: 'Assinado Anexado (Aguardando Conferência)',
-          color: '#c2410c',
-          bg: '#ffedd5',
+          color: '#ff9f1c',
+          bg: 'rgba(255, 159, 28, 0.12)',
         };
       case 'ACTIVE':
       case 'SIGNED_VERIFIED':
-        return { label: 'Ativo & Verificado (Gate C)', color: '#15803d', bg: '#dcfce7' };
+        return {
+          label: 'Ativo & Verificado (Gate C)',
+          color: '#26d866',
+          bg: 'rgba(38, 216, 102, 0.12)',
+        };
       case 'AMENDED':
-        return { label: 'Com Aditivo', color: '#0369a1', bg: '#e0f2fe' };
+        return { label: 'Com Aditivo', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.12)' };
       case 'CANCELED':
-        return { label: 'Cancelado', color: '#b91c1c', bg: '#fee2e2' };
+        return { label: 'Cancelado', color: '#ff4d57', bg: 'rgba(255, 77, 87, 0.12)' };
       default:
-        return { label: state, color: 'var(--text-muted)', bg: 'var(--surface-sunken)' };
+        return {
+          label: state,
+          color: 'var(--text-secondary, #9ba49e)',
+          bg: 'rgba(155, 164, 158, 0.12)',
+        };
     }
   };
 
@@ -350,64 +363,37 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
 
   if (isLoading) {
     return (
-      <div className="card" style={{ padding: '2rem', textAlign: 'center' }}>
+      <div
+        className="contract-card"
+        style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-secondary, #9ba49e)' }}
+      >
         Carregando dados contratuais...
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+    <div className="contract-container">
       {/* Top Banner: Gate C status */}
       <div
-        className="card"
-        style={{
-          borderLeft: gate?.status === 'SATISFIED' ? '6px solid #16a34a' : '6px solid #eab308',
-          padding: '1.25rem',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.75rem',
-        }}
+        className={`contract-gate-banner ${
+          gate?.status === 'SATISFIED'
+            ? 'contract-gate-banner--satisfied'
+            : 'contract-gate-banner--pending'
+        }`}
       >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '0.75rem',
-          }}
-        >
+        <div className="contract-gate-header">
           <div>
-            <div
-              style={{
-                fontSize: '0.75rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                color: 'var(--text-muted)',
-                fontWeight: 600,
-              }}
-            >
+            <div className="contract-gate-eyebrow">
               Milestone M5 — Gate C: Governança Contratual & Assinatura
             </div>
-            <div
-              style={{
-                fontSize: '1.125rem',
-                fontWeight: 700,
-                color: 'var(--text-primary)',
-                marginTop: '0.2rem',
-              }}
-            >
+            <div className="contract-gate-title">
               {gate?.status === 'SATISFIED' ? (
-                <span
-                  style={{ color: '#16a34a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                >
+                <span style={{ color: 'var(--status-success, #26d866)' }}>
                   ✅ Gate C Superado — Contrato Ativo e Verificado
                 </span>
               ) : (
-                <span
-                  style={{ color: '#ca8a04', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                >
+                <span style={{ color: 'var(--status-warning, #ff9f1c)' }}>
                   ⏳ Gate C Pendente — Aguardando Assinatura e Conferência Formal
                 </span>
               )}
@@ -415,24 +401,9 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
           </div>
 
           {!readonly && !contract && canCreate && (
-            <button
-              type="button"
-              className="btn btn--primary"
-              onClick={() => setIsCreating(true)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                backgroundColor: '#087443',
-                color: '#ffffff',
-                fontWeight: 700,
-                padding: '0.6rem 1.25rem',
-                borderRadius: 'var(--radius-sm, 6px)',
-                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
-              }}
-            >
+            <Button variant="primary" onClick={() => setIsCreating(true)}>
               + Gerar Contrato Comercial
-            </button>
+            </Button>
           )}
         </div>
 
@@ -440,8 +411,8 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
           <div
             style={{
               fontSize: '0.8125rem',
-              color: 'var(--text-muted)',
-              borderTop: '1px solid var(--border-subtle)',
+              color: 'var(--text-secondary, #9ba49e)',
+              borderTop: '1px solid var(--border-default, #29302b)',
               paddingTop: '0.5rem',
             }}
           >
@@ -456,27 +427,24 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
 
       {/* No contract state */}
       {!contract && (
-        <div
-          className="card"
-          style={{
-            padding: '2.5rem',
-            textAlign: 'center',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '1rem',
-          }}
-        >
-          <div style={{ fontSize: '2.5rem' }}>📝</div>
-          <div style={{ fontWeight: 600, fontSize: '1.125rem' }}>
+        <div className="contract-empty-card">
+          <div style={{ fontSize: '2.75rem' }}>📝</div>
+          <div
+            style={{
+              fontWeight: 700,
+              fontSize: '1.2rem',
+              color: 'var(--text-primary, #f5f7f5)',
+            }}
+          >
             Nenhum contrato formal gerado ainda
           </div>
           <p
             style={{
               maxWidth: '480px',
-              color: 'var(--text-muted)',
+              color: 'var(--text-secondary, #9ba49e)',
               margin: 0,
               fontSize: '0.875rem',
+              lineHeight: 1.5,
             }}
           >
             Assim que a proposta comercial for aceita formalmente pelo cliente, gere o contrato
@@ -484,23 +452,13 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
             Gate C.
           </p>
           {!readonly && canCreate && (
-            <button
-              type="button"
-              className="btn btn--primary"
+            <Button
+              variant="primary"
               onClick={() => setIsCreating(true)}
-              style={{
-                marginTop: '0.75rem',
-                backgroundColor: '#087443',
-                color: '#ffffff',
-                fontWeight: 700,
-                padding: '0.75rem 1.5rem',
-                fontSize: '1rem',
-                borderRadius: 'var(--radius-sm, 6px)',
-                boxShadow: '0 2px 5px rgba(0, 0, 0, 0.18)',
-              }}
+              style={{ marginTop: '0.5rem' }}
             >
               + Gerar Minuta Contratual (DOCX & PDF)
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -509,10 +467,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
       {contract && (
         <>
           {/* Main Contract Header Card */}
-          <div
-            className="card"
-            style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}
-          >
+          <div className="contract-card">
             <div
               style={{
                 display: 'flex',
@@ -523,21 +478,30 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span style={{ fontSize: '1.5rem' }}>📄</span>
+                <span style={{ fontSize: '1.75rem' }}>📄</span>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '1.25rem', fontWeight: 700 }}>{contract.code}</span>
+                    <span
+                      style={{
+                        fontSize: '1.3rem',
+                        fontWeight: 800,
+                        color: 'var(--brand-solar, #ffd400)',
+                      }}
+                    >
+                      {contract.code}
+                    </span>
                     {(() => {
                       const badge = getStatusBadge(contract.state);
                       return (
                         <span
                           style={{
-                            padding: '0.2rem 0.6rem',
+                            padding: '0.25rem 0.65rem',
                             borderRadius: '9999px',
                             fontSize: '0.75rem',
-                            fontWeight: 600,
+                            fontWeight: 700,
                             color: badge.color,
                             backgroundColor: badge.bg,
+                            border: `1px solid ${badge.color}33`,
                           }}
                         >
                           {badge.label}
@@ -545,7 +509,13 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                       );
                     })()}
                   </div>
-                  <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                  <div
+                    style={{
+                      fontSize: '0.8125rem',
+                      color: 'var(--text-secondary, #9ba49e)',
+                      marginTop: '2px',
+                    }}
+                  >
                     Criado em{' '}
                     {new Intl.DateTimeFormat('pt-BR', {
                       dateStyle: 'short',
@@ -560,21 +530,9 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 {!readonly &&
                   (contract.state === 'READY' || contract.state === 'SENT') &&
                   canSend && (
-                    <button
-                      type="button"
-                      className="btn btn--secondary"
-                      onClick={() => setIsDelivering(true)}
-                      style={{
-                        backgroundColor: '#ffffff',
-                        color: '#087443',
-                        border: '1.5px solid #087443',
-                        fontWeight: 600,
-                        padding: '0.5rem 1rem',
-                        fontSize: '0.875rem',
-                      }}
-                    >
+                    <Button type="button" variant="secondary" onClick={() => setIsDelivering(true)}>
                       📤 Registrar Envio
-                    </button>
+                    </Button>
                   )}
 
                 {!readonly &&
@@ -582,28 +540,20 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                     contract.state === 'READY' ||
                     contract.state === 'SIGNED_UPLOADED') &&
                   canUpload && (
-                    <button
-                      type="button"
-                      className="btn btn--primary"
-                      onClick={() => setIsUploading(true)}
-                      style={{
-                        backgroundColor: '#0284c7',
-                        color: '#ffffff',
-                        border: '1.5px solid #0369a1',
-                        fontWeight: 600,
-                        padding: '0.5rem 1rem',
-                        fontSize: '0.875rem',
-                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.12)',
-                      }}
-                    >
+                    <Button type="button" variant="primary" onClick={() => setIsUploading(true)}>
                       📥 Anexar Via Assinada
-                    </button>
+                    </Button>
                   )}
 
                 {!readonly && contract.state === 'SIGNED_UPLOADED' && canVerify && (
-                  <button
+                  <Button
                     type="button"
-                    className="btn btn--success"
+                    variant="primary"
+                    style={{
+                      backgroundColor: 'var(--status-success, #26d866)',
+                      color: '#090B0A',
+                      fontWeight: 700,
+                    }}
                     onClick={() => {
                       setCheckParties(false);
                       setCheckPages(false);
@@ -612,42 +562,28 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                       setReviewDecision('VERIFIED');
                       setIsReviewing(true);
                     }}
-                    style={{
-                      backgroundColor: '#15803d',
-                      color: '#ffffff',
-                      border: '1.5px solid #166534',
-                      fontWeight: 700,
-                      padding: '0.5rem 1.1rem',
-                      fontSize: '0.875rem',
-                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.18)',
-                    }}
                   >
                     🔍 Conferência de Assinatura (Gate C)
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
 
             {/* Document Download Buttons */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-                gap: '0.75rem',
-                backgroundColor: 'var(--surface-sunken)',
-                padding: '1rem',
-                borderRadius: '0.5rem',
-              }}
-            >
+            <div className="contract-downloads-grid">
               {/* DOCX Download */}
-              <div
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-              >
+              <div className="contract-download-item">
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      fontSize: '0.875rem',
+                      color: 'var(--text-primary, #f5f7f5)',
+                    }}
+                  >
                     📝 Minuta Editável (DOCX)
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #9ba49e)' }}>
                     {docxDoc
                       ? `${Math.round(docxDoc.fileSize / 1024)} KB • Modelo Moura Solar`
                       : 'Gerando...'}
@@ -656,14 +592,12 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 {docxDoc && canDownload && (
                   <a
                     href={`/api/v1/contracts/${contract.id}/docx`}
-                    className="btn btn--subtle"
+                    className="btn btn--secondary"
                     style={{
                       fontSize: '0.8125rem',
                       padding: '0.4rem 0.85rem',
                       fontWeight: 600,
-                      backgroundColor: '#f1f5f9',
-                      color: '#0f172a',
-                      border: '1px solid #cbd5e1',
+                      textDecoration: 'none',
                     }}
                     download
                   >
@@ -673,14 +607,18 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
               </div>
 
               {/* PDF Download */}
-              <div
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-              >
+              <div className="contract-download-item">
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      fontSize: '0.875rem',
+                      color: 'var(--text-primary, #f5f7f5)',
+                    }}
+                  >
                     📄 Contrato Formal (PDF)
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #9ba49e)' }}>
                     {pdfDoc
                       ? `${Math.round(pdfDoc.fileSize / 1024)} KB • Pronto para assinatura`
                       : 'Gerando...'}
@@ -694,9 +632,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                       fontSize: '0.8125rem',
                       padding: '0.4rem 0.85rem',
                       fontWeight: 600,
-                      backgroundColor: '#0284c7',
-                      color: '#ffffff',
-                      border: '1px solid #0369a1',
+                      textDecoration: 'none',
                     }}
                     download
                   >
@@ -708,27 +644,35 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
               {/* Signed Upload Download */}
               {signedDoc && (
                 <div
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                  className="contract-download-item"
+                  style={{ borderColor: 'rgba(38, 216, 102, 0.4)' }}
                 >
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#16a34a' }}>
+                    <div
+                      style={{
+                        fontWeight: 600,
+                        fontSize: '0.875rem',
+                        color: 'var(--status-success, #26d866)',
+                      }}
+                    >
                       ✍️ Via Assinada Anexada
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #9ba49e)' }}>
                       {Math.round(signedDoc.fileSize / 1024)} KB • {signedDoc.fileName}
                     </div>
                   </div>
                   {canDownload && (
                     <a
                       href={`/api/v1/contracts/${contract.id}/signed`}
-                      className="btn btn--success"
+                      className="btn"
                       style={{
                         fontSize: '0.8125rem',
                         padding: '0.4rem 0.85rem',
                         fontWeight: 600,
-                        backgroundColor: '#15803d',
-                        color: '#ffffff',
-                        border: '1px solid #166534',
+                        backgroundColor: 'var(--status-success, #26d866)',
+                        color: '#090B0A',
+                        textDecoration: 'none',
+                        borderRadius: 'var(--radius-sm, 6px)',
                       }}
                       download
                     >
@@ -741,35 +685,26 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
           </div>
 
           {/* Contract Stage Pipeline & Action Hub (Gate C) */}
-          <div
-            className="card"
-            style={{
-              padding: '1.25rem',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1rem',
-              backgroundColor: 'var(--color-surface)',
-              border: '1px solid var(--border-subtle)',
-            }}
-          >
+          <div className="contract-card">
             <div>
               <h3
                 style={{
                   margin: 0,
-                  fontSize: '1.125rem',
+                  fontSize: '1.15rem',
                   fontWeight: 700,
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.5rem',
+                  color: 'var(--text-primary, #f5f7f5)',
                 }}
               >
                 🎯 Etapas e Ações do Contrato (Gate C)
               </h3>
               <p
                 style={{
-                  margin: '0.25rem 0 0 0',
+                  margin: '0.35rem 0 0 0',
                   fontSize: '0.875rem',
-                  color: 'var(--text-muted)',
+                  color: 'var(--text-secondary, #9ba49e)',
                 }}
               >
                 Acompanhe as 4 etapas necessárias para homologar o contrato com validade jurídica e
@@ -777,26 +712,9 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
               </p>
             </div>
 
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                gap: '1rem',
-              }}
-            >
+            <div className="contract-pipeline-grid">
               {/* Step 1: Minutas */}
-              <div
-                style={{
-                  padding: '1rem',
-                  borderRadius: 'var(--radius-sm, 6px)',
-                  border: '1px solid #cbd5e1',
-                  backgroundColor: '#f8fafc',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.75rem',
-                  justifyContent: 'space-between',
-                }}
-              >
+              <div className="contract-pipeline-step contract-pipeline-step--success">
                 <div>
                   <div
                     style={{
@@ -806,7 +724,13 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                       marginBottom: '0.5rem',
                     }}
                   >
-                    <span style={{ fontWeight: 700, fontSize: '0.875rem' }}>
+                    <span
+                      style={{
+                        fontWeight: 700,
+                        fontSize: '0.875rem',
+                        color: 'var(--text-primary, #f5f7f5)',
+                      }}
+                    >
                       1. Minutas do Contrato
                     </span>
                     <span
@@ -815,14 +739,20 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                         borderRadius: '9999px',
                         fontSize: '0.75rem',
                         fontWeight: 600,
-                        color: '#15803d',
-                        backgroundColor: '#dcfce7',
+                        color: '#26d866',
+                        backgroundColor: 'rgba(38, 216, 102, 0.12)',
                       }}
                     >
                       ✓ Concluído
                     </span>
                   </div>
-                  <p style={{ margin: 0, fontSize: '0.8125rem', color: '#475569' }}>
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: '0.8125rem',
+                      color: 'var(--text-secondary, #9ba49e)',
+                    }}
+                  >
                     Documentos gerados com as cláusulas padrão Moura Solar e dados técnicos.
                   </p>
                 </div>
@@ -836,10 +766,6 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                       style={{
                         fontSize: '0.8125rem',
                         padding: '0.45rem 0.8rem',
-                        backgroundColor: '#0284c7',
-                        color: '#ffffff',
-                        border: '1px solid #0369a1',
-                        fontWeight: 600,
                         textDecoration: 'none',
                       }}
                     >
@@ -850,14 +776,10 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                     <a
                       href={`/api/v1/contracts/${contract.id}/docx`}
                       download
-                      className="btn btn--subtle"
+                      className="btn btn--secondary"
                       style={{
                         fontSize: '0.8125rem',
                         padding: '0.45rem 0.8rem',
-                        backgroundColor: '#ffffff',
-                        color: '#334155',
-                        border: '1px solid #cbd5e1',
-                        fontWeight: 600,
                         textDecoration: 'none',
                       }}
                     >
@@ -876,25 +798,13 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 const isCurrent = contract.state === 'READY';
                 return (
                   <div
-                    style={{
-                      padding: '1rem',
-                      borderRadius: 'var(--radius-sm, 6px)',
-                      border: isCurrent
-                        ? '2px solid #087443'
+                    className={`contract-pipeline-step ${
+                      isCurrent
+                        ? 'contract-pipeline-step--active'
                         : isSent
-                          ? '1px solid #cbd5e1'
-                          : '1px solid #e2e8f0',
-                      backgroundColor: isCurrent
-                        ? 'rgba(8, 116, 67, 0.05)'
-                        : isSent
-                          ? '#f8fafc'
-                          : '#ffffff',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '0.75rem',
-                      justifyContent: 'space-between',
-                      boxShadow: isCurrent ? '0 2px 6px rgba(8, 116, 67, 0.12)' : 'none',
-                    }}
+                          ? 'contract-pipeline-step--success'
+                          : ''
+                    }`}
                   >
                     <div>
                       <div
@@ -905,7 +815,13 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                           marginBottom: '0.5rem',
                         }}
                       >
-                        <span style={{ fontWeight: 700, fontSize: '0.875rem' }}>
+                        <span
+                          style={{
+                            fontWeight: 700,
+                            fontSize: '0.875rem',
+                            color: 'var(--text-primary, #f5f7f5)',
+                          }}
+                        >
                           2. Envio da Minuta
                         </span>
                         <span
@@ -914,14 +830,24 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                             borderRadius: '9999px',
                             fontSize: '0.75rem',
                             fontWeight: 600,
-                            color: isSent ? '#15803d' : isCurrent ? '#087443' : '#64748b',
-                            backgroundColor: isSent ? '#dcfce7' : isCurrent ? '#e2f3e9' : '#f1f5f9',
+                            color: isSent ? '#26d866' : isCurrent ? '#ffd400' : '#9ba49e',
+                            backgroundColor: isSent
+                              ? 'rgba(38, 216, 102, 0.12)'
+                              : isCurrent
+                                ? 'rgba(255, 212, 0, 0.12)'
+                                : 'rgba(155, 164, 158, 0.12)',
                           }}
                         >
                           {isSent ? '✓ Enviado' : isCurrent ? '👉 Ação Pendente' : 'Pendente'}
                         </span>
                       </div>
-                      <p style={{ margin: 0, fontSize: '0.8125rem', color: '#475569' }}>
+                      <p
+                        style={{
+                          margin: 0,
+                          fontSize: '0.8125rem',
+                          color: 'var(--text-secondary, #9ba49e)',
+                        }}
+                      >
                         {isSent
                           ? `Enviado via ${contract.deliveries[0]?.channel} para ${contract.deliveries[0]?.recipient}.`
                           : 'Envie a minuta ao cliente e registre o canal (WhatsApp/E-mail) para controle de prazos.'}
@@ -929,22 +855,13 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                     </div>
 
                     {!readonly && canSend && (
-                      <button
+                      <Button
                         type="button"
-                        className={isCurrent ? 'btn btn--primary' : 'btn btn--secondary'}
+                        variant={isCurrent ? 'primary' : 'secondary'}
                         onClick={() => setIsDelivering(true)}
-                        style={{
-                          fontSize: '0.8125rem',
-                          padding: '0.5rem 0.9rem',
-                          fontWeight: 700,
-                          backgroundColor: isCurrent ? '#087443' : '#ffffff',
-                          color: isCurrent ? '#ffffff' : '#087443',
-                          border: isCurrent ? '1px solid #045c34' : '1.5px solid #087443',
-                          boxShadow: isCurrent ? '0 2px 4px rgba(0, 0, 0, 0.15)' : 'none',
-                        }}
                       >
                         📤 {isSent ? 'Registrar Novo Envio' : 'Registrar Envio da Minuta'}
-                      </button>
+                      </Button>
                     )}
                   </div>
                 );
@@ -957,25 +874,13 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                   !hasUploaded && (contract.state === 'SENT' || contract.state === 'READY');
                 return (
                   <div
-                    style={{
-                      padding: '1rem',
-                      borderRadius: 'var(--radius-sm, 6px)',
-                      border: isCurrent
-                        ? '2px solid #0284c7'
+                    className={`contract-pipeline-step ${
+                      isCurrent
+                        ? 'contract-pipeline-step--active'
                         : hasUploaded
-                          ? '1px solid #cbd5e1'
-                          : '1px solid #e2e8f0',
-                      backgroundColor: isCurrent
-                        ? 'rgba(2, 132, 199, 0.05)'
-                        : hasUploaded
-                          ? '#f8fafc'
-                          : '#ffffff',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '0.75rem',
-                      justifyContent: 'space-between',
-                      boxShadow: isCurrent ? '0 2px 6px rgba(2, 132, 199, 0.12)' : 'none',
-                    }}
+                          ? 'contract-pipeline-step--success'
+                          : ''
+                    }`}
                   >
                     <div>
                       <div
@@ -986,7 +891,13 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                           marginBottom: '0.5rem',
                         }}
                       >
-                        <span style={{ fontWeight: 700, fontSize: '0.875rem' }}>
+                        <span
+                          style={{
+                            fontWeight: 700,
+                            fontSize: '0.875rem',
+                            color: 'var(--text-primary, #f5f7f5)',
+                          }}
+                        >
                           3. Assinatura do Cliente
                         </span>
                         <span
@@ -995,12 +906,12 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                             borderRadius: '9999px',
                             fontSize: '0.75rem',
                             fontWeight: 600,
-                            color: hasUploaded ? '#15803d' : isCurrent ? '#0369a1' : '#64748b',
+                            color: hasUploaded ? '#26d866' : isCurrent ? '#ffd400' : '#9ba49e',
                             backgroundColor: hasUploaded
-                              ? '#dcfce7'
+                              ? 'rgba(38, 216, 102, 0.12)'
                               : isCurrent
-                                ? '#e0f2fe'
-                                : '#f1f5f9',
+                                ? 'rgba(255, 212, 0, 0.12)'
+                                : 'rgba(155, 164, 158, 0.12)',
                           }}
                         >
                           {hasUploaded
@@ -1010,7 +921,13 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                               : 'Aguardando'}
                         </span>
                       </div>
-                      <p style={{ margin: 0, fontSize: '0.8125rem', color: '#475569' }}>
+                      <p
+                        style={{
+                          margin: 0,
+                          fontSize: '0.8125rem',
+                          color: 'var(--text-secondary, #9ba49e)',
+                        }}
+                      >
                         {signedDoc
                           ? `Via assinada anexada (${Math.round(signedDoc.fileSize / 1024)} KB) pronta para conferência.`
                           : 'Colete a assinatura física ou eletrônica (DocuSign/Gov.br) e faça o upload do PDF assinado.'}
@@ -1019,22 +936,13 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
 
                     {!readonly && canUpload && (
                       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                        <button
+                        <Button
                           type="button"
-                          className={hasUploaded ? 'btn btn--secondary' : 'btn btn--primary'}
+                          variant={hasUploaded ? 'secondary' : 'primary'}
                           onClick={() => setIsUploading(true)}
-                          style={{
-                            fontSize: '0.8125rem',
-                            padding: '0.5rem 0.9rem',
-                            fontWeight: 700,
-                            backgroundColor: hasUploaded ? '#ffffff' : '#0284c7',
-                            color: hasUploaded ? '#0284c7' : '#ffffff',
-                            border: hasUploaded ? '1.5px solid #0284c7' : '1px solid #0369a1',
-                            boxShadow: hasUploaded ? 'none' : '0 2px 4px rgba(0, 0, 0, 0.15)',
-                          }}
                         >
                           📥 {hasUploaded ? 'Substituir Via Assinada' : 'Anexar Contrato Assinado'}
-                        </button>
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -1047,25 +955,13 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 const isReadyForReview = contract.state === 'SIGNED_UPLOADED';
                 return (
                   <div
-                    style={{
-                      padding: '1rem',
-                      borderRadius: 'var(--radius-sm, 6px)',
-                      border: isReadyForReview
-                        ? '2px solid #16a34a'
+                    className={`contract-pipeline-step ${
+                      isReadyForReview
+                        ? 'contract-pipeline-step--active'
                         : isSatisfied
-                          ? '1px solid #16a34a'
-                          : '1px solid #e2e8f0',
-                      backgroundColor: isReadyForReview
-                        ? 'rgba(22, 163, 74, 0.08)'
-                        : isSatisfied
-                          ? '#f0fdf4'
-                          : '#ffffff',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '0.75rem',
-                      justifyContent: 'space-between',
-                      boxShadow: isReadyForReview ? '0 2px 8px rgba(22, 163, 74, 0.2)' : 'none',
-                    }}
+                          ? 'contract-pipeline-step--success'
+                          : ''
+                    }`}
                   >
                     <div>
                       <div
@@ -1076,7 +972,13 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                           marginBottom: '0.5rem',
                         }}
                       >
-                        <span style={{ fontWeight: 700, fontSize: '0.875rem' }}>
+                        <span
+                          style={{
+                            fontWeight: 700,
+                            fontSize: '0.875rem',
+                            color: 'var(--text-primary, #f5f7f5)',
+                          }}
+                        >
                           4. Conferência Gate C
                         </span>
                         <span
@@ -1086,15 +988,15 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                             fontSize: '0.75rem',
                             fontWeight: 600,
                             color: isSatisfied
-                              ? '#15803d'
+                              ? '#26d866'
                               : isReadyForReview
-                                ? '#15803d'
-                                : '#64748b',
+                                ? '#ffd400'
+                                : '#9ba49e',
                             backgroundColor: isSatisfied
-                              ? '#dcfce7'
+                              ? 'rgba(38, 216, 102, 0.12)'
                               : isReadyForReview
-                                ? '#dcfce7'
-                                : '#f1f5f9',
+                                ? 'rgba(255, 212, 0, 0.12)'
+                                : 'rgba(155, 164, 158, 0.12)',
                           }}
                         >
                           {isSatisfied
@@ -1104,7 +1006,13 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                               : '🔒 Bloqueado'}
                         </span>
                       </div>
-                      <p style={{ margin: 0, fontSize: '0.8125rem', color: '#475569' }}>
+                      <p
+                        style={{
+                          margin: 0,
+                          fontSize: '0.8125rem',
+                          color: 'var(--text-secondary, #9ba49e)',
+                        }}
+                      >
                         {isSatisfied
                           ? 'Contrato conferido e homologado. As 4 regras de governança foram atendidas.'
                           : isReadyForReview
@@ -1114,9 +1022,14 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                     </div>
 
                     {!readonly && isReadyForReview && canVerify && (
-                      <button
+                      <Button
                         type="button"
-                        className="btn btn--success"
+                        variant="primary"
+                        style={{
+                          backgroundColor: 'var(--status-success, #26d866)',
+                          color: '#090B0A',
+                          fontWeight: 700,
+                        }}
                         onClick={() => {
                           setCheckParties(false);
                           setCheckPages(false);
@@ -1125,22 +1038,19 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                           setReviewDecision('VERIFIED');
                           setIsReviewing(true);
                         }}
-                        style={{
-                          fontSize: '0.875rem',
-                          padding: '0.6rem 1.1rem',
-                          fontWeight: 700,
-                          backgroundColor: '#15803d',
-                          color: '#ffffff',
-                          border: '1px solid #166534',
-                          boxShadow: '0 2px 6px rgba(0, 0, 0, 0.18)',
-                        }}
                       >
                         🔍 Realizar Conferência Gate C
-                      </button>
+                      </Button>
                     )}
 
                     {isSatisfied && (
-                      <div style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: 600 }}>
+                      <div
+                        style={{
+                          fontSize: '0.75rem',
+                          color: 'var(--status-success, #26d866)',
+                          fontWeight: 700,
+                        }}
+                      >
                         ✓ Homologado com sucesso
                       </div>
                     )}
@@ -1152,57 +1062,36 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
 
           {/* Snapshots Grid */}
           {activeVersion && (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-                gap: '1rem',
-              }}
-            >
+            <div className="contract-snapshots-grid">
               {/* Partes Card */}
-              <div className="card" style={{ padding: '1.25rem' }}>
-                <h4
-                  style={{
-                    margin: '0 0 0.75rem 0',
-                    fontSize: '0.9375rem',
-                    color: 'var(--text-primary)',
-                  }}
-                >
-                  👤 Partes Contratantes
-                </h4>
-                <div
-                  style={{
-                    fontSize: '0.8125rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.4rem',
-                  }}
-                >
+              <div className="contract-snapshot-card">
+                <h4 className="contract-snapshot-title">👤 Partes Contratantes</h4>
+                <div className="contract-snapshot-content">
                   <div>
-                    <span style={{ color: 'var(--text-muted)' }}>Contratante:</span>{' '}
+                    <span className="contract-snapshot-label">Contratante:</span>{' '}
                     <strong>{activeVersion.partySnapshot?.client?.name}</strong>
                   </div>
                   <div>
-                    <span style={{ color: 'var(--text-muted)' }}>Documento:</span>{' '}
+                    <span className="contract-snapshot-label">Documento:</span>{' '}
                     {activeVersion.partySnapshot?.client?.document}
                   </div>
                   <div>
-                    <span style={{ color: 'var(--text-muted)' }}>Endereço:</span>{' '}
+                    <span className="contract-snapshot-label">Endereço:</span>{' '}
                     {activeVersion.partySnapshot?.client?.address}
                   </div>
                   <div>
-                    <span style={{ color: 'var(--text-muted)' }}>Unidade Consumidora:</span>{' '}
+                    <span className="contract-snapshot-label">Unidade Consumidora:</span>{' '}
                     {activeVersion.partySnapshot?.utility?.customerUnit} (
                     {activeVersion.partySnapshot?.utility?.company})
                   </div>
                   <div
                     style={{
-                      borderTop: '1px solid var(--border-subtle)',
+                      borderTop: '1px solid var(--border-default, #29302b)',
                       paddingTop: '0.4rem',
                       marginTop: '0.2rem',
                     }}
                   >
-                    <span style={{ color: 'var(--text-muted)' }}>Contratada:</span>{' '}
+                    <span className="contract-snapshot-label">Contratada:</span>{' '}
                     {activeVersion.partySnapshot?.company?.legalName} (CNPJ{' '}
                     {activeVersion.partySnapshot?.company?.cnpj})
                   </div>
@@ -1210,44 +1099,33 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
               </div>
 
               {/* Solução Técnica & BOM */}
-              <div className="card" style={{ padding: '1.25rem' }}>
-                <h4
-                  style={{
-                    margin: '0 0 0.75rem 0',
-                    fontSize: '0.9375rem',
-                    color: 'var(--text-primary)',
-                  }}
-                >
+              <div className="contract-snapshot-card">
+                <h4 className="contract-snapshot-title">
                   ⚡ Solução Técnica & Equipamentos (Anexo I)
                 </h4>
-                <div
-                  style={{
-                    fontSize: '0.8125rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.4rem',
-                  }}
-                >
+                <div className="contract-snapshot-content">
                   <div>
-                    <span style={{ color: 'var(--text-muted)' }}>Potência Instalada:</span>{' '}
-                    <strong>{activeVersion.technicalSnapshot?.systemPowerKwp}</strong>
+                    <span className="contract-snapshot-label">Potência Instalada:</span>{' '}
+                    <strong style={{ color: 'var(--brand-solar, #ffd400)' }}>
+                      {activeVersion.technicalSnapshot?.systemPowerKwp}
+                    </strong>
                   </div>
                   <div>
-                    <span style={{ color: 'var(--text-muted)' }}>Geração Estimada:</span>{' '}
+                    <span className="contract-snapshot-label">Geração Estimada:</span>{' '}
                     {activeVersion.technicalSnapshot?.estimatedMonthlyGenerationKwh}
                   </div>
                   <div>
-                    <span style={{ color: 'var(--text-muted)' }}>Módulos:</span>{' '}
+                    <span className="contract-snapshot-label">Módulos:</span>{' '}
                     {activeVersion.technicalSnapshot?.bom?.moduleQuantity}x{' '}
                     {activeVersion.technicalSnapshot?.bom?.moduleBrandModel}
                   </div>
                   <div>
-                    <span style={{ color: 'var(--text-muted)' }}>Inversor:</span>{' '}
+                    <span className="contract-snapshot-label">Inversor:</span>{' '}
                     {activeVersion.technicalSnapshot?.bom?.inverterQuantity}x{' '}
                     {activeVersion.technicalSnapshot?.bom?.inverterBrandModel}
                   </div>
                   <div>
-                    <span style={{ color: 'var(--text-muted)' }}>Estrutura & Telhado:</span>{' '}
+                    <span className="contract-snapshot-label">Estrutura & Telhado:</span>{' '}
                     {activeVersion.technicalSnapshot?.roofType} (
                     {activeVersion.technicalSnapshot?.bom?.structureType})
                   </div>
@@ -1255,32 +1133,19 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
               </div>
 
               {/* Condições Financeiras */}
-              <div className="card" style={{ padding: '1.25rem' }}>
-                <h4
-                  style={{
-                    margin: '0 0 0.75rem 0',
-                    fontSize: '0.9375rem',
-                    color: 'var(--text-primary)',
-                  }}
-                >
-                  💰 Investimento & Cronograma Financeiro
-                </h4>
-                <div
-                  style={{
-                    fontSize: '0.8125rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.4rem',
-                  }}
-                >
+              <div className="contract-snapshot-card">
+                <h4 className="contract-snapshot-title">💰 Investimento & Cronograma Financeiro</h4>
+                <div className="contract-snapshot-content">
                   <div>
-                    <span style={{ color: 'var(--text-muted)' }}>Valor Total do Contrato:</span>{' '}
-                    <strong style={{ fontSize: '1rem', color: '#16a34a' }}>
+                    <span className="contract-snapshot-label">Valor Total do Contrato:</span>{' '}
+                    <strong
+                      style={{ fontSize: '1.15rem', color: 'var(--status-success, #26d866)' }}
+                    >
                       {activeVersion.commercialSnapshot?.contractTotal}
                     </strong>
                   </div>
                   <div>
-                    <span style={{ color: 'var(--text-muted)' }}>Condição de Pagamento:</span>{' '}
+                    <span className="contract-snapshot-label">Condição de Pagamento:</span>{' '}
                     {activeVersion.commercialSnapshot?.paymentMethod}
                   </div>
                   <div
@@ -1297,16 +1162,19 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                         style={{
                           display: 'flex',
                           justifyContent: 'space-between',
-                          padding: '0.25rem 0.5rem',
-                          backgroundColor: 'var(--surface-sunken)',
+                          padding: '0.4rem 0.6rem',
+                          backgroundColor: 'var(--surface-sunken, #111412)',
+                          border: '1px solid var(--border-default, #29302b)',
                           borderRadius: '0.25rem',
                           fontSize: '0.75rem',
                         }}
                       >
-                        <span>
+                        <span style={{ color: 'var(--text-secondary, #9ba49e)' }}>
                           {m.stage} ({m.percent})
                         </span>
-                        <strong>{m.amount}</strong>
+                        <strong style={{ color: 'var(--text-primary, #f5f7f5)' }}>
+                          {m.amount}
+                        </strong>
                       </div>
                     ))}
                   </div>
@@ -1314,42 +1182,27 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
               </div>
 
               {/* Prazos & Escopo */}
-              <div className="card" style={{ padding: '1.25rem' }}>
-                <h4
-                  style={{
-                    margin: '0 0 0.75rem 0',
-                    fontSize: '0.9375rem',
-                    color: 'var(--text-primary)',
-                  }}
-                >
-                  ⏱ Prazos & Garantias (SPEC-007)
-                </h4>
-                <div
-                  style={{
-                    fontSize: '0.8125rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.4rem',
-                  }}
-                >
+              <div className="contract-snapshot-card">
+                <h4 className="contract-snapshot-title">⏱ Prazos & Garantias (SPEC-007)</h4>
+                <div className="contract-snapshot-content">
                   <div>
-                    <span style={{ color: 'var(--text-muted)' }}>Entrega de Equipamentos:</span>{' '}
+                    <span className="contract-snapshot-label">Entrega de Equipamentos:</span>{' '}
                     {activeVersion.clausesSnapshot?.deadlines?.equipmentDeliveryDays} dias úteis
                   </div>
                   <div>
-                    <span style={{ color: 'var(--text-muted)' }}>Instalação Física:</span>{' '}
+                    <span className="contract-snapshot-label">Instalação Física:</span>{' '}
                     {activeVersion.clausesSnapshot?.deadlines?.installationDays} dias úteis
                   </div>
                   <div>
-                    <span style={{ color: 'var(--text-muted)' }}>Homologação Documental:</span>{' '}
+                    <span className="contract-snapshot-label">Homologação Documental:</span>{' '}
                     {activeVersion.clausesSnapshot?.deadlines?.documentationDays} dias úteis
                   </div>
                   <div>
-                    <span style={{ color: 'var(--text-muted)' }}>Garantia de Instalação:</span>{' '}
+                    <span className="contract-snapshot-label">Garantia de Instalação:</span>{' '}
                     {activeVersion.clausesSnapshot?.deadlines?.installationWarrantyMonths} meses
                   </div>
                   <div>
-                    <span style={{ color: 'var(--text-muted)' }}>Foro de Eleição:</span> Comarca de{' '}
+                    <span className="contract-snapshot-label">Foro de Eleição:</span> Comarca de{' '}
                     {activeVersion.clausesSnapshot?.city || 'Recife'}/PE
                   </div>
                 </div>
@@ -1366,12 +1219,19 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
             }}
           >
             {/* Deliveries */}
-            <div className="card" style={{ padding: '1.25rem' }}>
-              <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.9375rem' }}>
+            <div className="contract-card">
+              <h4
+                style={{
+                  margin: '0 0 0.75rem 0',
+                  fontSize: '0.95rem',
+                  fontWeight: 700,
+                  color: 'var(--text-primary, #f5f7f5)',
+                }}
+              >
                 📤 Histórico de Envios ao Cliente
               </h4>
               {contract.deliveries?.length === 0 ? (
-                <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary, #9ba49e)' }}>
                   Nenhum envio registrado ainda.
                 </div>
               ) : (
@@ -1380,8 +1240,9 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                     <div
                       key={del.id}
                       style={{
-                        padding: '0.5rem',
-                        backgroundColor: 'var(--surface-sunken)',
+                        padding: '0.6rem 0.8rem',
+                        backgroundColor: 'var(--surface-sunken, #111412)',
+                        border: '1px solid var(--border-default, #29302b)',
                         borderRadius: '0.375rem',
                         fontSize: '0.8125rem',
                       }}
@@ -1391,10 +1252,16 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                           display: 'flex',
                           justifyContent: 'space-between',
                           fontWeight: 600,
+                          color: 'var(--text-primary, #f5f7f5)',
                         }}
                       >
                         <span>Canal: {del.channel}</span>
-                        <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                        <span
+                          style={{
+                            color: 'var(--text-secondary, #9ba49e)',
+                            fontSize: '0.75rem',
+                          }}
+                        >
                           {new Intl.DateTimeFormat('pt-BR', {
                             dateStyle: 'short',
                             timeStyle: 'short',
@@ -1402,12 +1269,23 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                         </span>
                       </div>
                       {del.recipient && (
-                        <div style={{ color: 'var(--text-muted)' }}>
+                        <div
+                          style={{
+                            color: 'var(--text-secondary, #9ba49e)',
+                            marginTop: '0.2rem',
+                          }}
+                        >
                           Destinatário: {del.recipient}
                         </div>
                       )}
                       {del.notes && (
-                        <div style={{ fontStyle: 'italic', marginTop: '0.2rem' }}>
+                        <div
+                          style={{
+                            fontStyle: 'italic',
+                            marginTop: '0.2rem',
+                            color: 'var(--text-secondary, #9ba49e)',
+                          }}
+                        >
                           &ldquo;{del.notes}&rdquo;
                         </div>
                       )}
@@ -1418,12 +1296,19 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
             </div>
 
             {/* Signed Reviews History */}
-            <div className="card" style={{ padding: '1.25rem' }}>
-              <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.9375rem' }}>
+            <div className="contract-card">
+              <h4
+                style={{
+                  margin: '0 0 0.75rem 0',
+                  fontSize: '0.95rem',
+                  fontWeight: 700,
+                  color: 'var(--text-primary, #f5f7f5)',
+                }}
+              >
                 🔍 Histórico de Conferência de Assinaturas
               </h4>
               {contract.signedReviews?.length === 0 ? (
-                <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary, #9ba49e)' }}>
                   Nenhuma conferência formal realizada ainda.
                 </div>
               ) : (
@@ -1432,10 +1317,14 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                     <div
                       key={rev.id}
                       style={{
-                        padding: '0.5rem',
+                        padding: '0.6rem 0.8rem',
                         borderLeft:
-                          rev.decision === 'VERIFIED' ? '4px solid #16a34a' : '4px solid #ef4444',
-                        backgroundColor: 'var(--surface-sunken)',
+                          rev.decision === 'VERIFIED'
+                            ? '4px solid var(--status-success, #26d866)'
+                            : '4px solid var(--status-danger, #ff4d57)',
+                        backgroundColor: 'var(--surface-sunken, #111412)',
+                        border: '1px solid var(--border-default, #29302b)',
+                        borderLeftWidth: '4px',
                         borderRadius: '0.375rem',
                         fontSize: '0.8125rem',
                       }}
@@ -1448,13 +1337,23 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                         }}
                       >
                         <span
-                          style={{ color: rev.decision === 'VERIFIED' ? '#16a34a' : '#ef4444' }}
+                          style={{
+                            color:
+                              rev.decision === 'VERIFIED'
+                                ? 'var(--status-success, #26d866)'
+                                : 'var(--status-danger, #ff4d57)',
+                          }}
                         >
                           {rev.decision === 'VERIFIED'
                             ? '✅ Aprovado (VERIFIED)'
                             : '❌ Rejeitado (REJECTED)'}
                         </span>
-                        <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                        <span
+                          style={{
+                            color: 'var(--text-secondary, #9ba49e)',
+                            fontSize: '0.75rem',
+                          }}
+                        >
                           {new Intl.DateTimeFormat('pt-BR', {
                             dateStyle: 'short',
                             timeStyle: 'short',
@@ -1462,19 +1361,29 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                         </span>
                       </div>
                       {rev.rejectionReason && (
-                        <div style={{ color: '#b91c1c', marginTop: '0.25rem' }}>
+                        <div
+                          style={{
+                            color: 'var(--status-danger, #ff4d57)',
+                            marginTop: '0.25rem',
+                          }}
+                        >
                           <strong>Motivo:</strong> {rev.rejectionReason}
                         </div>
                       )}
                       {rev.notes && (
-                        <div style={{ color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                        <div
+                          style={{
+                            color: 'var(--text-secondary, #9ba49e)',
+                            marginTop: '0.2rem',
+                          }}
+                        >
                           {rev.notes}
                         </div>
                       )}
                       <div
                         style={{
                           fontSize: '0.7rem',
-                          color: 'var(--text-muted)',
+                          color: 'var(--text-secondary, #9ba49e)',
                           marginTop: '0.25rem',
                         }}
                       >
@@ -1494,10 +1403,25 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
       {/* MODAL 1: Create Contract */}
       {isCreating && (
         <div className="modal-backdrop">
-          <div className="modal-card" style={{ maxWidth: '520px', width: '90%' }}>
-            <h3 style={{ margin: '0 0 1rem 0' }}>📄 Gerar Contrato Comercial Moura Solar</h3>
+          <div
+            className="modal-card"
+            style={{
+              maxWidth: '520px',
+              width: '90%',
+              backgroundColor: 'var(--surface-card, #161a17)',
+              border: '1px solid var(--border-default, #29302b)',
+              color: 'var(--text-primary, #f5f7f5)',
+            }}
+          >
+            <h3 style={{ margin: '0 0 1rem 0', color: 'var(--text-primary, #f5f7f5)' }}>
+              📄 Gerar Contrato Comercial Moura Solar
+            </h3>
             <p
-              style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '0 0 1.25rem 0' }}
+              style={{
+                fontSize: '0.875rem',
+                color: 'var(--text-secondary, #9ba49e)',
+                margin: '0 0 1.25rem 0',
+              }}
             >
               Este assistente gera a minuta em formato oficial DOCX (com os placeholders de
               qualificação, anexo I, II, III e IV preenchidos) e PDF pronto para coleta de
@@ -1513,7 +1437,12 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
             >
               <label
                 className="form-label"
-                style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.25rem',
+                  color: 'var(--text-primary, #f5f7f5)',
+                }}
               >
                 Cidade de Assinatura do Contrato
                 <input
@@ -1527,7 +1456,12 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
 
               <label
                 className="form-label"
-                style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.25rem',
+                  color: 'var(--text-primary, #f5f7f5)',
+                }}
               >
                 Tipo de Telhado / Superfície de Fixação
                 <select
@@ -1545,7 +1479,12 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
 
               <label
                 className="form-label"
-                style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.25rem',
+                  color: 'var(--text-primary, #f5f7f5)',
+                }}
               >
                 Observações e Condições Especiais
                 <textarea
@@ -1563,24 +1502,16 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 style={{
                   display: 'flex',
                   justifyContent: 'flex-end',
-                  gap: '0.5rem',
+                  gap: '0.75rem',
                   marginTop: '0.5rem',
                 }}
               >
-                <button
-                  type="button"
-                  className="btn btn--subtle"
-                  onClick={() => setIsCreating(false)}
-                >
+                <Button type="button" variant="secondary" onClick={() => setIsCreating(false)}>
                   Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn--primary"
-                  disabled={createMutation.isPending}
-                >
+                </Button>
+                <Button type="submit" variant="primary" disabled={createMutation.isPending}>
                   {createMutation.isPending ? 'Gerando Minutas...' : 'Confirmar e Emitir Contrato'}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -1590,9 +1521,26 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
       {/* MODAL 2: Record Delivery */}
       {isDelivering && (
         <div className="modal-backdrop">
-          <div className="modal-card" style={{ maxWidth: '480px', width: '90%' }}>
-            <h3 style={{ margin: '0 0 1rem 0' }}>📤 Registrar Envio do Contrato</h3>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '0 0 1rem 0' }}>
+          <div
+            className="modal-card"
+            style={{
+              maxWidth: '480px',
+              width: '90%',
+              backgroundColor: 'var(--surface-card, #161a17)',
+              border: '1px solid var(--border-default, #29302b)',
+              color: 'var(--text-primary, #f5f7f5)',
+            }}
+          >
+            <h3 style={{ margin: '0 0 1rem 0', color: 'var(--text-primary, #f5f7f5)' }}>
+              📤 Registrar Envio do Contrato
+            </h3>
+            <p
+              style={{
+                fontSize: '0.875rem',
+                color: 'var(--text-secondary, #9ba49e)',
+                margin: '0 0 1rem 0',
+              }}
+            >
               Registre o canal e destinatário para fins de auditoria e acompanhamento comercial.
             </p>
 
@@ -1605,7 +1553,12 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
             >
               <label
                 className="form-label"
-                style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.25rem',
+                  color: 'var(--text-primary, #f5f7f5)',
+                }}
               >
                 Canal de Envio
                 <select
@@ -1626,7 +1579,12 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
 
               <label
                 className="form-label"
-                style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.25rem',
+                  color: 'var(--text-primary, #f5f7f5)',
+                }}
               >
                 Destinatário
                 <input
@@ -1640,7 +1598,12 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
 
               <label
                 className="form-label"
-                style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.25rem',
+                  color: 'var(--text-primary, #f5f7f5)',
+                }}
               >
                 Observações
                 <textarea
@@ -1657,24 +1620,16 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 style={{
                   display: 'flex',
                   justifyContent: 'flex-end',
-                  gap: '0.5rem',
+                  gap: '0.75rem',
                   marginTop: '0.5rem',
                 }}
               >
-                <button
-                  type="button"
-                  className="btn btn--subtle"
-                  onClick={() => setIsDelivering(false)}
-                >
+                <Button type="button" variant="secondary" onClick={() => setIsDelivering(false)}>
                   Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn--primary"
-                  disabled={deliverMutation.isPending}
-                >
+                </Button>
+                <Button type="submit" variant="primary" disabled={deliverMutation.isPending}>
                   {deliverMutation.isPending ? 'Registrando...' : 'Registrar Envio'}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -1684,9 +1639,26 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
       {/* MODAL 3: Upload Signed Contract */}
       {isUploading && (
         <div className="modal-backdrop">
-          <div className="modal-card" style={{ maxWidth: '480px', width: '90%' }}>
-            <h3 style={{ margin: '0 0 1rem 0' }}>📥 Anexar Via Assinada pelo Cliente</h3>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '0 0 1rem 0' }}>
+          <div
+            className="modal-card"
+            style={{
+              maxWidth: '480px',
+              width: '90%',
+              backgroundColor: 'var(--surface-card, #161a17)',
+              border: '1px solid var(--border-default, #29302b)',
+              color: 'var(--text-primary, #f5f7f5)',
+            }}
+          >
+            <h3 style={{ margin: '0 0 1rem 0', color: 'var(--text-primary, #f5f7f5)' }}>
+              📥 Anexar Via Assinada pelo Cliente
+            </h3>
+            <p
+              style={{
+                fontSize: '0.875rem',
+                color: 'var(--text-secondary, #9ba49e)',
+                margin: '0 0 1rem 0',
+              }}
+            >
               O envio da via assinada moverá o contrato para <strong>SIGNED_UPLOADED</strong>. O
               Gate C será liberado apenas após a conferência formal.
             </p>
@@ -1700,7 +1672,12 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
             >
               <label
                 className="form-label"
-                style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.25rem',
+                  color: 'var(--text-primary, #f5f7f5)',
+                }}
               >
                 Arquivo Assinado (PDF)
                 <input
@@ -1711,7 +1688,13 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                   required
                 />
                 {uploadFileName && (
-                  <div style={{ fontSize: '0.75rem', color: '#16a34a', marginTop: '0.25rem' }}>
+                  <div
+                    style={{
+                      fontSize: '0.75rem',
+                      color: 'var(--status-success, #26d866)',
+                      marginTop: '0.25rem',
+                    }}
+                  >
                     Arquivo selecionado: {uploadFileName}
                   </div>
                 )}
@@ -1719,7 +1702,12 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
 
               <label
                 className="form-label"
-                style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.25rem',
+                  color: 'var(--text-primary, #f5f7f5)',
+                }}
               >
                 Observações sobre a Assinatura
                 <textarea
@@ -1737,24 +1725,20 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 style={{
                   display: 'flex',
                   justifyContent: 'flex-end',
-                  gap: '0.5rem',
+                  gap: '0.75rem',
                   marginTop: '0.5rem',
                 }}
               >
-                <button
-                  type="button"
-                  className="btn btn--subtle"
-                  onClick={() => setIsUploading(false)}
-                >
+                <Button type="button" variant="secondary" onClick={() => setIsUploading(false)}>
                   Cancelar
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  className="btn btn--primary"
+                  variant="primary"
                   disabled={uploadMutation.isPending || !uploadBase64}
                 >
                   {uploadMutation.isPending ? 'Enviando...' : 'Anexar Documento'}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -1764,9 +1748,26 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
       {/* MODAL 4: Formal Conference Checklist (Gate C) */}
       {isReviewing && (
         <div className="modal-backdrop">
-          <div className="modal-card" style={{ maxWidth: '540px', width: '90%' }}>
-            <h3 style={{ margin: '0 0 0.5rem 0' }}>🔍 Conferência Formal de Assinatura (Gate C)</h3>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '0 0 1rem 0' }}>
+          <div
+            className="modal-card"
+            style={{
+              maxWidth: '540px',
+              width: '90%',
+              backgroundColor: 'var(--surface-card, #161a17)',
+              border: '1px solid var(--border-default, #29302b)',
+              color: 'var(--text-primary, #f5f7f5)',
+            }}
+          >
+            <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary, #f5f7f5)' }}>
+              🔍 Conferência Formal de Assinatura (Gate C)
+            </h3>
+            <p
+              style={{
+                fontSize: '0.875rem',
+                color: 'var(--text-secondary, #9ba49e)',
+                margin: '0 0 1rem 0',
+              }}
+            >
               SPEC-007 Item 10: Realize a conferência do documento assinado em relação à versão
               gerada antes de homologar e liberar o estágio VENDIDO.
             </p>
@@ -1784,7 +1785,8 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '0.75rem',
-                  backgroundColor: 'var(--surface-sunken)',
+                  backgroundColor: 'var(--surface-sunken, #111412)',
+                  border: '1px solid var(--border-default, #29302b)',
                   padding: '1rem',
                   borderRadius: '0.5rem',
                 }}
@@ -1796,13 +1798,14 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                     gap: '0.6rem',
                     fontSize: '0.875rem',
                     cursor: 'pointer',
+                    color: 'var(--text-primary, #f5f7f5)',
                   }}
                 >
                   <input
                     type="checkbox"
                     checked={checkParties}
                     onChange={(e) => setCheckParties(e.target.checked)}
-                    style={{ marginTop: '0.2rem' }}
+                    style={{ marginTop: '0.2rem', width: 'auto' }}
                   />
                   <span>
                     <strong>1. Partes e Qualificação:</strong> Os dados do cliente, CPF/CNPJ,
@@ -1817,13 +1820,14 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                     gap: '0.6rem',
                     fontSize: '0.875rem',
                     cursor: 'pointer',
+                    color: 'var(--text-primary, #f5f7f5)',
                   }}
                 >
                   <input
                     type="checkbox"
                     checked={checkPages}
                     onChange={(e) => setCheckPages(e.target.checked)}
-                    style={{ marginTop: '0.2rem' }}
+                    style={{ marginTop: '0.2rem', width: 'auto' }}
                   />
                   <span>
                     <strong>2. Integridade de Páginas:</strong> Todas as páginas, cláusulas e anexos
@@ -1838,13 +1842,14 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                     gap: '0.6rem',
                     fontSize: '0.875rem',
                     cursor: 'pointer',
+                    color: 'var(--text-primary, #f5f7f5)',
                   }}
                 >
                   <input
                     type="checkbox"
                     checked={checkVersion}
                     onChange={(e) => setCheckVersion(e.target.checked)}
-                    style={{ marginTop: '0.2rem' }}
+                    style={{ marginTop: '0.2rem', width: 'auto' }}
                   />
                   <span>
                     <strong>3. Correspondência de Versão:</strong> O texto contratual, valores e
@@ -1859,13 +1864,14 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                     gap: '0.6rem',
                     fontSize: '0.875rem',
                     cursor: 'pointer',
+                    color: 'var(--text-primary, #f5f7f5)',
                   }}
                 >
                   <input
                     type="checkbox"
                     checked={checkSignatures}
                     onChange={(e) => setCheckSignatures(e.target.checked)}
-                    style={{ marginTop: '0.2rem' }}
+                    style={{ marginTop: '0.2rem', width: 'auto' }}
                   />
                   <span>
                     <strong>4. Legibilidade das Assinaturas:</strong> Assinaturas do contratante e
@@ -1876,7 +1882,12 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
 
               {/* Decision Toggle */}
               <div>
-                <label className="form-label">Decisão da Conferência</label>
+                <label
+                  className="form-label"
+                  style={{ color: 'var(--text-primary, #f5f7f5)', marginBottom: '0.5rem' }}
+                >
+                  Decisão da Conferência
+                </label>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
                   <label
                     style={{
@@ -1884,14 +1895,17 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.5rem',
-                      padding: '0.6rem',
+                      padding: '0.75rem',
                       border:
                         reviewDecision === 'VERIFIED'
-                          ? '2px solid #16a34a'
-                          : '1px solid var(--border-subtle)',
+                          ? '2px solid var(--status-success, #26d866)'
+                          : '1px solid var(--border-default, #29302b)',
                       borderRadius: '0.375rem',
                       cursor: 'pointer',
-                      backgroundColor: reviewDecision === 'VERIFIED' ? '#dcfce7' : 'transparent',
+                      backgroundColor:
+                        reviewDecision === 'VERIFIED'
+                          ? 'rgba(38, 216, 102, 0.1)'
+                          : 'var(--surface-sunken, #111412)',
                     }}
                   >
                     <input
@@ -1900,11 +1914,15 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                       value="VERIFIED"
                       checked={reviewDecision === 'VERIFIED'}
                       onChange={() => setReviewDecision('VERIFIED')}
+                      style={{ width: 'auto' }}
                     />
                     <span
                       style={{
                         fontWeight: 600,
-                        color: reviewDecision === 'VERIFIED' ? '#15803d' : 'inherit',
+                        color:
+                          reviewDecision === 'VERIFIED'
+                            ? 'var(--status-success, #26d866)'
+                            : 'var(--text-primary, #f5f7f5)',
                       }}
                     >
                       ✅ Aprovar e Liberar Gate C
@@ -1917,14 +1935,17 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.5rem',
-                      padding: '0.6rem',
+                      padding: '0.75rem',
                       border:
                         reviewDecision === 'REJECTED'
-                          ? '2px solid #ef4444'
-                          : '1px solid var(--border-subtle)',
+                          ? '2px solid var(--status-danger, #ff4d57)'
+                          : '1px solid var(--border-default, #29302b)',
                       borderRadius: '0.375rem',
                       cursor: 'pointer',
-                      backgroundColor: reviewDecision === 'REJECTED' ? '#fee2e2' : 'transparent',
+                      backgroundColor:
+                        reviewDecision === 'REJECTED'
+                          ? 'rgba(255, 77, 87, 0.1)'
+                          : 'var(--surface-sunken, #111412)',
                     }}
                   >
                     <input
@@ -1933,11 +1954,15 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                       value="REJECTED"
                       checked={reviewDecision === 'REJECTED'}
                       onChange={() => setReviewDecision('REJECTED')}
+                      style={{ width: 'auto' }}
                     />
                     <span
                       style={{
                         fontWeight: 600,
-                        color: reviewDecision === 'REJECTED' ? '#b91c1c' : 'inherit',
+                        color:
+                          reviewDecision === 'REJECTED'
+                            ? 'var(--status-danger, #ff4d57)'
+                            : 'var(--text-primary, #f5f7f5)',
                       }}
                     >
                       ❌ Rejeitar Documento
@@ -1953,7 +1978,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '0.25rem',
-                    color: '#ef4444',
+                    color: 'var(--status-danger, #ff4d57)',
                   }}
                 >
                   Motivo da Recusa (Obrigatório)
@@ -1970,7 +1995,12 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
 
               <label
                 className="form-label"
-                style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.25rem',
+                  color: 'var(--text-primary, #f5f7f5)',
+                }}
               >
                 Notas Adicionais do Conferente
                 <textarea
@@ -1987,20 +2017,25 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 style={{
                   display: 'flex',
                   justifyContent: 'flex-end',
-                  gap: '0.5rem',
+                  gap: '0.75rem',
                   marginTop: '0.5rem',
                 }}
               >
-                <button
-                  type="button"
-                  className="btn btn--subtle"
-                  onClick={() => setIsReviewing(false)}
-                >
+                <Button type="button" variant="secondary" onClick={() => setIsReviewing(false)}>
                   Cancelar
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  className={reviewDecision === 'VERIFIED' ? 'btn btn--primary' : 'btn btn--danger'}
+                  variant={reviewDecision === 'VERIFIED' ? 'primary' : 'danger'}
+                  style={
+                    reviewDecision === 'VERIFIED'
+                      ? {
+                          backgroundColor: 'var(--status-success, #26d866)',
+                          color: '#090B0A',
+                          fontWeight: 700,
+                        }
+                      : undefined
+                  }
                   disabled={
                     reviewMutation.isPending ||
                     (reviewDecision === 'VERIFIED' &&
@@ -2013,7 +2048,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                     : reviewDecision === 'VERIFIED'
                       ? 'Aprovar e Liberar Gate C'
                       : 'Confirmar Rejeição'}
-                </button>
+                </Button>
               </div>
             </form>
           </div>

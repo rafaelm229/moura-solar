@@ -1,0 +1,169 @@
+/* ==========================================================================
+   MOURA SOLAR — DESIGN SYSTEM SPEC-003 v0.2
+   PROPOSALS FEATURE STYLES (M4)
+   ========================================================================== */
+
+.proposal-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.proposal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.proposal-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.proposal-kpi-card {
+  background: var(--surface-card, #161a17);
+  border: 1px solid var(--border-default, #29302b);
+  border-radius: var(--radius-md, 8px);
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.proposal-kpi-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary, #9ba49e);
+}
+
+.proposal-kpi-value {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-primary, #f5f7f5);
+  line-height: 1.2;
+}
+
+.proposal-card {
+  background: var(--surface-card, #161a17);
+  border: 1px solid var(--border-default, #29302b);
+  border-radius: var(--radius-lg, 12px);
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.proposal-card--accepted {
+  border: 2px solid var(--status-success, #26d866);
+  box-shadow: 0 0 15px rgba(38, 216, 102, 0.12);
+}
+
+.proposal-card-header {
+  padding: 1rem 1.25rem;
+  background: var(--surface-elevated, #1c211d);
+  border-bottom: 1px solid var(--border-default, #29302b);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.proposal-code {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--brand-solar, #ffd400);
+}
+
+.proposal-version-card {
+  background: var(--surface-card, #161a17);
+  border: 1px solid var(--border-default, #29302b);
+  border-radius: var(--radius-md, 8px);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.proposal-version-card--accepted {
+  border: 1px solid var(--status-success, #26d866);
+  background: rgba(38, 216, 102, 0.04);
+}
+
+.proposal-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.proposal-metric-box {
+  background: var(--surface-elevated, #1c211d);
+  border: 1px solid var(--border-default, #29302b);
+  border-radius: var(--radius-sm, 6px);
+  padding: 0.75rem 1rem;
+}
+
+.proposal-metric-box--highlight {
+  background: rgba(255, 212, 0, 0.05);
+  border-color: rgba(255, 212, 0, 0.3);
+  grid-column: span 2;
+}
+
+@media (max-width: 640px) {
+  .proposal-metric-box--highlight {
+    grid-column: span 1;
+  }
+}
+
+.proposal-doc-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface-sunken, #111412);
+  border: 1px solid var(--border-default, #29302b);
+  border-radius: var(--radius-sm, 6px);
+  font-size: 0.875rem;
+}
+
+.proposal-timeline-box {
+  background: var(--surface-sunken, #111412);
+  border: 1px solid var(--border-default, #29302b);
+  border-radius: var(--radius-sm, 6px);
+  padding: 0.75rem 1rem;
+}
+
+.proposal-actions-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.625rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-default, #29302b);
+}
+
+.proposal-inline-form {
+  background: var(--surface-elevated, #1c211d);
+  border: 1px solid var(--border-default, #29302b);
+  border-radius: var(--radius-md, 8px);
+  padding: 1.25rem;
+  margin-top: 0.75rem;
+}
+
+.proposal-empty-state {
+  text-align: center;
+  padding: 3.5rem 1.5rem;
+  border: 2px dashed var(--border-default, #29302b);
+  border-radius: var(--radius-lg, 12px);
+  background: var(--surface-card, #161a17);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}

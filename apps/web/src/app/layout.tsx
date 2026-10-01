@@ -3,6 +3,8 @@ import '../ui/primitives.css';
 import '../features/identity/identity.css';
 import '../features/commercial/commercial.css';
 import '../features/design/design.css';
+import '../features/proposal/proposal.css';
+import '../features/contract/contract.css';
 import './styles.css';
 
 import type { Metadata, Viewport } from 'next';
