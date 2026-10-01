@@ -7,3 +7,4 @@ export * from './FormField';
 export * from './Skeleton';
 export * from './Separator';
 export * from './Icons';
+export * from './shell';

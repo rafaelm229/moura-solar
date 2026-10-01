@@ -23,6 +23,8 @@ const env = {
   S3_BUCKET: 'test',
   IDENTITY_LINK_SECRET: 'e2e-test-link-secret-at-least-32-characters',
   BOOTSTRAP_TOKEN: 'e2e-test-bootstrap-secret-at-least-32-characters',
+  LOGIN_RATE_LIMIT_EMAIL: '100',
+  LOGIN_RATE_LIMIT_IP: '200',
 };
 const deploy = spawnSync('pnpm', ['db:deploy'], { env, stdio: 'inherit' });
 if (deploy.status !== 0) process.exit(1);

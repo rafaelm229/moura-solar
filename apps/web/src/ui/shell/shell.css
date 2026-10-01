@@ -1,0 +1,134 @@
+/* Shell Layout Styles — SPEC-003 Design System IA */
+
+.shell-container {
+  display: flex;
+  height: 100dvh;
+  background-color: var(--color-canvas, #090b0a);
+  color: var(--color-ink-50, #f5f7f5);
+  overflow: hidden;
+  position: relative;
+}
+
+.shell-content-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.shell-main {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: var(--color-canvas, #090b0a);
+  padding: 24px;
+  position: relative;
+}
+
+/* Nav Item hover & active */
+.shell-nav-item:hover {
+  background-color: var(--surface-elevated, #1c211d) !important;
+  color: var(--color-ink-50, #f5f7f5) !important;
+}
+
+.shell-nav-item.active {
+  background-color: var(--color-brand-900, #3a3200) !important;
+  color: var(--color-solar, #ffd400) !important;
+  border-left-color: var(--color-solar, #ffd400) !important;
+}
+
+.shell-nav-item:focus-visible,
+.shell-topbar-toggle:focus-visible,
+.shell-topbar-logout:focus-visible {
+  outline: 2px solid var(--color-solar, #ffd400);
+  outline-offset: 2px;
+}
+
+.shell-group-header:hover {
+  color: var(--color-ink-100, #e0e5e1) !important;
+}
+
+.shell-search input:focus {
+  border-color: var(--color-solar, #ffd400) !important;
+  box-shadow: 0 0 0 1px var(--color-solar, #ffd400);
+}
+
+.shell-topbar-logout:hover {
+  background-color: var(--surface-card, #161a17) !important;
+  color: var(--color-ink-50, #f5f7f5) !important;
+  border-color: var(--border-default, #3a443d) !important;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 767px) {
+  .shell-container {
+    flex-direction: column;
+    height: auto;
+    min-height: 100dvh;
+    overflow-y: auto;
+  }
+
+  .shell-main {
+    padding: 16px;
+    padding-bottom: 96px;
+    overflow-y: visible;
+  }
+
+  .shell-breadcrumb {
+    display: none !important;
+  }
+
+  .shell-search {
+    max-width: 100% !important;
+    margin-left: 0 !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .shell-user-text {
+    display: block !important;
+  }
+}
+
+/* Mobile drawer details/summary styling */
+.mobile-more-details summary::-webkit-details-marker,
+.mobile-more-details summary::marker {
+  display: none !important;
+}
+
+.mobile-more-details[open] .mobile-more-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(2px);
+  z-index: 45;
+}
+
+.mobile-more-details[open] .mobile-more {
+  position: fixed;
+  bottom: 64px;
+  left: 0;
+  right: 0;
+  max-height: 80vh;
+  overflow-y: auto;
+  background: var(--surface-default, #111412);
+  border-top: 1px solid var(--border-subtle, #29302b);
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  padding: 16px 20px 24px;
+  z-index: 50;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.6);
+  animation: slideUpMobile 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUpMobile {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
