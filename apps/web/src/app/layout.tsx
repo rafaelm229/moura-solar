@@ -1,5 +1,6 @@
 import '@moura-solar/design-tokens/tokens.css';
 import '../ui/primitives.css';
+import '../features/identity/identity.css';
 import './styles.css';
 
 import type { Metadata, Viewport } from 'next';

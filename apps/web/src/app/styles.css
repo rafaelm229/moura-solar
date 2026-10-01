@@ -3,21 +3,21 @@
 }
 
 :root {
-  --brand-primary: #087443;
-  --brand-primary-strong: #045c34;
-  --brand-primary-soft: #e2f3e9;
-  --text-primary: #102a23;
-  --text-secondary: #52615c;
-  --text-muted: #64748b;
-  --status-success: #15803d;
-  --status-success-bg: #dcfce7;
-  --status-success-strong: #166534;
-  --status-danger: #b91c1c;
-  --status-danger-bg: #fee2e2;
-  --status-warning: #b45309;
-  --status-warning-bg: #fef3c7;
-  --surface-sunken: #f8fafc;
-  --border-subtle: #e2e8f0;
+  --brand-primary: var(--brand-solar, #ffd400);
+  --brand-primary-strong: var(--brand-solar-hover, #e6be00);
+  --brand-primary-soft: var(--brand-solar-muted, #3a3200);
+  --text-primary: #f5f7f5;
+  --text-secondary: #9ba49e;
+  --text-muted: #9ba49e;
+  --status-success: #26d866;
+  --status-success-bg: rgba(38, 216, 102, 0.12);
+  --status-success-strong: #26d866;
+  --status-danger: #ff4d57;
+  --status-danger-bg: rgba(255, 77, 87, 0.12);
+  --status-warning: #ff9f1c;
+  --status-warning-bg: rgba(255, 159, 28, 0.12);
+  --surface-sunken: #111412;
+  --border-subtle: #29302b;
 }
 
 html {

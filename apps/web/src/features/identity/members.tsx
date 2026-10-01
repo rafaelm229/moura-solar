@@ -5,19 +5,24 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, result, commandHeaders, type Member } from './client';
 import { MemberSessions } from './member-sessions';
 import { Feedback } from './feedback';
+import { Button } from '../../ui/Button';
+
 export function Members() {
   const query = useQueryClient();
   const [link, setLink] = useState('');
   const [sessionMember, setSessionMember] = useState<Member | null>(null);
   const [key, setKey] = useState<string>();
+
   const members = useQuery({
     queryKey: ['members'],
     queryFn: () => result(api.GET('/api/v1/identity/members')),
   });
+
   const roles = useQuery({
     queryKey: ['roles'],
     queryFn: () => result(api.GET('/api/v1/identity/roles')),
   });
+
   const {
     register,
     handleSubmit,
@@ -28,6 +33,7 @@ export function Members() {
     email: string;
     roleId: string;
   }>({ defaultValues: { name: '', email: '', roleId: '' } });
+
   const invite = useMutation({
     mutationFn: (body: { name: string; email: string; roleId: string }) => {
       const id = key ?? crypto.randomUUID();
@@ -46,6 +52,7 @@ export function Members() {
       void query.invalidateQueries({ queryKey: ['members'] });
     },
   });
+
   const action = useMutation({
     mutationFn: async ({
       member,
@@ -80,71 +87,129 @@ export function Members() {
       void query.invalidateQueries({ queryKey: ['members'] });
     },
   });
+
   return (
     <section>
-      <h2>Equipe e acessos</h2>
+      <div className="id-page-header">
+        <div>
+          <h2 className="id-page-title">Equipe e acessos</h2>
+          <p className="id-page-subtitle">Convide pessoas e defina o acesso à organização.</p>
+        </div>
+      </div>
+
       {sessionMember && (
         <MemberSessions member={sessionMember} onClose={() => setSessionMember(null)} />
       )}
-      <p>Convide pessoas e defina o acesso à organização.</p>
+
       <form
-        className="panel form-grid"
+        className="panel form-grid id-invite-form"
         data-dirty={isDirty}
         onSubmit={handleSubmit((body) => invite.mutate(body))}
         onChange={() => setKey(undefined)}
       >
         <h3>Convidar pessoa</h3>
-        <label>
-          Nome
-          <input required maxLength={100} {...register('name')} />
-        </label>
-        <label>
-          E-mail
-          <input required type="email" {...register('email')} />
-        </label>
-        <label>
-          Papel
-          <select required {...register('roleId')}>
-            <option value="">Selecione</option>
-            {roles.data?.map((role) => (
-              <option key={role.id} value={role.id}>
-                {role.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button disabled={invite.isPending || !roles.data}>
-          {invite.isPending ? 'Gerando…' : 'Gerar convite'}
-        </button>
+        <div className="id-form-row">
+          <div className="id-field">
+            <label htmlFor="member-name">Nome</label>
+            <input
+              id="member-name"
+              className="ui-input"
+              required
+              maxLength={100}
+              {...register('name')}
+            />
+          </div>
+
+          <div className="id-field">
+            <label htmlFor="member-email">E-mail</label>
+            <input
+              id="member-email"
+              className="ui-input"
+              required
+              type="email"
+              {...register('email')}
+            />
+          </div>
+
+          <div className="id-field">
+            <label htmlFor="member-role">Papel</label>
+            <select id="member-role" className="ui-input" required {...register('roleId')}>
+              <option value="">Selecione</option>
+              {roles.data?.map((role) => (
+                <option key={role.id} value={role.id}>
+                  {role.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <Button type="submit" variant="primary" disabled={invite.isPending || !roles.data}>
+            {invite.isPending ? 'Gerando…' : 'Gerar convite'}
+          </Button>
+        </div>
+
         <Feedback error={invite.error ?? roles.error} />
       </form>
+
       {link && (
-        <div className="panel">
-          <p role="status">
+        <div className="panel id-link-panel">
+          <p role="status" className="id-status-text">
             Link pronto. Entregue-o diretamente à pessoa; ele permite definir a senha.
           </p>
-          <label>
-            Link de acesso
-            <input readOnly value={link} onFocus={(event) => event.target.select()} />
-          </label>
-          <button type="button" onClick={() => setLink('')}>
-            Ocultar link
-          </button>
+          <div className="id-link-box">
+            <label htmlFor="member-link">Link de acesso</label>
+            <input
+              id="member-link"
+              className="ui-input id-link-input"
+              readOnly
+              value={link}
+              onFocus={(event) => event.target.select()}
+            />
+          </div>
+          <div className="actions">
+            <Button variant="secondary" size="compact" type="button" onClick={() => setLink('')}>
+              Ocultar link
+            </Button>
+          </div>
         </div>
       )}
+
       <Feedback
         error={members.error ?? action.error}
         success={action.isSuccess ? 'Acesso atualizado.' : undefined}
       />
-      {members.isPending && <p role="status">Carregando equipe…</p>}
-      {members.data?.length === 0 && <p>Nenhuma pessoa cadastrada.</p>}
-      <div className="record-list">
+
+      {members.isPending && (
+        <p role="status" className="id-status-text">
+          Carregando equipe…
+        </p>
+      )}
+
+      {members.data?.length === 0 && <p className="id-status-text">Nenhuma pessoa cadastrada.</p>}
+
+      <div className="record-list id-members-grid">
         {members.data?.map((member) => (
-          <article className="panel" key={member.id}>
-            <h3>{member.name}</h3>
-            <button onClick={() => setSessionMember(member)}>Ver sessões de {member.name}</button>
-            <p>{member.email}</p>
-            <p>
+          <article className="panel id-member-card" key={member.id}>
+            <div className="id-member-card__header">
+              <div className="id-member-avatar" aria-hidden="true">
+                {member.name.slice(0, 2).toUpperCase()}
+              </div>
+              <div className="id-member-info">
+                <h3 className="id-member-name">{member.name}</h3>
+                <p className="id-member-email">{member.email}</p>
+              </div>
+              <span className={`id-status-badge id-status-badge--${member.status}`}>
+                {member.status === 'active'
+                  ? 'Ativo'
+                  : member.status === 'blocked'
+                    ? 'Bloqueado'
+                    : 'Convite pendente'}
+              </span>
+            </div>
+
+            <p className="id-member-role-label">
               {member.roleName} ·{' '}
               {member.status === 'active'
                 ? 'Ativo'
@@ -152,8 +217,17 @@ export function Members() {
                   ? 'Bloqueado'
                   : 'Convite pendente'}
             </p>
+
+            <div>
+              <Button variant="secondary" size="compact" onClick={() => setSessionMember(member)}>
+                Ver sessões de {member.name}
+              </Button>
+            </div>
+
             <div className="actions">
-              <button
+              <Button
+                variant={member.status === 'blocked' ? 'secondary' : 'danger'}
+                size="compact"
                 disabled={action.isPending}
                 onClick={() => {
                   if (
@@ -168,18 +242,23 @@ export function Members() {
                 }}
               >
                 {member.status === 'blocked' ? 'Desbloquear' : 'Bloquear'}
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="secondary"
+                size="compact"
                 disabled={action.isPending || member.status === 'blocked'}
                 onClick={() => action.mutate({ member, kind: 'recovery' })}
               >
                 Gerar link de acesso
-              </button>
+              </Button>
             </div>
+
             {member.status === 'active' && (
-              <label>
-                Alterar papel
+              <div className="id-role-change">
+                <label htmlFor={`change-role-${member.id}`}>Alterar papel</label>
                 <select
+                  id={`change-role-${member.id}`}
+                  className="ui-input"
                   value={member.roleId}
                   disabled={action.isPending}
                   onChange={(event) => {
@@ -193,7 +272,7 @@ export function Members() {
                     </option>
                   ))}
                 </select>
-              </label>
+              </div>
             )}
           </article>
         ))}

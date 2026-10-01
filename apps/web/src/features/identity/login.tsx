@@ -3,57 +3,84 @@ import { useForm } from 'react-hook-form';
 import { useMutation } from '@tanstack/react-query';
 import { api, result, type Context } from './client';
 import { Feedback } from './feedback';
+import { Button } from '../../ui/Button';
+
 export function Login({ onLogin }: { onLogin: (context: Context) => void }) {
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<{ email: string; password: string }>();
+
   const mutation = useMutation({
     mutationFn: (body: { email: string; password: string }) =>
       result(api.POST('/api/v1/identity/login', { body })),
     onSuccess: onLogin,
   });
+
   return (
     <main className="auth-layout">
       <section className="auth-card">
-        <p className="eyebrow">MOURA SOLAR</p>
-        <h1>Entre na plataforma</h1>
-        <p>Acompanhe sua operação de qualquer aparelho.</p>
-        <form onSubmit={handleSubmit((body) => mutation.mutate(body))}>
-          <label>
-            E-mail
+        <div className="auth-brand">
+          <div className="auth-logo-badge" aria-hidden="true">
+            MS
+          </div>
+          <p className="auth-eyebrow eyebrow">MOURA SOLAR</p>
+          <h1>Entre na plataforma</h1>
+          <p className="auth-subtitle">Acompanhe sua operação de qualquer aparelho.</p>
+        </div>
+
+        <form className="auth-form" onSubmit={handleSubmit((body) => mutation.mutate(body))}>
+          <div className="auth-field">
+            <label htmlFor="login-email" className="auth-field__label">
+              E-mail
+            </label>
             <input
+              id="login-email"
+              className="ui-input"
               type="email"
               autoComplete="username"
               {...register('email', { required: true })}
             />
-          </label>
-          <label>
-            Senha
+          </div>
+
+          <div className="auth-field">
+            <label htmlFor="login-password" className="auth-field__label">
+              Senha
+            </label>
             <input
+              id="login-password"
+              className="ui-input"
               type="password"
               autoComplete="current-password"
               {...register('password', { required: true, minLength: 12 })}
             />
-          </label>
+          </div>
+
           {Object.keys(errors).length > 0 && (
-            <p role="alert">Preencha o e-mail e a senha de pelo menos 12 caracteres.</p>
+            <p role="alert" className="auth-alert-error">
+              Preencha o e-mail e a senha de pelo menos 12 caracteres.
+            </p>
           )}
+
           <Feedback error={mutation.error} />
-          <button disabled={mutation.isPending}>
+
+          <Button type="submit" variant="primary" fullWidth disabled={mutation.isPending}>
             {mutation.isPending ? 'Entrando…' : 'Entrar'}
-          </button>
+          </Button>
         </form>
-        <p className="help">
+
+        <p className="auth-help help">
           Esqueceu sua senha? Solicite um link de recuperação ao administrador da Moura Solar.
         </p>
       </section>
     </main>
   );
 }
+
 export function AcceptAccess({ token, onDone }: { token: string; onDone: () => void }) {
   const { register, handleSubmit } = useForm<{ password: string }>();
+
   const mutation = useMutation({
     mutationFn: (body: { password: string }) =>
       result(api.POST('/api/v1/identity/accept-link', { body: { ...body, token } })),
@@ -62,16 +89,29 @@ export function AcceptAccess({ token, onDone }: { token: string; onDone: () => v
       onDone();
     },
   });
+
   return (
     <main className="auth-layout">
       <section className="auth-card">
-        <p className="eyebrow">MOURA SOLAR</p>
-        <h1>Defina sua senha</h1>
-        <p>Use pelo menos 12 caracteres. Este link só pode ser usado uma vez.</p>
-        <form onSubmit={handleSubmit((body) => mutation.mutate(body))}>
-          <label>
-            Nova senha
+        <div className="auth-brand">
+          <div className="auth-logo-badge" aria-hidden="true">
+            MS
+          </div>
+          <p className="auth-eyebrow eyebrow">MOURA SOLAR</p>
+          <h1>Defina sua senha</h1>
+          <p className="auth-subtitle">
+            Use pelo menos 12 caracteres. Este link só pode ser usado uma vez.
+          </p>
+        </div>
+
+        <form className="auth-form" onSubmit={handleSubmit((body) => mutation.mutate(body))}>
+          <div className="auth-field">
+            <label htmlFor="accept-password" className="auth-field__label">
+              Nova senha
+            </label>
             <input
+              id="accept-password"
+              className="ui-input"
               required
               minLength={12}
               maxLength={128}
@@ -79,11 +119,13 @@ export function AcceptAccess({ token, onDone }: { token: string; onDone: () => v
               autoComplete="new-password"
               {...register('password')}
             />
-          </label>
+          </div>
+
           <Feedback error={mutation.error} />
-          <button disabled={mutation.isPending}>
+
+          <Button type="submit" variant="primary" fullWidth disabled={mutation.isPending}>
             {mutation.isPending ? 'Salvando…' : 'Salvar senha'}
-          </button>
+          </Button>
         </form>
       </section>
     </main>
