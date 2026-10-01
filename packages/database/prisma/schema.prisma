@@ -50,6 +50,17 @@ model Organization {
   paymentAllocations  PaymentAllocation[]
   commissions         Commission[]
   cashMovements       CashMovement[]
+  stockLocations      StockLocation[]
+  stockBalances       StockBalance[]
+  stockMovements      StockMovement[]
+  stockReservations   StockReservation[]
+  stockReservationItems StockReservationItem[]
+  suppliers           Supplier[]
+  purchaseOrders      PurchaseOrder[]
+  purchaseOrderItems  PurchaseOrderItem[]
+  goodsReceipts       GoodsReceipt[]
+  goodsReceiptItems   GoodsReceiptItem[]
+  serializedAssets    SerializedAsset[]
 
   @@map("organizations")
 }
@@ -74,6 +85,12 @@ model User {
   satisfiedProjectGates ProjectGate[] @relation("SatisfiedProjectGates")
   createdReceipts       Receipt[]     @relation("CreatedReceipts")
   createdPayments       Payment[]     @relation("CreatedPayments")
+  managedStockLocations     StockLocation[]      @relation("ManagedStockLocations")
+  createdStockMovements     StockMovement[]      @relation("CreatedStockMovements")
+  createdStockReservations  StockReservation[]   @relation("CreatedStockReservations")
+  createdPurchaseOrders     PurchaseOrder[]      @relation("CreatedPurchaseOrders")
+  approvedPurchaseOrders    PurchaseOrder[]      @relation("ApprovedPurchaseOrders")
+  receivedGoodsReceipts     GoodsReceipt[]       @relation("ReceivedGoodsReceipts")
 
   @@map("users")
 }
@@ -355,6 +372,10 @@ model Opportunity {
   receipts             Receipt[]
   payables             Payable[]
   commissions          Commission[]
+  stockMovements       StockMovement[]
+  stockReservation     StockReservation?
+  purchaseOrders       PurchaseOrder[]
+  serializedAssets     SerializedAsset[]
 
   @@unique([organizationId, code])
   @@index([organizationId, state])
@@ -481,6 +502,12 @@ model CatalogItem {
 
   organization        Organization  @relation(fields: [organizationId], references: [id])
   designItems         DesignItem[]
+  stockBalances         StockBalance[]
+  stockMovements        StockMovement[]
+  stockReservationItems StockReservationItem[]
+  purchaseOrderItems    PurchaseOrderItem[]
+  goodsReceiptItems     GoodsReceiptItem[]
+  serializedAssets      SerializedAsset[]
 
   @@unique([organizationId, sku])
   @@index([organizationId, category, status])
@@ -1105,6 +1132,284 @@ model CashMovement {
 
   @@index([accountId, effectiveAt])
   @@map("cash_movements")
+}
+
+model StockLocation {
+  id                String                 @id @default(uuid()) @db.Uuid
+  organizationId    String                 @map("organization_id") @db.Uuid
+  code              String
+  name              String
+  type              String                 @default("WAREHOUSE") // WAREHOUSE, VEHICLE, TRANSIT, QUARANTINE
+  address           String?
+  managerUserId     String?                @map("manager_user_id") @db.Uuid
+  status            String                 @default("ACTIVE") // ACTIVE, INACTIVE
+  createdAt         DateTime               @default(now()) @map("created_at")
+  updatedAt         DateTime               @updatedAt @map("updated_at")
+
+  organization      Organization           @relation(fields: [organizationId], references: [id])
+  managerUser       User?                  @relation("ManagedStockLocations", fields: [managerUserId], references: [id])
+  balances          StockBalance[]
+  outgoingMovements StockMovement[]        @relation("FromStockLocation")
+  incomingMovements StockMovement[]        @relation("ToStockLocation")
+  reservations      StockReservationItem[]
+  serializedAssets  SerializedAsset[]
+  goodsReceipts     GoodsReceipt[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId, status])
+  @@map("stock_locations")
+}
+
+model StockBalance {
+  id             String        @id @default(uuid()) @db.Uuid
+  organizationId String        @map("organization_id") @db.Uuid
+  catalogItemId  String        @map("catalog_item_id") @db.Uuid
+  locationId     String        @map("location_id") @db.Uuid
+  physicalOnHand Decimal       @default(0) @map("physical_on_hand") @db.Decimal(12, 4)
+  reserved       Decimal       @default(0) @db.Decimal(12, 4)
+  blocked        Decimal       @default(0) @db.Decimal(12, 4)
+  available      Decimal       @default(0) @db.Decimal(12, 4)
+  averageCost    Decimal       @default(0) @map("average_cost") @db.Decimal(12, 2)
+  minStockAlert  Decimal?      @map("min_stock_alert") @db.Decimal(12, 4)
+  version        Int           @default(1)
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  catalogItem    CatalogItem   @relation(fields: [catalogItemId], references: [id], onDelete: Cascade)
+  location       StockLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, catalogItemId, locationId])
+  @@index([locationId])
+  @@index([catalogItemId])
+  @@map("stock_balances")
+}
+
+model StockMovement {
+  id              String         @id @default(uuid()) @db.Uuid
+  organizationId  String         @map("organization_id") @db.Uuid
+  catalogItemId   String         @map("catalog_item_id") @db.Uuid
+  type            String         // RECEIVE, TRANSFER_OUT, TRANSFER_IN, CONSUME, RETURN, ADJUST, LOSS, QUARANTINE, RELEASE
+  quantity        Decimal        @db.Decimal(12, 4)
+  unitCost        Decimal?       @map("unit_cost") @db.Decimal(12, 2)
+  totalCost       Decimal?       @map("total_cost") @db.Decimal(12, 2)
+  fromLocationId  String?        @map("from_location_id") @db.Uuid
+  toLocationId    String?        @map("to_location_id") @db.Uuid
+  opportunityId   String?        @map("opportunity_id") @db.Uuid
+  purchaseOrderId String?        @map("purchase_order_id") @db.Uuid
+  goodsReceiptId  String?        @map("goods_receipt_id") @db.Uuid
+  notes           String?
+  idempotencyKey  String?        @unique @map("idempotency_key")
+  createdById     String         @map("created_by_id") @db.Uuid
+  occurredAt      DateTime       @default(now()) @map("occurred_at")
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  organization    Organization   @relation(fields: [organizationId], references: [id])
+  catalogItem     CatalogItem    @relation(fields: [catalogItemId], references: [id])
+  fromLocation    StockLocation? @relation("FromStockLocation", fields: [fromLocationId], references: [id])
+  toLocation      StockLocation? @relation("ToStockLocation", fields: [toLocationId], references: [id])
+  opportunity     Opportunity?   @relation(fields: [opportunityId], references: [id])
+  purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+  goodsReceipt    GoodsReceipt?  @relation(fields: [goodsReceiptId], references: [id])
+  createdBy       User           @relation("CreatedStockMovements", fields: [createdById], references: [id])
+
+  @@index([organizationId, catalogItemId, occurredAt])
+  @@index([fromLocationId])
+  @@index([toLocationId])
+  @@index([opportunityId])
+  @@map("stock_movements")
+}
+
+model StockReservation {
+  id             String                 @id @default(uuid()) @db.Uuid
+  organizationId String                 @map("organization_id") @db.Uuid
+  opportunityId  String                 @unique @map("opportunity_id") @db.Uuid
+  status         String                 @default("ACTIVE") // ACTIVE, PARTIAL, COMPLETED, CANCELED
+  notes          String?
+  createdById    String                 @map("created_by_id") @db.Uuid
+  createdAt      DateTime               @default(now()) @map("created_at")
+  updatedAt      DateTime               @updatedAt @map("updated_at")
+
+  organization   Organization           @relation(fields: [organizationId], references: [id])
+  opportunity    Opportunity            @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  createdBy      User                   @relation("CreatedStockReservations", fields: [createdById], references: [id])
+  items          StockReservationItem[]
+
+  @@map("stock_reservations")
+}
+
+model StockReservationItem {
+  id               String           @id @default(uuid()) @db.Uuid
+  organizationId   String           @map("organization_id") @db.Uuid
+  reservationId    String           @map("reservation_id") @db.Uuid
+  catalogItemId    String           @map("catalog_item_id") @db.Uuid
+  locationId       String           @map("location_id") @db.Uuid
+  quantityNeeded   Decimal          @map("quantity_needed") @db.Decimal(12, 4)
+  quantityReserved Decimal          @default(0) @map("quantity_reserved") @db.Decimal(12, 4)
+  quantityConsumed Decimal          @default(0) @map("quantity_consumed") @db.Decimal(12, 4)
+  status           String           @default("PENDING") // PENDING, RESERVED, PARTIALLY_RESERVED, CONSUMED, RELEASED
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  organization     Organization     @relation(fields: [organizationId], references: [id])
+  reservation      StockReservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  catalogItem      CatalogItem      @relation(fields: [catalogItemId], references: [id])
+  location         StockLocation    @relation(fields: [locationId], references: [id])
+
+  @@index([reservationId])
+  @@index([catalogItemId, locationId])
+  @@map("stock_reservation_items")
+}
+
+model Supplier {
+  id             String          @id @default(uuid()) @db.Uuid
+  organizationId String          @map("organization_id") @db.Uuid
+  code           String
+  name           String
+  tradeName      String?         @map("trade_name")
+  documentNumber String          @map("document_number") // CNPJ
+  contactName    String?         @map("contact_name")
+  email          String?
+  phone          String?
+  address        String?
+  city           String?
+  state          String?
+  category       String          @default("SOLAR_EQUIPMENT") // SOLAR_EQUIPMENT, ELECTRICAL, STRUCTURAL, SERVICE
+  leadTimeDays   Int             @default(7) @map("lead_time_days")
+  paymentTerms   String?         @map("payment_terms")
+  status         String          @default("ACTIVE") // ACTIVE, INACTIVE
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  purchaseOrders PurchaseOrder[]
+
+  @@unique([organizationId, code])
+  @@unique([organizationId, documentNumber])
+  @@index([organizationId, status])
+  @@map("suppliers")
+}
+
+model PurchaseOrder {
+  id                   String              @id @default(uuid()) @db.Uuid
+  organizationId       String              @map("organization_id") @db.Uuid
+  supplierId           String              @map("supplier_id") @db.Uuid
+  code                 String
+  status               String              @default("DRAFT") // DRAFT, APPROVED, ORDERED, PARTIALLY_RECEIVED, RECEIVED, CANCELED
+  expectedDeliveryDate DateTime?           @map("expected_delivery_date") @db.Date
+  currency             String              @default("BRL")
+  totalAmount          Decimal             @default(0) @map("total_amount") @db.Decimal(12, 2)
+  notes                String?
+  opportunityId        String?             @map("opportunity_id") @db.Uuid
+  createdById          String              @map("created_by_id") @db.Uuid
+  approvedById         String?             @map("approved_by_id") @db.Uuid
+  createdAt            DateTime            @default(now()) @map("created_at")
+  updatedAt            DateTime            @updatedAt @map("updated_at")
+
+  organization         Organization        @relation(fields: [organizationId], references: [id])
+  supplier             Supplier            @relation(fields: [supplierId], references: [id])
+  opportunity          Opportunity?        @relation(fields: [opportunityId], references: [id])
+  createdBy            User                @relation("CreatedPurchaseOrders", fields: [createdById], references: [id])
+  approvedBy           User?               @relation("ApprovedPurchaseOrders", fields: [approvedById], references: [id])
+  items                PurchaseOrderItem[]
+  goodsReceipts        GoodsReceipt[]
+  movements            StockMovement[]
+
+  @@unique([organizationId, code])
+  @@index([supplierId])
+  @@index([status])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id               String        @id @default(uuid()) @db.Uuid
+  organizationId   String        @map("organization_id") @db.Uuid
+  purchaseOrderId  String        @map("purchase_order_id") @db.Uuid
+  catalogItemId    String        @map("catalog_item_id") @db.Uuid
+  quantityOrdered  Decimal       @map("quantity_ordered") @db.Decimal(12, 4)
+  quantityReceived Decimal       @default(0) @map("quantity_received") @db.Decimal(12, 4)
+  unitCost         Decimal       @map("unit_cost") @db.Decimal(12, 2)
+  totalCost        Decimal       @map("total_cost") @db.Decimal(12, 2)
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  organization     Organization  @relation(fields: [organizationId], references: [id])
+  purchaseOrder    PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  catalogItem      CatalogItem   @relation(fields: [catalogItemId], references: [id])
+
+  @@index([purchaseOrderId])
+  @@index([catalogItemId])
+  @@map("purchase_order_items")
+}
+
+model GoodsReceipt {
+  id               String             @id @default(uuid()) @db.Uuid
+  organizationId   String             @map("organization_id") @db.Uuid
+  purchaseOrderId  String             @map("purchase_order_id") @db.Uuid
+  locationId       String             @map("location_id") @db.Uuid
+  code             String
+  invoiceNumber    String?            @map("invoice_number")
+  receivedAt       DateTime           @default(now()) @map("received_at")
+  notes            String?
+  receivedById     String             @map("received_by_id") @db.Uuid
+  createdAt        DateTime           @default(now()) @map("created_at")
+
+  organization     Organization       @relation(fields: [organizationId], references: [id])
+  purchaseOrder    PurchaseOrder      @relation(fields: [purchaseOrderId], references: [id])
+  location         StockLocation      @relation(fields: [locationId], references: [id])
+  receivedBy       User               @relation("ReceivedGoodsReceipts", fields: [receivedById], references: [id])
+  items            GoodsReceiptItem[]
+  movements        StockMovement[]
+  serializedAssets SerializedAsset[]
+
+  @@unique([organizationId, code])
+  @@index([purchaseOrderId])
+  @@index([locationId])
+  @@map("goods_receipts")
+}
+
+model GoodsReceiptItem {
+  id               String        @id @default(uuid()) @db.Uuid
+  organizationId   String        @map("organization_id") @db.Uuid
+  goodsReceiptId   String        @map("goods_receipt_id") @db.Uuid
+  catalogItemId    String        @map("catalog_item_id") @db.Uuid
+  quantityReceived Decimal       @map("quantity_received") @db.Decimal(12, 4)
+  unitCost         Decimal       @map("unit_cost") @db.Decimal(12, 2)
+  createdAt        DateTime      @default(now()) @map("created_at")
+
+  organization     Organization  @relation(fields: [organizationId], references: [id])
+  goodsReceipt     GoodsReceipt  @relation(fields: [goodsReceiptId], references: [id], onDelete: Cascade)
+  catalogItem      CatalogItem   @relation(fields: [catalogItemId], references: [id])
+
+  @@index([goodsReceiptId])
+  @@map("goods_receipt_items")
+}
+
+model SerializedAsset {
+  id             String         @id @default(uuid()) @db.Uuid
+  organizationId String         @map("organization_id") @db.Uuid
+  catalogItemId  String         @map("catalog_item_id") @db.Uuid
+  serialNumber   String         @map("serial_number")
+  locationId     String?        @map("location_id") @db.Uuid
+  opportunityId  String?        @map("opportunity_id") @db.Uuid
+  goodsReceiptId String?        @map("goods_receipt_id") @db.Uuid
+  status         String         @default("IN_STOCK") // IN_STOCK, RESERVED, IN_TRANSIT, INSTALLED, DEFECTIVE, RETURNED
+  warrantyMonths Int?           @map("warranty_months")
+  installedAt    DateTime?      @map("installed_at")
+  notes          String?
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  catalogItem    CatalogItem    @relation(fields: [catalogItemId], references: [id])
+  location       StockLocation? @relation(fields: [locationId], references: [id])
+  opportunity    Opportunity?   @relation(fields: [opportunityId], references: [id])
+  goodsReceipt   GoodsReceipt?  @relation(fields: [goodsReceiptId], references: [id])
+
+  @@unique([organizationId, serialNumber])
+  @@index([catalogItemId, status])
+  @@index([locationId])
+  @@index([opportunityId])
+  @@map("serialized_assets")
 }
 
 

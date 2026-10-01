@@ -1380,6 +1380,166 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/inventory/locations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['InventoryController_listLocations'];
+    put?: never;
+    post: operations['InventoryController_createLocation'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/inventory/balances': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['InventoryController_listBalances'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/inventory/movements': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['InventoryController_listMovements'];
+    put?: never;
+    post: operations['InventoryController_recordMovement'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/inventory/reservations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['InventoryController_listReservations'];
+    put?: never;
+    post: operations['InventoryController_reserveKit'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/inventory/reservations/{id}/release': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['InventoryController_releaseReservation'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/inventory/suppliers': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['InventoryController_listSuppliers'];
+    put?: never;
+    post: operations['InventoryController_createSupplier'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/inventory/purchases': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['InventoryController_listPurchaseOrders'];
+    put?: never;
+    post: operations['InventoryController_createPurchaseOrder'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/inventory/purchases/{id}/approve': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['InventoryController_approvePurchaseOrder'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/inventory/purchases/{id}/receive': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['InventoryController_receiveGoods'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/inventory/serials': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['InventoryController_listSerializedAssets'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2409,6 +2569,124 @@ export interface components {
       triggerGate: string;
       /** @description Notas da comissão */
       notes?: string;
+    };
+    CreateStockLocationDto: {
+      /** @example DEP-MATRIZ */
+      code: string;
+      /** @example Depósito Matriz */
+      name: string;
+      /**
+       * @example WAREHOUSE
+       * @enum {string}
+       */
+      type?: 'WAREHOUSE' | 'VEHICLE' | 'TRANSIT' | 'QUARANTINE';
+      /** @example Rua das Flores, 123 - Belo Horizonte/MG */
+      address?: string;
+      managerUserId?: string;
+    };
+    RecordMovementDto: {
+      catalogItemId: string;
+      /**
+       * @example RECEIVE
+       * @enum {string}
+       */
+      type:
+        | 'RECEIVE'
+        | 'TRANSFER_OUT'
+        | 'TRANSFER_IN'
+        | 'CONSUME'
+        | 'RETURN'
+        | 'ADJUST'
+        | 'LOSS'
+        | 'QUARANTINE'
+        | 'RELEASE';
+      /** @example 10 */
+      quantity: number;
+      /** @example 450.5 */
+      unitCost?: number;
+      fromLocationId?: string;
+      toLocationId?: string;
+      opportunityId?: string;
+      purchaseOrderId?: string;
+      goodsReceiptId?: string;
+      notes?: string;
+      serialNumbers?: string[];
+    };
+    ReservationItemInputDto: {
+      catalogItemId: string;
+      locationId: string;
+      /** @example 14 */
+      quantityNeeded: number;
+    };
+    ReserveKitDto: {
+      opportunityId: string;
+      items: components['schemas']['ReservationItemInputDto'][];
+      notes?: string;
+    };
+    CreateSupplierDto: {
+      /** @example FORN-WEG */
+      code: string;
+      /** @example WEG Equipamentos Elétricos S.A. */
+      name: string;
+      /** @example WEG Solar */
+      tradeName?: string;
+      /** @example 07.175.725/0001-63 */
+      documentNumber: string;
+      /** @example Carlos Mendes */
+      contactName?: string;
+      /** @example solar@weg.net */
+      email?: string;
+      /** @example (47) 3276-4000 */
+      phone?: string;
+      /** @example Av. Prefeito Waldemar Grubba, 3300 */
+      address?: string;
+      /** @example Jaraguá do Sul */
+      city?: string;
+      /** @example SC */
+      state?: string;
+      /**
+       * @example SOLAR_EQUIPMENT
+       * @enum {string}
+       */
+      category?: 'SOLAR_EQUIPMENT' | 'ELECTRICAL' | 'STRUCTURAL' | 'SERVICE';
+      /** @example 10 */
+      leadTimeDays?: number;
+      /** @example 28/56 dias */
+      paymentTerms?: string;
+    };
+    PurchaseOrderItemInputDto: {
+      catalogItemId: string;
+      /** @example 20 */
+      quantityOrdered: number;
+      /** @example 380 */
+      unitCost: number;
+    };
+    CreatePurchaseOrderDto: {
+      supplierId: string;
+      /** @example PO-2026-001 */
+      code: string;
+      expectedDeliveryDate?: string;
+      opportunityId?: string;
+      notes?: string;
+      items: components['schemas']['PurchaseOrderItemInputDto'][];
+    };
+    GoodsReceiptItemInputDto: {
+      catalogItemId: string;
+      /** @example 20 */
+      quantityReceived: number;
+      /** @example 380 */
+      unitCost: number;
+      serialNumbers?: string[];
+    };
+    ReceiveGoodsDto: {
+      purchaseOrderId: string;
+      locationId: string;
+      /** @example REC-2026-001 */
+      code: string;
+      /** @example NF-e 001928 */
+      invoiceNumber?: string;
+      notes?: string;
+      items: components['schemas']['GoodsReceiptItemInputDto'][];
     };
   };
   responses: never;
@@ -4692,6 +4970,309 @@ export interface operations {
   FinancialController_getCashFlow: {
     parameters: {
       query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InventoryController_listLocations: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InventoryController_createLocation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateStockLocationDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InventoryController_listBalances: {
+    parameters: {
+      query?: {
+        locationId?: string;
+        catalogItemId?: string;
+        lowStockOnly?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InventoryController_listMovements: {
+    parameters: {
+      query?: {
+        catalogItemId?: string;
+        locationId?: string;
+        opportunityId?: string;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InventoryController_recordMovement: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RecordMovementDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InventoryController_listReservations: {
+    parameters: {
+      query?: {
+        opportunityId?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InventoryController_reserveKit: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReserveKitDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InventoryController_releaseReservation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InventoryController_listSuppliers: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InventoryController_createSupplier: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateSupplierDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InventoryController_listPurchaseOrders: {
+    parameters: {
+      query?: {
+        status?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InventoryController_createPurchaseOrder: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreatePurchaseOrderDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InventoryController_approvePurchaseOrder: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InventoryController_receiveGoods: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReceiveGoodsDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InventoryController_listSerializedAssets: {
+    parameters: {
+      query?: {
+        catalogItemId?: string;
+        locationId?: string;
+        status?: string;
+        search?: string;
+      };
       header?: never;
       path?: never;
       cookie?: never;

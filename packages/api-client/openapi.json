@@ -3626,6 +3626,447 @@
         ],
         "tags": ["financial"]
       }
+    },
+    "/api/v1/inventory/locations": {
+      "get": {
+        "operationId": "InventoryController_listLocations",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["inventory"]
+      },
+      "post": {
+        "operationId": "InventoryController_createLocation",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStockLocationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["inventory"]
+      }
+    },
+    "/api/v1/inventory/balances": {
+      "get": {
+        "operationId": "InventoryController_listBalances",
+        "parameters": [
+          {
+            "name": "locationId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "catalogItemId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lowStockOnly",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["inventory"]
+      }
+    },
+    "/api/v1/inventory/movements": {
+      "get": {
+        "operationId": "InventoryController_listMovements",
+        "parameters": [
+          {
+            "name": "catalogItemId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locationId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "opportunityId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["inventory"]
+      },
+      "post": {
+        "operationId": "InventoryController_recordMovement",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordMovementDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["inventory"]
+      }
+    },
+    "/api/v1/inventory/reservations": {
+      "get": {
+        "operationId": "InventoryController_listReservations",
+        "parameters": [
+          {
+            "name": "opportunityId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["inventory"]
+      },
+      "post": {
+        "operationId": "InventoryController_reserveKit",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReserveKitDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["inventory"]
+      }
+    },
+    "/api/v1/inventory/reservations/{id}/release": {
+      "post": {
+        "operationId": "InventoryController_releaseReservation",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["inventory"]
+      }
+    },
+    "/api/v1/inventory/suppliers": {
+      "get": {
+        "operationId": "InventoryController_listSuppliers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["inventory"]
+      },
+      "post": {
+        "operationId": "InventoryController_createSupplier",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSupplierDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["inventory"]
+      }
+    },
+    "/api/v1/inventory/purchases": {
+      "get": {
+        "operationId": "InventoryController_listPurchaseOrders",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["inventory"]
+      },
+      "post": {
+        "operationId": "InventoryController_createPurchaseOrder",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePurchaseOrderDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["inventory"]
+      }
+    },
+    "/api/v1/inventory/purchases/{id}/approve": {
+      "post": {
+        "operationId": "InventoryController_approvePurchaseOrder",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["inventory"]
+      }
+    },
+    "/api/v1/inventory/purchases/{id}/receive": {
+      "post": {
+        "operationId": "InventoryController_receiveGoods",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReceiveGoodsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["inventory"]
+      }
+    },
+    "/api/v1/inventory/serials": {
+      "get": {
+        "operationId": "InventoryController_listSerializedAssets",
+        "parameters": [
+          {
+            "name": "catalogItemId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locationId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["inventory"]
+      }
     }
   },
   "info": {
@@ -6375,6 +6816,278 @@
           }
         },
         "required": ["opportunityId", "beneficiaryName", "percentage"]
+      },
+      "CreateStockLocationDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "DEP-MATRIZ"
+          },
+          "name": {
+            "type": "string",
+            "example": "Depósito Matriz"
+          },
+          "type": {
+            "type": "string",
+            "example": "WAREHOUSE",
+            "enum": ["WAREHOUSE", "VEHICLE", "TRANSIT", "QUARANTINE"]
+          },
+          "address": {
+            "type": "string",
+            "example": "Rua das Flores, 123 - Belo Horizonte/MG"
+          },
+          "managerUserId": {
+            "type": "string"
+          }
+        },
+        "required": ["code", "name"]
+      },
+      "RecordMovementDto": {
+        "type": "object",
+        "properties": {
+          "catalogItemId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "example": "RECEIVE",
+            "enum": [
+              "RECEIVE",
+              "TRANSFER_OUT",
+              "TRANSFER_IN",
+              "CONSUME",
+              "RETURN",
+              "ADJUST",
+              "LOSS",
+              "QUARANTINE",
+              "RELEASE"
+            ]
+          },
+          "quantity": {
+            "type": "number",
+            "example": 10
+          },
+          "unitCost": {
+            "type": "number",
+            "example": 450.5
+          },
+          "fromLocationId": {
+            "type": "string"
+          },
+          "toLocationId": {
+            "type": "string"
+          },
+          "opportunityId": {
+            "type": "string"
+          },
+          "purchaseOrderId": {
+            "type": "string"
+          },
+          "goodsReceiptId": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "serialNumbers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["catalogItemId", "type", "quantity"]
+      },
+      "ReservationItemInputDto": {
+        "type": "object",
+        "properties": {
+          "catalogItemId": {
+            "type": "string"
+          },
+          "locationId": {
+            "type": "string"
+          },
+          "quantityNeeded": {
+            "type": "number",
+            "example": 14
+          }
+        },
+        "required": ["catalogItemId", "locationId", "quantityNeeded"]
+      },
+      "ReserveKitDto": {
+        "type": "object",
+        "properties": {
+          "opportunityId": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReservationItemInputDto"
+            }
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "required": ["opportunityId", "items"]
+      },
+      "CreateSupplierDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "FORN-WEG"
+          },
+          "name": {
+            "type": "string",
+            "example": "WEG Equipamentos Elétricos S.A."
+          },
+          "tradeName": {
+            "type": "string",
+            "example": "WEG Solar"
+          },
+          "documentNumber": {
+            "type": "string",
+            "example": "07.175.725/0001-63"
+          },
+          "contactName": {
+            "type": "string",
+            "example": "Carlos Mendes"
+          },
+          "email": {
+            "type": "string",
+            "example": "solar@weg.net"
+          },
+          "phone": {
+            "type": "string",
+            "example": "(47) 3276-4000"
+          },
+          "address": {
+            "type": "string",
+            "example": "Av. Prefeito Waldemar Grubba, 3300"
+          },
+          "city": {
+            "type": "string",
+            "example": "Jaraguá do Sul"
+          },
+          "state": {
+            "type": "string",
+            "example": "SC"
+          },
+          "category": {
+            "type": "string",
+            "example": "SOLAR_EQUIPMENT",
+            "enum": ["SOLAR_EQUIPMENT", "ELECTRICAL", "STRUCTURAL", "SERVICE"]
+          },
+          "leadTimeDays": {
+            "type": "number",
+            "example": 10
+          },
+          "paymentTerms": {
+            "type": "string",
+            "example": "28/56 dias"
+          }
+        },
+        "required": ["code", "name", "documentNumber"]
+      },
+      "PurchaseOrderItemInputDto": {
+        "type": "object",
+        "properties": {
+          "catalogItemId": {
+            "type": "string"
+          },
+          "quantityOrdered": {
+            "type": "number",
+            "example": 20
+          },
+          "unitCost": {
+            "type": "number",
+            "example": 380
+          }
+        },
+        "required": ["catalogItemId", "quantityOrdered", "unitCost"]
+      },
+      "CreatePurchaseOrderDto": {
+        "type": "object",
+        "properties": {
+          "supplierId": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "example": "PO-2026-001"
+          },
+          "expectedDeliveryDate": {
+            "type": "string"
+          },
+          "opportunityId": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PurchaseOrderItemInputDto"
+            }
+          }
+        },
+        "required": ["supplierId", "code", "items"]
+      },
+      "GoodsReceiptItemInputDto": {
+        "type": "object",
+        "properties": {
+          "catalogItemId": {
+            "type": "string"
+          },
+          "quantityReceived": {
+            "type": "number",
+            "example": 20
+          },
+          "unitCost": {
+            "type": "number",
+            "example": 380
+          },
+          "serialNumbers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["catalogItemId", "quantityReceived", "unitCost"]
+      },
+      "ReceiveGoodsDto": {
+        "type": "object",
+        "properties": {
+          "purchaseOrderId": {
+            "type": "string"
+          },
+          "locationId": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "example": "REC-2026-001"
+          },
+          "invoiceNumber": {
+            "type": "string",
+            "example": "NF-e 001928"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GoodsReceiptItemInputDto"
+            }
+          }
+        },
+        "required": ["purchaseOrderId", "locationId", "code", "items"]
       }
     }
   }
