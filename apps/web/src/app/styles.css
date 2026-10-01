@@ -503,58 +503,59 @@ label {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.025em;
-  background: var(--color-canvas);
-  color: var(--text-primary);
-  border: 1px solid var(--color-border);
+  background: var(--surface-elevated, #1c211d);
+  color: var(--text-primary, #f5f7f5);
+  border: 1px solid var(--border-default, #29302b);
 }
 .badge.badge-novo {
-  background: var(--brand-primary-soft);
-  color: var(--brand-primary-strong);
-  border-color: var(--brand-primary);
+  background: rgba(255, 212, 0, 0.12);
+  color: #ffd400;
+  border-color: rgba(255, 212, 0, 0.3);
 }
 .badge.badge-qualificado {
-  background: #eff6ff;
-  color: #1d4ed8;
-  border-color: #93c5fd;
+  background: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
+  border-color: rgba(59, 130, 246, 0.3);
 }
 .badge.badge-perdido,
 .badge.badge-cancelado {
-  background: #fef2f2;
-  color: var(--status-danger);
-  border-color: #fca5a5;
+  background: rgba(255, 77, 87, 0.12);
+  color: #ff4d57;
+  border-color: rgba(255, 77, 87, 0.3);
 }
 .badge.badge-ativo,
 .badge.badge-accepted,
-.badge.badge-contratacao {
-  background: #f0fdf4;
-  color: var(--status-success);
-  border-color: #86efac;
+.badge.badge-contratacao,
+.badge.badge-vendido {
+  background: rgba(38, 216, 102, 0.12);
+  color: #26d866;
+  border-color: rgba(38, 216, 102, 0.3);
 }
 .badge.badge-ready,
 .badge.badge-viewed {
-  background: #f5f3ff;
-  color: #6d28d9;
-  border-color: #c4b5fd;
+  background: rgba(168, 85, 247, 0.12);
+  color: #c084fc;
+  border-color: rgba(168, 85, 247, 0.3);
 }
 .badge.badge-sent,
 .badge.badge-proposta_apresentada {
-  background: #fffbeb;
-  color: #b45309;
-  border-color: #fde68a;
+  background: rgba(255, 159, 28, 0.12);
+  color: #ff9f1c;
+  border-color: rgba(255, 159, 28, 0.3);
 }
 .badge.badge-rejected,
 .badge.badge-expired {
-  background: #fef2f2;
-  color: var(--status-danger);
-  border-color: #fca5a5;
+  background: rgba(255, 77, 87, 0.12);
+  color: #ff4d57;
+  border-color: rgba(255, 77, 87, 0.3);
 }
 
 .table-wrapper {
   width: 100%;
   overflow-x: auto;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
+  border: 1px solid var(--border-default, #29302b);
+  border-radius: var(--radius-md, 8px);
+  background: var(--surface-card, #161a17);
   margin-block: var(--space-4);
 }
 .data-table {
@@ -566,15 +567,15 @@ label {
 .data-table th,
 .data-table td {
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--border-default, #29302b);
 }
 .data-table th {
-  background: var(--color-canvas);
+  background: var(--surface-elevated, #1c211d);
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--text-secondary, #9ba49e);
 }
 .data-table tr:hover {
-  background: rgba(0, 0, 0, 0.02);
+  background: rgba(255, 212, 0, 0.03);
 }
 
 .filter-bar {

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, result, allows } from '../identity/client';
 import { Feedback } from '../identity/feedback';
+import { Button } from '../../ui/Button';
 import { EnergyReadings } from '../design/consumption';
 import { TechnicalSurvey } from '../design/survey';
 import { SolarDesigner } from '../design/solar-designer';
@@ -18,8 +19,18 @@ interface OpportunitiesProps {
   onCreated?: () => void;
 }
 
+const KANBAN_STAGES: { state: string; label: string; color: string }[] = [
+  { state: 'NOVO', label: 'Novo Lead', color: '#ffd400' },
+  { state: 'QUALIFICADO', label: 'Qualificado', color: '#3b82f6' },
+  { state: 'PROPOSTA_APRESENTADA', label: 'Proposta', color: '#ff9f1c' },
+  { state: 'CONTRATACAO', label: 'Contratação', color: '#a855f7' },
+  { state: 'VENDIDO', label: 'Vendido / Ganho', color: '#26d866' },
+  { state: 'PERDIDO', label: 'Perdido', color: '#ff4d57' },
+];
+
 export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesProps = {}) {
   const queryClient = useQueryClient();
+  const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
   const [stateFilter, setStateFilter] = useState('');
   const [search, setSearch] = useState('');
   const [selectedOpp, setSelectedOpp] = useState<Opportunity | null>(null);
@@ -208,36 +219,106 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
   const items = oppsQuery.data?.items ?? [];
   const customers = customersList.data?.items ?? [];
 
+  const totalOpps = items.length;
+  const newOpps = items.filter((o) => o.state === 'NOVO').length;
+  const qualifiedOpps = items.filter((o) => o.state === 'QUALIFICADO').length;
+  const proposalOpps = items.filter((o) => o.state === 'PROPOSTA_APRESENTADA').length;
+  const wonOpps = items.filter((o) => o.state === 'VENDIDO').length;
+
   return (
     <div className="commercial-opportunities">
-      <div className="app-header" style={{ borderBottom: 'none', paddingInline: 0 }}>
-        <div>
-          <h2>Oportunidades</h2>
-          <span className="device">{items.length} negociações</span>
+      {/* KPI Metrics Summary Row */}
+      <div className="comm-kpi-grid">
+        <div className="comm-kpi-card">
+          <span className="comm-kpi-card__label">Total no Funil</span>
+          <span className="comm-kpi-card__value">{totalOpps}</span>
+          <span className="comm-kpi-card__subtext">Negociações ativas</span>
         </div>
-        <div className="actions">
-          {!isCreating && (
-            <button
-              onClick={() => {
-                setIsCreating(true);
-                setSelectedOpp(null);
-              }}
-            >
-              + Nova Oportunidade
-            </button>
-          )}
+        <div className="comm-kpi-card">
+          <span className="comm-kpi-card__label">Novos Leads</span>
+          <span className="comm-kpi-card__value" style={{ color: 'var(--brand-solar, #ffd400)' }}>
+            {newOpps}
+          </span>
+          <span className="comm-kpi-card__subtext">Aguardando qualificação</span>
+        </div>
+        <div className="comm-kpi-card">
+          <span className="comm-kpi-card__label">Qualificados</span>
+          <span className="comm-kpi-card__value" style={{ color: '#3b82f6' }}>
+            {qualifiedOpps}
+          </span>
+          <span className="comm-kpi-card__subtext">Em dimensionamento</span>
+        </div>
+        <div className="comm-kpi-card">
+          <span className="comm-kpi-card__label">Em Proposta</span>
+          <span className="comm-kpi-card__value" style={{ color: '#ff9f1c' }}>
+            {proposalOpps}
+          </span>
+          <span className="comm-kpi-card__subtext">Propostas apresentadas</span>
+        </div>
+        <div className="comm-kpi-card">
+          <span className="comm-kpi-card__label">Vendido / Ganho</span>
+          <span
+            className="comm-kpi-card__value"
+            style={{ color: 'var(--status-success, #26d866)' }}
+          >
+            {wonOpps}
+          </span>
+          <span className="comm-kpi-card__subtext">Contratos formalizados</span>
         </div>
       </div>
 
-      <div className="filter-bar">
+      {/* Toolbar */}
+      <div className="comm-toolbar">
+        <div className="comm-toolbar__title-group">
+          <h2 className="comm-toolbar__title">Oportunidades</h2>
+          <span className="comm-toolbar__count device">{items.length} negociações</span>
+        </div>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <div className="comm-view-toggle">
+            <button
+              type="button"
+              className={`comm-view-toggle__btn ${viewMode === 'kanban' ? 'comm-view-toggle__btn--active' : ''}`}
+              onClick={() => setViewMode('kanban')}
+            >
+              Kanban
+            </button>
+            <button
+              type="button"
+              className={`comm-view-toggle__btn ${viewMode === 'table' ? 'comm-view-toggle__btn--active' : ''}`}
+              onClick={() => setViewMode('table')}
+            >
+              Tabela
+            </button>
+          </div>
+
+          <div className="actions" style={{ margin: 0 }}>
+            {!isCreating && (
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setIsCreating(true);
+                  setSelectedOpp(null);
+                }}
+              >
+                + Nova Oportunidade
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Filter bar */}
+      <div className="comm-filter-bar">
         <input
           type="search"
+          className="comm-search-input"
           placeholder="Buscar por código, título ou cliente…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           aria-label="Buscar oportunidades"
         />
         <select
+          className="comm-filter-select"
           value={stateFilter}
           onChange={(e) => setStateFilter(e.target.value)}
           aria-label="Filtrar por estado do funil"
@@ -247,21 +328,19 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
           <option value="QUALIFICADO">Qualificado</option>
           <option value="LEVANTAMENTO">Levantamento</option>
           <option value="DIMENSIONAMENTO">Dimensionamento</option>
-          <option value="PROPOSTA">Proposta</option>
-          <option value="NEGOCIACAO">Negociação</option>
+          <option value="PROPOSTA_APRESENTADA">Proposta Apresentada</option>
           <option value="CONTRATACAO">Contratação</option>
           <option value="VENDIDO">Vendido</option>
           <option value="PERDIDO">Perdido</option>
-          <option value="CANCELADO">Cancelado</option>
         </select>
       </div>
 
+      {/* Create form panel */}
       {isCreating && (
         <section className="panel" aria-label="Cadastro de nova oportunidade">
-          <h3>Nova Oportunidade</h3>
-          <p className="device">
-            A oportunidade é criada em conjunto com sua primeira atividade comercial obrigatória.
-          </p>
+          <h3 style={{ fontSize: '18px', fontWeight: 700, margin: '0 0 16px' }}>
+            Cadastrar Nova Oportunidade
+          </h3>
           <Feedback error={createMutation.error} />
 
           <form
@@ -272,13 +351,26 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
           >
             <div className="form-grid">
               <label>
+                Título da Negociação *
+                <input
+                  type="text"
+                  className="ui-input"
+                  required
+                  placeholder="ex: Sistema Residencial 6kWp"
+                  value={formTitle}
+                  onChange={(e) => setFormTitle(e.target.value)}
+                />
+              </label>
+
+              <label>
                 Cliente *
                 <select
+                  className="ui-input"
                   required
                   value={formCustomerId}
                   onChange={(e) => setFormCustomerId(e.target.value)}
                 >
-                  <option value="">Selecione o cliente…</option>
+                  <option value="">Selecione um cliente cadastrado</option>
                   {customers.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.legalName} {c.taxId ? `(${c.taxId})` : ''}
@@ -288,20 +380,10 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
               </label>
 
               <label>
-                Título da Negociação *
-                <input
-                  type="text"
-                  required
-                  placeholder="ex: Sistema Residencial 5 kWp"
-                  value={formTitle}
-                  onChange={(e) => setFormTitle(e.target.value)}
-                />
-              </label>
-
-              <label>
                 Consumo Médio Estimado (kWh/mês)
                 <input
                   type="number"
+                  className="ui-input"
                   placeholder="ex: 550"
                   value={formEstimatedConsumption}
                   onChange={(e) => setFormEstimatedConsumption(e.target.value)}
@@ -311,6 +393,7 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
               <label>
                 Temperatura / Prioridade
                 <select
+                  className="ui-input"
                   value={formPriority}
                   onChange={(e) => setFormPriority(e.target.value as 'WARM' | 'COLD' | 'HOT')}
                 >
@@ -324,6 +407,7 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
                 Resumo da Necessidade *
                 <input
                   type="text"
+                  className="ui-input"
                   required
                   placeholder="ex: Reduzir conta de luz de R$ 600 para taxa mínima"
                   value={formNeedSummary}
@@ -334,19 +418,28 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
 
             <fieldset
               style={{
-                marginTop: '1rem',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-sm)',
-                padding: '1rem',
+                marginTop: '1.25rem',
+                border: '1px solid var(--border-default, #29302b)',
+                borderRadius: '8px',
+                padding: '1.25rem',
+                background: 'var(--surface-elevated, #1c211d)',
               }}
             >
-              <legend>
-                <strong>Primeira Atividade Obrigatória (Gate de Entrada)</strong>
+              <legend
+                style={{
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  color: 'var(--brand-solar, #ffd400)',
+                  padding: '0 8px',
+                }}
+              >
+                Primeira Atividade Obrigatória (Gate de Entrada)
               </legend>
               <div className="form-grid">
                 <label>
                   Tipo de Atividade
                   <select
+                    className="ui-input"
                     value={formActType}
                     onChange={(e) =>
                       setFormActType(
@@ -367,6 +460,7 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
                   Assunto da Atividade *
                   <input
                     type="text"
+                    className="ui-input"
                     required
                     placeholder="ex: Contatar cliente para coletar fatura de energia"
                     value={formActSubject}
@@ -378,6 +472,7 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
                   Data e Hora do Agendamento *
                   <input
                     type="datetime-local"
+                    className="ui-input"
                     required
                     value={formActDue}
                     onChange={(e) => setFormActDue(e.target.value)}
@@ -386,38 +481,34 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
               </div>
             </fieldset>
 
-            <div className="actions" style={{ marginTop: '1rem' }}>
-              <button type="submit" disabled={createMutation.isPending}>
+            <div className="actions" style={{ marginTop: '1.25rem' }}>
+              <Button type="submit" variant="primary" disabled={createMutation.isPending}>
                 {createMutation.isPending ? 'Salvando…' : 'Criar Oportunidade'}
-              </button>
-              <button
-                type="button"
-                style={{ background: 'var(--color-surface)', color: 'var(--text-primary)' }}
-                onClick={() => setIsCreating(false)}
-              >
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => setIsCreating(false)}>
                 Cancelar
-              </button>
+              </Button>
             </div>
           </form>
         </section>
       )}
 
+      {/* Opportunity detail panel */}
       {selectedOpp && (
-        <section className="panel" aria-label="Detalhes da oportunidade">
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: '0.5rem',
-            }}
-          >
+        <section className="panel comm-detail-panel" aria-label="Detalhes da oportunidade">
+          <div className="comm-detail-header">
             <div>
-              <h3>
+              <h3
+                style={{
+                  fontSize: '20px',
+                  fontWeight: 700,
+                  margin: '0 0 6px',
+                  color: 'var(--text-primary, #f5f7f5)',
+                }}
+              >
                 [{selectedOpp.code}] {selectedOpp.title}
               </h3>
-              <p className="device">
+              <p className="device" style={{ margin: 0, fontSize: '13px' }}>
                 Estágio da esteira:{' '}
                 <span
                   className={`badge badge-${(detailQuery.data?.state ?? selectedOpp.state).toLowerCase()}`}
@@ -427,92 +518,57 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
                 | Versão: {detailQuery.data?.version ?? selectedOpp.version}
               </p>
             </div>
-            <button
-              style={{ background: 'var(--color-surface)', color: 'var(--text-primary)' }}
-              onClick={() => setSelectedOpp(null)}
-            >
+            <Button variant="secondary" size="compact" onClick={() => setSelectedOpp(null)}>
               Fechar
-            </button>
+            </Button>
           </div>
 
           {/* Sub Navigation Tabs */}
-          <div
-            style={{
-              display: 'flex',
-              gap: '0.5rem',
-              marginBlock: '1rem',
-              borderBottom: '1px solid var(--color-border)',
-              paddingBottom: '0.5rem',
-              flexWrap: 'wrap',
-            }}
-          >
+          <div className="comm-tabs-nav">
             <button
               type="button"
+              className={`comm-tab-btn ${oppTab === 'commercial' ? 'comm-tab-btn--active' : ''}`}
               aria-current={oppTab === 'commercial' ? 'page' : undefined}
-              style={{
-                background:
-                  oppTab === 'commercial' ? 'var(--brand-primary)' : 'var(--color-surface)',
-                color: oppTab === 'commercial' ? 'var(--color-surface)' : 'var(--text-primary)',
-              }}
               onClick={() => setOppTab('commercial')}
             >
               📋 Dados Comerciais
             </button>
             <button
               type="button"
+              className={`comm-tab-btn ${oppTab === 'consumption' ? 'comm-tab-btn--active' : ''}`}
               aria-current={oppTab === 'consumption' ? 'page' : undefined}
-              style={{
-                background:
-                  oppTab === 'consumption' ? 'var(--brand-primary)' : 'var(--color-surface)',
-                color: oppTab === 'consumption' ? 'var(--color-surface)' : 'var(--text-primary)',
-              }}
               onClick={() => setOppTab('consumption')}
             >
               ⚡ Consumo & Vistoria
             </button>
             <button
               type="button"
+              className={`comm-tab-btn ${oppTab === 'design' ? 'comm-tab-btn--active' : ''}`}
               aria-current={oppTab === 'design' ? 'page' : undefined}
-              style={{
-                background: oppTab === 'design' ? 'var(--brand-primary)' : 'var(--color-surface)',
-                color: oppTab === 'design' ? 'var(--color-surface)' : 'var(--text-primary)',
-              }}
               onClick={() => setOppTab('design')}
             >
               ☀️ Dimensionamento & Custos
             </button>
             <button
               type="button"
+              className={`comm-tab-btn ${oppTab === 'proposals' ? 'comm-tab-btn--active' : ''}`}
               aria-current={oppTab === 'proposals' ? 'page' : undefined}
-              style={{
-                background:
-                  oppTab === 'proposals' ? 'var(--brand-primary)' : 'var(--color-surface)',
-                color: oppTab === 'proposals' ? 'var(--color-surface)' : 'var(--text-primary)',
-              }}
               onClick={() => setOppTab('proposals')}
             >
               📄 Propostas Comerciais
             </button>
             <button
               type="button"
+              className={`comm-tab-btn ${oppTab === 'contracts' ? 'comm-tab-btn--active' : ''}`}
               aria-current={oppTab === 'contracts' ? 'page' : undefined}
-              style={{
-                background:
-                  oppTab === 'contracts' ? 'var(--brand-primary)' : 'var(--color-surface)',
-                color: oppTab === 'contracts' ? 'var(--color-surface)' : 'var(--text-primary)',
-              }}
               onClick={() => setOppTab('contracts')}
             >
               📝 Contratos & Documentos
             </button>
             <button
               type="button"
+              className={`comm-tab-btn ${oppTab === 'financial' ? 'comm-tab-btn--active' : ''}`}
               aria-current={oppTab === 'financial' ? 'page' : undefined}
-              style={{
-                background:
-                  oppTab === 'financial' ? 'var(--brand-primary)' : 'var(--color-surface)',
-                color: oppTab === 'financial' ? 'var(--color-surface)' : 'var(--text-primary)',
-              }}
               onClick={() => setOppTab('financial')}
             >
               💰 Financeiro & Margem
@@ -521,170 +577,251 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
 
           {oppTab === 'commercial' && (
             <div style={{ marginTop: '1rem' }}>
-              <p>
-                <strong>Necessidade:</strong> {selectedOpp.needSummary}
-              </p>
-              {selectedOpp.estimatedConsumption && (
-                <p>
-                  <strong>Consumo estimado:</strong> {selectedOpp.estimatedConsumption} kWh/mês
+              <div
+                style={{
+                  background: 'var(--surface-elevated, #1c211d)',
+                  border: '1px solid var(--border-default, #29302b)',
+                  borderRadius: '8px',
+                  padding: '16px',
+                  display: 'grid',
+                  gap: '8px',
+                }}
+              >
+                <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-primary, #f5f7f5)' }}>
+                  <strong>Necessidade:</strong> {selectedOpp.needSummary}
                 </p>
-              )}
+                {selectedOpp.estimatedConsumption && (
+                  <p
+                    style={{ margin: 0, fontSize: '14px', color: 'var(--text-secondary, #9ba49e)' }}
+                  >
+                    <strong>Consumo estimado:</strong> {selectedOpp.estimatedConsumption} kWh/mês
+                  </p>
+                )}
+              </div>
 
               {/* Stepper Commands */}
-              <div className="actions" style={{ marginBlock: '1rem' }}>
+              <div className="actions" style={{ marginBlock: '1.25rem' }}>
                 {selectedOpp.state === 'NOVO' && (
-                  <button
+                  <Button
+                    variant="primary"
                     onClick={() => {
                       setQualifySummary(selectedOpp.needSummary);
                       setIsQualifying(true);
                     }}
                   >
                     ✔ Qualificar Oportunidade (Gate A)
-                  </button>
+                  </Button>
                 )}
 
                 {!['PERDIDO', 'CANCELADO', 'VENDIDO'].includes(selectedOpp.state) && (
-                  <button
-                    style={{
-                      background: 'var(--color-surface)',
-                      color: 'var(--status-danger)',
-                      borderColor: 'var(--status-danger)',
-                    }}
-                    onClick={() => setIsLosing(true)}
-                  >
+                  <Button variant="danger" onClick={() => setIsLosing(true)}>
                     Registrar Perda
-                  </button>
+                  </Button>
                 )}
 
                 {['PERDIDO', 'CANCELADO'].includes(selectedOpp.state) && canReopen && (
-                  <button onClick={() => setIsReopening(true)}>↺ Reabrir Oportunidade</button>
+                  <Button variant="secondary" onClick={() => setIsReopening(true)}>
+                    ↺ Reabrir Oportunidade
+                  </Button>
                 )}
               </div>
 
               {isQualifying && (
-                <div className="notice" style={{ marginBlock: '1rem' }}>
-                  <h4>Qualificação Comercial (Gate A)</h4>
-                  <p className="device">
+                <div
+                  className="notice"
+                  style={{
+                    marginBlock: '1rem',
+                    flexDirection: 'column',
+                    alignItems: 'stretch',
+                    borderLeftColor: '#3b82f6',
+                    background: 'rgba(59, 130, 246, 0.08)',
+                  }}
+                >
+                  <h4
+                    style={{
+                      margin: '0 0 4px',
+                      fontSize: '15px',
+                      color: 'var(--text-primary, #f5f7f5)',
+                    }}
+                  >
+                    Qualificação Comercial (Gate A)
+                  </h4>
+                  <p className="device" style={{ margin: '0 0 10px' }}>
                     Confirme que a necessidade foi identificada e os contatos do cliente estão
                     completos.
                   </p>
                   <Feedback error={qualifyMutation.error} />
-                  <label>
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     Resumo Confirmado da Necessidade *
                     <input
                       type="text"
+                      className="ui-input"
                       required
                       value={qualifySummary}
                       onChange={(e) => setQualifySummary(e.target.value)}
                     />
                   </label>
-                  <div className="actions">
-                    <button
+                  <div className="actions" style={{ marginTop: '10px' }}>
+                    <Button
+                      variant="primary"
                       onClick={() => qualifyMutation.mutate()}
                       disabled={qualifyMutation.isPending}
                     >
                       Confirmar Qualificação
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
-                      style={{ background: 'var(--color-surface)', color: 'var(--text-primary)' }}
+                      variant="secondary"
                       onClick={() => setIsQualifying(false)}
                     >
                       Cancelar
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
 
               {isLosing && (
-                <div className="notice error" style={{ marginBlock: '1rem' }}>
-                  <h4>Registrar Perda Comercial</h4>
+                <div
+                  className="notice error"
+                  style={{
+                    marginBlock: '1rem',
+                    flexDirection: 'column',
+                    alignItems: 'stretch',
+                  }}
+                >
+                  <h4 style={{ margin: '0 0 4px', fontSize: '15px' }}>
+                    Registrar Perda da Negociação
+                  </h4>
                   <Feedback error={loseMutation.error} />
-                  <label>
-                    Motivo da Perda *
-                    <select value={lossReason} onChange={(e) => setLossReason(e.target.value)}>
-                      <option value="PRECO_ELEVADO">Preço elevado</option>
-                      <option value="CONCORRENTE">Perdido para concorrente</option>
-                      <option value="DESISTENCIA">Desistência do cliente</option>
-                      <option value="INVIABILIDADE_TECNICA">Inviabilidade técnica</option>
-                      <option value="FINANCIAMENTO_RECUSADO">Financiamento recusado</option>
-                    </select>
-                  </label>
-                  <label>
-                    Observações
-                    <input
-                      type="text"
-                      placeholder="Detalhes adicionais…"
-                      value={lossNotes}
-                      onChange={(e) => setLossNotes(e.target.value)}
-                    />
-                  </label>
-                  <div className="actions">
-                    <button onClick={() => loseMutation.mutate()} disabled={loseMutation.isPending}>
-                      Confirmar Perda
-                    </button>
-                    <button
-                      type="button"
-                      style={{ background: 'var(--color-surface)', color: 'var(--text-primary)' }}
-                      onClick={() => setIsLosing(false)}
+                  <div className="form-grid" style={{ marginTop: '8px' }}>
+                    <label>
+                      Motivo da Perda *
+                      <select
+                        className="ui-input"
+                        value={lossReason}
+                        onChange={(e) => setLossReason(e.target.value)}
+                      >
+                        <option value="PRECO_ELEVADO">
+                          Preço Elevado / Concorrente Mais Barato
+                        </option>
+                        <option value="DESISTENCIA_CLIENTE">
+                          Cliente Desistiu do Investimento
+                        </option>
+                        <option value="VIABILIDADE_TECNICA">Inviabilidade Técnica / Telhado</option>
+                        <option value="PROBLEMAS_CREDITO">Crédito / Financiamento Reprovado</option>
+                        <option value="FALTA_CONTATO">Cliente Não Responde Mais</option>
+                        <option value="OUTRO">Outro Motivo</option>
+                      </select>
+                    </label>
+                    <label style={{ gridColumn: '1 / -1' }}>
+                      Observações Adicionais
+                      <input
+                        type="text"
+                        className="ui-input"
+                        placeholder="Contexto da decisão do cliente"
+                        value={lossNotes}
+                        onChange={(e) => setLossNotes(e.target.value)}
+                      />
+                    </label>
+                  </div>
+                  <div className="actions" style={{ marginTop: '10px' }}>
+                    <Button
+                      variant="danger"
+                      onClick={() => loseMutation.mutate()}
+                      disabled={loseMutation.isPending}
                     >
+                      Confirmar Perda
+                    </Button>
+                    <Button type="button" variant="secondary" onClick={() => setIsLosing(false)}>
                       Cancelar
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
 
               {isReopening && (
-                <div className="notice" style={{ marginBlock: '1rem' }}>
-                  <h4>Reabertura de Oportunidade</h4>
+                <div
+                  className="notice"
+                  style={{
+                    marginBlock: '1rem',
+                    flexDirection: 'column',
+                    alignItems: 'stretch',
+                  }}
+                >
+                  <h4 style={{ margin: '0 0 4px', fontSize: '15px' }}>
+                    Reabrir Negociação (Governança)
+                  </h4>
                   <Feedback error={reopenMutation.error} />
-                  <label>
-                    Justificativa de Reabertura *
+                  <label
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '6px',
+                      marginTop: '8px',
+                    }}
+                  >
+                    Justificativa Obrigatória *
                     <input
                       type="text"
+                      className="ui-input"
                       required
-                      placeholder="Informe o motivo da reabertura…"
+                      placeholder="ex: Cliente retomou contato após nova condição de financiamento"
                       value={reopenJustification}
                       onChange={(e) => setReopenJustification(e.target.value)}
                     />
                   </label>
-                  <div className="actions">
-                    <button
+                  <div className="actions" style={{ marginTop: '10px' }}>
+                    <Button
+                      variant="primary"
                       onClick={() => reopenMutation.mutate()}
                       disabled={reopenMutation.isPending}
                     >
-                      Confirmar Reabertura
-                    </button>
-                    <button
-                      type="button"
-                      style={{ background: 'var(--color-surface)', color: 'var(--text-primary)' }}
-                      onClick={() => setIsReopening(false)}
-                    >
+                      Reabrir Negociação
+                    </Button>
+                    <Button type="button" variant="secondary" onClick={() => setIsReopening(false)}>
                       Cancelar
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
 
-              {detailQuery.data && (
-                <div style={{ marginTop: '1.5rem' }}>
-                  <h4>Histórico de Transições da Esteira</h4>
+              {/* Status and Activity History */}
+              <div style={{ marginTop: '1.5rem' }}>
+                <h4
+                  style={{
+                    fontSize: '15px',
+                    fontWeight: 700,
+                    margin: '0 0 10px',
+                    color: 'var(--text-primary, #f5f7f5)',
+                  }}
+                >
+                  Histórico de Transições
+                </h4>
+                {detailQuery.data?.transitions?.length === 0 ? (
+                  <p className="device">Nenhuma transição registrada.</p>
+                ) : (
                   <div className="timeline">
-                    {detailQuery.data.transitions?.map((t) => (
-                      <div key={t.id} className="timeline-item">
-                        <strong>
-                          {t.fromState ? `${t.fromState} → ` : ''}
-                          {t.toState}
-                        </strong>{' '}
-                        <span className="device">
-                          ({t.reason}) — {new Date(t.createdAt).toLocaleString()}
-                        </span>
-                        {t.notes && <div>{t.notes}</div>}
+                    {detailQuery.data?.transitions?.map((t) => (
+                      <div className="timeline-item" key={t.id}>
+                        <div>
+                          <strong>
+                            {t.fromState ? `${t.fromState} → ` : ''}
+                            {t.toState}
+                          </strong>{' '}
+                          <span className="device">({t.reason})</span>
+                        </div>
+                        <div className="device" style={{ fontSize: '12px' }}>
+                          Por: {t.actorUserId ?? 'Sistema'} em{' '}
+                          {new Date(t.createdAt).toLocaleString('pt-BR')}
+                        </div>
+                        {t.notes && (
+                          <p style={{ margin: '4px 0 0 0', fontSize: '13px' }}>{t.notes}</p>
+                        )}
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
 
@@ -761,59 +898,137 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
         </section>
       )}
 
-      {/* Table view */}
-      <div className="table-wrapper">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Código</th>
-              <th>Título / Cliente</th>
-              <th>Estágio</th>
-              <th>Prioridade</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {oppsQuery.isPending && (
-              <tr>
-                <td colSpan={5}>Carregando oportunidades…</td>
-              </tr>
-            )}
-            {items.length === 0 && !oppsQuery.isPending && (
-              <tr>
-                <td colSpan={5} style={{ textAlign: 'center', padding: '2rem' }}>
-                  Nenhuma oportunidade encontrada.
-                </td>
-              </tr>
-            )}
-            {items.map((opp) => (
-              <tr key={opp.id}>
-                <td>
-                  <strong>{opp.code}</strong>
-                </td>
-                <td>
-                  <div>
-                    <strong>{opp.title}</strong>
+      {/* Main View: Kanban vs Table */}
+      {viewMode === 'kanban' ? (
+        <div className="kanban-board">
+          {KANBAN_STAGES.map((col) => {
+            const stageOpps = items.filter((opp) => opp.state === col.state);
+            return (
+              <div className="kanban-col" key={col.state}>
+                <div className="kanban-col__header">
+                  <div className="kanban-col__title">
+                    <span
+                      className="kanban-col__indicator"
+                      style={{ background: col.color }}
+                      aria-hidden="true"
+                    />
+                    {col.label}
                   </div>
-                  <div className="device">{opp.customer?.legalName}</div>
-                </td>
-                <td>
-                  <span className={`badge badge-${opp.state.toLowerCase()}`}>{opp.state}</span>
-                </td>
-                <td>{opp.priority}</td>
-                <td>
-                  <button
-                    style={{ padding: '0.25rem 0.75rem', fontSize: '0.8125rem' }}
-                    onClick={() => setSelectedOpp(opp)}
-                  >
-                    Abrir
-                  </button>
-                </td>
+                  <span className="kanban-col__count">{stageOpps.length}</span>
+                </div>
+
+                <div className="kanban-col__cards">
+                  {stageOpps.length === 0 ? (
+                    <p
+                      style={{
+                        fontSize: '12px',
+                        color: 'var(--text-disabled, #626a65)',
+                        textAlign: 'center',
+                        padding: '16px 0',
+                      }}
+                    >
+                      Nenhuma negociação
+                    </p>
+                  ) : (
+                    stageOpps.map((opp) => (
+                      <article
+                        className="kanban-card"
+                        key={opp.id}
+                        onClick={() => setSelectedOpp(opp)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') setSelectedOpp(opp);
+                        }}
+                      >
+                        <div className="kanban-card__top">
+                          <span className="kanban-card__code">{opp.code}</span>
+                          <span
+                            className={`badge badge-${opp.state.toLowerCase()}`}
+                            style={{ fontSize: '10px', padding: '1px 6px' }}
+                          >
+                            {opp.state}
+                          </span>
+                        </div>
+                        <div className="kanban-card__title">{opp.title}</div>
+                        <p className="kanban-card__customer">
+                          {opp.customer?.legalName ?? 'Cliente não informado'}
+                        </p>
+                        <div className="kanban-card__footer">
+                          <span className="kanban-card__metric">
+                            {opp.estimatedConsumption ? `${opp.estimatedConsumption} kWh/mês` : '—'}
+                          </span>
+                          <span
+                            style={{ fontSize: '11px', color: 'var(--text-secondary, #9ba49e)' }}
+                          >
+                            {opp.priority === 'HOT'
+                              ? '🔥 Quente'
+                              : opp.priority === 'COLD'
+                                ? '❄️ Frio'
+                                : '⚡ Morno'}
+                          </span>
+                        </div>
+                      </article>
+                    ))
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="table-wrapper">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Título / Cliente</th>
+                <th>Estágio</th>
+                <th>Prioridade</th>
+                <th style={{ textAlign: 'right' }}>Ações</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {oppsQuery.isPending && (
+                <tr>
+                  <td colSpan={5} style={{ textAlign: 'center', padding: '2rem' }}>
+                    Carregando oportunidades…
+                  </td>
+                </tr>
+              )}
+              {items.length === 0 && !oppsQuery.isPending && (
+                <tr>
+                  <td colSpan={5} style={{ textAlign: 'center', padding: '2rem' }}>
+                    Nenhuma oportunidade encontrada.
+                  </td>
+                </tr>
+              )}
+              {items.map((opp) => (
+                <tr key={opp.id}>
+                  <td>
+                    <strong style={{ color: 'var(--brand-solar, #ffd400)' }}>{opp.code}</strong>
+                  </td>
+                  <td>
+                    <div>
+                      <strong>{opp.title}</strong>
+                    </div>
+                    <div className="device">{opp.customer?.legalName}</div>
+                  </td>
+                  <td>
+                    <span className={`badge badge-${opp.state.toLowerCase()}`}>{opp.state}</span>
+                  </td>
+                  <td>{opp.priority}</td>
+                  <td style={{ textAlign: 'right' }}>
+                    <Button variant="secondary" size="compact" onClick={() => setSelectedOpp(opp)}>
+                      Abrir
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

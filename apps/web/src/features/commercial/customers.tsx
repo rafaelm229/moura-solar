@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, result, allows } from '../identity/client';
 import { Feedback } from '../identity/feedback';
+import { Button } from '../../ui/Button';
 import type { Schemas } from '@moura-solar/api-client';
 
 type Customer = Schemas['CustomerViewDto'];
@@ -154,17 +155,53 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
   }
 
   const items = customersQuery.data?.items ?? [];
+  const activeCount = items.filter((c) => c.status === 'ACTIVE').length;
+  const pfCount = items.filter((c) => c.kind === 'PERSON').length;
+  const pjCount = items.filter((c) => c.kind === 'COMPANY').length;
 
   return (
     <div className="commercial-customers">
-      <div className="app-header" style={{ borderBottom: 'none', paddingInline: 0 }}>
-        <div>
-          <h2>Clientes</h2>
-          <span className="device">{items.length} exibidos</span>
+      {/* KPI Metrics Summary Row */}
+      <div className="comm-kpi-grid">
+        <div className="comm-kpi-card">
+          <span className="comm-kpi-card__label">Total Clientes</span>
+          <span className="comm-kpi-card__value">{items.length}</span>
+          <span className="comm-kpi-card__subtext">Cadastros no sistema</span>
+        </div>
+        <div className="comm-kpi-card">
+          <span className="comm-kpi-card__label">Clientes Ativos</span>
+          <span
+            className="comm-kpi-card__value"
+            style={{ color: 'var(--status-success, #26d866)' }}
+          >
+            {activeCount}
+          </span>
+          <span className="comm-kpi-card__subtext">Em carteira comercial</span>
+        </div>
+        <div className="comm-kpi-card">
+          <span className="comm-kpi-card__label">Pessoas Físicas</span>
+          <span className="comm-kpi-card__value">{pfCount}</span>
+          <span className="comm-kpi-card__subtext">Residencial / Rural</span>
+        </div>
+        <div className="comm-kpi-card">
+          <span className="comm-kpi-card__label">Pessoas Jurídicas</span>
+          <span className="comm-kpi-card__value" style={{ color: 'var(--brand-solar, #ffd400)' }}>
+            {pjCount}
+          </span>
+          <span className="comm-kpi-card__subtext">Comercial / Industrial</span>
+        </div>
+      </div>
+
+      {/* Toolbar */}
+      <div className="comm-toolbar">
+        <div className="comm-toolbar__title-group">
+          <h2 className="comm-toolbar__title">Clientes</h2>
+          <span className="comm-toolbar__count device">{items.length} exibidos</span>
         </div>
         <div className="actions">
           {canCreate && !isCreating && (
-            <button
+            <Button
+              variant="primary"
               onClick={() => {
                 setIsCreating(true);
                 setSelectedCustomer(null);
@@ -172,20 +209,23 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
               }}
             >
               + Novo Cliente
-            </button>
+            </Button>
           )}
         </div>
       </div>
 
-      <div className="filter-bar">
+      {/* Filter bar */}
+      <div className="comm-filter-bar">
         <input
           type="search"
+          className="comm-search-input"
           placeholder="Buscar por nome, CPF/CNPJ, telefone…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           aria-label="Buscar clientes"
         />
         <select
+          className="comm-filter-select"
           value={status}
           onChange={(e) => setStatus(e.target.value)}
           aria-label="Filtrar por status"
@@ -196,28 +236,32 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
         </select>
       </div>
 
+      {/* Create form panel */}
       {isCreating && (
         <section className="panel" aria-label="Cadastro de novo cliente">
-          <h3>Cadastrar Novo Cliente</h3>
+          <h3 style={{ fontSize: '18px', fontWeight: 700, margin: '0 0 16px' }}>
+            Cadastrar Novo Cliente
+          </h3>
           <Feedback error={createMutation.error} />
 
           {duplicatesWarning.length > 0 && (
             <div
               className="notice"
-              style={{ borderColor: 'var(--status-warning)', background: '#fffbeb' }}
+              style={{
+                borderColor: 'var(--status-warning, #ff9f1c)',
+                background: 'rgba(255, 159, 28, 0.12)',
+              }}
             >
               <strong>Atenção: Possíveis duplicidades encontradas</strong>
               <ul style={{ margin: '0.5rem 0', paddingLeft: '1.25rem' }}>
                 {duplicatesWarning.map((d, i) => (
                   <li key={i}>
                     [{d.strength === 'STRONG' ? 'Forte' : 'Moderada'}] {d.reason}
-                    <button
+                    <Button
+                      variant="secondary"
+                      size="compact"
                       type="button"
-                      style={{
-                        marginLeft: '0.5rem',
-                        padding: '0.1rem 0.4rem',
-                        fontSize: '0.75rem',
-                      }}
+                      style={{ marginLeft: '0.5rem', padding: '2px 8px', fontSize: '12px' }}
                       onClick={() => {
                         setSelectedCustomer({
                           id: d.customerId,
@@ -227,7 +271,7 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
                       }}
                     >
                       Abrir existente
-                    </button>
+                    </Button>
                   </li>
                 ))}
               </ul>
@@ -252,6 +296,7 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
               <label>
                 Tipo de Pessoa
                 <select
+                  className="ui-input"
                   value={formKind}
                   onChange={(e) => setFormKind(e.target.value as 'PERSON' | 'COMPANY')}
                 >
@@ -264,6 +309,7 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
                 Nome Completo / Razão Social *
                 <input
                   type="text"
+                  className="ui-input"
                   required
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
@@ -276,6 +322,7 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
                   Nome Fantasia
                   <input
                     type="text"
+                    className="ui-input"
                     value={formTradeName}
                     onChange={(e) => setFormTradeName(e.target.value)}
                     placeholder="ex: Silva Materiais"
@@ -287,6 +334,7 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
                 {formKind === 'PERSON' ? 'CPF' : 'CNPJ'}
                 <input
                   type="text"
+                  className="ui-input"
                   value={formTaxId}
                   onChange={(e) => setFormTaxId(e.target.value)}
                   placeholder={formKind === 'PERSON' ? '000.000.000-00' : '00.000.000/0001-00'}
@@ -297,6 +345,7 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
                 Telefone / WhatsApp
                 <input
                   type="tel"
+                  className="ui-input"
                   value={formPhone}
                   onChange={(e) => setFormPhone(e.target.value)}
                   placeholder="(31) 98765-4321"
@@ -307,6 +356,7 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
                 E-mail
                 <input
                   type="email"
+                  className="ui-input"
                   value={formEmail}
                   onChange={(e) => setFormEmail(e.target.value)}
                   placeholder="cliente@exemplo.com"
@@ -317,6 +367,7 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
                 Rua / Logradouro
                 <input
                   type="text"
+                  className="ui-input"
                   value={formStreet}
                   onChange={(e) => setFormStreet(e.target.value)}
                   placeholder="Rua das Flores"
@@ -327,6 +378,7 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
                 Número
                 <input
                   type="text"
+                  className="ui-input"
                   value={formNumber}
                   onChange={(e) => setFormNumber(e.target.value)}
                   placeholder="123"
@@ -337,6 +389,7 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
                 Cidade
                 <input
                   type="text"
+                  className="ui-input"
                   value={formCity}
                   onChange={(e) => setFormCity(e.target.value)}
                   placeholder="Belo Horizonte"
@@ -347,6 +400,7 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
                 Estado
                 <input
                   type="text"
+                  className="ui-input"
                   maxLength={2}
                   value={formState}
                   onChange={(e) => setFormState(e.target.value.toUpperCase())}
@@ -355,59 +409,100 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
               </label>
             </div>
 
-            <div className="actions" style={{ marginTop: '1rem' }}>
-              <button type="submit" disabled={createMutation.isPending}>
+            <div className="actions" style={{ marginTop: '1.25rem' }}>
+              <Button type="submit" variant="primary" disabled={createMutation.isPending}>
                 {createMutation.isPending ? 'Salvando…' : 'Salvar Cliente'}
-              </button>
-              <button
-                type="button"
-                style={{ background: 'var(--color-surface)', color: 'var(--text-primary)' }}
-                onClick={() => setIsCreating(false)}
-              >
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => setIsCreating(false)}>
                 Cancelar
-              </button>
+              </Button>
             </div>
           </form>
         </section>
       )}
 
+      {/* Customer detail panel */}
       {selectedCustomer && (
-        <section className="panel" aria-label="Detalhe do cliente">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <section className="panel comm-detail-panel" aria-label="Detalhe do cliente">
+          <div className="comm-detail-header">
             <div>
-              <h3>{selectedCustomer.legalName}</h3>
-              {selectedCustomer.tradeName && <p>{selectedCustomer.tradeName}</p>}
+              <h3
+                style={{
+                  fontSize: '20px',
+                  fontWeight: 700,
+                  margin: '0 0 4px',
+                  color: 'var(--text-primary, #f5f7f5)',
+                }}
+              >
+                {selectedCustomer.legalName}
+              </h3>
+              {selectedCustomer.tradeName && (
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary, #9ba49e)' }}>
+                  {selectedCustomer.tradeName}
+                </p>
+              )}
             </div>
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
               <span
                 className={`badge ${selectedCustomer.status === 'ACTIVE' ? 'badge-ativo' : 'badge-cancelado'}`}
               >
                 {selectedCustomer.status === 'ACTIVE' ? 'Ativo' : 'Arquivado'}
               </span>
-              <button
-                style={{ background: 'var(--color-surface)', color: 'var(--text-primary)' }}
-                onClick={() => setSelectedCustomer(null)}
-              >
+              <Button variant="secondary" size="compact" onClick={() => setSelectedCustomer(null)}>
                 Fechar
-              </button>
+              </Button>
             </div>
           </div>
 
           <div style={{ marginTop: '1rem' }}>
-            <p>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary, #9ba49e)' }}>
               <strong>Documento:</strong> {selectedCustomer.taxId || 'Não informado'} |{' '}
               <strong>Versão:</strong> {selectedCustomer.version}
             </p>
 
-            {customerDetailQuery.isPending && <p>Carregando detalhes…</p>}
+            {customerDetailQuery.isPending && (
+              <p role="status" className="id-status-text">
+                Carregando detalhes…
+              </p>
+            )}
+
             {customerDetailQuery.data && (
-              <div style={{ display: 'grid', gap: '1rem', marginTop: '1rem' }}>
-                <div>
-                  <h4>Contatos</h4>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 16rem), 1fr))',
+                  gap: '1rem',
+                  marginTop: '1rem',
+                }}
+              >
+                <div
+                  style={{
+                    background: 'var(--surface-elevated, #1c211d)',
+                    border: '1px solid var(--border-default, #29302b)',
+                    borderRadius: '8px',
+                    padding: '14px',
+                  }}
+                >
+                  <h4
+                    style={{
+                      margin: '0 0 8px',
+                      fontSize: '14px',
+                      color: 'var(--text-primary, #f5f7f5)',
+                    }}
+                  >
+                    Contatos
+                  </h4>
                   {customerDetailQuery.data.contacts?.length === 0 ? (
                     <p className="device">Nenhum contato cadastrado.</p>
                   ) : (
-                    <ul>
+                    <ul
+                      style={{
+                        margin: 0,
+                        paddingLeft: '1.25rem',
+                        fontSize: '13px',
+                        color: 'var(--text-secondary, #9ba49e)',
+                      }}
+                    >
                       {customerDetailQuery.data.contacts?.map((c) => (
                         <li key={c.id}>
                           <strong>[{c.type}]</strong> {c.value} {c.isPrimary && '(Principal)'}
@@ -417,12 +512,34 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
                   )}
                 </div>
 
-                <div>
-                  <h4>Unidades Consumidoras</h4>
+                <div
+                  style={{
+                    background: 'var(--surface-elevated, #1c211d)',
+                    border: '1px solid var(--border-default, #29302b)',
+                    borderRadius: '8px',
+                    padding: '14px',
+                  }}
+                >
+                  <h4
+                    style={{
+                      margin: '0 0 8px',
+                      fontSize: '14px',
+                      color: 'var(--text-primary, #f5f7f5)',
+                    }}
+                  >
+                    Unidades Consumidoras
+                  </h4>
                   {customerDetailQuery.data.utilityUnits?.length === 0 ? (
                     <p className="device">Nenhuma unidade consumidora cadastrada.</p>
                   ) : (
-                    <ul>
+                    <ul
+                      style={{
+                        margin: 0,
+                        paddingLeft: '1.25rem',
+                        fontSize: '13px',
+                        color: 'var(--text-secondary, #9ba49e)',
+                      }}
+                    >
                       {customerDetailQuery.data.utilityUnits?.map((u) => (
                         <li key={u.id}>
                           {u.distributorName} — Código: {u.externalCode || 'S/N'} ({u.consumerClass}
@@ -433,15 +550,38 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
                   )}
                 </div>
 
-                <div>
-                  <h4>Oportunidades</h4>
+                <div
+                  style={{
+                    background: 'var(--surface-elevated, #1c211d)',
+                    border: '1px solid var(--border-default, #29302b)',
+                    borderRadius: '8px',
+                    padding: '14px',
+                  }}
+                >
+                  <h4
+                    style={{
+                      margin: '0 0 8px',
+                      fontSize: '14px',
+                      color: 'var(--text-primary, #f5f7f5)',
+                    }}
+                  >
+                    Oportunidades
+                  </h4>
                   {customerDetailQuery.data.opportunities?.length === 0 ? (
                     <p className="device">Nenhuma oportunidade aberta.</p>
                   ) : (
-                    <ul>
+                    <ul
+                      style={{
+                        margin: 0,
+                        paddingLeft: '1.25rem',
+                        fontSize: '13px',
+                        color: 'var(--text-secondary, #9ba49e)',
+                      }}
+                    >
                       {customerDetailQuery.data.opportunities?.map((o) => (
                         <li key={o.id}>
-                          <strong>{o.code}</strong> — {o.title} [{o.state}]
+                          <strong style={{ color: 'var(--brand-solar, #ffd400)' }}>{o.code}</strong>{' '}
+                          — {o.title} [{o.state}]
                         </li>
                       ))}
                     </ul>
@@ -450,39 +590,36 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
               </div>
             )}
 
-            <div className="actions" style={{ marginTop: '1rem' }}>
+            <div className="actions" style={{ marginTop: '1.25rem' }}>
               {onCreateOpportunity && (
-                <button
+                <Button
+                  variant="primary"
                   onClick={() => {
                     onCreateOpportunity(selectedCustomer);
                   }}
                 >
                   + Nova Oportunidade
-                </button>
+                </Button>
               )}
 
               {canArchive && selectedCustomer.status === 'ACTIVE' && (
-                <button
-                  style={{
-                    background: 'var(--color-surface)',
-                    color: 'var(--status-danger)',
-                    borderColor: 'var(--status-danger)',
-                  }}
+                <Button
+                  variant="danger"
                   disabled={archiveMutation.isPending}
                   onClick={() => archiveMutation.mutate(selectedCustomer)}
                 >
                   Arquivar Cliente
-                </button>
+                </Button>
               )}
 
               {canArchive && selectedCustomer.status === 'ARCHIVED' && (
-                <button
-                  style={{ background: 'var(--brand-primary)' }}
+                <Button
+                  variant="primary"
                   disabled={restoreMutation.isPending}
                   onClick={() => restoreMutation.mutate(selectedCustomer)}
                 >
                   Restaurar Cliente
-                </button>
+                </Button>
               )}
             </div>
             <Feedback error={archiveMutation.error || restoreMutation.error} />
@@ -490,63 +627,64 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
         </section>
       )}
 
-      {/* Responsive Presentation: Table on Desktop, Cards on Mobile */}
-      <div className="desktop-view" style={{ display: 'contents' }}>
-        <div className="table-wrapper">
-          <table className="data-table">
-            <thead>
+      {/* Table view */}
+      <div className="table-wrapper">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Nome / Razão Social</th>
+              <th>CPF / CNPJ</th>
+              <th>Tipo</th>
+              <th>Status</th>
+              <th style={{ textAlign: 'right' }}>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {customersQuery.isPending && (
               <tr>
-                <th>Nome / Razão Social</th>
-                <th>CPF / CNPJ</th>
-                <th>Tipo</th>
-                <th>Status</th>
-                <th>Ações</th>
+                <td colSpan={5} style={{ textAlign: 'center', padding: '2rem' }}>
+                  Carregando clientes…
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {customersQuery.isPending && (
-                <tr>
-                  <td colSpan={5}>Carregando clientes…</td>
-                </tr>
-              )}
-              {items.length === 0 && !customersQuery.isPending && (
-                <tr>
-                  <td colSpan={5} style={{ textAlign: 'center', padding: '2rem' }}>
-                    Nenhum cliente encontrado.
-                  </td>
-                </tr>
-              )}
-              {items.map((cust) => (
-                <tr key={cust.id}>
-                  <td>
-                    <strong>{cust.legalName}</strong>
-                    {cust.tradeName && <div className="device">{cust.tradeName}</div>}
-                  </td>
-                  <td>{cust.taxId || '—'}</td>
-                  <td>{cust.kind === 'PERSON' ? 'Física' : 'Jurídica'}</td>
-                  <td>
-                    <span
-                      className={`badge ${cust.status === 'ACTIVE' ? 'badge-ativo' : 'badge-cancelado'}`}
-                    >
-                      {cust.status === 'ACTIVE' ? 'Ativo' : 'Arquivado'}
-                    </span>
-                  </td>
-                  <td>
-                    <button
-                      style={{ padding: '0.25rem 0.75rem', fontSize: '0.8125rem' }}
-                      onClick={() => {
-                        setSelectedCustomer(cust);
-                        if (onSelectCustomer) onSelectCustomer(cust);
-                      }}
-                    >
-                      Ver detalhes
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            )}
+            {items.length === 0 && !customersQuery.isPending && (
+              <tr>
+                <td colSpan={5} style={{ textAlign: 'center', padding: '2rem' }}>
+                  Nenhum cliente encontrado.
+                </td>
+              </tr>
+            )}
+            {items.map((cust) => (
+              <tr key={cust.id}>
+                <td>
+                  <strong>{cust.legalName}</strong>
+                  {cust.tradeName && <div className="device">{cust.tradeName}</div>}
+                </td>
+                <td>{cust.taxId || '—'}</td>
+                <td>{cust.kind === 'PERSON' ? 'Física' : 'Jurídica'}</td>
+                <td>
+                  <span
+                    className={`badge ${cust.status === 'ACTIVE' ? 'badge-ativo' : 'badge-cancelado'}`}
+                  >
+                    {cust.status === 'ACTIVE' ? 'Ativo' : 'Arquivado'}
+                  </span>
+                </td>
+                <td style={{ textAlign: 'right' }}>
+                  <Button
+                    variant="secondary"
+                    size="compact"
+                    onClick={() => {
+                      setSelectedCustomer(cust);
+                      if (onSelectCustomer) onSelectCustomer(cust);
+                    }}
+                  >
+                    Ver detalhes
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, result, allows } from '../identity/client';
 import { Feedback } from '../identity/feedback';
+import { Button } from '../../ui/Button';
 import type { Schemas } from '@moura-solar/api-client';
 
 type Activity = Schemas['ActivityViewDto'];
@@ -229,24 +230,62 @@ export function Activities() {
   const customers = customersList.data?.items ?? [];
   const opps = oppsList.data?.items ?? [];
 
+  const pendingCount = items.filter((a) => a.status === 'OPEN').length;
+  const overdueCount = items.filter(
+    (a) => a.status === 'OPEN' && new Date(a.dueAt).getTime() < Date.now(),
+  ).length;
+  const completedCount = items.filter((a) => a.status === 'COMPLETED').length;
+
   return (
     <div className="commercial-activities">
-      <div className="app-header" style={{ borderBottom: 'none', paddingInline: 0 }}>
-        <div>
-          <h2>Atividades Comerciais</h2>
-          <span className="device">{items.length} atividades</span>
+      {/* TOOLBAR */}
+      <div className="comm-toolbar">
+        <div className="comm-toolbar__title-group">
+          <h2 className="comm-toolbar__title">Atividades Comerciais</h2>
+          <span className="comm-toolbar__count">{items.length} atividades</span>
         </div>
-        <div className="actions">
+        <div className="comm-toolbar__actions">
           {canManage && !isCreating && (
-            <button
+            <Button
+              variant="primary"
               onClick={() => {
                 setIsCreating(true);
                 setSelectedActivity(null);
               }}
             >
-              Nova Atividade
-            </button>
+              + Nova Atividade
+            </Button>
           )}
+        </div>
+      </div>
+
+      {/* KPI METRIC CARDS */}
+      <div className="comm-kpi-grid">
+        <div className="comm-kpi-card">
+          <div className="comm-kpi-card__label">Total Registradas</div>
+          <div className="comm-kpi-card__value">{items.length}</div>
+          <div className="comm-kpi-card__subtext">Volume de tarefas</div>
+        </div>
+        <div className="comm-kpi-card">
+          <div className="comm-kpi-card__label">Pendentes</div>
+          <div className="comm-kpi-card__value" style={{ color: 'var(--brand-solar, #ffd400)' }}>
+            {pendingCount}
+          </div>
+          <div className="comm-kpi-card__subtext">Aguardando ação</div>
+        </div>
+        <div className="comm-kpi-card">
+          <div className="comm-kpi-card__label">Atrasadas</div>
+          <div className="comm-kpi-card__value" style={{ color: '#EF4444' }}>
+            {overdueCount}
+          </div>
+          <div className="comm-kpi-card__subtext">Prazo expirado</div>
+        </div>
+        <div className="comm-kpi-card">
+          <div className="comm-kpi-card__label">Concluídas</div>
+          <div className="comm-kpi-card__value" style={{ color: '#10B981' }}>
+            {completedCount}
+          </div>
+          <div className="comm-kpi-card__subtext">Finalizadas</div>
         </div>
       </div>
 
@@ -261,16 +300,12 @@ export function Activities() {
       />
 
       {/* FILTER TABS */}
-      <div className="filter-bar" role="tablist" aria-label="Filtro de atividades">
+      <div className="comm-tabs-nav" role="tablist" aria-label="Filtro de atividades">
         <button
           role="tab"
           aria-selected={tabFilter === 'PENDING'}
           aria-current={tabFilter === 'PENDING' ? 'true' : undefined}
-          style={
-            tabFilter === 'PENDING'
-              ? { background: 'var(--brand-primary)', color: '#fff' }
-              : { background: 'var(--color-surface)', color: 'var(--text-primary)' }
-          }
+          className={`comm-tab-btn ${tabFilter === 'PENDING' ? 'comm-tab-btn--active' : ''}`}
           onClick={() => setTabFilter('PENDING')}
         >
           Pendentes
@@ -279,11 +314,7 @@ export function Activities() {
           role="tab"
           aria-selected={tabFilter === 'OVERDUE'}
           aria-current={tabFilter === 'OVERDUE' ? 'true' : undefined}
-          style={
-            tabFilter === 'OVERDUE'
-              ? { background: 'var(--status-danger)', color: '#fff' }
-              : { background: 'var(--color-surface)', color: 'var(--text-primary)' }
-          }
+          className={`comm-tab-btn ${tabFilter === 'OVERDUE' ? 'comm-tab-btn--active' : ''}`}
           onClick={() => setTabFilter('OVERDUE')}
         >
           Atrasadas
@@ -292,155 +323,145 @@ export function Activities() {
           role="tab"
           aria-selected={tabFilter === 'ALL'}
           aria-current={tabFilter === 'ALL' ? 'true' : undefined}
-          style={
-            tabFilter === 'ALL'
-              ? { background: 'var(--brand-primary)', color: '#fff' }
-              : { background: 'var(--color-surface)', color: 'var(--text-primary)' }
-          }
+          className={`comm-tab-btn ${tabFilter === 'ALL' ? 'comm-tab-btn--active' : ''}`}
           onClick={() => setTabFilter('ALL')}
         >
           Todas
         </button>
       </div>
 
-      {/* CREATE ACTIVITY FORM */}
+      {/* CREATE ACTIVITY MODAL */}
       {isCreating && (
-        <section
-          className="auth-card"
-          style={{ maxWidth: '100%', marginBottom: '1.5rem' }}
-          aria-labelledby="create-activity-title"
-        >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '1rem',
-            }}
+        <div className="comm-modal-overlay">
+          <section
+            className="comm-modal-box"
+            style={{ maxWidth: '640px' }}
+            aria-labelledby="create-activity-title"
+            role="dialog"
+            aria-modal="true"
           >
-            <h3 id="create-activity-title">Agendar Nova Atividade</h3>
-            <button
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--text-secondary)',
-                fontSize: '1.25rem',
-              }}
-              onClick={() => setIsCreating(false)}
-            >
-              ✕
-            </button>
-          </div>
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              createMutation.mutate();
-            }}
-          >
-            <div className="form-grid">
-              <label>
-                Tipo de Atividade *
-                <select
-                  value={newType}
-                  onChange={(e) =>
-                    setNewType(
-                      e.target.value as 'CALL' | 'MESSAGE' | 'MEETING' | 'VISIT' | 'EMAIL' | 'TASK',
-                    )
-                  }
-                >
-                  <option value="CALL">Ligação</option>
-                  <option value="MESSAGE">WhatsApp / Mensagem</option>
-                  <option value="MEETING">Reunião</option>
-                  <option value="VISIT">Visita Técnica</option>
-                  <option value="TASK">Tarefa Interna</option>
-                </select>
-              </label>
-
-              <label>
-                Data e Hora Limite (Vencimento) *
-                <input
-                  type="datetime-local"
-                  required
-                  value={newDueAt}
-                  onChange={(e) => setNewDueAt(e.target.value)}
-                />
-              </label>
-
-              <label style={{ gridColumn: '1 / -1' }}>
-                Assunto / Objetivo *
-                <input
-                  type="text"
-                  required
-                  placeholder="ex: Primeiro contato para qualificação técnica"
-                  value={newSubject}
-                  onChange={(e) => setNewSubject(e.target.value)}
-                />
-              </label>
-
-              <label>
-                Cliente Vinculado (Opcional)
-                <select value={newCustomerId} onChange={(e) => setNewCustomerId(e.target.value)}>
-                  <option value="">Nenhum cliente selecionado</option>
-                  {customers.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.legalName} {c.taxId ? `(${c.taxId})` : ''}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label>
-                Oportunidade Vinculada (Opcional)
-                <select
-                  value={newOpportunityId}
-                  onChange={(e) => setNewOpportunityId(e.target.value)}
-                >
-                  <option value="">Nenhuma oportunidade selecionada</option>
-                  {opps.map((o) => (
-                    <option key={o.id} value={o.id}>
-                      [{o.code}] {o.title}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label style={{ gridColumn: '1 / -1' }}>
-                Descrição Detalhada / Instruções
-                <textarea
-                  rows={3}
-                  value={newDescription}
-                  onChange={(e) => setNewDescription(e.target.value)}
-                  placeholder="Orientações e contexto para a execução da atividade"
-                />
-              </label>
-            </div>
-
-            <div
-              style={{
-                display: 'flex',
-                gap: '1rem',
-                justifyContent: 'flex-end',
-                marginTop: '1.5rem',
-              }}
-            >
+            <div className="comm-modal-header">
+              <h3 id="create-activity-title" className="comm-modal-title">
+                Agendar Nova Atividade
+              </h3>
               <button
                 type="button"
                 style={{
                   background: 'transparent',
-                  border: '1px solid var(--color-border)',
-                  color: 'var(--text-primary)',
+                  border: 'none',
+                  color: 'var(--text-secondary, #9ba49e)',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
                 }}
                 onClick={() => setIsCreating(false)}
               >
-                Cancelar
-              </button>
-              <button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending ? 'Salvando…' : 'Agendar Atividade'}
+                ✕
               </button>
             </div>
-          </form>
-        </section>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                createMutation.mutate();
+              }}
+            >
+              <div className="form-grid">
+                <label>
+                  Tipo de Atividade *
+                  <select
+                    value={newType}
+                    onChange={(e) =>
+                      setNewType(
+                        e.target.value as
+                          'CALL' | 'MESSAGE' | 'MEETING' | 'VISIT' | 'EMAIL' | 'TASK',
+                      )
+                    }
+                  >
+                    <option value="CALL">Ligação</option>
+                    <option value="MESSAGE">WhatsApp / Mensagem</option>
+                    <option value="MEETING">Reunião</option>
+                    <option value="VISIT">Visita Técnica</option>
+                    <option value="TASK">Tarefa Interna</option>
+                  </select>
+                </label>
+
+                <label>
+                  Data e Hora Limite (Vencimento) *
+                  <input
+                    type="datetime-local"
+                    required
+                    value={newDueAt}
+                    onChange={(e) => setNewDueAt(e.target.value)}
+                  />
+                </label>
+
+                <label style={{ gridColumn: '1 / -1' }}>
+                  Assunto / Objetivo *
+                  <input
+                    type="text"
+                    required
+                    placeholder="ex: Primeiro contato para qualificação técnica"
+                    value={newSubject}
+                    onChange={(e) => setNewSubject(e.target.value)}
+                  />
+                </label>
+
+                <label>
+                  Cliente Vinculado (Opcional)
+                  <select value={newCustomerId} onChange={(e) => setNewCustomerId(e.target.value)}>
+                    <option value="">Nenhum cliente selecionado</option>
+                    {customers.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.legalName} {c.taxId ? `(${c.taxId})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  Oportunidade Vinculada (Opcional)
+                  <select
+                    value={newOpportunityId}
+                    onChange={(e) => setNewOpportunityId(e.target.value)}
+                  >
+                    <option value="">Nenhuma oportunidade selecionada</option>
+                    {opps.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        [{o.code}] {o.title}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label style={{ gridColumn: '1 / -1' }}>
+                  Descrição Detalhada / Instruções
+                  <textarea
+                    rows={3}
+                    value={newDescription}
+                    onChange={(e) => setNewDescription(e.target.value)}
+                    placeholder="Orientações e contexto para a execução da atividade"
+                  />
+                </label>
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '0.75rem',
+                  justifyContent: 'flex-end',
+                  marginTop: '0.5rem',
+                }}
+              >
+                <Button type="button" variant="secondary" onClick={() => setIsCreating(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" variant="primary" disabled={createMutation.isPending}>
+                  {createMutation.isPending ? 'Salvando…' : 'Agendar Atividade'}
+                </Button>
+              </div>
+            </form>
+          </section>
+        </div>
       )}
 
       {/* ACTIVITIES TABLE (DESKTOP) */}
@@ -460,7 +481,14 @@ export function Activities() {
           <tbody>
             {items.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ textAlign: 'center', padding: '2rem' }}>
+                <td
+                  colSpan={7}
+                  style={{
+                    textAlign: 'center',
+                    padding: '2.5rem',
+                    color: 'var(--text-secondary, #9ba49e)',
+                  }}
+                >
                   {activitiesQuery.isPending
                     ? 'Carregando atividades…'
                     : 'Nenhuma atividade encontrada para este filtro.'}
@@ -471,18 +499,23 @@ export function Activities() {
                 const isOverdue =
                   act.status === 'OPEN' && new Date(act.dueAt).getTime() < Date.now();
                 return (
-                  <tr key={act.id} style={isOverdue ? { background: '#fff5f5' } : undefined}>
+                  <tr
+                    key={act.id}
+                    style={isOverdue ? { background: 'rgba(239, 68, 68, 0.08)' } : undefined}
+                  >
                     <td>
                       <span className="badge">{ACTIVITY_TYPE_LABELS[act.type] ?? act.type}</span>
                     </td>
                     <td>
-                      <strong>{act.subject}</strong>
+                      <strong style={{ color: 'var(--text-primary, #f5f7f5)' }}>
+                        {act.subject}
+                      </strong>
                       {act.description && (
                         <p
                           style={{
-                            margin: 0,
+                            margin: '0.2rem 0 0 0',
                             fontSize: '0.8125rem',
-                            color: 'var(--text-secondary)',
+                            color: 'var(--text-secondary, #9ba49e)',
                           }}
                         >
                           {act.description}
@@ -493,7 +526,7 @@ export function Activities() {
                           style={{
                             margin: '0.25rem 0 0 0',
                             fontSize: '0.8125rem',
-                            color: 'var(--brand-primary)',
+                            color: 'var(--brand-solar, #ffd400)',
                           }}
                         >
                           <strong>Resultado:</strong> {act.resultCode}
@@ -504,25 +537,31 @@ export function Activities() {
                     <td>
                       {act.customer && (
                         <div>
-                          <strong>{act.customer.legalName}</strong>
+                          <strong style={{ color: 'var(--text-primary, #f5f7f5)' }}>
+                            {act.customer.legalName}
+                          </strong>
                         </div>
                       )}
                       {act.opportunity && (
                         <span
                           style={{
                             fontSize: '0.8125rem',
-                            color: 'var(--text-secondary)',
+                            color: 'var(--text-secondary, #9ba49e)',
                           }}
                         >
                           [{act.opportunity.code}] {act.opportunity.title}
                         </span>
                       )}
-                      {!act.customer && !act.opportunity && '—'}
+                      {!act.customer && !act.opportunity && (
+                        <span style={{ color: 'var(--text-disabled, #626a65)' }}>—</span>
+                      )}
                     </td>
                     <td>
                       <span
                         style={
-                          isOverdue ? { color: 'var(--status-danger)', fontWeight: 600 } : undefined
+                          isOverdue
+                            ? { color: '#EF4444', fontWeight: 600 }
+                            : { color: 'var(--text-primary, #f5f7f5)' }
                         }
                       >
                         {new Date(act.dueAt).toLocaleString('pt-BR')}
@@ -531,7 +570,12 @@ export function Activities() {
                         <div>
                           <span
                             className="badge badge-cancelado"
-                            style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem' }}
+                            style={{
+                              fontSize: '0.7rem',
+                              padding: '0.1rem 0.4rem',
+                              marginTop: '0.25rem',
+                              display: 'inline-block',
+                            }}
                           >
                             Atrasada
                           </span>
@@ -555,32 +599,25 @@ export function Activities() {
                             : 'Cancelada'}
                       </span>
                     </td>
-                    <td>{act.assignee?.name ?? '—'}</td>
+                    <td style={{ color: 'var(--text-primary, #f5f7f5)' }}>
+                      {act.assignee?.name ?? '—'}
+                    </td>
                     <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                       {canManage && act.status === 'OPEN' && (
                         <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
-                          <button
-                            style={{
-                              padding: '0.25rem 0.5rem',
-                              fontSize: '0.8125rem',
-                              background: 'var(--status-success)',
-                              borderColor: 'var(--status-success)',
-                            }}
+                          <Button
+                            variant="primary"
+                            size="compact"
                             onClick={() => {
                               setSelectedActivity(act);
                               setIsCompleting(true);
                             }}
                           >
                             Concluir
-                          </button>
-                          <button
-                            style={{
-                              padding: '0.25rem 0.5rem',
-                              fontSize: '0.8125rem',
-                              background: 'var(--color-surface)',
-                              color: 'var(--text-primary)',
-                              borderColor: 'var(--color-border)',
-                            }}
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            size="compact"
                             onClick={() => {
                               setSelectedActivity(act);
                               setRescheduleDueAt(new Date(act.dueAt).toISOString().slice(0, 16));
@@ -588,22 +625,17 @@ export function Activities() {
                             }}
                           >
                             Reagendar
-                          </button>
-                          <button
-                            style={{
-                              padding: '0.25rem 0.5rem',
-                              fontSize: '0.8125rem',
-                              background: 'transparent',
-                              color: 'var(--status-danger)',
-                              borderColor: 'var(--status-danger)',
-                            }}
+                          </Button>
+                          <Button
+                            variant="danger"
+                            size="compact"
                             onClick={() => {
                               setSelectedActivity(act);
                               setIsCanceling(true);
                             }}
                           >
                             Cancelar
-                          </button>
+                          </Button>
                         </div>
                       )}
                     </td>
@@ -618,7 +650,13 @@ export function Activities() {
       {/* ACTIVITIES CARDS (MOBILE) */}
       <div className="mobile-cards mobile-only" style={{ display: 'grid', gap: '1rem' }}>
         {items.length === 0 ? (
-          <p style={{ textAlign: 'center', padding: '2rem' }}>
+          <p
+            style={{
+              textAlign: 'center',
+              padding: '2rem',
+              color: 'var(--text-secondary, #9ba49e)',
+            }}
+          >
             {activitiesQuery.isPending ? 'Carregando atividades…' : 'Nenhuma atividade encontrada.'}
           </p>
         ) : (
@@ -627,11 +665,10 @@ export function Activities() {
             return (
               <div
                 key={act.id}
-                className="auth-card"
+                className="comm-detail-card"
                 style={{
-                  maxWidth: '100%',
-                  padding: '1rem',
-                  borderLeft: isOverdue ? '4px solid var(--status-danger)' : undefined,
+                  padding: '1.25rem',
+                  borderLeft: isOverdue ? '4px solid #EF4444' : '1px solid #29302b',
                 }}
               >
                 <div
@@ -660,13 +697,20 @@ export function Activities() {
                   </span>
                 </div>
 
-                <h4 style={{ margin: '0.5rem 0 0.25rem 0' }}>{act.subject}</h4>
+                <h4
+                  style={{
+                    margin: '0.75rem 0 0.25rem 0',
+                    color: 'var(--text-primary, #f5f7f5)',
+                  }}
+                >
+                  {act.subject}
+                </h4>
                 {act.description && (
                   <p
                     style={{
                       margin: '0 0 0.5rem 0',
                       fontSize: '0.875rem',
-                      color: 'var(--text-secondary)',
+                      color: 'var(--text-secondary, #9ba49e)',
                     }}
                   >
                     {act.description}
@@ -676,7 +720,7 @@ export function Activities() {
                 <div
                   style={{
                     fontSize: '0.8125rem',
-                    color: 'var(--text-secondary)',
+                    color: 'var(--text-secondary, #9ba49e)',
                     display: 'grid',
                     gap: '0.25rem',
                     marginBlock: '0.5rem',
@@ -684,7 +728,10 @@ export function Activities() {
                 >
                   {act.customer && (
                     <div>
-                      Cliente: <strong>{act.customer.legalName}</strong>
+                      Cliente:{' '}
+                      <strong style={{ color: 'var(--text-primary, #f5f7f5)' }}>
+                        {act.customer.legalName}
+                      </strong>
                     </div>
                   )}
                   {act.opportunity && (
@@ -694,7 +741,11 @@ export function Activities() {
                   )}
                   <div>
                     Vencimento:{' '}
-                    <strong style={isOverdue ? { color: 'var(--status-danger)' } : undefined}>
+                    <strong
+                      style={
+                        isOverdue ? { color: '#EF4444' } : { color: 'var(--text-primary, #f5f7f5)' }
+                      }
+                    >
                       {new Date(act.dueAt).toLocaleString('pt-BR')}
                       {isOverdue && ' (Atrasada)'}
                     </strong>
@@ -705,14 +756,17 @@ export function Activities() {
                 {act.resultCode && (
                   <div
                     style={{
-                      background: 'var(--color-canvas)',
-                      padding: '0.5rem',
-                      borderRadius: 'var(--radius-sm)',
+                      background: 'rgba(255, 212, 0, 0.08)',
+                      border: '1px solid rgba(255, 212, 0, 0.2)',
+                      padding: '0.5rem 0.75rem',
+                      borderRadius: '8px',
                       fontSize: '0.8125rem',
                       marginTop: '0.5rem',
+                      color: 'var(--text-primary, #f5f7f5)',
                     }}
                   >
-                    <strong>Resultado:</strong> {act.resultCode}
+                    <strong style={{ color: 'var(--brand-solar, #ffd400)' }}>Resultado:</strong>{' '}
+                    {act.resultCode}
                     {act.resultNotes ? ` — ${act.resultNotes}` : ''}
                   </div>
                 )}
@@ -726,28 +780,19 @@ export function Activities() {
                       marginTop: '1rem',
                     }}
                   >
-                    <button
-                      style={{
-                        padding: '0.5rem',
-                        fontSize: '0.8125rem',
-                        background: 'var(--status-success)',
-                        borderColor: 'var(--status-success)',
-                      }}
+                    <Button
+                      variant="primary"
+                      size="compact"
                       onClick={() => {
                         setSelectedActivity(act);
                         setIsCompleting(true);
                       }}
                     >
                       Concluir
-                    </button>
-                    <button
-                      style={{
-                        padding: '0.5rem',
-                        fontSize: '0.8125rem',
-                        background: 'var(--color-surface)',
-                        color: 'var(--text-primary)',
-                        borderColor: 'var(--color-border)',
-                      }}
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="compact"
                       onClick={() => {
                         setSelectedActivity(act);
                         setRescheduleDueAt(new Date(act.dueAt).toISOString().slice(0, 16));
@@ -755,22 +800,17 @@ export function Activities() {
                       }}
                     >
                       Reagendar
-                    </button>
-                    <button
-                      style={{
-                        padding: '0.5rem',
-                        fontSize: '0.8125rem',
-                        background: 'transparent',
-                        color: 'var(--status-danger)',
-                        borderColor: 'var(--status-danger)',
-                      }}
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="compact"
                       onClick={() => {
                         setSelectedActivity(act);
                         setIsCanceling(true);
                       }}
                     >
                       Cancelar
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -781,309 +821,365 @@ export function Activities() {
 
       {/* COMPLETE MODAL */}
       {isCompleting && selectedActivity && (
-        <section
-          role="dialog"
-          aria-labelledby="complete-modal-title"
-          aria-modal="true"
-          className="auth-card"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            margin: 'auto',
-            maxHeight: '90vh',
-            overflowY: 'auto',
-            zIndex: 100,
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
-          }}
-        >
-          <h3 id="complete-modal-title">Concluir Atividade</h3>
-          <p style={{ color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-            Atividade: <strong>{selectedActivity.subject}</strong>
-          </p>
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              completeMutation.mutate();
-            }}
+        <div className="comm-modal-overlay">
+          <section
+            role="dialog"
+            aria-labelledby="complete-modal-title"
+            aria-modal="true"
+            className="comm-modal-box"
           >
-            <label>
-              Código do Resultado *
-              <select
-                value={completeResultCode}
-                onChange={(e) => setCompleteResultCode(e.target.value)}
-              >
-                {RESULT_CODE_PRESETS.map((p) => (
-                  <option key={p.code} value={p.code}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            {completeResultCode === 'OUTRO' && (
-              <label>
-                Especifique o Resultado *
-                <input
-                  type="text"
-                  required
-                  value={completeCustomResult}
-                  onChange={(e) => setCompleteCustomResult(e.target.value)}
-                  placeholder="ex: Contato adiado para próxima semana"
-                />
-              </label>
-            )}
-
-            <label>
-              Anotações / Resumo da Conversa
-              <textarea
-                rows={3}
-                value={completeNotes}
-                onChange={(e) => setCompleteNotes(e.target.value)}
-                placeholder="Detalhes relevantes acordados com o cliente"
-              />
-            </label>
-
-            <fieldset
-              style={{
-                marginTop: '1rem',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-sm)',
-                padding: '1rem',
-              }}
-            >
-              <legend>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
-                  <input
-                    type="checkbox"
-                    checked={hasFollowUp}
-                    onChange={(e) => setHasFollowUp(e.target.checked)}
-                    style={{ width: 'auto' }}
-                  />
-                  <strong>Agendar próxima atividade de acompanhamento</strong>
-                </label>
-              </legend>
-
-              {hasFollowUp && (
-                <div className="form-grid" style={{ marginTop: '0.75rem' }}>
-                  <label>
-                    Tipo
-                    <select
-                      value={followUpType}
-                      onChange={(e) =>
-                        setFollowUpType(
-                          e.target.value as
-                            'CALL' | 'MESSAGE' | 'MEETING' | 'VISIT' | 'EMAIL' | 'TASK',
-                        )
-                      }
-                    >
-                      <option value="CALL">Ligação</option>
-                      <option value="MESSAGE">WhatsApp / Mensagem</option>
-                      <option value="MEETING">Reunião</option>
-                      <option value="VISIT">Visita Técnica</option>
-                      <option value="TASK">Tarefa Interna</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    Data e Hora
-                    <input
-                      type="datetime-local"
-                      required={hasFollowUp}
-                      value={followUpDueAt}
-                      onChange={(e) => setFollowUpDueAt(e.target.value)}
-                    />
-                  </label>
-
-                  <label style={{ gridColumn: '1 / -1' }}>
-                    Assunto do Acompanhamento *
-                    <input
-                      type="text"
-                      required={hasFollowUp}
-                      placeholder="ex: Enviar proposta comercial personalizada"
-                      value={followUpSubject}
-                      onChange={(e) => setFollowUpSubject(e.target.value)}
-                    />
-                  </label>
-                </div>
-              )}
-            </fieldset>
-
-            <div
-              style={{
-                display: 'flex',
-                gap: '1rem',
-                justifyContent: 'flex-end',
-                marginTop: '1.5rem',
-              }}
-            >
+            <div className="comm-modal-header">
+              <h3 id="complete-modal-title" className="comm-modal-title">
+                Concluir Atividade
+              </h3>
               <button
                 type="button"
                 style={{
                   background: 'transparent',
-                  border: '1px solid var(--color-border)',
-                  color: 'var(--text-primary)',
+                  border: 'none',
+                  color: 'var(--text-secondary, #9ba49e)',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
                 }}
                 onClick={() => {
                   setIsCompleting(false);
                   setSelectedActivity(null);
                 }}
               >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={completeMutation.isPending}
-                style={{
-                  background: 'var(--status-success)',
-                  borderColor: 'var(--status-success)',
-                }}
-              >
-                {completeMutation.isPending ? 'Concluindo…' : 'Confirmar Conclusão'}
+                ✕
               </button>
             </div>
-          </form>
-        </section>
+            <p
+              style={{
+                color: 'var(--text-secondary, #9ba49e)',
+                margin: 0,
+              }}
+            >
+              Atividade:{' '}
+              <strong style={{ color: 'var(--text-primary, #f5f7f5)' }}>
+                {selectedActivity.subject}
+              </strong>
+            </p>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                completeMutation.mutate();
+              }}
+            >
+              <label>
+                Código do Resultado *
+                <select
+                  value={completeResultCode}
+                  onChange={(e) => setCompleteResultCode(e.target.value)}
+                >
+                  {RESULT_CODE_PRESETS.map((p) => (
+                    <option key={p.code} value={p.code}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {completeResultCode === 'OUTRO' && (
+                <label>
+                  Especifique o Resultado *
+                  <input
+                    type="text"
+                    required
+                    value={completeCustomResult}
+                    onChange={(e) => setCompleteCustomResult(e.target.value)}
+                    placeholder="ex: Contato adiado para próxima semana"
+                  />
+                </label>
+              )}
+
+              <label>
+                Anotações / Resumo da Conversa
+                <textarea
+                  rows={3}
+                  value={completeNotes}
+                  onChange={(e) => setCompleteNotes(e.target.value)}
+                  placeholder="Detalhes relevantes acordados com o cliente"
+                />
+              </label>
+
+              <fieldset
+                style={{
+                  margin: 0,
+                  border: '1px solid var(--border-default, #29302b)',
+                  borderRadius: 'var(--radius-md, 8px)',
+                  padding: '1rem',
+                  background: 'var(--surface-elevated, #1c211d)',
+                }}
+              >
+                <legend style={{ padding: '0 0.5rem', color: 'var(--text-primary, #f5f7f5)' }}>
+                  <label
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      margin: 0,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={hasFollowUp}
+                      onChange={(e) => setHasFollowUp(e.target.checked)}
+                      style={{ width: 'auto' }}
+                    />
+                    <strong>Agendar próxima atividade de acompanhamento</strong>
+                  </label>
+                </legend>
+
+                {hasFollowUp && (
+                  <div className="form-grid" style={{ marginTop: '0.75rem' }}>
+                    <label>
+                      Tipo
+                      <select
+                        value={followUpType}
+                        onChange={(e) =>
+                          setFollowUpType(
+                            e.target.value as
+                              'CALL' | 'MESSAGE' | 'MEETING' | 'VISIT' | 'EMAIL' | 'TASK',
+                          )
+                        }
+                      >
+                        <option value="CALL">Ligação</option>
+                        <option value="MESSAGE">WhatsApp / Mensagem</option>
+                        <option value="MEETING">Reunião</option>
+                        <option value="VISIT">Visita Técnica</option>
+                        <option value="TASK">Tarefa Interna</option>
+                      </select>
+                    </label>
+
+                    <label>
+                      Data e Hora
+                      <input
+                        type="datetime-local"
+                        required={hasFollowUp}
+                        value={followUpDueAt}
+                        onChange={(e) => setFollowUpDueAt(e.target.value)}
+                      />
+                    </label>
+
+                    <label style={{ gridColumn: '1 / -1' }}>
+                      Assunto do Acompanhamento *
+                      <input
+                        type="text"
+                        required={hasFollowUp}
+                        placeholder="ex: Enviar proposta comercial personalizada"
+                        value={followUpSubject}
+                        onChange={(e) => setFollowUpSubject(e.target.value)}
+                      />
+                    </label>
+                  </div>
+                )}
+              </fieldset>
+
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '0.75rem',
+                  justifyContent: 'flex-end',
+                  marginTop: '0.5rem',
+                }}
+              >
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setIsCompleting(false);
+                    setSelectedActivity(null);
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" variant="primary" disabled={completeMutation.isPending}>
+                  {completeMutation.isPending ? 'Concluindo…' : 'Confirmar Conclusão'}
+                </Button>
+              </div>
+            </form>
+          </section>
+        </div>
       )}
 
       {/* RESCHEDULE MODAL */}
       {isRescheduling && selectedActivity && (
-        <section
-          role="dialog"
-          aria-labelledby="reschedule-modal-title"
-          aria-modal="true"
-          className="auth-card"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            margin: 'auto',
-            maxHeight: '90vh',
-            overflowY: 'auto',
-            zIndex: 100,
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
-          }}
-        >
-          <h3 id="reschedule-modal-title">Reagendar Atividade</h3>
-          <p style={{ color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-            Atividade: <strong>{selectedActivity.subject}</strong>
-          </p>
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              rescheduleMutation.mutate();
-            }}
+        <div className="comm-modal-overlay">
+          <section
+            role="dialog"
+            aria-labelledby="reschedule-modal-title"
+            aria-modal="true"
+            className="comm-modal-box"
           >
-            <label>
-              Nova Data e Hora *
-              <input
-                type="datetime-local"
-                required
-                value={rescheduleDueAt}
-                onChange={(e) => setRescheduleDueAt(e.target.value)}
-              />
-            </label>
-
-            <label>
-              Motivo do Reagendamento
-              <textarea
-                rows={3}
-                value={rescheduleNotes}
-                onChange={(e) => setRescheduleNotes(e.target.value)}
-                placeholder="ex: Cliente indisponível hoje, pediu para ligar na quinta"
-              />
-            </label>
-
-            <div
-              style={{
-                display: 'flex',
-                gap: '1rem',
-                justifyContent: 'flex-end',
-                marginTop: '1.5rem',
-              }}
-            >
+            <div className="comm-modal-header">
+              <h3 id="reschedule-modal-title" className="comm-modal-title">
+                Reagendar Atividade
+              </h3>
               <button
                 type="button"
                 style={{
                   background: 'transparent',
-                  border: '1px solid var(--color-border)',
-                  color: 'var(--text-primary)',
+                  border: 'none',
+                  color: 'var(--text-secondary, #9ba49e)',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
                 }}
                 onClick={() => {
                   setIsRescheduling(false);
                   setSelectedActivity(null);
                 }}
               >
-                Cancelar
-              </button>
-              <button type="submit" disabled={rescheduleMutation.isPending}>
-                {rescheduleMutation.isPending ? 'Salvando…' : 'Confirmar Reagendamento'}
+                ✕
               </button>
             </div>
-          </form>
-        </section>
+            <p
+              style={{
+                color: 'var(--text-secondary, #9ba49e)',
+                margin: 0,
+              }}
+            >
+              Atividade:{' '}
+              <strong style={{ color: 'var(--text-primary, #f5f7f5)' }}>
+                {selectedActivity.subject}
+              </strong>
+            </p>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                rescheduleMutation.mutate();
+              }}
+            >
+              <label>
+                Nova Data e Hora *
+                <input
+                  type="datetime-local"
+                  required
+                  value={rescheduleDueAt}
+                  onChange={(e) => setRescheduleDueAt(e.target.value)}
+                />
+              </label>
+
+              <label>
+                Motivo do Reagendamento
+                <textarea
+                  rows={3}
+                  value={rescheduleNotes}
+                  onChange={(e) => setRescheduleNotes(e.target.value)}
+                  placeholder="ex: Cliente indisponível hoje, pediu para ligar na quinta"
+                />
+              </label>
+
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '0.75rem',
+                  justifyContent: 'flex-end',
+                  marginTop: '0.5rem',
+                }}
+              >
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setIsRescheduling(false);
+                    setSelectedActivity(null);
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" variant="primary" disabled={rescheduleMutation.isPending}>
+                  {rescheduleMutation.isPending ? 'Salvando…' : 'Confirmar Reagendamento'}
+                </Button>
+              </div>
+            </form>
+          </section>
+        </div>
       )}
 
       {/* CANCEL MODAL */}
       {isCanceling && selectedActivity && (
-        <section
-          role="dialog"
-          aria-labelledby="cancel-modal-title"
-          aria-modal="true"
-          className="auth-card"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            margin: 'auto',
-            maxHeight: '90vh',
-            overflowY: 'auto',
-            zIndex: 100,
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
-          }}
-        >
-          <h3 id="cancel-modal-title" style={{ color: 'var(--status-danger)' }}>
-            Cancelar Atividade
-          </h3>
-          <p style={{ marginTop: '0.5rem' }}>
-            Tem certeza de que deseja cancelar a atividade{' '}
-            <strong>&ldquo;{selectedActivity.subject}&rdquo;</strong>?
-          </p>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-            Esta ação atualizará o status da atividade para Cancelada de forma auditável.
-          </p>
-
-          <div
-            style={{
-              display: 'flex',
-              gap: '1rem',
-              justifyContent: 'flex-end',
-              marginTop: '1.5rem',
-            }}
+        <div className="comm-modal-overlay">
+          <section
+            role="dialog"
+            aria-labelledby="cancel-modal-title"
+            aria-modal="true"
+            className="comm-modal-box"
           >
-            <button
-              type="button"
+            <div className="comm-modal-header">
+              <h3
+                id="cancel-modal-title"
+                className="comm-modal-title"
+                style={{ color: 'var(--status-danger, #ef4444)' }}
+              >
+                Cancelar Atividade
+              </h3>
+              <button
+                type="button"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-secondary, #9ba49e)',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                }}
+                onClick={() => {
+                  setIsCanceling(false);
+                  setSelectedActivity(null);
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            <p style={{ marginTop: '0.5rem', color: 'var(--text-primary, #f5f7f5)' }}>
+              Tem certeza de que deseja cancelar a atividade{' '}
+              <strong style={{ color: 'var(--brand-solar, #ffd400)' }}>
+                &ldquo;{selectedActivity.subject}&rdquo;
+              </strong>
+              ?
+            </p>
+            <p
               style={{
-                background: 'transparent',
-                border: '1px solid var(--color-border)',
-                color: 'var(--text-primary)',
-              }}
-              onClick={() => {
-                setIsCanceling(false);
-                setSelectedActivity(null);
+                color: 'var(--text-secondary, #9ba49e)',
+                fontSize: '0.875rem',
+                margin: 0,
               }}
             >
-              Voltar
-            </button>
-            <button
-              type="button"
-              disabled={cancelMutation.isPending}
-              style={{ background: 'var(--status-danger)', borderColor: 'var(--status-danger)' }}
-              onClick={() => cancelMutation.mutate()}
+              Esta ação atualizará o status da atividade para Cancelada de forma auditável.
+            </p>
+
+            <div
+              style={{
+                display: 'flex',
+                gap: '0.75rem',
+                justifyContent: 'flex-end',
+                marginTop: '1rem',
+              }}
             >
-              {cancelMutation.isPending ? 'Cancelando…' : 'Confirmar Cancelamento'}
-            </button>
-          </div>
-        </section>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setIsCanceling(false);
+                  setSelectedActivity(null);
+                }}
+              >
+                Voltar
+              </Button>
+              <Button
+                type="button"
+                variant="danger"
+                disabled={cancelMutation.isPending}
+                onClick={() => cancelMutation.mutate()}
+              >
+                {cancelMutation.isPending ? 'Cancelando…' : 'Confirmar Cancelamento'}
+              </Button>
+            </div>
+          </section>
+        </div>
       )}
     </div>
   );
