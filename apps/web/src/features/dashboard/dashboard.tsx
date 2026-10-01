@@ -79,8 +79,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
     refetchOnWindowFocus: true,
   });
 
-  const opportunities: Opportunity[] =
-    (oppsQuery.data as { items?: Opportunity[] })?.items || [];
+  const opportunities: Opportunity[] = (oppsQuery.data as { items?: Opportunity[] })?.items || [];
   const customers: Customer[] = (customersQuery.data as { items?: Customer[] })?.items || [];
   const cashFlow = cashFlowQuery.data;
   const activities: Activity[] = (activitiesQuery.data as Activity[]) || [];
