@@ -4067,6 +4067,443 @@
         ],
         "tags": ["inventory"]
       }
+    },
+    "/api/v1/engineering/projects": {
+      "post": {
+        "operationId": "EngineeringController_createOperationalProject",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOperationalProjectDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Engenharia & Instalações"]
+      },
+      "get": {
+        "operationId": "EngineeringController_listOperationalProjects",
+        "parameters": [
+          {
+            "name": "state",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Engenharia & Instalações"]
+      }
+    },
+    "/api/v1/engineering/projects/{id}": {
+      "get": {
+        "operationId": "EngineeringController_getOperationalProject",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Engenharia & Instalações"]
+      },
+      "patch": {
+        "operationId": "EngineeringController_updateOperationalProject",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOperationalProjectDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Engenharia & Instalações"]
+      }
+    },
+    "/api/v1/engineering/projects/{id}/designs": {
+      "post": {
+        "operationId": "EngineeringController_createExecutiveDesign",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateExecutiveDesignDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Engenharia & Instalações"]
+      }
+    },
+    "/api/v1/engineering/projects/{id}/designs/{designId}/approve": {
+      "post": {
+        "operationId": "EngineeringController_approveExecutiveDesign",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "designId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Engenharia & Instalações"]
+      }
+    },
+    "/api/v1/engineering/projects/{id}/homologation": {
+      "put": {
+        "operationId": "EngineeringController_updateHomologation",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateHomologationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Engenharia & Instalações"]
+      }
+    },
+    "/api/v1/engineering/projects/{id}/work-orders": {
+      "post": {
+        "operationId": "EngineeringController_createWorkOrder",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWorkOrderDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Engenharia & Instalações"]
+      }
+    },
+    "/api/v1/engineering/work-orders": {
+      "get": {
+        "operationId": "EngineeringController_listWorkOrders",
+        "parameters": [
+          {
+            "name": "state",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "leaderId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Engenharia & Instalações"]
+      }
+    },
+    "/api/v1/engineering/work-orders/{id}": {
+      "get": {
+        "operationId": "EngineeringController_getWorkOrder",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Engenharia & Instalações"]
+      }
+    },
+    "/api/v1/engineering/work-orders/{id}/state": {
+      "patch": {
+        "operationId": "EngineeringController_updateWorkOrderState",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWorkOrderStateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Engenharia & Instalações"]
+      }
+    },
+    "/api/v1/engineering/checklist-items/{id}": {
+      "patch": {
+        "operationId": "EngineeringController_updateChecklistItem",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateChecklistItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Engenharia & Instalações"]
+      }
+    },
+    "/api/v1/engineering/projects/{id}/handover": {
+      "post": {
+        "operationId": "EngineeringController_recordCustomerHandover",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordCustomerHandoverDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Engenharia & Instalações"]
+      }
     }
   },
   "info": {
@@ -7088,6 +7525,307 @@
           }
         },
         "required": ["purchaseOrderId", "locationId", "code", "items"]
+      },
+      "CreateOperationalProjectDto": {
+        "type": "object",
+        "properties": {
+          "opportunityId": {
+            "type": "string",
+            "example": "b0e00888-c774-4b47-ba21-863a566580ec"
+          },
+          "code": {
+            "type": "string",
+            "example": "PRJ-2026-0001"
+          },
+          "title": {
+            "type": "string",
+            "example": "Instalação Solar Residencial 7.2 kWp"
+          },
+          "engineerUserId": {
+            "type": "string",
+            "example": "b0e00888-c774-4b47-ba21-863a566580ec"
+          },
+          "nominalPowerKw": {
+            "type": "number",
+            "example": 7.2
+          },
+          "estimatedMonthlyGenerationKwh": {
+            "type": "number",
+            "example": 950
+          },
+          "artNumber": {
+            "type": "string",
+            "example": "ART-2026-887412"
+          },
+          "notes": {
+            "type": "string",
+            "example": "Telhado cerâmico colonial, orientação Norte."
+          }
+        },
+        "required": ["opportunityId", "code", "title"]
+      },
+      "UpdateOperationalProjectDto": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "PREPARATION",
+              "ENGINEERING",
+              "HOMOLOGATION",
+              "SUPPLY",
+              "READY_TO_SCHEDULE",
+              "SCHEDULED",
+              "INSTALLING",
+              "COMMISSIONING",
+              "DELIVERY",
+              "AFTER_SALES",
+              "CLOSED",
+              "SUSPENDED",
+              "CANCELED"
+            ],
+            "example": "ENGINEERING"
+          },
+          "engineerUserId": {
+            "type": "string",
+            "example": "b0e00888-c774-4b47-ba21-863a566580ec"
+          },
+          "artNumber": {
+            "type": "string",
+            "example": "ART-2026-887412"
+          },
+          "notes": {
+            "type": "string",
+            "example": "Observações de engenharia e telhado."
+          }
+        }
+      },
+      "CreateExecutiveDesignDto": {
+        "type": "object",
+        "properties": {
+          "stringsCount": {
+            "type": "number",
+            "example": 2
+          },
+          "modulesPerString": {
+            "type": "number",
+            "example": 8
+          },
+          "mpptCount": {
+            "type": "number",
+            "example": 2
+          },
+          "tiltDegrees": {
+            "type": "number",
+            "example": 18.5
+          },
+          "azimuthDegrees": {
+            "type": "number",
+            "example": 0
+          },
+          "cableGaugeMm": {
+            "type": "number",
+            "example": 6
+          },
+          "diagramUrl": {
+            "type": "string",
+            "example": "https://docs.moura-solar.test/diagrams/prj-1.pdf"
+          },
+          "notes": {
+            "type": "string",
+            "example": "Configuração em 2 strings de 8 módulos no MPPT 1 e 2."
+          }
+        },
+        "required": ["stringsCount", "modulesPerString", "mpptCount"]
+      },
+      "UpdateHomologationDto": {
+        "type": "object",
+        "properties": {
+          "distributor": {
+            "type": "string",
+            "example": "CEMIG Distribuição S.A."
+          },
+          "protocolNumber": {
+            "type": "string",
+            "example": "PROT-CEMIG-2026-9988"
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "PREPARING",
+              "SUBMITTED",
+              "PENDING_INFORMATION",
+              "UNDER_REVIEW",
+              "APPROVED",
+              "REJECTED",
+              "METER_EXCHANGE_PENDING",
+              "METER_EXCHANGED",
+              "COMPLETED"
+            ],
+            "example": "SUBMITTED"
+          },
+          "deadlineAt": {
+            "type": "string",
+            "example": "2026-10-15"
+          },
+          "notes": {
+            "type": "string",
+            "example": "Projeto submetido no portal da concessionária."
+          }
+        },
+        "required": ["distributor", "stage"]
+      },
+      "CreateWorkOrderChecklistInputDto": {
+        "type": "object",
+        "properties": {
+          "section": {
+            "type": "string",
+            "enum": [
+              "PREPARATION",
+              "SAFETY_ARRIVAL",
+              "EQUIPMENT",
+              "EXECUTION",
+              "COMMISSIONING",
+              "DELIVERY"
+            ],
+            "example": "PREPARATION"
+          },
+          "itemCode": {
+            "type": "string",
+            "example": "EPI-01"
+          },
+          "title": {
+            "type": "string",
+            "example": "Conferência de EPIs da equipe"
+          },
+          "responseType": {
+            "type": "string",
+            "example": "CHECK"
+          }
+        },
+        "required": ["section", "itemCode", "title"]
+      },
+      "CreateWorkOrderDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "OS-2026-0001"
+          },
+          "title": {
+            "type": "string",
+            "example": "Instalação Física e Conexão Elétrica"
+          },
+          "scheduledDate": {
+            "type": "string",
+            "example": "2026-10-10"
+          },
+          "scheduledEndDate": {
+            "type": "string",
+            "example": "2026-10-11"
+          },
+          "assignedLeaderId": {
+            "type": "string",
+            "example": "b0e00888-c774-4b47-ba21-863a566580ec"
+          },
+          "assignedTeamId": {
+            "type": "string",
+            "example": "b0e00888-c774-4b47-ba21-863a566580ec"
+          },
+          "vehiclePlate": {
+            "type": "string",
+            "example": "ABC-1234"
+          },
+          "checklistItems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateWorkOrderChecklistInputDto"
+            }
+          }
+        },
+        "required": ["code", "title"]
+      },
+      "UpdateWorkOrderStateDto": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "READY",
+              "ASSIGNED",
+              "CONFIRMED",
+              "IN_PROGRESS",
+              "PAUSED",
+              "PARTIALLY_COMPLETED",
+              "COMPLETED",
+              "CANCELED"
+            ],
+            "example": "IN_PROGRESS"
+          },
+          "pauseReason": {
+            "type": "string",
+            "example": "CLIMA"
+          },
+          "pauseNotes": {
+            "type": "string",
+            "example": "Chuva torrencial no local impossibilitando subida no telhado."
+          }
+        },
+        "required": ["state"]
+      },
+      "UpdateChecklistItemDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["PENDING", "OK", "NOK", "NOT_APPLICABLE"],
+            "example": "OK"
+          },
+          "measurementValue": {
+            "type": "number",
+            "example": 450.5
+          },
+          "notes": {
+            "type": "string",
+            "example": "Tensão de circuito aberto (Voc) aferida em 450.5 V, dentro do esperado."
+          },
+          "photoUrl": {
+            "type": "string",
+            "example": "https://storage.moura-solar.test/photos/os-1-voc.jpg"
+          }
+        },
+        "required": ["status"]
+      },
+      "RecordCustomerHandoverDto": {
+        "type": "object",
+        "properties": {
+          "clientName": {
+            "type": "string",
+            "example": "Carlos Alberto Silva"
+          },
+          "clientDocument": {
+            "type": "string",
+            "example": "123.456.789-00"
+          },
+          "generationVerifiedKw": {
+            "type": "number",
+            "example": 6.8
+          },
+          "satisfactionRating": {
+            "type": "number",
+            "example": 5
+          },
+          "signatureData": {
+            "type": "string",
+            "example": "CONFIRMED_VIA_TOUCH_SIGNATURE"
+          },
+          "notes": {
+            "type": "string",
+            "example": "Cliente instruído sobre aplicativo do inversor e desligamento de emergência."
+          }
+        },
+        "required": ["clientName"]
       }
     }
   }

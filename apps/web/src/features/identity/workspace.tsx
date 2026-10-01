@@ -21,6 +21,7 @@ import { Activities } from '../commercial/activities';
 import { Catalog } from '../design/catalog';
 import { GlobalFinancialDashboard } from '../financial/financial';
 import { InventoryManagement } from '../inventory/inventory';
+import { EngineeringManagement } from '../engineering/engineering';
 
 const destinations = [
   { id: 'sessions', label: 'Minhas sessões', permission: 'sessions:read_own', organization: false },
@@ -40,6 +41,12 @@ const destinations = [
     id: 'inventory',
     label: 'Estoque & Compras',
     permission: 'inventory:read',
+    organization: false,
+  },
+  {
+    id: 'engineering',
+    label: 'Engenharia & Obras',
+    permission: 'engineering:read',
     organization: false,
   },
   { id: 'catalog', label: 'Catálogo', permission: 'catalog:read', organization: false },
@@ -214,6 +221,7 @@ function Application() {
             {tab === 'activities' && <Activities />}
             {tab === 'financial' && <GlobalFinancialDashboard />}
             {tab === 'inventory' && <InventoryManagement />}
+            {tab === 'engineering' && <EngineeringManagement />}
             {tab === 'catalog' && <Catalog />}
             {tab === 'sessions' && <Sessions onLogout={logoutLocal} />}
             {tab === 'members' && <Members />}

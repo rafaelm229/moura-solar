@@ -11,6 +11,7 @@ import { ProposalModule } from './proposal/proposal.module';
 import { ContractModule } from './contract/contract.module';
 import { FinancialModule } from './financial/financial.module';
 import { InventoryModule } from './inventory/inventory.module';
+import { EngineeringModule } from './engineering/engineering.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { InventoryModule } from './inventory/inventory.module';
     ContractModule,
     FinancialModule,
     InventoryModule,
+    EngineeringModule,
   ],
 })
 export class AppModule {}

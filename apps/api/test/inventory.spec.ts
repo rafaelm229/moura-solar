@@ -50,7 +50,7 @@ describe('SPEC-009 Inventory & Procurement Governance Unit Tests', () => {
       },
     };
 
-    service = new InventoryService(fakeDb as any, fakeAuditService as any);
+    service = new InventoryService(fakeDb as any);
   });
 
   it('calculates weighted moving average cost accurately on incoming stock', () => {

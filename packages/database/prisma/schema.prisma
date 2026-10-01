@@ -61,6 +61,12 @@ model Organization {
   goodsReceipts       GoodsReceipt[]
   goodsReceiptItems   GoodsReceiptItem[]
   serializedAssets    SerializedAsset[]
+  operationalProjects OperationalProject[]
+  executiveDesigns    ExecutiveDesign[]
+  homologationProcesses HomologationProcess[]
+  workOrders          WorkOrder[]
+  workOrderChecklistItems WorkOrderChecklistItem[]
+  customerHandovers   CustomerHandover[]
 
   @@map("organizations")
 }
@@ -91,6 +97,11 @@ model User {
   createdPurchaseOrders     PurchaseOrder[]      @relation("CreatedPurchaseOrders")
   approvedPurchaseOrders    PurchaseOrder[]      @relation("ApprovedPurchaseOrders")
   receivedGoodsReceipts     GoodsReceipt[]       @relation("ReceivedGoodsReceipts")
+  engineeredProjects        OperationalProject[] @relation("EngineeredProjects")
+  approvedExecutiveDesigns  ExecutiveDesign[]    @relation("ApprovedExecutiveDesigns")
+  ledWorkOrders             WorkOrder[]          @relation("LedWorkOrders")
+  checkedWorkOrderItems     WorkOrderChecklistItem[] @relation("CheckedWorkOrderItems")
+  receivedHandovers         CustomerHandover[]   @relation("ReceivedHandovers")
 
   @@map("users")
 }
@@ -152,6 +163,7 @@ model Team {
   version        Int          @default(1)
   organization   Organization @relation(fields: [organizationId], references: [id])
   members        TeamMember[]
+  workOrders     WorkOrder[]
 
   @@unique([organizationId, name])
   @@map("teams")
@@ -376,6 +388,7 @@ model Opportunity {
   stockReservation     StockReservation?
   purchaseOrders       PurchaseOrder[]
   serializedAssets     SerializedAsset[]
+  operationalProject   OperationalProject?
 
   @@unique([organizationId, code])
   @@index([organizationId, state])
@@ -1410,6 +1423,168 @@ model SerializedAsset {
   @@index([locationId])
   @@index([opportunityId])
   @@map("serialized_assets")
+}
+
+// ==========================================
+// M8: Engineering, Homologation, Field Work Orders & Handover (SPEC-010)
+// ==========================================
+
+model OperationalProject {
+  id                            String                @id @default(uuid()) @db.Uuid
+  organizationId                String                @map("organization_id") @db.Uuid
+  opportunityId                 String                @unique @map("opportunity_id") @db.Uuid
+  code                          String
+  title                         String
+  state                         String                @default("PREPARATION") // PREPARATION, ENGINEERING, HOMOLOGATION, SUPPLY, READY_TO_SCHEDULE, SCHEDULED, INSTALLING, COMMISSIONING, DELIVERY, AFTER_SALES, CLOSED, SUSPENDED, CANCELED
+  engineerUserId                String?               @map("engineer_user_id") @db.Uuid
+  nominalPowerKw                Decimal?              @map("nominal_power_kw") @db.Decimal(10, 2)
+  estimatedMonthlyGenerationKwh Decimal?              @map("estimated_monthly_generation_kwh") @db.Decimal(10, 2)
+  artNumber                     String?               @map("art_number")
+  notes                         String?
+  createdAt                     DateTime              @default(now()) @map("created_at")
+  updatedAt                     DateTime              @updatedAt @map("updated_at")
+
+  organization                  Organization          @relation(fields: [organizationId], references: [id])
+  opportunity                   Opportunity           @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  engineerUser                  User?                 @relation("EngineeredProjects", fields: [engineerUserId], references: [id])
+  executiveDesigns              ExecutiveDesign[]
+  homologation                  HomologationProcess?
+  workOrders                    WorkOrder[]
+  handover                      CustomerHandover?
+
+  @@unique([organizationId, code])
+  @@index([organizationId, state])
+  @@index([engineerUserId])
+  @@map("operational_projects")
+}
+
+model ExecutiveDesign {
+  id               String             @id @default(uuid()) @db.Uuid
+  organizationId   String             @map("organization_id") @db.Uuid
+  projectId        String             @map("project_id") @db.Uuid
+  versionNumber    Int                @map("version_number")
+  status           String             @default("DRAFT") // DRAFT, IN_REVIEW, APPROVED, SUPERSEDED
+  stringsCount     Int                @default(1) @map("strings_count")
+  modulesPerString Int                @default(10) @map("modules_per_string")
+  mpptCount        Int                @default(1) @map("mppt_count")
+  tiltDegrees      Decimal?           @map("tilt_degrees") @db.Decimal(5, 2)
+  azimuthDegrees   Decimal?           @map("azimuth_degrees") @db.Decimal(5, 2)
+  cableGaugeMm     Decimal?           @map("cable_gauge_mm") @db.Decimal(5, 2)
+  diagramUrl       String?            @map("diagram_url")
+  approvedById     String?            @map("approved_by_id") @db.Uuid
+  approvedAt       DateTime?          @map("approved_at")
+  notes            String?
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+
+  organization     Organization       @relation(fields: [organizationId], references: [id])
+  project          OperationalProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  approvedBy       User?              @relation("ApprovedExecutiveDesigns", fields: [approvedById], references: [id])
+
+  @@unique([projectId, versionNumber])
+  @@index([projectId, status])
+  @@map("executive_designs")
+}
+
+model HomologationProcess {
+  id               String             @id @default(uuid()) @db.Uuid
+  organizationId   String             @map("organization_id") @db.Uuid
+  projectId        String             @unique @map("project_id") @db.Uuid
+  distributor      String
+  protocolNumber   String?            @map("protocol_number")
+  stage            String             @default("PREPARING") // PREPARING, SUBMITTED, PENDING_INFORMATION, UNDER_REVIEW, APPROVED, REJECTED, METER_EXCHANGE_PENDING, METER_EXCHANGED, COMPLETED
+  submittedAt      DateTime?          @map("submitted_at")
+  approvedAt       DateTime?          @map("approved_at")
+  meterExchangedAt DateTime?          @map("meter_exchanged_at")
+  deadlineAt       DateTime?          @map("deadline_at")
+  notes            String?
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+
+  organization     Organization       @relation(fields: [organizationId], references: [id])
+  project          OperationalProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, stage])
+  @@map("homologation_processes")
+}
+
+model WorkOrder {
+  id               String                   @id @default(uuid()) @db.Uuid
+  organizationId   String                   @map("organization_id") @db.Uuid
+  projectId        String                   @map("project_id") @db.Uuid
+  code             String
+  title            String
+  state            String                   @default("DRAFT") // DRAFT, READY, ASSIGNED, CONFIRMED, IN_PROGRESS, PAUSED, PARTIALLY_COMPLETED, COMPLETED, CANCELED
+  scheduledDate    DateTime?                @map("scheduled_date") @db.Date
+  scheduledEndDate DateTime?                @map("scheduled_end_date") @db.Date
+  assignedLeaderId String?                  @map("assigned_leader_id") @db.Uuid
+  assignedTeamId   String?                  @map("assigned_team_id") @db.Uuid
+  vehiclePlate     String?                  @map("vehicle_plate")
+  pauseReason      String?                  @map("pause_reason")
+  pauseNotes       String?                  @map("pause_notes")
+  startedAt        DateTime?                @map("started_at")
+  completedAt      DateTime?                @map("completed_at")
+  createdAt        DateTime                 @default(now()) @map("created_at")
+  updatedAt        DateTime                 @updatedAt @map("updated_at")
+
+  organization     Organization             @relation(fields: [organizationId], references: [id])
+  project          OperationalProject       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignedLeader   User?                    @relation("LedWorkOrders", fields: [assignedLeaderId], references: [id])
+  assignedTeam     Team?                    @relation(fields: [assignedTeamId], references: [id])
+  checklistItems   WorkOrderChecklistItem[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId, state])
+  @@index([projectId])
+  @@index([assignedLeaderId])
+  @@map("work_orders")
+}
+
+model WorkOrderChecklistItem {
+  id               String             @id @default(uuid()) @db.Uuid
+  organizationId   String             @map("organization_id") @db.Uuid
+  workOrderId      String             @map("work_order_id") @db.Uuid
+  section          String             // PREPARATION, SAFETY_ARRIVAL, EQUIPMENT, EXECUTION, COMMISSIONING, DELIVERY
+  itemCode         String             @map("item_code")
+  title            String
+  responseType     String             @default("CHECK") @map("response_type") // CHECK, YES_NO, TEXT, PHOTO, MEASUREMENT
+  status           String             @default("PENDING") // PENDING, OK, NOK, NOT_APPLICABLE
+  measurementValue Decimal?           @map("measurement_value") @db.Decimal(10, 2)
+  notes            String?
+  photoUrl         String?            @map("photo_url")
+  checkedById      String?            @map("checked_by_id") @db.Uuid
+  checkedAt        DateTime?          @map("checked_at")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+
+  organization     Organization       @relation(fields: [organizationId], references: [id])
+  workOrder        WorkOrder          @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  checkedBy        User?              @relation("CheckedWorkOrderItems", fields: [checkedById], references: [id])
+
+  @@index([workOrderId, section])
+  @@map("work_order_checklist_items")
+}
+
+model CustomerHandover {
+  id                   String             @id @default(uuid()) @db.Uuid
+  organizationId       String             @map("organization_id") @db.Uuid
+  projectId            String             @unique @map("project_id") @db.Uuid
+  clientName           String             @map("client_name")
+  clientDocument       String?            @map("client_document")
+  generationVerifiedKw Decimal?           @map("generation_verified_kw") @db.Decimal(10, 2)
+  satisfactionRating   Int?               @map("satisfaction_rating")
+  signatureData        String?            @map("signature_data")
+  handedOverAt         DateTime           @default(now()) @map("handed_over_at")
+  receivedById         String?            @map("received_by_id") @db.Uuid
+  notes                String?
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+
+  organization         Organization       @relation(fields: [organizationId], references: [id])
+  project              OperationalProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  receivedBy           User?              @relation("ReceivedHandovers", fields: [receivedById], references: [id])
+
+  @@map("customer_handovers")
 }
 
 

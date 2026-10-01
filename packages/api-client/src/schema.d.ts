@@ -1540,6 +1540,182 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/engineering/projects': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['EngineeringController_listOperationalProjects'];
+    put?: never;
+    post: operations['EngineeringController_createOperationalProject'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/engineering/projects/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['EngineeringController_getOperationalProject'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['EngineeringController_updateOperationalProject'];
+    trace?: never;
+  };
+  '/api/v1/engineering/projects/{id}/designs': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['EngineeringController_createExecutiveDesign'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/engineering/projects/{id}/designs/{designId}/approve': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['EngineeringController_approveExecutiveDesign'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/engineering/projects/{id}/homologation': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put: operations['EngineeringController_updateHomologation'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/engineering/projects/{id}/work-orders': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['EngineeringController_createWorkOrder'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/engineering/work-orders': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['EngineeringController_listWorkOrders'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/engineering/work-orders/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['EngineeringController_getWorkOrder'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/engineering/work-orders/{id}/state': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['EngineeringController_updateWorkOrderState'];
+    trace?: never;
+  };
+  '/api/v1/engineering/checklist-items/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['EngineeringController_updateChecklistItem'];
+    trace?: never;
+  };
+  '/api/v1/engineering/projects/{id}/handover': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['EngineeringController_recordCustomerHandover'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2687,6 +2863,170 @@ export interface components {
       invoiceNumber?: string;
       notes?: string;
       items: components['schemas']['GoodsReceiptItemInputDto'][];
+    };
+    CreateOperationalProjectDto: {
+      /** @example b0e00888-c774-4b47-ba21-863a566580ec */
+      opportunityId: string;
+      /** @example PRJ-2026-0001 */
+      code: string;
+      /** @example Instalação Solar Residencial 7.2 kWp */
+      title: string;
+      /** @example b0e00888-c774-4b47-ba21-863a566580ec */
+      engineerUserId?: string;
+      /** @example 7.2 */
+      nominalPowerKw?: number;
+      /** @example 950 */
+      estimatedMonthlyGenerationKwh?: number;
+      /** @example ART-2026-887412 */
+      artNumber?: string;
+      /** @example Telhado cerâmico colonial, orientação Norte. */
+      notes?: string;
+    };
+    UpdateOperationalProjectDto: {
+      /**
+       * @example ENGINEERING
+       * @enum {string}
+       */
+      state?:
+        | 'PREPARATION'
+        | 'ENGINEERING'
+        | 'HOMOLOGATION'
+        | 'SUPPLY'
+        | 'READY_TO_SCHEDULE'
+        | 'SCHEDULED'
+        | 'INSTALLING'
+        | 'COMMISSIONING'
+        | 'DELIVERY'
+        | 'AFTER_SALES'
+        | 'CLOSED'
+        | 'SUSPENDED'
+        | 'CANCELED';
+      /** @example b0e00888-c774-4b47-ba21-863a566580ec */
+      engineerUserId?: string;
+      /** @example ART-2026-887412 */
+      artNumber?: string;
+      /** @example Observações de engenharia e telhado. */
+      notes?: string;
+    };
+    CreateExecutiveDesignDto: {
+      /** @example 2 */
+      stringsCount: number;
+      /** @example 8 */
+      modulesPerString: number;
+      /** @example 2 */
+      mpptCount: number;
+      /** @example 18.5 */
+      tiltDegrees?: number;
+      /** @example 0 */
+      azimuthDegrees?: number;
+      /** @example 6 */
+      cableGaugeMm?: number;
+      /** @example https://docs.moura-solar.test/diagrams/prj-1.pdf */
+      diagramUrl?: string;
+      /** @example Configuração em 2 strings de 8 módulos no MPPT 1 e 2. */
+      notes?: string;
+    };
+    UpdateHomologationDto: {
+      /** @example CEMIG Distribuição S.A. */
+      distributor: string;
+      /** @example PROT-CEMIG-2026-9988 */
+      protocolNumber?: string;
+      /**
+       * @example SUBMITTED
+       * @enum {string}
+       */
+      stage:
+        | 'PREPARING'
+        | 'SUBMITTED'
+        | 'PENDING_INFORMATION'
+        | 'UNDER_REVIEW'
+        | 'APPROVED'
+        | 'REJECTED'
+        | 'METER_EXCHANGE_PENDING'
+        | 'METER_EXCHANGED'
+        | 'COMPLETED';
+      /** @example 2026-10-15 */
+      deadlineAt?: string;
+      /** @example Projeto submetido no portal da concessionária. */
+      notes?: string;
+    };
+    CreateWorkOrderChecklistInputDto: {
+      /**
+       * @example PREPARATION
+       * @enum {string}
+       */
+      section:
+        'PREPARATION' | 'SAFETY_ARRIVAL' | 'EQUIPMENT' | 'EXECUTION' | 'COMMISSIONING' | 'DELIVERY';
+      /** @example EPI-01 */
+      itemCode: string;
+      /** @example Conferência de EPIs da equipe */
+      title: string;
+      /** @example CHECK */
+      responseType?: string;
+    };
+    CreateWorkOrderDto: {
+      /** @example OS-2026-0001 */
+      code: string;
+      /** @example Instalação Física e Conexão Elétrica */
+      title: string;
+      /** @example 2026-10-10 */
+      scheduledDate?: string;
+      /** @example 2026-10-11 */
+      scheduledEndDate?: string;
+      /** @example b0e00888-c774-4b47-ba21-863a566580ec */
+      assignedLeaderId?: string;
+      /** @example b0e00888-c774-4b47-ba21-863a566580ec */
+      assignedTeamId?: string;
+      /** @example ABC-1234 */
+      vehiclePlate?: string;
+      checklistItems?: components['schemas']['CreateWorkOrderChecklistInputDto'][];
+    };
+    UpdateWorkOrderStateDto: {
+      /**
+       * @example IN_PROGRESS
+       * @enum {string}
+       */
+      state:
+        | 'DRAFT'
+        | 'READY'
+        | 'ASSIGNED'
+        | 'CONFIRMED'
+        | 'IN_PROGRESS'
+        | 'PAUSED'
+        | 'PARTIALLY_COMPLETED'
+        | 'COMPLETED'
+        | 'CANCELED';
+      /** @example CLIMA */
+      pauseReason?: string;
+      /** @example Chuva torrencial no local impossibilitando subida no telhado. */
+      pauseNotes?: string;
+    };
+    UpdateChecklistItemDto: {
+      /**
+       * @example OK
+       * @enum {string}
+       */
+      status: 'PENDING' | 'OK' | 'NOK' | 'NOT_APPLICABLE';
+      /** @example 450.5 */
+      measurementValue?: number;
+      /** @example Tensão de circuito aberto (Voc) aferida em 450.5 V, dentro do esperado. */
+      notes?: string;
+      /** @example https://storage.moura-solar.test/photos/os-1-voc.jpg */
+      photoUrl?: string;
+    };
+    RecordCustomerHandoverDto: {
+      /** @example Carlos Alberto Silva */
+      clientName: string;
+      /** @example 123.456.789-00 */
+      clientDocument?: string;
+      /** @example 6.8 */
+      generationVerifiedKw?: number;
+      /** @example 5 */
+      satisfactionRating?: number;
+      /** @example CONFIRMED_VIA_TOUCH_SIGNATURE */
+      signatureData?: string;
+      /** @example Cliente instruído sobre aplicativo do inversor e desligamento de emergência. */
+      notes?: string;
     };
   };
   responses: never;
@@ -5278,6 +5618,287 @@ export interface operations {
       cookie?: never;
     };
     requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  EngineeringController_listOperationalProjects: {
+    parameters: {
+      query?: {
+        state?: string;
+        search?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  EngineeringController_createOperationalProject: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateOperationalProjectDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  EngineeringController_getOperationalProject: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  EngineeringController_updateOperationalProject: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateOperationalProjectDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  EngineeringController_createExecutiveDesign: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateExecutiveDesignDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  EngineeringController_approveExecutiveDesign: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+        designId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  EngineeringController_updateHomologation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateHomologationDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  EngineeringController_createWorkOrder: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateWorkOrderDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  EngineeringController_listWorkOrders: {
+    parameters: {
+      query?: {
+        state?: string;
+        leaderId?: string;
+        projectId?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  EngineeringController_getWorkOrder: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  EngineeringController_updateWorkOrderState: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateWorkOrderStateDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  EngineeringController_updateChecklistItem: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateChecklistItemDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  EngineeringController_recordCustomerHandover: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RecordCustomerHandoverDto'];
+      };
+    };
     responses: {
       200: {
         headers: {
