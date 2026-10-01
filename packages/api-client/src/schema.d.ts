@@ -1716,6 +1716,230 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/after-sales/tickets': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['AfterSalesController_listTickets'];
+    put?: never;
+    post: operations['AfterSalesController_createTicket'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/after-sales/tickets/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['AfterSalesController_getTicket'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/after-sales/tickets/{id}/triage': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['AfterSalesController_triageTicket'];
+    trace?: never;
+  };
+  '/api/v1/after-sales/tickets/{id}/status': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['AfterSalesController_updateTicketStatus'];
+    trace?: never;
+  };
+  '/api/v1/after-sales/tickets/{id}/interactions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['AfterSalesController_addInteraction'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/after-sales/projects/{projectId}/warranties': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['AfterSalesController_listWarrantyCoverages'];
+    put?: never;
+    post: operations['AfterSalesController_createWarrantyCoverage'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/after-sales/tickets/{id}/warranty-claims': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['AfterSalesController_createWarrantyClaim'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/after-sales/warranty-claims/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['AfterSalesController_updateWarrantyClaim'];
+    trace?: never;
+  };
+  '/api/v1/after-sales/tickets/{id}/quotes': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['AfterSalesController_createServiceVisitQuote'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/after-sales/quotes/{id}/accept': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['AfterSalesController_acceptServiceVisitQuote'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/after-sales/projects/{projectId}/monitoring': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['AfterSalesController_getMonitoringSystem'];
+    put?: never;
+    post: operations['AfterSalesController_createMonitoringSystem'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/after-sales/monitoring/{id}/readings': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['AfterSalesController_recordMonitoringReading'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/after-sales/monitoring/{id}/incidents': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['AfterSalesController_recordConnectivityIncident'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/after-sales/incidents/{id}/restore': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['AfterSalesController_restoreConnectivityIncident'];
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3027,6 +3251,258 @@ export interface components {
       signatureData?: string;
       /** @example Cliente instruído sobre aplicativo do inversor e desligamento de emergência. */
       notes?: string;
+    };
+    CreateSupportTicketDto: {
+      /** @description ID do Cliente */
+      customerId: string;
+      /** @description ID do Projeto Operacional (se houver) */
+      projectId?: string;
+      /**
+       * @description Tipo de atendimento
+       * @enum {string}
+       */
+      type:
+        | 'ORIENTATION'
+        | 'CONNECTIVITY'
+        | 'INSTALLATION_WARRANTY'
+        | 'MANUFACTURER_WARRANTY'
+        | 'MAINTENANCE'
+        | 'EXTERNAL_EVENT'
+        | 'PERFORMANCE';
+      /**
+       * @description Prioridade do chamado
+       * @default MEDIUM
+       * @enum {string}
+       */
+      priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+      /**
+       * @description Canal de entrada
+       * @default WHATSAPP
+       * @enum {string}
+       */
+      channel: 'WHATSAPP' | 'PHONE' | 'EMAIL' | 'IN_PERSON' | 'PORTAL' | 'SYSTEM';
+      /** @description Título / Resumo do Chamado */
+      title: string;
+      /** @description Descrição detalhada do relato do cliente */
+      description: string;
+      /**
+       * @description Cobertura provável inicial
+       * @enum {string}
+       */
+      probableCoverage?:
+        | 'PENDING'
+        | 'CONTRACT'
+        | 'INSTALLATION'
+        | 'MANUFACTURER'
+        | 'COURTESY'
+        | 'INSURANCE'
+        | 'BILLABLE'
+        | 'NOT_APPLICABLE'
+        | 'PENDENTE'
+        | 'CONTRATO'
+        | 'INSTALACAO'
+        | 'FABRICANTE'
+        | 'CORTESIA'
+        | 'SEGURO'
+        | 'COBRAVEL'
+        | 'NAO_APLICAVEL';
+    };
+    TriageSupportTicketDto: {
+      /**
+       * @description Cobertura confirmada após análise
+       * @enum {string}
+       */
+      confirmedCoverage?:
+        | 'PENDING'
+        | 'CONTRACT'
+        | 'INSTALLATION'
+        | 'MANUFACTURER'
+        | 'COURTESY'
+        | 'INSURANCE'
+        | 'BILLABLE'
+        | 'NOT_APPLICABLE'
+        | 'PENDENTE'
+        | 'CONTRATO'
+        | 'INSTALACAO'
+        | 'FABRICANTE'
+        | 'CORTESIA'
+        | 'SEGURO'
+        | 'COBRAVEL'
+        | 'NAO_APLICAVEL';
+      /** @description Causa raiz identificada */
+      rootCause?: string;
+      /** @description ID do usuário responsável */
+      assignedToId?: string;
+      /** @description ID da equipe responsável */
+      assignedTeamId?: string;
+      /** @enum {string} */
+      priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+    };
+    UpdateSupportTicketStatusDto: {
+      /**
+       * @description Novo estado do chamado
+       * @enum {string}
+       */
+      status:
+        | 'OPEN'
+        | 'IN_TRIAGE'
+        | 'WAITING_CUSTOMER'
+        | 'WAITING_INTERNAL'
+        | 'SCHEDULED'
+        | 'IN_PROGRESS'
+        | 'RESOLVED'
+        | 'CLOSED'
+        | 'CANCELED'
+        | 'REOPENED';
+      /** @description Resumo da solução técnica adotada */
+      resolutionSummary?: string;
+      /** @description Avaliação de satisfação do cliente (1 a 5) */
+      satisfactionRating?: number;
+    };
+    CreateSupportInteractionDto: {
+      /**
+       * @description Tipo de interação
+       * @enum {string}
+       */
+      kind: 'NOTE' | 'MESSAGE' | 'REMOTE_GUIDANCE' | 'STATUS_CHANGE' | 'EVIDENCE';
+      /**
+       * @description Visibilidade da nota
+       * @default INTERNAL
+       * @enum {string}
+       */
+      visibility: 'INTERNAL' | 'PUBLIC';
+      /** @description Conteúdo da interação ou orientação prestada */
+      body: string;
+      /** @description URL de anexo ou evidência */
+      attachmentUrl?: string;
+    };
+    CreateWarrantyCoverageDto: {
+      /**
+       * @description Tipo da garantia
+       * @enum {string}
+       */
+      kind: 'INSTALLATION' | 'INVERTER' | 'MODULE' | 'STRUCTURE' | 'ELECTRICAL';
+      /**
+       * @description Tipo do provedor
+       * @enum {string}
+       */
+      providerType: 'INSTALLER' | 'MANUFACTURER' | 'DISTRIBUTOR';
+      /** @description Nome do provedor (ex: Moura Solar, Solis, Canadian Solar) */
+      providerName: string;
+      /** @description Modelo do equipamento coberto */
+      itemModel?: string;
+      /** @description Número de série coberto */
+      serialNumber?: string;
+      /** @description Data de início da vigência (YYYY-MM-DD) */
+      startsAt: string;
+      /** @description Data de término da vigência (YYYY-MM-DD) */
+      endsAt: string;
+      /** @description Termos e condições resumidos */
+      terms?: string;
+    };
+    CreateWarrantyClaimDto: {
+      /** @description ID da cobertura de garantia vinculada */
+      coverageId: string;
+      /** @description ID do fornecedor/fabricante */
+      supplierId?: string;
+      /** @description Descrição da falha constatada */
+      failureDescription: string;
+      /** @description Protocolo de abertura com o fabricante */
+      protocolNumber?: string;
+    };
+    UpdateWarrantyClaimDto: {
+      /**
+       * @description Status do sinistro/RMA
+       * @enum {string}
+       */
+      status:
+        | 'DRAFT'
+        | 'SUBMITTED'
+        | 'UNDER_REVIEW'
+        | 'APPROVED'
+        | 'REJECTED'
+        | 'RMA'
+        | 'REPLACED'
+        | 'CLOSED';
+      /** @description Código RMA gerado pelo fabricante */
+      rmaCode?: string;
+      /** @description Número de série da peça substituta */
+      replacementSerial?: string;
+      /** @description Valor de custos reembolsados pelo fabricante */
+      costsReimbursed?: number;
+    };
+    CreateServiceVisitQuoteDto: {
+      /** @description Valor de mão de obra / serviço técnico */
+      laborAmount: number;
+      /** @description Taxa de deslocamento / km */
+      displacementAmount: number;
+      /**
+       * @description Valor de materiais adicionais fora de garantia
+       * @default 0
+       */
+      materialsAmount: number;
+      /**
+       * @description Desconto comercial concedido
+       * @default 0
+       */
+      discountAmount: number;
+      /** @description Data limite de validade do orçamento (YYYY-MM-DD) */
+      validUntil: string;
+      /** @description Observações do orçamento */
+      notes?: string;
+    };
+    AcceptServiceVisitQuoteDto: {
+      /** @description Nome do responsável pelo aceite */
+      acceptedBy: string;
+      /** @description Evidência do aceite (link, WhatsApp, assinatura digital) */
+      acceptanceEvidence?: string;
+    };
+    CreateMonitoringSystemDto: {
+      /** @description Provedor da telemetria (ex: SolisCloud, Deye Cloud, Huawei, Manual) */
+      provider: string;
+      /** @description ID da usina no portal do fabricante */
+      externalPlantId?: string;
+      /**
+       * @description Tipo de conexão
+       * @default WIFI
+       * @enum {string}
+       */
+      connectionType: 'WIFI' | 'ETHERNET' | '4G' | 'RS485';
+      /** @description Modelo do inversor / datalogger */
+      inverterModel?: string;
+      /** @description Observações de conectividade */
+      notes?: string;
+    };
+    RecordMonitoringReadingDto: {
+      /** @description Competência no formato YYYY-MM */
+      period: string;
+      /** @description Geração esperada em kWh */
+      expectedGenerationKwh: number;
+      /** @description Geração real apurada em kWh. Deixar nulo se não houver telemetria (não enviar zero!). */
+      realizedGenerationKwh?: number | null;
+      /**
+       * @description Origem da leitura
+       * @default INFORMADA
+       * @enum {string}
+       */
+      source: 'INFORMADA' | 'IMPORTADA' | 'ESTIMADA' | 'VALIDADA';
+      /** @description Observações da leitura */
+      notes?: string;
+    };
+    RecordConnectivityIncidentDto: {
+      /** @description ID do chamado relacionado */
+      ticketId?: string;
+      /** @description Causa provável (ex: Troca de roteador/provedor de internet) */
+      reason?: string;
+      /**
+       * @description Cliente trocou rede Wi-Fi/provedor?
+       * @default false
+       */
+      customerNetworkChanged: boolean;
+    };
+    RestoreConnectivityIncidentDto: {
+      /** @description Método de resolução (ex: Roteiro remoto via WPS aplicado com sucesso) */
+      resolutionMethod: string;
     };
   };
   responses: never;
@@ -5897,6 +6373,383 @@ export interface operations {
     requestBody: {
       content: {
         'application/json': components['schemas']['RecordCustomerHandoverDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AfterSalesController_listTickets: {
+    parameters: {
+      query?: {
+        status?: string;
+        priority?: string;
+        customerId?: string;
+        projectId?: string;
+        search?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AfterSalesController_createTicket: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateSupportTicketDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AfterSalesController_getTicket: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AfterSalesController_triageTicket: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TriageSupportTicketDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AfterSalesController_updateTicketStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateSupportTicketStatusDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AfterSalesController_addInteraction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateSupportInteractionDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AfterSalesController_listWarrantyCoverages: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        projectId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AfterSalesController_createWarrantyCoverage: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        projectId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateWarrantyCoverageDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AfterSalesController_createWarrantyClaim: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateWarrantyClaimDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AfterSalesController_updateWarrantyClaim: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateWarrantyClaimDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AfterSalesController_createServiceVisitQuote: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateServiceVisitQuoteDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AfterSalesController_acceptServiceVisitQuote: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AcceptServiceVisitQuoteDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AfterSalesController_getMonitoringSystem: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        projectId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AfterSalesController_createMonitoringSystem: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        projectId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateMonitoringSystemDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AfterSalesController_recordMonitoringReading: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RecordMonitoringReadingDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AfterSalesController_recordConnectivityIncident: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RecordConnectivityIncidentDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AfterSalesController_restoreConnectivityIncident: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RestoreConnectivityIncidentDto'];
       };
     };
     responses: {

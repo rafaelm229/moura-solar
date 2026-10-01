@@ -62,10 +62,18 @@ try {
   assert.equal(await db.homologationProcess.count(), 0);
   assert.equal(await db.workOrder.count(), 0);
   assert.equal(await db.customerHandover.count(), 0);
+  assert.equal(await db.supportTicket.count(), 0);
+  assert.equal(await db.supportInteraction.count(), 0);
+  assert.equal(await db.warrantyCoverage.count(), 0);
+  assert.equal(await db.warrantyClaim.count(), 0);
+  assert.equal(await db.serviceVisitQuote.count(), 0);
+  assert.equal(await db.monitoringSystem.count(), 0);
+  assert.equal(await db.monitoringReading.count(), 0);
+  assert.equal(await db.connectivityIncident.count(), 0);
   prisma(['migrate', 'deploy']);
   assert.equal(await db.organization.count(), 1);
   console.log(
-    'Upgrade M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 preserved existing organization; repeated deployment was safe.',
+    'Upgrade M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M9 preserved existing organization; repeated deployment was safe.',
   );
 } finally {
   await db.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);

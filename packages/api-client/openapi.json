@@ -4504,6 +4504,595 @@
         ],
         "tags": ["Engenharia & Instalações"]
       }
+    },
+    "/api/v1/after-sales/tickets": {
+      "post": {
+        "operationId": "AfterSalesController_createTicket",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSupportTicketDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Pós-Venda, Suporte & Monitoramento"]
+      },
+      "get": {
+        "operationId": "AfterSalesController_listTickets",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "priority",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "customerId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Pós-Venda, Suporte & Monitoramento"]
+      }
+    },
+    "/api/v1/after-sales/tickets/{id}": {
+      "get": {
+        "operationId": "AfterSalesController_getTicket",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Pós-Venda, Suporte & Monitoramento"]
+      }
+    },
+    "/api/v1/after-sales/tickets/{id}/triage": {
+      "patch": {
+        "operationId": "AfterSalesController_triageTicket",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TriageSupportTicketDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Pós-Venda, Suporte & Monitoramento"]
+      }
+    },
+    "/api/v1/after-sales/tickets/{id}/status": {
+      "patch": {
+        "operationId": "AfterSalesController_updateTicketStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSupportTicketStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Pós-Venda, Suporte & Monitoramento"]
+      }
+    },
+    "/api/v1/after-sales/tickets/{id}/interactions": {
+      "post": {
+        "operationId": "AfterSalesController_addInteraction",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSupportInteractionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Pós-Venda, Suporte & Monitoramento"]
+      }
+    },
+    "/api/v1/after-sales/projects/{projectId}/warranties": {
+      "get": {
+        "operationId": "AfterSalesController_listWarrantyCoverages",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Pós-Venda, Suporte & Monitoramento"]
+      },
+      "post": {
+        "operationId": "AfterSalesController_createWarrantyCoverage",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWarrantyCoverageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Pós-Venda, Suporte & Monitoramento"]
+      }
+    },
+    "/api/v1/after-sales/tickets/{id}/warranty-claims": {
+      "post": {
+        "operationId": "AfterSalesController_createWarrantyClaim",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWarrantyClaimDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Pós-Venda, Suporte & Monitoramento"]
+      }
+    },
+    "/api/v1/after-sales/warranty-claims/{id}": {
+      "patch": {
+        "operationId": "AfterSalesController_updateWarrantyClaim",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWarrantyClaimDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Pós-Venda, Suporte & Monitoramento"]
+      }
+    },
+    "/api/v1/after-sales/tickets/{id}/quotes": {
+      "post": {
+        "operationId": "AfterSalesController_createServiceVisitQuote",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateServiceVisitQuoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Pós-Venda, Suporte & Monitoramento"]
+      }
+    },
+    "/api/v1/after-sales/quotes/{id}/accept": {
+      "post": {
+        "operationId": "AfterSalesController_acceptServiceVisitQuote",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptServiceVisitQuoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Pós-Venda, Suporte & Monitoramento"]
+      }
+    },
+    "/api/v1/after-sales/projects/{projectId}/monitoring": {
+      "get": {
+        "operationId": "AfterSalesController_getMonitoringSystem",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Pós-Venda, Suporte & Monitoramento"]
+      },
+      "post": {
+        "operationId": "AfterSalesController_createMonitoringSystem",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMonitoringSystemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Pós-Venda, Suporte & Monitoramento"]
+      }
+    },
+    "/api/v1/after-sales/monitoring/{id}/readings": {
+      "post": {
+        "operationId": "AfterSalesController_recordMonitoringReading",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordMonitoringReadingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Pós-Venda, Suporte & Monitoramento"]
+      }
+    },
+    "/api/v1/after-sales/monitoring/{id}/incidents": {
+      "post": {
+        "operationId": "AfterSalesController_recordConnectivityIncident",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordConnectivityIncidentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Pós-Venda, Suporte & Monitoramento"]
+      }
+    },
+    "/api/v1/after-sales/incidents/{id}/restore": {
+      "patch": {
+        "operationId": "AfterSalesController_restoreConnectivityIncident",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestoreConnectivityIncidentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Pós-Venda, Suporte & Monitoramento"]
+      }
     }
   },
   "info": {
@@ -7826,6 +8415,398 @@
           }
         },
         "required": ["clientName"]
+      },
+      "CreateSupportTicketDto": {
+        "type": "object",
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "description": "ID do Cliente"
+          },
+          "projectId": {
+            "type": "string",
+            "description": "ID do Projeto Operacional (se houver)"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "ORIENTATION",
+              "CONNECTIVITY",
+              "INSTALLATION_WARRANTY",
+              "MANUFACTURER_WARRANTY",
+              "MAINTENANCE",
+              "EXTERNAL_EVENT",
+              "PERFORMANCE"
+            ],
+            "description": "Tipo de atendimento"
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
+            "default": "MEDIUM",
+            "description": "Prioridade do chamado"
+          },
+          "channel": {
+            "type": "string",
+            "enum": ["WHATSAPP", "PHONE", "EMAIL", "IN_PERSON", "PORTAL", "SYSTEM"],
+            "default": "WHATSAPP",
+            "description": "Canal de entrada"
+          },
+          "title": {
+            "type": "string",
+            "description": "Título / Resumo do Chamado"
+          },
+          "description": {
+            "type": "string",
+            "description": "Descrição detalhada do relato do cliente"
+          },
+          "probableCoverage": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "CONTRACT",
+              "INSTALLATION",
+              "MANUFACTURER",
+              "COURTESY",
+              "INSURANCE",
+              "BILLABLE",
+              "NOT_APPLICABLE",
+              "PENDENTE",
+              "CONTRATO",
+              "INSTALACAO",
+              "FABRICANTE",
+              "CORTESIA",
+              "SEGURO",
+              "COBRAVEL",
+              "NAO_APLICAVEL"
+            ],
+            "description": "Cobertura provável inicial"
+          }
+        },
+        "required": ["customerId", "type", "title", "description"]
+      },
+      "TriageSupportTicketDto": {
+        "type": "object",
+        "properties": {
+          "confirmedCoverage": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "CONTRACT",
+              "INSTALLATION",
+              "MANUFACTURER",
+              "COURTESY",
+              "INSURANCE",
+              "BILLABLE",
+              "NOT_APPLICABLE",
+              "PENDENTE",
+              "CONTRATO",
+              "INSTALACAO",
+              "FABRICANTE",
+              "CORTESIA",
+              "SEGURO",
+              "COBRAVEL",
+              "NAO_APLICAVEL"
+            ],
+            "description": "Cobertura confirmada após análise"
+          },
+          "rootCause": {
+            "type": "string",
+            "description": "Causa raiz identificada"
+          },
+          "assignedToId": {
+            "type": "string",
+            "description": "ID do usuário responsável"
+          },
+          "assignedTeamId": {
+            "type": "string",
+            "description": "ID da equipe responsável"
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+          }
+        }
+      },
+      "UpdateSupportTicketStatusDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "IN_TRIAGE",
+              "WAITING_CUSTOMER",
+              "WAITING_INTERNAL",
+              "SCHEDULED",
+              "IN_PROGRESS",
+              "RESOLVED",
+              "CLOSED",
+              "CANCELED",
+              "REOPENED"
+            ],
+            "description": "Novo estado do chamado"
+          },
+          "resolutionSummary": {
+            "type": "string",
+            "description": "Resumo da solução técnica adotada"
+          },
+          "satisfactionRating": {
+            "type": "number",
+            "description": "Avaliação de satisfação do cliente (1 a 5)"
+          }
+        },
+        "required": ["status"]
+      },
+      "CreateSupportInteractionDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": ["NOTE", "MESSAGE", "REMOTE_GUIDANCE", "STATUS_CHANGE", "EVIDENCE"],
+            "description": "Tipo de interação"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": ["INTERNAL", "PUBLIC"],
+            "default": "INTERNAL",
+            "description": "Visibilidade da nota"
+          },
+          "body": {
+            "type": "string",
+            "description": "Conteúdo da interação ou orientação prestada"
+          },
+          "attachmentUrl": {
+            "type": "string",
+            "description": "URL de anexo ou evidência"
+          }
+        },
+        "required": ["kind", "body"]
+      },
+      "CreateWarrantyCoverageDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": ["INSTALLATION", "INVERTER", "MODULE", "STRUCTURE", "ELECTRICAL"],
+            "description": "Tipo da garantia"
+          },
+          "providerType": {
+            "type": "string",
+            "enum": ["INSTALLER", "MANUFACTURER", "DISTRIBUTOR"],
+            "description": "Tipo do provedor"
+          },
+          "providerName": {
+            "type": "string",
+            "description": "Nome do provedor (ex: Moura Solar, Solis, Canadian Solar)"
+          },
+          "itemModel": {
+            "type": "string",
+            "description": "Modelo do equipamento coberto"
+          },
+          "serialNumber": {
+            "type": "string",
+            "description": "Número de série coberto"
+          },
+          "startsAt": {
+            "type": "string",
+            "description": "Data de início da vigência (YYYY-MM-DD)"
+          },
+          "endsAt": {
+            "type": "string",
+            "description": "Data de término da vigência (YYYY-MM-DD)"
+          },
+          "terms": {
+            "type": "string",
+            "description": "Termos e condições resumidos"
+          }
+        },
+        "required": ["kind", "providerType", "providerName", "startsAt", "endsAt"]
+      },
+      "CreateWarrantyClaimDto": {
+        "type": "object",
+        "properties": {
+          "coverageId": {
+            "type": "string",
+            "description": "ID da cobertura de garantia vinculada"
+          },
+          "supplierId": {
+            "type": "string",
+            "description": "ID do fornecedor/fabricante"
+          },
+          "failureDescription": {
+            "type": "string",
+            "description": "Descrição da falha constatada"
+          },
+          "protocolNumber": {
+            "type": "string",
+            "description": "Protocolo de abertura com o fabricante"
+          }
+        },
+        "required": ["coverageId", "failureDescription"]
+      },
+      "UpdateWarrantyClaimDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "SUBMITTED",
+              "UNDER_REVIEW",
+              "APPROVED",
+              "REJECTED",
+              "RMA",
+              "REPLACED",
+              "CLOSED"
+            ],
+            "description": "Status do sinistro/RMA"
+          },
+          "rmaCode": {
+            "type": "string",
+            "description": "Código RMA gerado pelo fabricante"
+          },
+          "replacementSerial": {
+            "type": "string",
+            "description": "Número de série da peça substituta"
+          },
+          "costsReimbursed": {
+            "type": "number",
+            "description": "Valor de custos reembolsados pelo fabricante"
+          }
+        },
+        "required": ["status"]
+      },
+      "CreateServiceVisitQuoteDto": {
+        "type": "object",
+        "properties": {
+          "laborAmount": {
+            "type": "number",
+            "description": "Valor de mão de obra / serviço técnico"
+          },
+          "displacementAmount": {
+            "type": "number",
+            "description": "Taxa de deslocamento / km"
+          },
+          "materialsAmount": {
+            "type": "number",
+            "description": "Valor de materiais adicionais fora de garantia",
+            "default": 0
+          },
+          "discountAmount": {
+            "type": "number",
+            "description": "Desconto comercial concedido",
+            "default": 0
+          },
+          "validUntil": {
+            "type": "string",
+            "description": "Data limite de validade do orçamento (YYYY-MM-DD)"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Observações do orçamento"
+          }
+        },
+        "required": ["laborAmount", "displacementAmount", "validUntil"]
+      },
+      "AcceptServiceVisitQuoteDto": {
+        "type": "object",
+        "properties": {
+          "acceptedBy": {
+            "type": "string",
+            "description": "Nome do responsável pelo aceite"
+          },
+          "acceptanceEvidence": {
+            "type": "string",
+            "description": "Evidência do aceite (link, WhatsApp, assinatura digital)"
+          }
+        },
+        "required": ["acceptedBy"]
+      },
+      "CreateMonitoringSystemDto": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "description": "Provedor da telemetria (ex: SolisCloud, Deye Cloud, Huawei, Manual)"
+          },
+          "externalPlantId": {
+            "type": "string",
+            "description": "ID da usina no portal do fabricante"
+          },
+          "connectionType": {
+            "type": "string",
+            "enum": ["WIFI", "ETHERNET", "4G", "RS485"],
+            "default": "WIFI",
+            "description": "Tipo de conexão"
+          },
+          "inverterModel": {
+            "type": "string",
+            "description": "Modelo do inversor / datalogger"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Observações de conectividade"
+          }
+        },
+        "required": ["provider"]
+      },
+      "RecordMonitoringReadingDto": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string",
+            "description": "Competência no formato YYYY-MM"
+          },
+          "expectedGenerationKwh": {
+            "type": "number",
+            "description": "Geração esperada em kWh"
+          },
+          "realizedGenerationKwh": {
+            "type": "number",
+            "nullable": true,
+            "description": "Geração real apurada em kWh. Deixar nulo se não houver telemetria (não enviar zero!)."
+          },
+          "source": {
+            "type": "string",
+            "enum": ["INFORMADA", "IMPORTADA", "ESTIMADA", "VALIDADA"],
+            "default": "INFORMADA",
+            "description": "Origem da leitura"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Observações da leitura"
+          }
+        },
+        "required": ["period", "expectedGenerationKwh"]
+      },
+      "RecordConnectivityIncidentDto": {
+        "type": "object",
+        "properties": {
+          "ticketId": {
+            "type": "string",
+            "description": "ID do chamado relacionado"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Causa provável (ex: Troca de roteador/provedor de internet)"
+          },
+          "customerNetworkChanged": {
+            "type": "boolean",
+            "description": "Cliente trocou rede Wi-Fi/provedor?",
+            "default": false
+          }
+        }
+      },
+      "RestoreConnectivityIncidentDto": {
+        "type": "object",
+        "properties": {
+          "resolutionMethod": {
+            "type": "string",
+            "description": "Método de resolução (ex: Roteiro remoto via WPS aplicado com sucesso)"
+          }
+        },
+        "required": ["resolutionMethod"]
       }
     }
   }

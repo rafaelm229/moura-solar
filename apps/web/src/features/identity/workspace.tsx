@@ -22,6 +22,7 @@ import { Catalog } from '../design/catalog';
 import { GlobalFinancialDashboard } from '../financial/financial';
 import { InventoryManagement } from '../inventory/inventory';
 import { EngineeringManagement } from '../engineering/engineering';
+import { AfterSalesManagement } from '../after-sales/after-sales';
 
 const destinations = [
   { id: 'sessions', label: 'Minhas sessões', permission: 'sessions:read_own', organization: false },
@@ -47,6 +48,12 @@ const destinations = [
     id: 'engineering',
     label: 'Engenharia & Obras',
     permission: 'engineering:read',
+    organization: false,
+  },
+  {
+    id: 'after_sales',
+    label: 'Pós-Venda & Garantias',
+    permission: 'after_sales:read',
     organization: false,
   },
   { id: 'catalog', label: 'Catálogo', permission: 'catalog:read', organization: false },
@@ -222,6 +229,7 @@ function Application() {
             {tab === 'financial' && <GlobalFinancialDashboard />}
             {tab === 'inventory' && <InventoryManagement />}
             {tab === 'engineering' && <EngineeringManagement />}
+            {tab === 'after_sales' && <AfterSalesManagement />}
             {tab === 'catalog' && <Catalog />}
             {tab === 'sessions' && <Sessions onLogout={logoutLocal} />}
             {tab === 'members' && <Members />}

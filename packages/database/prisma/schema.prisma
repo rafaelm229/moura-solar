@@ -67,6 +67,14 @@ model Organization {
   workOrders          WorkOrder[]
   workOrderChecklistItems WorkOrderChecklistItem[]
   customerHandovers   CustomerHandover[]
+  supportTickets      SupportTicket[]
+  supportInteractions SupportInteraction[]
+  warrantyCoverages   WarrantyCoverage[]
+  warrantyClaims      WarrantyClaim[]
+  serviceVisitQuotes  ServiceVisitQuote[]
+  monitoringSystems   MonitoringSystem[]
+  monitoringReadings  MonitoringReading[]
+  connectivityIncidents ConnectivityIncident[]
 
   @@map("organizations")
 }
@@ -102,6 +110,9 @@ model User {
   ledWorkOrders             WorkOrder[]          @relation("LedWorkOrders")
   checkedWorkOrderItems     WorkOrderChecklistItem[] @relation("CheckedWorkOrderItems")
   receivedHandovers         CustomerHandover[]   @relation("ReceivedHandovers")
+  assignedSupportTickets    SupportTicket[]      @relation("AssignedSupportTickets")
+  supportInteractions       SupportInteraction[] @relation("AuthorSupportInteractions")
+  validatedMonitoringReadings MonitoringReading[] @relation("ValidatedMonitoringReadings")
 
   @@map("users")
 }
@@ -164,6 +175,7 @@ model Team {
   organization   Organization @relation(fields: [organizationId], references: [id])
   members        TeamMember[]
   workOrders     WorkOrder[]
+  assignedSupportTickets SupportTicket[]
 
   @@unique([organizationId, name])
   @@map("teams")
@@ -270,6 +282,7 @@ model Customer {
   utilityUnits      UtilityUnit[]
   opportunities     Opportunity[]
   activities        Activity[]
+  supportTickets    SupportTicket[]
 
   @@index([organizationId, status])
   @@index([organizationId, taxId])
@@ -974,6 +987,7 @@ model Receivable {
   opportunity       Opportunity         @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
   paymentPlan       PaymentPlan         @relation(fields: [paymentPlanId], references: [id], onDelete: Cascade)
   allocations       ReceiptAllocation[]
+  serviceVisitQuotes ServiceVisitQuote[]
 
   @@index([opportunityId, status])
   @@index([dueDate, status])
@@ -1295,6 +1309,7 @@ model Supplier {
 
   organization   Organization    @relation(fields: [organizationId], references: [id])
   purchaseOrders PurchaseOrder[]
+  warrantyClaims WarrantyClaim[]
 
   @@unique([organizationId, code])
   @@unique([organizationId, documentNumber])
@@ -1451,6 +1466,9 @@ model OperationalProject {
   homologation                  HomologationProcess?
   workOrders                    WorkOrder[]
   handover                      CustomerHandover?
+  supportTickets                SupportTicket[]
+  warrantyCoverages             WarrantyCoverage[]
+  monitoringSystem              MonitoringSystem?
 
   @@unique([organizationId, code])
   @@index([organizationId, state])
@@ -1532,6 +1550,7 @@ model WorkOrder {
   assignedLeader   User?                    @relation("LedWorkOrders", fields: [assignedLeaderId], references: [id])
   assignedTeam     Team?                    @relation(fields: [assignedTeamId], references: [id])
   checklistItems   WorkOrderChecklistItem[]
+  serviceVisitQuotes ServiceVisitQuote[]
 
   @@unique([organizationId, code])
   @@index([organizationId, state])
@@ -1585,6 +1604,223 @@ model CustomerHandover {
   receivedBy           User?              @relation("ReceivedHandovers", fields: [receivedById], references: [id])
 
   @@map("customer_handovers")
+}
+
+model SupportTicket {
+  id                 String                  @id @default(uuid()) @db.Uuid
+  organizationId     String                  @map("organization_id") @db.Uuid
+  ticketNumber       String                  @map("ticket_number")
+  customerId         String                  @map("customer_id") @db.Uuid
+  projectId          String?                 @map("project_id") @db.Uuid
+  type               String                  @default("ORIENTATION") // ORIENTATION, CONNECTIVITY, INSTALLATION_WARRANTY, MANUFACTURER_WARRANTY, MAINTENANCE, EXTERNAL_EVENT, PERFORMANCE
+  status             String                  @default("OPEN") // OPEN, IN_TRIAGE, WAITING_CUSTOMER, WAITING_INTERNAL, SCHEDULED, IN_PROGRESS, RESOLVED, CLOSED, CANCELED, REOPENED
+  priority           String                  @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  channel            String                  @default("WHATSAPP") // WHATSAPP, PHONE, EMAIL, IN_PERSON, PORTAL, SYSTEM
+  title              String
+  description        String
+  probableCoverage   String                  @default("PENDING") @map("probable_coverage") // PENDING, CONTRACT, INSTALLATION, MANUFACTURER, COURTESY, INSURANCE, BILLABLE, NOT_APPLICABLE
+  confirmedCoverage  String?                 @map("confirmed_coverage")
+  rootCause          String?                 @map("root_cause")
+  assignedToId       String?                 @map("assigned_to_id") @db.Uuid
+  assignedTeamId     String?                 @map("assigned_team_id") @db.Uuid
+  slaDueAt           DateTime?               @map("sla_due_at")
+  firstResponseAt    DateTime?               @map("first_response_at")
+  resolvedAt         DateTime?               @map("resolved_at")
+  closedAt           DateTime?               @map("closed_at")
+  resolutionSummary  String?                 @map("resolution_summary")
+  satisfactionRating Int?                    @map("satisfaction_rating")
+  version            Int                     @default(1)
+  createdAt          DateTime                @default(now()) @map("created_at")
+  updatedAt          DateTime                @updatedAt @map("updated_at")
+
+  organization          Organization           @relation(fields: [organizationId], references: [id])
+  customer              Customer               @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  project               OperationalProject?    @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  assignedTo            User?                  @relation("AssignedSupportTickets", fields: [assignedToId], references: [id], onDelete: SetNull)
+  assignedTeam          Team?                  @relation(fields: [assignedTeamId], references: [id], onDelete: SetNull)
+  interactions          SupportInteraction[]
+  warrantyClaims        WarrantyClaim[]
+  serviceVisitQuotes    ServiceVisitQuote[]
+  connectivityIncidents ConnectivityIncident[]
+
+  @@unique([organizationId, ticketNumber])
+  @@index([organizationId, status])
+  @@index([organizationId, priority])
+  @@index([customerId])
+  @@index([projectId])
+  @@map("support_tickets")
+}
+
+model SupportInteraction {
+  id             String        @id @default(uuid()) @db.Uuid
+  organizationId String        @map("organization_id") @db.Uuid
+  ticketId       String        @map("ticket_id") @db.Uuid
+  kind           String        @default("NOTE") // NOTE, MESSAGE, REMOTE_GUIDANCE, STATUS_CHANGE, EVIDENCE
+  visibility     String        @default("INTERNAL") // INTERNAL, PUBLIC
+  body           String
+  authorId       String        @map("author_id") @db.Uuid
+  occurredAt     DateTime      @default(now()) @map("occurred_at")
+  attachmentUrl  String?       @map("attachment_url")
+
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  ticket         SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author         User          @relation("AuthorSupportInteractions", fields: [authorId], references: [id])
+
+  @@index([ticketId, occurredAt])
+  @@map("support_interactions")
+}
+
+model WarrantyCoverage {
+  id             String             @id @default(uuid()) @db.Uuid
+  organizationId String             @map("organization_id") @db.Uuid
+  projectId      String             @map("project_id") @db.Uuid
+  kind           String             @default("INSTALLATION") // INSTALLATION, INVERTER, MODULE, STRUCTURE, ELECTRICAL
+  providerType   String             @default("INSTALLER") @map("provider_type") // INSTALLER, MANUFACTURER, DISTRIBUTOR
+  providerName   String             @map("provider_name")
+  itemModel      String?            @map("item_model")
+  serialNumber   String?            @map("serial_number")
+  startsAt       DateTime           @map("starts_at") @db.Date
+  endsAt         DateTime           @map("ends_at") @db.Date
+  terms          String?
+  status         String             @default("ACTIVE") // ACTIVE, EXPIRED, VOIDED
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+
+  organization   Organization       @relation(fields: [organizationId], references: [id])
+  project        OperationalProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  claims         WarrantyClaim[]
+
+  @@index([projectId, kind])
+  @@index([organizationId, status])
+  @@map("warranty_coverages")
+}
+
+model WarrantyClaim {
+  id                 String           @id @default(uuid()) @db.Uuid
+  organizationId     String           @map("organization_id") @db.Uuid
+  ticketId           String           @map("ticket_id") @db.Uuid
+  coverageId         String           @map("coverage_id") @db.Uuid
+  supplierId         String?          @map("supplier_id") @db.Uuid
+  status             String           @default("DRAFT") // DRAFT, SUBMITTED, UNDER_REVIEW, APPROVED, REJECTED, RMA, REPLACED, CLOSED
+  protocolNumber     String?          @map("protocol_number")
+  failureDescription String           @map("failure_description")
+  rmaCode            String?          @map("rma_code")
+  replacementSerial  String?          @map("replacement_serial")
+  costsReimbursed    Decimal?         @map("costs_reimbursed") @db.Decimal(12, 2)
+  openedAt           DateTime         @default(now()) @map("opened_at")
+  decidedAt          DateTime?        @map("decided_at")
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+
+  organization       Organization     @relation(fields: [organizationId], references: [id])
+  ticket             SupportTicket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  coverage           WarrantyCoverage @relation(fields: [coverageId], references: [id], onDelete: Cascade)
+  supplier           Supplier?        @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+
+  @@index([ticketId])
+  @@index([coverageId])
+  @@map("warranty_claims")
+}
+
+model ServiceVisitQuote {
+  id                 String        @id @default(uuid()) @db.Uuid
+  organizationId     String        @map("organization_id") @db.Uuid
+  ticketId           String        @map("ticket_id") @db.Uuid
+  quoteNumber        String        @map("quote_number")
+  status             String        @default("DRAFT") // DRAFT, PRESENTED, ACCEPTED, REJECTED, CANCELED
+  laborAmount        Decimal       @default(0) @map("labor_amount") @db.Decimal(12, 2)
+  displacementAmount Decimal       @default(0) @map("displacement_amount") @db.Decimal(12, 2)
+  materialsAmount    Decimal       @default(0) @map("materials_amount") @db.Decimal(12, 2)
+  discountAmount     Decimal       @default(0) @map("discount_amount") @db.Decimal(12, 2)
+  totalAmount        Decimal       @map("total_amount") @db.Decimal(12, 2)
+  currency           String        @default("BRL")
+  validUntil         DateTime      @map("valid_until") @db.Date
+  acceptedAt         DateTime?     @map("accepted_at")
+  acceptedBy         String?       @map("accepted_by")
+  acceptanceEvidence String?       @map("acceptance_evidence")
+  workOrderId        String?       @map("work_order_id") @db.Uuid
+  receivableId       String?       @map("receivable_id") @db.Uuid
+  notes              String?
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+
+  organization       Organization  @relation(fields: [organizationId], references: [id])
+  ticket             SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  workOrder          WorkOrder?    @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
+  receivable         Receivable?   @relation(fields: [receivableId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, quoteNumber])
+  @@index([ticketId])
+  @@map("service_visit_quotes")
+}
+
+model MonitoringSystem {
+  id              String                 @id @default(uuid()) @db.Uuid
+  organizationId  String                 @map("organization_id") @db.Uuid
+  projectId       String                 @unique @map("project_id") @db.Uuid
+  provider        String                 // SolisCloud, Deye Cloud, Huawei, Manual, etc.
+  externalPlantId String?                @map("external_plant_id")
+  connectionType  String                 @default("WIFI") @map("connection_type") // WIFI, ETHERNET, 4G, RS485
+  status          String                 @default("ACTIVE") // ACTIVE, NO_TELEMETRY, PARTIAL, DEACTIVATED
+  lastTelemetryAt DateTime?              @map("last_telemetry_at")
+  inverterModel   String?                @map("inverter_model")
+  notes           String?
+  createdAt       DateTime               @default(now()) @map("created_at")
+  updatedAt       DateTime               @updatedAt @map("updated_at")
+
+  organization    Organization           @relation(fields: [organizationId], references: [id])
+  project         OperationalProject     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  readings        MonitoringReading[]
+  incidents       ConnectivityIncident[]
+
+  @@index([organizationId, status])
+  @@map("monitoring_systems")
+}
+
+model MonitoringReading {
+  id                    String           @id @default(uuid()) @db.Uuid
+  organizationId        String           @map("organization_id") @db.Uuid
+  monitoringSystemId    String           @map("monitoring_system_id") @db.Uuid
+  period                String           // YYYY-MM
+  expectedGenerationKwh Decimal          @map("expected_generation_kwh") @db.Decimal(10, 2)
+  realizedGenerationKwh Decimal?         @map("realized_generation_kwh") @db.Decimal(10, 2)
+  performanceRatio      Decimal?         @map("performance_ratio") @db.Decimal(5, 2)
+  source                String           @default("INFORMADA") // INFORMADA, IMPORTADA, ESTIMADA, VALIDADA
+  capturedAt            DateTime         @default(now()) @map("captured_at")
+  validatedById         String?          @map("validated_by_id") @db.Uuid
+  notes                 String?
+  createdAt             DateTime         @default(now()) @map("created_at")
+  updatedAt             DateTime         @updatedAt @map("updated_at")
+
+  organization          Organization     @relation(fields: [organizationId], references: [id])
+  monitoringSystem      MonitoringSystem @relation(fields: [monitoringSystemId], references: [id], onDelete: Cascade)
+  validatedBy           User?            @relation("ValidatedMonitoringReadings", fields: [validatedById], references: [id], onDelete: SetNull)
+
+  @@unique([monitoringSystemId, period])
+  @@index([period])
+  @@map("monitoring_readings")
+}
+
+model ConnectivityIncident {
+  id                     String           @id @default(uuid()) @db.Uuid
+  organizationId         String           @map("organization_id") @db.Uuid
+  monitoringSystemId     String           @map("monitoring_system_id") @db.Uuid
+  ticketId               String?          @map("ticket_id") @db.Uuid
+  detectedAt             DateTime         @default(now()) @map("detected_at")
+  restoredAt             DateTime?        @map("restored_at")
+  detectionSource        String           @default("MANUAL") @map("detection_source") // MANUAL, WEBHOOK, SYSTEM
+  reason                 String?
+  customerNetworkChanged Boolean          @default(false) @map("customer_network_changed")
+  resolutionMethod       String?          @map("resolution_method")
+  createdAt              DateTime         @default(now()) @map("created_at")
+  updatedAt              DateTime         @updatedAt @map("updated_at")
+
+  organization           Organization     @relation(fields: [organizationId], references: [id])
+  monitoringSystem       MonitoringSystem @relation(fields: [monitoringSystemId], references: [id], onDelete: Cascade)
+  ticket                 SupportTicket?   @relation(fields: [ticketId], references: [id], onDelete: SetNull)
+
+  @@index([monitoringSystemId, detectedAt])
+  @@map("connectivity_incidents")
 }
 
 
