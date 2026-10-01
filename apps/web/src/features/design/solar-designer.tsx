@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, result, allows } from '../identity/client';
 import { Feedback } from '../identity/feedback';
+import { Button } from '../../ui/Button';
 import type { Schemas } from '@moura-solar/api-client';
 
 type Design = Schemas['DesignViewDto'];
@@ -351,21 +352,32 @@ export function SolarDesigner({
   // ---------------------------------------------------------------------------
   if (!currentDesign) {
     return (
-      <section className="panel" aria-label="Assistente de Dimensionamento Solar">
-        <div style={{ marginBottom: '1rem' }}>
-          <h3>Assistente de Dimensionamento Solar & Catálogo</h3>
-          <p className="device">
-            Calcule a potência fotovoltaica ótima (kWp), o arranjo de módulos e os inversores
-            compatíveis segundo as regras normativas e o catálogo Moura Solar.
-          </p>
+      <section className="design-panel" aria-label="Assistente de Dimensionamento Solar">
+        <div className="design-section-header">
+          <div>
+            <h3 className="design-section-title">Assistente de Dimensionamento Solar & Catálogo</h3>
+            <p className="design-section-desc">
+              Calcule a potência fotovoltaica ótima (kWp), o arranjo de módulos e os inversores
+              compatíveis segundo as regras normativas e o catálogo Moura Solar.
+            </p>
+          </div>
         </div>
 
         <Feedback error={designsQuery.error} />
         <Feedback error={suggestMutation.error} />
         <Feedback error={createDesignMutation.error} />
 
-        <div className="panel" style={{ background: 'var(--color-canvas)' }}>
-          <h4>Parâmetros de Entrada</h4>
+        <div className="design-form">
+          <h4
+            style={{
+              fontSize: '15px',
+              fontWeight: 700,
+              color: 'var(--text-primary, #f5f7f5)',
+              margin: '0 0 16px',
+            }}
+          >
+            Parâmetros de Entrada
+          </h4>
           <div className="form-grid">
             <label>
               Geração Mensal Alvo (kWh/mês) *
@@ -402,90 +414,78 @@ export function SolarDesigner({
             </label>
           </div>
 
-          <div className="actions" style={{ marginTop: '1rem' }}>
-            <button
-              type="button"
+          <div style={{ marginTop: '1.25rem' }}>
+            <Button
+              variant="primary"
               onClick={() => suggestMutation.mutate()}
               disabled={suggestMutation.isPending}
             >
               Calcular Sugestão de Dimensionamento
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Suggestion Result Display */}
         {suggestion && (
-          <div
-            className="panel"
-            style={{
-              marginTop: '1.5rem',
-              border: '2px solid var(--brand-primary)',
-              background: 'var(--brand-primary-soft)',
-            }}
-          >
-            <span className="eyebrow">SUGESTÃO TÉCNICA AUTOMATIZADA</span>
-            <h4 style={{ marginBlock: '0.25rem' }}>
+          <div className="design-suggestion-box">
+            <span className="design-suggestion-badge">SUGESTÃO TÉCNICA AUTOMATIZADA</span>
+            <h4
+              style={{
+                fontSize: '17px',
+                fontWeight: 700,
+                color: 'var(--text-primary, #f5f7f5)',
+                margin: '8px 0 4px',
+              }}
+            >
               Sistema Recomendado: {suggestion.suggestedDcPowerKwp} kWp (Geração est.{' '}
               {suggestion.estimatedMonthlyGenerationKwh.toLocaleString('pt-BR')} kWh/mês)
             </h4>
-            <p className="device" style={{ fontSize: '0.8125rem' }}>
+            <p className="device" style={{ fontSize: '13px', margin: '0 0 16px' }}>
               {suggestion.classification}
             </p>
 
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(11rem, 1fr))',
-                gap: '0.75rem',
-                marginBlock: '1rem',
-              }}
-            >
-              <div className="panel" style={{ margin: 0, padding: '0.75rem' }}>
-                <span className="device" style={{ fontSize: '0.75rem' }}>
-                  GERAÇÃO ESTIMADA
-                </span>
-                <strong style={{ fontSize: '1.25rem', display: 'block' }}>
+            <div className="design-kpi-grid">
+              <div className="design-kpi-card">
+                <div className="design-kpi-card__label">GERAÇÃO ESTIMADA</div>
+                <div
+                  className="design-kpi-card__value"
+                  style={{ color: 'var(--brand-solar, #ffd400)' }}
+                >
                   {suggestion.estimatedMonthlyGenerationKwh.toLocaleString('pt-BR')} kWh/mês
-                </strong>
-                <span className="device" style={{ fontSize: '0.75rem' }}>
+                </div>
+                <div className="design-kpi-card__subtext">
                   {suggestion.estimatedAnnualGenerationKwh.toLocaleString('pt-BR')} kWh/ano
-                </span>
+                </div>
               </div>
 
-              <div className="panel" style={{ margin: 0, padding: '0.75rem' }}>
-                <span className="device" style={{ fontSize: '0.75rem' }}>
-                  MÓDULOS FOTOVOLTAICOS
-                </span>
-                <strong style={{ fontSize: '1.25rem', display: 'block' }}>
+              <div className="design-kpi-card">
+                <div className="design-kpi-card__label">MÓDULOS FOTOVOLTAICOS</div>
+                <div className="design-kpi-card__value">
                   {suggestion.suggestedModuleQuantity}× {suggestion.suggestedModulePowerWp} Wp
-                </strong>
-                <span className="device" style={{ fontSize: '0.75rem' }}>
+                </div>
+                <div className="design-kpi-card__subtext">
                   Potência DC: {suggestion.suggestedDcPowerKwp} kWp
-                </span>
+                </div>
               </div>
 
-              <div className="panel" style={{ margin: 0, padding: '0.75rem' }}>
-                <span className="device" style={{ fontSize: '0.75rem' }}>
-                  INVERSOR SOLAR
-                </span>
-                <strong style={{ fontSize: '1.25rem', display: 'block' }}>
+              <div className="design-kpi-card">
+                <div className="design-kpi-card__label">INVERSOR SOLAR</div>
+                <div className="design-kpi-card__value">
                   {suggestion.suggestedInverterQuantity}× {suggestion.suggestedInverterPowerKw} kW
-                </strong>
-                <span className="device" style={{ fontSize: '0.75rem' }}>
-                  Razão CC/CA: {suggestion.dcAcRatio}
-                </span>
+                </div>
+                <div className="design-kpi-card__subtext">Razão CC/CA: {suggestion.dcAcRatio}</div>
               </div>
             </div>
 
             {!readonly && canCreateDesign && (
-              <div className="actions" style={{ marginTop: '1rem' }}>
-                <button
-                  type="button"
+              <div style={{ marginTop: '1.25rem' }}>
+                <Button
+                  variant="primary"
                   onClick={() => createDesignMutation.mutate()}
                   disabled={createDesignMutation.isPending}
                 >
                   Criar Dimensionamento a partir desta Sugestão
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -501,68 +501,45 @@ export function SolarDesigner({
   const isDraft = currentVersion?.status === 'DRAFT';
 
   return (
-    <section className="panel" aria-label="Dimensionamento Solar e Composição de Custos">
+    <section className="design-panel" aria-label="Dimensionamento Solar e Composição de Custos">
       {/* Header and Version Tabs */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '0.5rem',
-        }}
-      >
+      <div className="design-section-header">
         <div>
-          <h3>{currentDesign.name}</h3>
-          <p className="device">
+          <h3 className="design-section-title">{currentDesign.name}</h3>
+          <p className="design-section-desc">
             Versão Atual: <strong>v{currentDesign.currentVersionNumber}</strong> | Sistema:{' '}
             {currentVersion?.systemType ?? 'ON_GRID'}
           </p>
         </div>
 
         {/* Version Switcher Tabs */}
-        <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
-          {currentDesign.versions.map((v) => (
-            <button
-              key={v.id}
-              type="button"
-              style={{
-                padding: '0.35rem 0.75rem',
-                fontSize: '0.8125rem',
-                background: (
-                  selectedVersionId
-                    ? v.id === selectedVersionId
-                    : v.versionNumber === currentDesign.currentVersionNumber
-                )
-                  ? 'var(--brand-primary)'
-                  : 'var(--color-surface)',
-                color: (
-                  selectedVersionId
-                    ? v.id === selectedVersionId
-                    : v.versionNumber === currentDesign.currentVersionNumber
-                )
-                  ? 'var(--color-surface)'
-                  : 'var(--brand-primary)',
-              }}
-              onClick={() => setSelectedVersionId(v.id)}
-            >
-              v{v.versionNumber} ({v.status})
-            </button>
-          ))}
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          {currentDesign.versions.map((v) => {
+            const isSelected = selectedVersionId
+              ? v.id === selectedVersionId
+              : v.versionNumber === currentDesign.currentVersionNumber;
+            return (
+              <Button
+                key={v.id}
+                type="button"
+                variant={isSelected ? 'primary' : 'secondary'}
+                size="compact"
+                onClick={() => setSelectedVersionId(v.id)}
+              >
+                v{v.versionNumber} ({v.status})
+              </Button>
+            );
+          })}
           {isApproved && !readonly && canCreateDesign && (
-            <button
+            <Button
               type="button"
-              style={{
-                padding: '0.35rem 0.75rem',
-                fontSize: '0.8125rem',
-                background: 'var(--color-surface)',
-                color: 'var(--brand-primary)',
-              }}
+              variant="secondary"
+              size="compact"
               onClick={() => createVersionMutation.mutate()}
               disabled={createVersionMutation.isPending}
             >
               + Nova Versão
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -573,22 +550,14 @@ export function SolarDesigner({
 
       {/* Version Status Banner */}
       {isApproved && (
-        <div
-          className="notice"
-          style={{
-            marginBlock: '1rem',
-            borderLeft: '4px solid var(--brand-primary)',
-            background: 'var(--brand-primary-soft)',
-            color: 'var(--brand-primary-strong)',
-          }}
-        >
+        <div className="design-alert design-alert--success">
           <strong>
             ✅ Versão {currentVersion.versionNumber} Aprovada em{' '}
             {currentVersion.approvedAt
               ? new Date(currentVersion.approvedAt).toLocaleDateString('pt-BR')
               : 'data recente'}
           </strong>
-          <p style={{ margin: 0, fontSize: '0.875rem', marginTop: '0.25rem' }}>
+          <p style={{ margin: '4px 0 0', fontSize: '13px' }}>
             Esta versão foi congelada e é imutável. Alterações no catálogo ou custos não modificam
             este registro, garantindo rastreabilidade jurídica e integridade da proposta comercial.
           </p>
@@ -596,16 +565,9 @@ export function SolarDesigner({
       )}
 
       {isDraft && (
-        <div
-          className="notice"
-          style={{
-            marginBlock: '1rem',
-            borderLeft: '4px solid var(--color-brand-500)',
-            background: 'var(--color-canvas)',
-          }}
-        >
+        <div className="design-alert design-alert--info">
           <strong>✏️ Versão {currentVersion?.versionNumber} — Rascunho em Elaboração</strong>
-          <p className="device" style={{ margin: 0, fontSize: '0.875rem', marginTop: '0.25rem' }}>
+          <p style={{ margin: '4px 0 0', fontSize: '13px' }}>
             Adicione ou edite os materiais, custos adicionais e o percentual de markup sobre o
             custo. Ao concluir, submeta a versão para aprovação técnica/comercial.
           </p>
@@ -614,45 +576,38 @@ export function SolarDesigner({
 
       {/* Technical Sizing Metrics KPI Bar */}
       {currentVersion && (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(9.5rem, 1fr))',
-            gap: '0.75rem',
-            marginBlock: '1rem',
-          }}
-        >
-          <div className="panel" style={{ margin: 0, padding: '0.75rem' }}>
-            <span className="device" style={{ fontSize: '0.75rem' }}>
-              POTÊNCIA DC
-            </span>
-            <strong style={{ fontSize: '1.25rem', display: 'block' }}>
+        <div className="design-kpi-grid">
+          <div className="design-kpi-card">
+            <div className="design-kpi-card__label">POTÊNCIA DC</div>
+            <div
+              className="design-kpi-card__value"
+              style={{ color: 'var(--brand-solar, #ffd400)' }}
+            >
               {currentVersion.dcPowerKwp.toFixed(2)} kWp
-            </strong>
+            </div>
+            <div className="design-kpi-card__subtext">Capacidade fotovoltaica</div>
           </div>
-          <div className="panel" style={{ margin: 0, padding: '0.75rem' }}>
-            <span className="device" style={{ fontSize: '0.75rem' }}>
-              POTÊNCIA AC
-            </span>
-            <strong style={{ fontSize: '1.25rem', display: 'block' }}>
-              {currentVersion.acPowerKw.toFixed(2)} kW
-            </strong>
+          <div className="design-kpi-card">
+            <div className="design-kpi-card__label">POTÊNCIA AC</div>
+            <div className="design-kpi-card__value">{currentVersion.acPowerKw.toFixed(2)} kW</div>
+            <div className="design-kpi-card__subtext">Potência dos inversores</div>
           </div>
-          <div className="panel" style={{ margin: 0, padding: '0.75rem' }}>
-            <span className="device" style={{ fontSize: '0.75rem' }}>
-              GERAÇÃO ESTIMADA
-            </span>
-            <strong style={{ fontSize: '1.25rem', display: 'block' }}>
+          <div className="design-kpi-card">
+            <div className="design-kpi-card__label">GERAÇÃO ESTIMADA</div>
+            <div className="design-kpi-card__value">
               {currentVersion.estimatedMonthlyGenerationKwh.toLocaleString('pt-BR')} kWh/mês
-            </strong>
+            </div>
+            <div className="design-kpi-card__subtext">Produção média esperada</div>
           </div>
-          <div className="panel" style={{ margin: 0, padding: '0.75rem' }}>
-            <span className="device" style={{ fontSize: '0.75rem' }}>
-              COBERTURA
-            </span>
-            <strong style={{ fontSize: '1.25rem', display: 'block' }}>
+          <div className="design-kpi-card">
+            <div className="design-kpi-card__label">COBERTURA</div>
+            <div
+              className="design-kpi-card__value"
+              style={{ color: 'var(--status-success, #26d866)' }}
+            >
               {currentVersion.coveragePercent.toFixed(1)}%
-            </strong>
+            </div>
+            <div className="design-kpi-card__subtext">Do consumo estimado</div>
           </div>
         </div>
       )}
@@ -660,49 +615,52 @@ export function SolarDesigner({
       {/* -------------------------------------------------------------------- */}
       {/* 1. LISTA DE MATERIAIS E SERVIÇOS (BOM) */}
       {/* -------------------------------------------------------------------- */}
-      <div style={{ marginTop: '1.5rem' }}>
+      <div style={{ marginTop: '2rem' }}>
         <div
           style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
             flexWrap: 'wrap',
-            gap: '0.5rem',
+            gap: '0.75rem',
+            marginBottom: '1rem',
           }}
         >
-          <h4>Lista de Materiais e Serviços (Composição Prevista)</h4>
+          <h4
+            style={{
+              fontSize: '16px',
+              fontWeight: 700,
+              color: 'var(--text-primary, #f5f7f5)',
+              margin: 0,
+            }}
+          >
+            Lista de Materiais e Serviços (Composição Prevista)
+          </h4>
           {isDraft && !readonly && (
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button
-                type="button"
-                style={{
-                  padding: '0.25rem 0.5rem',
-                  fontSize: '0.8125rem',
-                  background: 'var(--color-surface)',
-                  color: 'var(--text-primary)',
-                }}
-                onClick={() => setShowManualItemForm(!showManualItemForm)}
-              >
-                + Item Manual
-              </button>
-            </div>
+            <Button
+              type="button"
+              variant="secondary"
+              size="compact"
+              onClick={() => setShowManualItemForm(!showManualItemForm)}
+            >
+              + Item Manual
+            </Button>
           )}
         </div>
 
         {/* Quick Add from Catalog Dropdown */}
         {isDraft && !readonly && (
           <div
-            className="panel"
+            className="design-form"
             style={{
-              background: 'var(--color-canvas)',
-              marginBlock: '0.75rem',
               display: 'flex',
-              gap: '0.5rem',
+              gap: '12px',
               alignItems: 'flex-end',
               flexWrap: 'wrap',
+              marginBlock: '1rem',
             }}
           >
-            <label style={{ flex: '2 1 14rem', margin: 0 }}>
+            <label style={{ flex: '2 1 16rem', margin: 0 }}>
               Adicionar do Catálogo Moura Solar
               <select
                 value={selectedCatalogId}
@@ -717,7 +675,7 @@ export function SolarDesigner({
                 ))}
               </select>
             </label>
-            <label style={{ flex: '0 1 6rem', margin: 0 }}>
+            <label style={{ flex: '0 1 7rem', margin: 0 }}>
               Qtd
               <input
                 type="number"
@@ -727,25 +685,30 @@ export function SolarDesigner({
                 onChange={(e) => setCatalogItemQty(e.target.value)}
               />
             </label>
-            <button
+            <Button
               type="button"
+              variant="primary"
               onClick={handleAddCatalogItem}
               disabled={!selectedCatalogId}
-              style={{ minHeight: 'var(--touch-target)' }}
             >
               Adicionar
-            </button>
+            </Button>
           </div>
         )}
 
         {/* Manual Item Form */}
         {showManualItemForm && isDraft && (
-          <form
-            className="panel"
-            style={{ background: 'var(--color-canvas)', marginBlock: '0.75rem' }}
-            onSubmit={handleAddManualItem}
-          >
-            <h5>Adicionar Item Manual (Fora do Catálogo Padrão)</h5>
+          <form className="design-form" onSubmit={handleAddManualItem}>
+            <h5
+              style={{
+                fontSize: '15px',
+                fontWeight: 700,
+                color: 'var(--text-primary, #f5f7f5)',
+                margin: '0 0 12px',
+              }}
+            >
+              Adicionar Item Manual (Fora do Catálogo Padrão)
+            </h5>
             <div className="form-grid">
               <label>
                 Tipo *
@@ -820,20 +783,29 @@ export function SolarDesigner({
                 />
               </label>
             </div>
-            <div className="actions" style={{ marginTop: '0.75rem' }}>
-              <button type="submit">Inserir Item Manual</button>
-              <button
+            <div
+              style={{
+                display: 'flex',
+                gap: '0.75rem',
+                justifyContent: 'flex-end',
+                marginTop: '1rem',
+              }}
+            >
+              <Button
                 type="button"
-                style={{ background: 'var(--color-surface)', color: 'var(--text-primary)' }}
+                variant="secondary"
                 onClick={() => setShowManualItemForm(false)}
               >
                 Cancelar
-              </button>
+              </Button>
+              <Button type="submit" variant="primary">
+                Inserir Item Manual
+              </Button>
             </div>
           </form>
         )}
 
-        {/* Items Table / Cards */}
+        {/* Items Table */}
         <div className="table-wrapper">
           <table className="data-table">
             <thead>
@@ -844,13 +816,20 @@ export function SolarDesigner({
                 <th>Custo Unit. (R$)</th>
                 <th>Total (R$)</th>
                 <th>Origem</th>
-                {isDraft && !readonly && <th>Ação</th>}
+                {isDraft && !readonly && <th style={{ textAlign: 'right' }}>Ação</th>}
               </tr>
             </thead>
             <tbody>
               {editItems.length === 0 && (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: '1rem' }}>
+                  <td
+                    colSpan={7}
+                    style={{
+                      textAlign: 'center',
+                      padding: '1.5rem',
+                      color: 'var(--text-secondary, #9ba49e)',
+                    }}
+                  >
                     Nenhum item na composição.
                   </td>
                 </tr>
@@ -858,22 +837,27 @@ export function SolarDesigner({
               {editItems.map((item, idx) => (
                 <tr key={idx}>
                   <td>
-                    <span className="badge" style={{ fontSize: '0.7rem' }}>
+                    <span className="badge" style={{ fontSize: '11px' }}>
                       {item.category}
                     </span>
                   </td>
                   <td>
-                    <strong>{item.description}</strong>
+                    <strong style={{ color: 'var(--text-primary, #f5f7f5)' }}>
+                      {item.description}
+                    </strong>
                     {item.justification && (
-                      <div className="device" style={{ fontSize: '0.75rem' }}>
+                      <div
+                        className="device"
+                        style={{ fontSize: '12px', color: 'var(--text-secondary, #9ba49e)' }}
+                      >
                         Justificativa: {item.justification}
                       </div>
                     )}
                   </td>
-                  <td>
+                  <td style={{ color: 'var(--text-primary, #f5f7f5)' }}>
                     {item.quantity} {item.unitOfMeasure}
                   </td>
-                  <td>
+                  <td style={{ color: 'var(--text-primary, #f5f7f5)' }}>
                     R${' '}
                     {item.unitCost.toLocaleString('pt-BR', {
                       minimumFractionDigits: 2,
@@ -881,7 +865,7 @@ export function SolarDesigner({
                     })}
                   </td>
                   <td>
-                    <strong>
+                    <strong style={{ color: 'var(--brand-solar, #ffd400)' }}>
                       R${' '}
                       {(item.quantity * item.unitCost).toLocaleString('pt-BR', {
                         minimumFractionDigits: 2,
@@ -890,27 +874,21 @@ export function SolarDesigner({
                     </strong>
                   </td>
                   <td>
-                    <span className="device" style={{ fontSize: '0.75rem' }}>
+                    <span className="device" style={{ fontSize: '12px' }}>
                       {item.costSource}
                     </span>
                   </td>
                   {isDraft && !readonly && (
-                    <td>
-                      <button
-                        type="button"
-                        style={{
-                          padding: '0.2rem 0.4rem',
-                          fontSize: '0.75rem',
-                          background: 'var(--color-surface)',
-                          color: 'var(--status-danger)',
-                          borderColor: 'var(--status-danger)',
-                        }}
+                    <td style={{ textAlign: 'right' }}>
+                      <Button
+                        variant="danger"
+                        size="compact"
                         onClick={() => {
                           setEditItems(editItems.filter((_, i) => i !== idx));
                         }}
                       >
                         Remover
-                      </button>
+                      </Button>
                     </td>
                   )}
                 </tr>
@@ -923,40 +901,51 @@ export function SolarDesigner({
       {/* -------------------------------------------------------------------- */}
       {/* 2. CUSTOS ADICIONAIS E CONTINGÊNCIA */}
       {/* -------------------------------------------------------------------- */}
-      <div style={{ marginTop: '1.5rem' }}>
+      <div style={{ marginTop: '2rem' }}>
         <div
           style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
             flexWrap: 'wrap',
-            gap: '0.5rem',
+            gap: '0.75rem',
+            marginBottom: '1rem',
           }}
         >
-          <h4>Custos Adicionais & Contingência</h4>
+          <h4
+            style={{
+              fontSize: '16px',
+              fontWeight: 700,
+              color: 'var(--text-primary, #f5f7f5)',
+              margin: 0,
+            }}
+          >
+            Custos Adicionais & Contingência
+          </h4>
           {isDraft && !readonly && (
-            <button
+            <Button
               type="button"
-              style={{
-                padding: '0.25rem 0.5rem',
-                fontSize: '0.8125rem',
-                background: 'var(--color-surface)',
-                color: 'var(--text-primary)',
-              }}
+              variant="secondary"
+              size="compact"
               onClick={() => setShowAdditionalCostForm(!showAdditionalCostForm)}
             >
               + Custo Adicional
-            </button>
+            </Button>
           )}
         </div>
 
         {showAdditionalCostForm && isDraft && (
-          <form
-            className="panel"
-            style={{ background: 'var(--color-canvas)', marginBlock: '0.75rem' }}
-            onSubmit={handleAddAdditionalCost}
-          >
-            <h5>Adicionar Custo Adicional</h5>
+          <form className="design-form" onSubmit={handleAddAdditionalCost}>
+            <h5
+              style={{
+                fontSize: '15px',
+                fontWeight: 700,
+                color: 'var(--text-primary, #f5f7f5)',
+                margin: '0 0 12px',
+              }}
+            >
+              Adicionar Custo Adicional
+            </h5>
             <div className="form-grid">
               <label>
                 Categoria *
@@ -998,15 +987,24 @@ export function SolarDesigner({
                 />
               </label>
             </div>
-            <div className="actions" style={{ marginTop: '0.75rem' }}>
-              <button type="submit">Salvar Custo</button>
-              <button
+            <div
+              style={{
+                display: 'flex',
+                gap: '0.75rem',
+                justifyContent: 'flex-end',
+                marginTop: '1rem',
+              }}
+            >
+              <Button
                 type="button"
-                style={{ background: 'var(--color-surface)', color: 'var(--text-primary)' }}
+                variant="secondary"
                 onClick={() => setShowAdditionalCostForm(false)}
               >
                 Cancelar
-              </button>
+              </Button>
+              <Button type="submit" variant="primary">
+                Salvar Custo
+              </Button>
             </div>
           </form>
         )}
@@ -1018,13 +1016,20 @@ export function SolarDesigner({
                 <th>Categoria</th>
                 <th>Descrição</th>
                 <th>Valor (R$)</th>
-                {isDraft && !readonly && <th>Ação</th>}
+                {isDraft && !readonly && <th style={{ textAlign: 'right' }}>Ação</th>}
               </tr>
             </thead>
             <tbody>
               {editAdditionalCosts.length === 0 && (
                 <tr>
-                  <td colSpan={4} style={{ textAlign: 'center', padding: '0.75rem' }}>
+                  <td
+                    colSpan={4}
+                    style={{
+                      textAlign: 'center',
+                      padding: '1rem',
+                      color: 'var(--text-secondary, #9ba49e)',
+                    }}
+                  >
                     Nenhum custo adicional registrado.
                   </td>
                 </tr>
@@ -1032,13 +1037,13 @@ export function SolarDesigner({
               {editAdditionalCosts.map((cost, idx) => (
                 <tr key={idx}>
                   <td>
-                    <span className="badge" style={{ fontSize: '0.7rem' }}>
+                    <span className="badge" style={{ fontSize: '11px' }}>
                       {cost.category}
                     </span>
                   </td>
-                  <td>{cost.description}</td>
+                  <td style={{ color: 'var(--text-primary, #f5f7f5)' }}>{cost.description}</td>
                   <td>
-                    <strong>
+                    <strong style={{ color: 'var(--brand-solar, #ffd400)' }}>
                       R${' '}
                       {cost.amount.toLocaleString('pt-BR', {
                         minimumFractionDigits: 2,
@@ -1047,22 +1052,16 @@ export function SolarDesigner({
                     </strong>
                   </td>
                   {isDraft && !readonly && (
-                    <td>
-                      <button
-                        type="button"
-                        style={{
-                          padding: '0.2rem 0.4rem',
-                          fontSize: '0.75rem',
-                          background: 'var(--color-surface)',
-                          color: 'var(--status-danger)',
-                          borderColor: 'var(--status-danger)',
-                        }}
+                    <td style={{ textAlign: 'right' }}>
+                      <Button
+                        variant="danger"
+                        size="compact"
                         onClick={() => {
                           setEditAdditionalCosts(editAdditionalCosts.filter((_, i) => i !== idx));
                         }}
                       >
                         Remover
-                      </button>
+                      </Button>
                     </td>
                   )}
                 </tr>
@@ -1075,89 +1074,79 @@ export function SolarDesigner({
       {/* -------------------------------------------------------------------- */}
       {/* 3. PAINEL DE PRECIFICAÇÃO, MARKUP VS MARGEM E ALÇADA */}
       {/* -------------------------------------------------------------------- */}
-      <div
-        className="panel"
-        style={{
-          marginTop: '2rem',
-          border: '2px solid var(--color-border)',
-          background: 'var(--color-surface)',
-        }}
-      >
-        <div style={{ marginBottom: '1rem' }}>
-          <h4>Composição de Custos, Markup e Margem Bruta</h4>
-          <p className="device">
+      <div className="design-pricing-box" style={{ marginTop: '2.5rem' }}>
+        <div style={{ marginBottom: '1.25rem' }}>
+          <h4
+            style={{
+              fontSize: '18px',
+              fontWeight: 700,
+              color: 'var(--text-primary, #f5f7f5)',
+              margin: '0 0 4px',
+            }}
+          >
+            Composição de Custos, Markup e Margem Bruta
+          </h4>
+          <p className="device" style={{ margin: 0 }}>
             Conforme <strong>SPEC-005 item 8 e 9</strong>: distinção exata entre Markup (percentual
             sobre o custo) e Margem Bruta (percentual sobre o preço final de venda).
           </p>
         </div>
 
         {/* Cost Summary Breakdown */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(11rem, 1fr))',
-            gap: '0.75rem',
-            marginBottom: '1.5rem',
-          }}
-        >
-          <div className="panel" style={{ margin: 0, padding: '0.75rem' }}>
-            <span className="device" style={{ fontSize: '0.75rem' }}>
-              CUSTO DIRETO MATERIAIS
-            </span>
-            <strong style={{ display: 'block', fontSize: '1.1rem' }}>
+        <div className="design-kpi-grid" style={{ marginBottom: '1.5rem' }}>
+          <div className="design-kpi-card">
+            <div className="design-kpi-card__label">CUSTO DIRETO MATERIAIS</div>
+            <div className="design-kpi-card__value" style={{ fontSize: '18px' }}>
               R${' '}
               {editItems
                 .filter((i) => i.kind === 'MATERIAL')
                 .reduce((acc, i) => acc + i.quantity * i.unitCost, 0)
                 .toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </strong>
+            </div>
+            <div className="design-kpi-card__subtext">Equipamentos e insumos</div>
           </div>
 
-          <div className="panel" style={{ margin: 0, padding: '0.75rem' }}>
-            <span className="device" style={{ fontSize: '0.75rem' }}>
-              CUSTO DIRETO SERVIÇOS
-            </span>
-            <strong style={{ display: 'block', fontSize: '1.1rem' }}>
+          <div className="design-kpi-card">
+            <div className="design-kpi-card__label">CUSTO DIRETO SERVIÇOS</div>
+            <div className="design-kpi-card__value" style={{ fontSize: '18px' }}>
               R${' '}
               {editItems
                 .filter((i) => i.kind === 'SERVICE')
                 .reduce((acc, i) => acc + i.quantity * i.unitCost, 0)
                 .toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </strong>
+            </div>
+            <div className="design-kpi-card__subtext">Instalação e engenharia</div>
           </div>
 
-          <div className="panel" style={{ margin: 0, padding: '0.75rem' }}>
-            <span className="device" style={{ fontSize: '0.75rem' }}>
-              CUSTOS ADICIONAIS
-            </span>
-            <strong style={{ display: 'block', fontSize: '1.1rem' }}>
+          <div className="design-kpi-card">
+            <div className="design-kpi-card__label">CUSTOS ADICIONAIS</div>
+            <div className="design-kpi-card__value" style={{ fontSize: '18px' }}>
               R${' '}
               {editAdditionalCosts
                 .reduce((acc, c) => acc + c.amount, 0)
                 .toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </strong>
+            </div>
+            <div className="design-kpi-card__subtext">Frete, ART e taxas</div>
           </div>
 
-          <div
-            className="panel"
-            style={{ margin: 0, padding: '0.75rem', background: 'var(--color-canvas)' }}
-          >
-            <span className="device" style={{ fontSize: '0.75rem' }}>
+          <div className="design-kpi-card" style={{ borderColor: 'rgba(255, 212, 0, 0.4)' }}>
+            <div
+              className="design-kpi-card__label"
+              style={{ color: 'var(--brand-solar, #ffd400)' }}
+            >
               CUSTO TOTAL ESTIMADO
-            </span>
-            <strong
-              style={{
-                display: 'block',
-                fontSize: '1.25rem',
-                color: 'var(--text-primary)',
-              }}
+            </div>
+            <div
+              className="design-kpi-card__value"
+              style={{ fontSize: '20px', color: 'var(--brand-solar, #ffd400)' }}
             >
               R${' '}
               {totalDirectCost.toLocaleString('pt-BR', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}
-            </strong>
+            </div>
+            <div className="design-kpi-card__subtext">Base para o markup</div>
           </div>
         </div>
 
@@ -1185,7 +1174,7 @@ export function SolarDesigner({
                 value={markupPercent}
                 onChange={(e) => setMarkupPercent(parseFloat(e.target.value) || 0)}
               />
-              <span className="device" style={{ fontSize: '0.75rem', fontWeight: 400 }}>
+              <span className="device" style={{ fontSize: '12px', fontWeight: 400 }}>
                 Fórmula: Preço = Custo × (1 + Markup / 100)
               </span>
             </label>
@@ -1205,30 +1194,25 @@ export function SolarDesigner({
 
         {/* Final Price & Gross Margin Big Display */}
         <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(14rem, 1fr))',
-            gap: '1rem',
-            padding: '1.25rem',
-            borderRadius: 'var(--radius-md)',
-            background: isLowMargin ? '#fffbeb' : 'var(--brand-primary-soft)',
-            border: isLowMargin
-              ? '2px solid var(--color-accent-500)'
-              : '2px solid var(--brand-primary)',
-          }}
+          className={`design-pricing-highlight ${
+            isLowMargin
+              ? 'design-pricing-highlight--low-margin'
+              : 'design-pricing-highlight--normal'
+          }`}
         >
           <div>
-            <span className="eyebrow" style={{ color: 'var(--text-secondary)' }}>
-              VALOR FINAL DE VENDA
-            </span>
-            <div
+            <span
+              className="device"
               style={{
-                fontSize: '2rem',
-                fontWeight: 800,
-                color: 'var(--brand-primary-strong)',
-                lineHeight: 1.1,
+                fontSize: '12px',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
               }}
             >
+              VALOR FINAL DE VENDA
+            </span>
+            <div className="design-pricing-amount">
               R${' '}
               {finalPrice.toLocaleString('pt-BR', {
                 minimumFractionDigits: 2,
@@ -1236,32 +1220,37 @@ export function SolarDesigner({
               })}
             </div>
             {discountAmount > 0 && (
-              <span className="device" style={{ fontSize: '0.8125rem' }}>
+              <span className="device" style={{ fontSize: '13px' }}>
                 Preço inicial R${' '}
                 {priceBeforeDiscount.toLocaleString('pt-BR', {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}{' '}
-                (- R${discountAmount.toLocaleString('pt-BR')})
+                (- R$ {discountAmount.toLocaleString('pt-BR')})
               </span>
             )}
           </div>
 
           <div>
-            <span className="eyebrow" style={{ color: 'var(--text-secondary)' }}>
+            <span
+              className="device"
+              style={{
+                fontSize: '12px',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+              }}
+            >
               MARGEM BRUTA SOBRE O PREÇO
             </span>
             <div
-              style={{
-                fontSize: '2rem',
-                fontWeight: 800,
-                color: isLowMargin ? '#b45309' : 'var(--brand-primary-strong)',
-                lineHeight: 1.1,
-              }}
+              className={`design-margin-amount ${
+                isLowMargin ? 'design-margin-amount--low' : 'design-margin-amount--normal'
+              }`}
             >
               {grossMarginPercent.toFixed(1)}%
             </div>
-            <span className="device" style={{ fontSize: '0.8125rem' }}>
+            <span className="device" style={{ fontSize: '13px' }}>
               Lucro Bruto: R${' '}
               {grossMarginAmount.toLocaleString('pt-BR', {
                 minimumFractionDigits: 2,
@@ -1275,18 +1264,14 @@ export function SolarDesigner({
         {/* Low Margin Warning & Governance Notice (SPEC-005 item 9 & 16) */}
         {isLowMargin && (
           <div
-            className="notice error"
+            className="design-alert design-alert--danger"
             data-testid="low-margin-alert"
-            style={{
-              marginTop: '1rem',
-              borderLeft: '4px solid var(--status-danger)',
-              background: '#fef2f2',
-            }}
+            style={{ marginTop: '1.25rem' }}
           >
             <strong>
               ⚠️ Alçada de Margem: Margem Inferior a 20% ({grossMarginPercent.toFixed(1)}%)
             </strong>
-            <p style={{ margin: 0, fontSize: '0.875rem', marginTop: '0.25rem' }}>
+            <p style={{ margin: '4px 0 0', fontSize: '13px' }}>
               A margem bruta estimada está abaixo da alçada comercial mínima padrão da Moura Solar
               (20%). Para aprovar esta versão, será{' '}
               <strong>
@@ -1299,26 +1284,35 @@ export function SolarDesigner({
 
         {/* Actions for Draft Version */}
         {isDraft && !readonly && (
-          <div className="actions" style={{ marginTop: '1.5rem' }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: '0.75rem',
+              justifyContent: 'flex-end',
+              marginTop: '1.5rem',
+              flexWrap: 'wrap',
+            }}
+          >
             {canUpdateDesign && (
-              <button
+              <Button
                 type="button"
-                style={{ background: 'var(--color-surface)', color: 'var(--text-primary)' }}
+                variant="secondary"
                 onClick={() => saveVersionMutation.mutate()}
                 disabled={saveVersionMutation.isPending}
               >
                 Salvar Rascunho
-              </button>
+              </Button>
             )}
 
             {canApproveDesign && (
-              <button
+              <Button
                 type="button"
+                variant="primary"
                 onClick={() => setIsApproving(true)}
                 disabled={approveMutation.isPending}
               >
                 ✔ Aprovar Versão do Dimensionamento
-              </button>
+              </Button>
             )}
           </div>
         )}
@@ -1329,51 +1323,71 @@ export function SolarDesigner({
       {/* -------------------------------------------------------------------- */}
       {isApproving && isDraft && (
         <div
-          className="notice"
+          className="design-panel"
           data-testid="approval-dialog"
           style={{
-            marginTop: '1.5rem',
-            borderLeft: '4px solid var(--brand-primary)',
-            background: 'var(--color-surface)',
-            border: '1px solid var(--color-border)',
-            padding: '1.25rem',
+            marginTop: '2rem',
+            border: '2px solid var(--brand-solar, #ffd400)',
+            background: 'var(--surface-elevated, #1c211d)',
           }}
         >
-          <h4>Aprovação Técnica e Comercial — Versão {currentVersion?.versionNumber}</h4>
-          <p className="device">
+          <h4
+            style={{
+              fontSize: '18px',
+              fontWeight: 700,
+              color: 'var(--text-primary, #f5f7f5)',
+              margin: '0 0 6px',
+            }}
+          >
+            Aprovação Técnica e Comercial — Versão {currentVersion?.versionNumber}
+          </h4>
+          <p className="device" style={{ margin: '0 0 16px' }}>
             A aprovação congela esta versão como imutável, tornando-a a base oficial para a geração
             de propostas comerciais e contratos.
           </p>
 
           <Feedback error={approveMutation.error} />
 
-          {isLowMargin && (
-            <label style={{ color: 'var(--status-danger)' }}>
-              Justificativa Obrigatória de Exceção de Margem (&lt; 20%) *
+          <div className="design-form" style={{ background: 'var(--surface-card, #161a17)' }}>
+            {isLowMargin && (
+              <label style={{ color: 'var(--status-danger, #ff4d57)' }}>
+                Justificativa Obrigatória de Exceção de Margem (&lt; 20%) *
+                <input
+                  type="text"
+                  required
+                  data-testid="override-margin-input"
+                  placeholder="Informe a autorização da diretoria / alçada comercial para margem reduzida…"
+                  value={lowMarginJustification}
+                  onChange={(e) => setLowMarginJustification(e.target.value)}
+                />
+              </label>
+            )}
+
+            <label style={{ marginTop: isLowMargin ? '12px' : 0 }}>
+              Observações Gerais de Aprovação (Opcional)
               <input
                 type="text"
-                required
-                data-testid="override-margin-input"
-                placeholder="Informe a autorização da diretoria / alçada comercial para margem reduzida…"
-                value={lowMarginJustification}
-                onChange={(e) => setLowMarginJustification(e.target.value)}
+                placeholder="Ex: Projeto técnico validado de acordo com a vistoria técnica…"
+                value={approvalNotes}
+                onChange={(e) => setApprovalNotes(e.target.value)}
               />
             </label>
-          )}
+          </div>
 
-          <label>
-            Observações Gerais de Aprovação (Opcional)
-            <input
-              type="text"
-              placeholder="Ex: Projeto técnico validado de acordo com a vistoria técnica…"
-              value={approvalNotes}
-              onChange={(e) => setApprovalNotes(e.target.value)}
-            />
-          </label>
-
-          <div className="actions" style={{ marginTop: '1rem' }}>
-            <button
+          <div
+            style={{
+              display: 'flex',
+              gap: '0.75rem',
+              justifyContent: 'flex-end',
+              marginTop: '1.25rem',
+            }}
+          >
+            <Button type="button" variant="secondary" onClick={() => setIsApproving(false)}>
+              Cancelar
+            </Button>
+            <Button
               type="button"
+              variant="primary"
               data-testid="confirm-approval-btn"
               onClick={() => approveMutation.mutate()}
               disabled={
@@ -1381,14 +1395,7 @@ export function SolarDesigner({
               }
             >
               Confirmar e Congelar Aprovação
-            </button>
-            <button
-              type="button"
-              style={{ background: 'var(--color-surface)', color: 'var(--text-primary)' }}
-              onClick={() => setIsApproving(false)}
-            >
-              Cancelar
-            </button>
+            </Button>
           </div>
         </div>
       )}

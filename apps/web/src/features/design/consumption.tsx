@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, result, allows } from '../identity/client';
 import { Feedback } from '../identity/feedback';
+import { Button } from '../../ui/Button';
 import type { Schemas } from '@moura-solar/api-client';
 
 type EnergyReading = Schemas['EnergyReadingViewDto'];
@@ -137,7 +138,7 @@ export function EnergyReadings({
     },
   });
 
-  // Add / update reading
+  // Add reading
   const addReadingMutation = useMutation({
     mutationFn: async () => {
       if (!activeUnitId) throw new Error('Unidade consumidora não definida');
@@ -181,30 +182,62 @@ export function EnergyReadings({
   if (!activeUnitId) {
     const existingUnits: UtilityUnit[] = unitsQuery.data ?? [];
     return (
-      <section className="panel" aria-label="Vinculação de Unidade Consumidora">
-        <h3>Unidade Consumidora (UC)</h3>
-        <p className="device">
-          Para registrar o histórico de 12 meses de consumo e dimensionar o sistema solar com
-          precisão, vincule uma Unidade Consumidora a esta oportunidade.
-        </p>
+      <section className="design-panel" aria-label="Vinculação de Unidade Consumidora">
+        <div className="design-section-header">
+          <div>
+            <h3 className="design-section-title">Unidade Consumidora (UC)</h3>
+            <p className="design-section-desc">
+              Para registrar o histórico de 12 meses de consumo e dimensionar o sistema solar com
+              precisão, vincule uma Unidade Consumidora a esta oportunidade.
+            </p>
+          </div>
+        </div>
 
         {existingUnits.length > 0 && (
           <div style={{ marginBlock: '1rem' }}>
-            <h4>Unidades cadastradas para este cliente:</h4>
-            <div className="record-list" style={{ marginTop: '0.5rem' }}>
+            <h4
+              style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary, #f5f7f5)' }}
+            >
+              Unidades cadastradas para este cliente:
+            </h4>
+            <div
+              style={{
+                display: 'grid',
+                gap: '0.75rem',
+                marginTop: '0.5rem',
+              }}
+            >
               {existingUnits.map((u) => (
-                <div key={u.id} className="panel" style={{ padding: '0.75rem' }}>
-                  <strong>UC: {u.externalCode ?? u.id}</strong>
-                  <p className="device">
-                    {u.distributorName} | {u.consumerClass} | {u.voltage} | {u.connectionType}
-                  </p>
-                  <button
+                <div
+                  key={u.id}
+                  style={{
+                    background: 'var(--surface-elevated, #1c211d)',
+                    border: '1px solid var(--border-default, #29302b)',
+                    borderRadius: '8px',
+                    padding: '14px 16px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '12px',
+                  }}
+                >
+                  <div>
+                    <strong style={{ color: 'var(--brand-solar, #ffd400)' }}>
+                      UC: {u.externalCode ?? u.id}
+                    </strong>
+                    <p className="device" style={{ margin: '4px 0 0', fontSize: '13px' }}>
+                      {u.distributorName} | {u.consumerClass} | {u.voltage} | {u.connectionType}
+                    </p>
+                  </div>
+                  <Button
+                    variant="primary"
+                    size="compact"
                     onClick={() => linkUnitMutation.mutate(u.id)}
                     disabled={linkUnitMutation.isPending}
-                    style={{ marginTop: '0.5rem' }}
                   >
                     Vincular a esta Oportunidade
-                  </button>
+                  </Button>
                 </div>
               ))}
             </div>
@@ -212,93 +245,123 @@ export function EnergyReadings({
         )}
 
         {canManageUnits && !showNewUnitForm && (
-          <button
-            onClick={() => setShowNewUnitForm(true)}
-            style={{
-              marginTop: '1rem',
-              background: 'var(--color-surface)',
-              color: 'var(--brand-primary)',
-            }}
-          >
-            + Cadastrar Nova Unidade Consumidora
-          </button>
+          <div style={{ marginTop: '1rem' }}>
+            <Button variant="secondary" onClick={() => setShowNewUnitForm(true)}>
+              + Cadastrar Nova Unidade Consumidora
+            </Button>
+          </div>
         )}
 
+        {/* Modal: New Utility Unit */}
         {showNewUnitForm && (
-          <form
-            className="panel"
-            style={{ marginTop: '1rem' }}
-            onSubmit={(e) => {
-              e.preventDefault();
-              createUnitMutation.mutate();
-            }}
-          >
-            <h4>Nova Unidade Consumidora</h4>
-            <Feedback error={createUnitMutation.error} />
-            <div className="form-grid">
-              <label>
-                Código da UC *
-                <input
-                  type="text"
-                  required
-                  placeholder="Ex: 1002345678"
-                  value={unitCode}
-                  onChange={(e) => setUnitCode(e.target.value)}
-                />
-              </label>
-              <label>
-                Concessionária *
-                <input
-                  type="text"
-                  required
-                  value={distributor}
-                  onChange={(e) => setDistributor(e.target.value)}
-                />
-              </label>
-              <label>
-                Grupo Tarifário *
-                <select value={tariffGroup} onChange={(e) => setTariffGroup(e.target.value)}>
-                  <option value="B1">B1 — Residencial</option>
-                  <option value="B2">B2 — Rural</option>
-                  <option value="B3">B3 — Comercial / Outros</option>
-                  <option value="A4">A4 — Média Tensão</option>
-                </select>
-              </label>
-              <label>
-                Tipo de Ligação *
-                <select
-                  value={connectionType}
-                  onChange={(e) =>
-                    setConnectionType(e.target.value as 'MONOPHASIC' | 'BIPHASIC' | 'TRIPHASIC')
-                  }
+          <div className="comm-modal-overlay">
+            <section
+              className="comm-modal-box"
+              style={{ maxWidth: '600px' }}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="new-uc-title"
+            >
+              <div className="comm-modal-header">
+                <h3 id="new-uc-title" className="comm-modal-title">
+                  Nova Unidade Consumidora
+                </h3>
+                <button
+                  type="button"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--text-secondary, #9ba49e)',
+                    fontSize: '1.25rem',
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => setShowNewUnitForm(false)}
                 >
-                  <option value="MONOPHASIC">Monofásico</option>
-                  <option value="BIPHASIC">Bifásico</option>
-                  <option value="TRIPHASIC">Trifásico</option>
-                </select>
-              </label>
-              <label>
-                Tensão *
-                <select value={voltage} onChange={(e) => setVoltage(e.target.value)}>
-                  <option value="127V">127V</option>
-                  <option value="220V">220V</option>
-                  <option value="380V">380V</option>
-                </select>
-              </label>
-            </div>
-            <div className="actions">
-              <button type="submit" disabled={createUnitMutation.isPending}>
-                Salvar e Vincular UC
-              </button>
-              <button
-                type="button"
-                style={{ background: 'var(--color-surface)', color: 'var(--text-primary)' }}
-                onClick={() => setShowNewUnitForm(false)}
+                  ✕
+                </button>
+              </div>
+
+              <Feedback error={createUnitMutation.error} />
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  createUnitMutation.mutate();
+                }}
               >
-                Cancelar
-              </button>
-            </div>
-          </form>
+                <div className="form-grid">
+                  <label>
+                    Código da UC *
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ex: 1002345678"
+                      value={unitCode}
+                      onChange={(e) => setUnitCode(e.target.value)}
+                    />
+                  </label>
+                  <label>
+                    Concessionária *
+                    <input
+                      type="text"
+                      required
+                      value={distributor}
+                      onChange={(e) => setDistributor(e.target.value)}
+                    />
+                  </label>
+                  <label>
+                    Grupo Tarifário *
+                    <select value={tariffGroup} onChange={(e) => setTariffGroup(e.target.value)}>
+                      <option value="B1">B1 — Residencial</option>
+                      <option value="B2">B2 — Rural</option>
+                      <option value="B3">B3 — Comercial / Outros</option>
+                      <option value="A4">A4 — Média Tensão</option>
+                    </select>
+                  </label>
+                  <label>
+                    Tipo de Ligação *
+                    <select
+                      value={connectionType}
+                      onChange={(e) =>
+                        setConnectionType(e.target.value as 'MONOPHASIC' | 'BIPHASIC' | 'TRIPHASIC')
+                      }
+                    >
+                      <option value="MONOPHASIC">Monofásico</option>
+                      <option value="BIPHASIC">Bifásico</option>
+                      <option value="TRIPHASIC">Trifásico</option>
+                    </select>
+                  </label>
+                  <label>
+                    Tensão *
+                    <select value={voltage} onChange={(e) => setVoltage(e.target.value)}>
+                      <option value="127V">127V</option>
+                      <option value="220V">220V</option>
+                      <option value="380V">380V</option>
+                    </select>
+                  </label>
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: '0.75rem',
+                    justifyContent: 'flex-end',
+                    marginTop: '0.5rem',
+                  }}
+                >
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setShowNewUnitForm(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button type="submit" variant="primary" disabled={createUnitMutation.isPending}>
+                    Salvar e Vincular UC
+                  </Button>
+                </div>
+              </form>
+            </section>
+          </div>
         )}
       </section>
     );
@@ -310,21 +373,13 @@ export function EnergyReadings({
   const hasIncompleteHistory = consumptionSummary?.hasIncompleteHistory ?? false;
 
   return (
-    <section className="panel" aria-label="Histórico de Consumo de Energia">
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '0.5rem',
-        }}
-      >
+    <section className="design-panel" aria-label="Histórico de Consumo de Energia">
+      <div className="design-section-header">
         <div>
-          <h3>Histórico de Consumo de Energia</h3>
-          <p className="device">
+          <h3 className="design-section-title">Histórico de Consumo de Energia</h3>
+          <p className="design-section-desc">
             UC vinculada:{' '}
-            <strong>
+            <strong style={{ color: 'var(--brand-solar, #ffd400)' }}>
               {unitsQuery.data?.find((u) => u.id === activeUnitId)?.externalCode ?? activeUnitId}
             </strong>
           </p>
@@ -333,87 +388,63 @@ export function EnergyReadings({
 
       <Feedback error={readingsQuery.error} />
 
-      {/* KPI Cards */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(10rem, 1fr))',
-          gap: '0.75rem',
-          marginBlock: '1rem',
-        }}
-      >
-        <div className="panel" style={{ margin: 0, padding: '1rem' }}>
-          <span className="eyebrow" style={{ fontSize: '0.7rem' }}>
-            MÉDIA MENSAL
-          </span>
-          <strong style={{ fontSize: '1.5rem', display: 'block' }}>
+      {/* KPI METRICS BAR */}
+      <div className="design-kpi-grid">
+        <div className="design-kpi-card">
+          <div className="design-kpi-card__label">MÉDIA MENSAL</div>
+          <div className="design-kpi-card__value" style={{ color: 'var(--brand-solar, #ffd400)' }}>
             {consumptionSummary
               ? `${consumptionSummary.averageMonthlyConsumptionKwh.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} kWh`
               : '—'}
-          </strong>
-          <span className="device" style={{ fontSize: '0.75rem' }}>
+          </div>
+          <div className="design-kpi-card__subtext">
             {monthsCount} {monthsCount === 1 ? 'mês registrado' : 'meses registrados'}
-          </span>
+          </div>
         </div>
 
-        <div className="panel" style={{ margin: 0, padding: '1rem' }}>
-          <span className="eyebrow" style={{ fontSize: '0.7rem' }}>
-            CONSUMO ANUALIZADO
-          </span>
-          <strong style={{ fontSize: '1.5rem', display: 'block' }}>
+        <div className="design-kpi-card">
+          <div className="design-kpi-card__label">CONSUMO ANUALIZADO</div>
+          <div className="design-kpi-card__value">
             {consumptionSummary
               ? `${consumptionSummary.annualizedConsumptionKwh.toLocaleString('pt-BR', { maximumFractionDigits: 0 })} kWh`
               : '—'}
-          </strong>
-          <span className="device" style={{ fontSize: '0.75rem' }}>
-            Projeção anual 12 meses
-          </span>
+          </div>
+          <div className="design-kpi-card__subtext">Projeção anual 12 meses</div>
         </div>
 
-        <div className="panel" style={{ margin: 0, padding: '1rem' }}>
-          <span className="eyebrow" style={{ fontSize: '0.7rem' }}>
-            SÉRIE HISTÓRICA
-          </span>
-          <strong style={{ fontSize: '1.5rem', display: 'block' }}>{monthsCount} / 12</strong>
-          <span className="device" style={{ fontSize: '0.75rem' }}>
+        <div className="design-kpi-card">
+          <div className="design-kpi-card__label">SÉRIE HISTÓRICA</div>
+          <div className="design-kpi-card__value">{monthsCount} / 12</div>
+          <div className="design-kpi-card__subtext">
             {hasIncompleteHistory ? 'Histórico incompleto' : 'Histórico completo'}
-          </span>
+          </div>
         </div>
       </div>
 
       {/* Incomplete history warning banner as mandated by SPEC-005 item 16 */}
       {hasIncompleteHistory && (
         <div
-          className="notice"
+          className="design-alert design-alert--warning"
           data-testid="incomplete-history-notice"
-          style={{
-            marginBlock: '1rem',
-            borderLeft: '4px solid var(--color-accent-500)',
-            backgroundColor: '#fffbeb',
-            color: '#92400e',
-          }}
+          style={{ marginBlock: '1rem' }}
         >
           <strong>⚠️ Aviso: Histórico de Consumo Incompleto ({monthsCount}/12 meses)</strong>
-          <p style={{ margin: 0, fontSize: '0.875rem', marginTop: '0.25rem' }}>
+          <p style={{ margin: '4px 0 0', fontSize: '13px' }}>
             A média foi calculada com base estritamente nos <strong>{monthsCount} meses</strong>{' '}
-            informados, sem interpolação ou invenção de meses ausentes. Recomenda-se registrar os 12
-            meses para maior precisão de sazonalidade.
+            informados (
+            {consumptionSummary?.averageMonthlyConsumptionKwh.toLocaleString('pt-BR', {
+              maximumFractionDigits: 1,
+            })}{' '}
+            kWh), sem interpolação ou invenção de meses ausentes. Recomenda-se registrar os 12 meses
+            para maior precisão de sazonalidade.
           </p>
         </div>
       )}
 
       {monthsCount === 12 && (
-        <div
-          className="notice"
-          style={{
-            marginBlock: '1rem',
-            borderLeft: '4px solid var(--brand-primary)',
-            backgroundColor: 'var(--brand-primary-soft)',
-            color: 'var(--brand-primary-strong)',
-          }}
-        >
+        <div className="design-alert design-alert--success" style={{ marginBlock: '1rem' }}>
           <strong>✅ Histórico Completo de 12 Meses</strong>
-          <p style={{ margin: 0, fontSize: '0.875rem', marginTop: '0.25rem' }}>
+          <p style={{ margin: '4px 0 0', fontSize: '13px' }}>
             Série histórica completa de 12 meses registrada. O dimensionamento considerará a
             sazonalidade anual integral.
           </p>
@@ -423,14 +454,22 @@ export function EnergyReadings({
       {/* Add Reading Form */}
       {!readonly && canManageUnits && (
         <form
-          className="panel"
-          style={{ marginBlock: '1rem', background: 'var(--color-canvas)' }}
+          className="design-form"
           onSubmit={(e) => {
             e.preventDefault();
             addReadingMutation.mutate();
           }}
         >
-          <h4>Adicionar Leitura Mensal</h4>
+          <h4
+            style={{
+              fontSize: '15px',
+              fontWeight: 700,
+              color: 'var(--text-primary, #f5f7f5)',
+              margin: '0 0 12px',
+            }}
+          >
+            Adicionar Leitura Mensal
+          </h4>
           <Feedback error={addReadingMutation.error} />
           <div className="form-grid">
             <label>
@@ -475,15 +514,21 @@ export function EnergyReadings({
               />
             </label>
           </div>
-          <div className="actions" style={{ marginTop: '0.75rem' }}>
-            <button type="submit" disabled={addReadingMutation.isPending}>
-              Salvar Leitura
-            </button>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              marginTop: '1rem',
+            }}
+          >
+            <Button type="submit" variant="primary" disabled={addReadingMutation.isPending}>
+              {addReadingMutation.isPending ? 'Salvando…' : 'Salvar Leitura'}
+            </Button>
           </div>
         </form>
       )}
 
-      {/* Desktop Table View */}
+      {/* DESKTOP TABLE VIEW */}
       <div className="table-wrapper desktop-only">
         <table className="data-table">
           <thead>
@@ -492,13 +537,20 @@ export function EnergyReadings({
               <th>Consumo (kWh)</th>
               <th>Faturado (R$)</th>
               <th>Observação</th>
-              {!readonly && <th>Ações</th>}
+              {!readonly && <th style={{ textAlign: 'right' }}>Ações</th>}
             </tr>
           </thead>
           <tbody>
             {readings.length === 0 && (
               <tr>
-                <td colSpan={5} style={{ textAlign: 'center', padding: '1.5rem' }}>
+                <td
+                  colSpan={5}
+                  style={{
+                    textAlign: 'center',
+                    padding: '2.5rem',
+                    color: 'var(--text-secondary, #9ba49e)',
+                  }}
+                >
                   Nenhuma leitura cadastrada ainda para esta UC.
                 </td>
               </tr>
@@ -506,33 +558,33 @@ export function EnergyReadings({
             {readings.map((r) => (
               <tr key={r.id}>
                 <td>
-                  <strong>{r.referenceMonth}</strong>
+                  <strong style={{ color: 'var(--text-primary, #f5f7f5)' }}>
+                    {r.referenceMonth}
+                  </strong>
                 </td>
                 <td>
-                  <strong>{r.consumptionKwh.toLocaleString('pt-BR')} kWh</strong>
+                  <strong style={{ color: 'var(--brand-solar, #ffd400)' }}>
+                    {r.consumptionKwh.toLocaleString('pt-BR')} kWh
+                  </strong>
                 </td>
-                <td>
+                <td style={{ color: 'var(--text-primary, #f5f7f5)' }}>
                   {r.billedAmount !== null && r.billedAmount !== undefined
                     ? `R$ ${r.billedAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                     : '—'}
                 </td>
-                <td className="device">{r.notes ?? '—'}</td>
+                <td className="device" style={{ fontSize: '13px' }}>
+                  {r.notes ?? '—'}
+                </td>
                 {!readonly && (
-                  <td>
-                    <button
-                      type="button"
-                      style={{
-                        padding: '0.25rem 0.5rem',
-                        fontSize: '0.75rem',
-                        background: 'var(--color-surface)',
-                        color: 'var(--status-danger)',
-                        borderColor: 'var(--status-danger)',
-                      }}
+                  <td style={{ textAlign: 'right' }}>
+                    <Button
+                      variant="danger"
+                      size="compact"
                       onClick={() => deleteReadingMutation.mutate(r.id)}
                       disabled={deleteReadingMutation.isPending}
                     >
                       Excluir
-                    </button>
+                    </Button>
                   </td>
                 )}
               </tr>
@@ -541,35 +593,42 @@ export function EnergyReadings({
         </table>
       </div>
 
-      {/* Mobile Card List View (Visible on 360px up to 768px, or responsive) */}
+      {/* MOBILE CARD LIST VIEW */}
       <div className="mobile-readings-list">
         {readings.length === 0 && (
-          <p className="device" style={{ textAlign: 'center', padding: '1rem' }}>
+          <p
+            className="device"
+            style={{
+              textAlign: 'center',
+              padding: '1.5rem',
+              color: 'var(--text-secondary, #9ba49e)',
+            }}
+          >
             Nenhuma leitura cadastrada ainda para esta UC.
           </p>
         )}
-        <div className="record-list">
+        <div style={{ display: 'grid', gap: '0.75rem' }}>
           {readings.map((r) => (
-            <div
-              key={r.id}
-              className="panel"
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: '0.5rem',
-              }}
-            >
+            <div key={r.id} className="mobile-reading-card">
               <div>
-                <strong>{r.referenceMonth}</strong>
+                <strong style={{ color: 'var(--text-primary, #f5f7f5)', fontSize: '14px' }}>
+                  {r.referenceMonth}
+                </strong>
                 <div
-                  style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--brand-primary)' }}
+                  style={{
+                    fontSize: '18px',
+                    fontWeight: 700,
+                    color: 'var(--brand-solar, #ffd400)',
+                    marginTop: '2px',
+                  }}
                 >
                   {r.consumptionKwh.toLocaleString('pt-BR')} kWh
                 </div>
                 {r.billedAmount !== null && r.billedAmount !== undefined && (
-                  <div className="device" style={{ fontSize: '0.8125rem' }}>
+                  <div
+                    className="device"
+                    style={{ fontSize: '12px', color: 'var(--text-secondary, #9ba49e)' }}
+                  >
                     Faturado: R${' '}
                     {r.billedAmount.toLocaleString('pt-BR', {
                       minimumFractionDigits: 2,
@@ -579,20 +638,14 @@ export function EnergyReadings({
                 )}
               </div>
               {!readonly && (
-                <button
-                  type="button"
-                  style={{
-                    padding: '0.35rem 0.75rem',
-                    fontSize: '0.8125rem',
-                    background: 'var(--color-surface)',
-                    color: 'var(--status-danger)',
-                    borderColor: 'var(--status-danger)',
-                  }}
+                <Button
+                  variant="danger"
+                  size="compact"
                   onClick={() => deleteReadingMutation.mutate(r.id)}
                   disabled={deleteReadingMutation.isPending}
                 >
                   Excluir
-                </button>
+                </Button>
               )}
             </div>
           ))}

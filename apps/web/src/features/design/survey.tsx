@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, result, allows } from '../identity/client';
 import { Feedback } from '../identity/feedback';
+import { Button } from '../../ui/Button';
 import type { Schemas } from '@moura-solar/api-client';
 
 type Survey = Schemas['SurveyViewDto'];
@@ -89,25 +90,18 @@ export function TechnicalSurvey({ opportunityId, readonly = false }: SurveyProps
   const latestSurvey = surveys[0] as Survey | undefined;
 
   return (
-    <section className="panel" aria-label="Levantamento Técnico e Vistoria">
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '0.5rem',
-        }}
-      >
+    <section className="design-panel" aria-label="Levantamento Técnico e Vistoria">
+      <div className="design-section-header">
         <div>
-          <h3>Levantamento Técnico & Vistoria</h3>
-          <p className="device">
+          <h3 className="design-section-title">Levantamento Técnico & Vistoria</h3>
+          <p className="design-section-desc">
             Premissas físicas e elétricas da instalação (tipo de telhado, tensão e tipo de ligação).
           </p>
         </div>
         {latestSurvey && !readonly && canManageSurvey && latestSurvey.status !== 'COMPLETED' && (
-          <button
-            style={{ background: 'var(--color-surface)', color: 'var(--text-primary)' }}
+          <Button
+            variant="secondary"
+            size="compact"
             onClick={() => {
               if (latestSurvey) {
                 setType((latestSurvey.type as 'REMOTE' | 'ONSITE' | 'HYBRID') || 'REMOTE');
@@ -125,7 +119,7 @@ export function TechnicalSurvey({ opportunityId, readonly = false }: SurveyProps
             }}
           >
             {showEditForm ? 'Fechar Edição' : 'Editar Vistoria'}
-          </button>
+          </Button>
         )}
       </div>
 
@@ -133,12 +127,16 @@ export function TechnicalSurvey({ opportunityId, readonly = false }: SurveyProps
       <Feedback error={completeSurveyMutation.error} />
 
       {!latestSurvey && !showEditForm && (
-        <div style={{ padding: '1.5rem', textAlign: 'center' }}>
-          <p className="device">Nenhum levantamento técnico registrado ainda.</p>
+        <div style={{ padding: '2.5rem', textAlign: 'center' }}>
+          <p className="device" style={{ color: 'var(--text-secondary, #9ba49e)' }}>
+            Nenhum levantamento técnico registrado ainda.
+          </p>
           {!readonly && canManageSurvey && (
-            <button onClick={() => setShowEditForm(true)} style={{ marginTop: '0.5rem' }}>
-              + Iniciar Levantamento Técnico
-            </button>
+            <div style={{ marginTop: '1rem' }}>
+              <Button variant="primary" onClick={() => setShowEditForm(true)}>
+                + Iniciar Levantamento Técnico
+              </Button>
+            </div>
           )}
         </div>
       )}
@@ -162,9 +160,13 @@ export function TechnicalSurvey({ opportunityId, readonly = false }: SurveyProps
                 ? 'Vistoria Concluída'
                 : 'Em Elaboração (Rascunho)'}
             </span>
-            <span className="device">
-              Tipo: <strong>{latestSurvey.type}</strong> | Registrado em:{' '}
-              {new Date(latestSurvey.createdAt).toLocaleDateString('pt-BR')}
+            <span
+              className="device"
+              style={{ fontSize: '13px', color: 'var(--text-secondary, #9ba49e)' }}
+            >
+              Tipo:{' '}
+              <strong style={{ color: 'var(--text-primary, #f5f7f5)' }}>{latestSurvey.type}</strong>{' '}
+              | Registrado em: {new Date(latestSurvey.createdAt).toLocaleDateString('pt-BR')}
             </span>
           </div>
 
@@ -175,54 +177,125 @@ export function TechnicalSurvey({ opportunityId, readonly = false }: SurveyProps
               gap: '0.75rem',
             }}
           >
-            <div className="panel" style={{ margin: 0, padding: '0.75rem' }}>
-              <span className="device" style={{ fontSize: '0.75rem' }}>
+            <div
+              style={{
+                background: 'var(--surface-elevated, #1c211d)',
+                border: '1px solid var(--border-default, #29302b)',
+                borderRadius: '8px',
+                padding: '12px 16px',
+              }}
+            >
+              <span className="device" style={{ fontSize: '11px', textTransform: 'uppercase' }}>
                 TIPO DE TELHADO
               </span>
-              <strong style={{ display: 'block' }}>
+              <strong
+                style={{
+                  display: 'block',
+                  fontSize: '15px',
+                  color: 'var(--text-primary, #f5f7f5)',
+                  marginTop: '2px',
+                }}
+              >
                 {latestSurvey.roofType ?? 'Não informado'}
               </strong>
             </div>
-            <div className="panel" style={{ margin: 0, padding: '0.75rem' }}>
-              <span className="device" style={{ fontSize: '0.75rem' }}>
+
+            <div
+              style={{
+                background: 'var(--surface-elevated, #1c211d)',
+                border: '1px solid var(--border-default, #29302b)',
+                borderRadius: '8px',
+                padding: '12px 16px',
+              }}
+            >
+              <span className="device" style={{ fontSize: '11px', textTransform: 'uppercase' }}>
                 TENSÃO & CONEXÃO
               </span>
-              <strong style={{ display: 'block' }}>
+              <strong
+                style={{
+                  display: 'block',
+                  fontSize: '15px',
+                  color: 'var(--text-primary, #f5f7f5)',
+                  marginTop: '2px',
+                }}
+              >
                 {latestSurvey.voltage} — {latestSurvey.connectionType}
               </strong>
             </div>
-            <div className="panel" style={{ margin: 0, padding: '0.75rem' }}>
-              <span className="device" style={{ fontSize: '0.75rem' }}>
+
+            <div
+              style={{
+                background: 'var(--surface-elevated, #1c211d)',
+                border: '1px solid var(--border-default, #29302b)',
+                borderRadius: '8px',
+                padding: '12px 16px',
+              }}
+            >
+              <span className="device" style={{ fontSize: '11px', textTransform: 'uppercase' }}>
                 TARIFA APLICÁVEL
               </span>
-              <strong style={{ display: 'block' }}>
+              <strong
+                style={{
+                  display: 'block',
+                  fontSize: '15px',
+                  color: 'var(--brand-solar, #ffd400)',
+                  marginTop: '2px',
+                }}
+              >
                 R$ {latestSurvey.tariffPerKwh.toFixed(4)} / kWh
               </strong>
             </div>
-            <div className="panel" style={{ margin: 0, padding: '0.75rem' }}>
-              <span className="device" style={{ fontSize: '0.75rem' }}>
+
+            <div
+              style={{
+                background: 'var(--surface-elevated, #1c211d)',
+                border: '1px solid var(--border-default, #29302b)',
+                borderRadius: '8px',
+                padding: '12px 16px',
+              }}
+            >
+              <span className="device" style={{ fontSize: '11px', textTransform: 'uppercase' }}>
                 SOMBREAMENTO CONHECIDO
               </span>
-              <strong style={{ display: 'block' }}>
+              <strong
+                style={{
+                  display: 'block',
+                  fontSize: '15px',
+                  color: 'var(--text-primary, #f5f7f5)',
+                  marginTop: '2px',
+                }}
+              >
                 {latestSurvey.shadingKnown ? 'Sim' : 'Não'}
               </strong>
             </div>
           </div>
 
           {latestSurvey.notes && (
-            <p style={{ marginTop: '1rem', fontStyle: 'italic' }}>
-              <strong>Observações:</strong> {latestSurvey.notes}
+            <p
+              style={{
+                marginTop: '1rem',
+                fontSize: '13px',
+                color: 'var(--text-secondary, #9ba49e)',
+                background: 'var(--surface-elevated, #1c211d)',
+                padding: '10px 14px',
+                borderRadius: '6px',
+                border: '1px solid var(--border-default, #29302b)',
+              }}
+            >
+              <strong style={{ color: 'var(--text-primary, #f5f7f5)' }}>Observações:</strong>{' '}
+              {latestSurvey.notes}
             </p>
           )}
 
           {latestSurvey.status !== 'COMPLETED' && !readonly && canCompleteSurvey && (
-            <div className="actions" style={{ marginTop: '1.25rem' }}>
-              <button
+            <div style={{ marginTop: '1.25rem' }}>
+              <Button
+                variant="primary"
                 onClick={() => completeSurveyMutation.mutate(latestSurvey.id)}
                 disabled={completeSurveyMutation.isPending}
               >
                 ✔ Concluir e Validar Vistoria Técnica
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -231,14 +304,22 @@ export function TechnicalSurvey({ opportunityId, readonly = false }: SurveyProps
       {/* Edit / New Survey Form */}
       {showEditForm && !readonly && (
         <form
-          className="panel"
-          style={{ marginTop: '1rem', background: 'var(--color-canvas)' }}
+          className="design-form"
           onSubmit={(e) => {
             e.preventDefault();
             saveSurveyMutation.mutate();
           }}
         >
-          <h4>{latestSurvey ? 'Atualizar Levantamento Técnico' : 'Novo Levantamento Técnico'}</h4>
+          <h4
+            style={{
+              fontSize: '16px',
+              fontWeight: 700,
+              color: 'var(--text-primary, #f5f7f5)',
+              margin: '0 0 16px',
+            }}
+          >
+            {latestSurvey ? 'Atualizar Levantamento Técnico' : 'Novo Levantamento Técnico'}
+          </h4>
           <Feedback error={saveSurveyMutation.error} />
           <div className="form-grid">
             <label>
@@ -293,14 +374,17 @@ export function TechnicalSurvey({ opportunityId, readonly = false }: SurveyProps
                 onChange={(e) => setTariffPerKwh(e.target.value)}
               />
             </label>
-            <div className="check-row" style={{ marginTop: '1.5rem' }}>
+            <div
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '1.75rem' }}
+            >
               <input
                 type="checkbox"
                 id="shading-check"
                 checked={shadingKnown}
                 onChange={(e) => setShadingKnown(e.target.checked)}
+                style={{ width: 'auto' }}
               />
-              <label htmlFor="shading-check" style={{ margin: 0 }}>
+              <label htmlFor="shading-check" style={{ margin: 0, cursor: 'pointer' }}>
                 Possui sombreamento conhecido?
               </label>
             </div>
@@ -314,17 +398,20 @@ export function TechnicalSurvey({ opportunityId, readonly = false }: SurveyProps
               />
             </label>
           </div>
-          <div className="actions" style={{ marginTop: '0.75rem' }}>
-            <button type="submit" disabled={saveSurveyMutation.isPending}>
-              Salvar Levantamento
-            </button>
-            <button
-              type="button"
-              style={{ background: 'var(--color-surface)', color: 'var(--text-primary)' }}
-              onClick={() => setShowEditForm(false)}
-            >
+          <div
+            style={{
+              display: 'flex',
+              gap: '0.75rem',
+              justifyContent: 'flex-end',
+              marginTop: '1.25rem',
+            }}
+          >
+            <Button type="button" variant="secondary" onClick={() => setShowEditForm(false)}>
               Cancelar
-            </button>
+            </Button>
+            <Button type="submit" variant="primary" disabled={saveSurveyMutation.isPending}>
+              Salvar Levantamento
+            </Button>
           </div>
         </form>
       )}
