@@ -83,6 +83,67 @@ export function Catalog() {
     },
   });
 
+  // Editing state
+  const [editingItem, setEditingItem] = useState<CatalogItem | null>(null);
+  const [editSku, setEditSku] = useState('');
+  const [editKind, setEditKind] = useState<'MATERIAL' | 'SERVICE'>('MATERIAL');
+  const [editCategory, setEditCategory] = useState<string>('MODULE');
+  const [editName, setEditName] = useState('');
+  const [editManufacturer, setEditManufacturer] = useState('');
+  const [editModel, setEditModel] = useState('');
+  const [editUnitOfMeasure, setEditUnitOfMeasure] = useState('UN');
+  const [editPowerRatingWp, setEditPowerRatingWp] = useState('');
+  const [editPowerRatingKw, setEditPowerRatingKw] = useState('');
+  const [editReferenceCost, setEditReferenceCost] = useState('');
+  const [editReferencePrice, setEditReferencePrice] = useState('');
+  const [editStatus, setEditStatus] = useState<'ACTIVE' | 'INACTIVE'>('ACTIVE');
+
+  const startEditing = (item: CatalogItem) => {
+    setEditingItem(item);
+    setEditSku(item.sku);
+    setEditKind(item.kind as 'MATERIAL' | 'SERVICE');
+    setEditCategory(item.category);
+    setEditName(item.name);
+    setEditManufacturer(item.manufacturer || '');
+    setEditModel(item.model || '');
+    setEditUnitOfMeasure(item.unitOfMeasure);
+    setEditPowerRatingWp(item.powerRatingWp ? String(item.powerRatingWp) : '');
+    setEditPowerRatingKw(item.powerRatingKw ? String(item.powerRatingKw) : '');
+    setEditReferenceCost(String(item.referenceCost));
+    setEditReferencePrice(item.referencePrice ? String(item.referencePrice) : '');
+    setEditStatus(item.status as 'ACTIVE' | 'INACTIVE');
+  };
+
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      if (!editingItem) return;
+      return result(
+        api.PUT('/api/v1/catalog/{id}', {
+          params: { path: { id: editingItem.id } },
+          body: {
+            sku: editSku,
+            kind: editKind,
+            category: editCategory,
+            name: editName,
+            manufacturer: editManufacturer || undefined,
+            model: editModel || undefined,
+            unitOfMeasure: editUnitOfMeasure,
+            powerRatingWp: editPowerRatingWp ? parseFloat(editPowerRatingWp) : undefined,
+            powerRatingKw: editPowerRatingKw ? parseFloat(editPowerRatingKw) : undefined,
+            referenceCost: parseFloat(editReferenceCost),
+            referencePrice: editReferencePrice ? parseFloat(editReferencePrice) : undefined,
+            status: editStatus,
+            expectedVersion: editingItem.version,
+          },
+        }),
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['catalog'] });
+      setEditingItem(null);
+    },
+  });
+
   const resetForm = () => {
     setSku('');
     setName('');
@@ -124,12 +185,27 @@ export function Catalog() {
           </p>
         </div>
         {canManageCatalog && !showAddForm && (
-          <button onClick={() => setShowAddForm(true)}>+ Novo Item no Catálogo</button>
+          <button
+            type="button"
+            style={{
+              background: '#087443',
+              color: '#ffffff',
+              fontWeight: 600,
+              padding: '0.5rem 1rem',
+              borderRadius: '6px',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+            onClick={() => setShowAddForm(true)}
+          >
+            + Novo Item no Catálogo
+          </button>
         )}
       </div>
 
       <Feedback error={catalogQuery.error} />
       <Feedback error={createMutation.error} />
+      <Feedback error={updateMutation.error} />
 
       {/* New Item Form */}
       {showAddForm && canManageCatalog && (
@@ -319,17 +395,21 @@ export function Catalog() {
               <th>Custo Ref. (R$)</th>
               <th>Preço Ref. (R$)</th>
               <th>Situação</th>
+              {canManageCatalog && <th>Ações</th>}
             </tr>
           </thead>
           <tbody>
             {catalogQuery.isPending && (
               <tr>
-                <td colSpan={7}>Carregando catálogo…</td>
+                <td colSpan={canManageCatalog ? 8 : 7}>Carregando catálogo…</td>
               </tr>
             )}
             {items.length === 0 && !catalogQuery.isPending && (
               <tr>
-                <td colSpan={7} style={{ textAlign: 'center', padding: '1.5rem' }}>
+                <td
+                  colSpan={canManageCatalog ? 8 : 7}
+                  style={{ textAlign: 'center', padding: '1.5rem' }}
+                >
                   Nenhum item encontrado no catálogo.
                 </td>
               </tr>
@@ -377,11 +457,284 @@ export function Catalog() {
                     {item.status}
                   </span>
                 </td>
+                {canManageCatalog && (
+                  <td>
+                    <button
+                      type="button"
+                      style={{
+                        background: '#f8fafc',
+                        color: '#087443',
+                        border: '1px solid #087443',
+                        borderRadius: '4px',
+                        padding: '0.35rem 0.75rem',
+                        cursor: 'pointer',
+                        fontSize: '0.8rem',
+                        fontWeight: 600,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.25rem',
+                      }}
+                      onClick={() => startEditing(item)}
+                    >
+                      ✏️ Editar
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* Edit Item Modal */}
+      {editingItem && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="edit-item-modal-title"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.5)',
+            backdropFilter: 'blur(3px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1050,
+            padding: '1rem',
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '12px',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              maxWidth: '680px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              border: '1px solid #e2e8f0',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '1.25rem 1.5rem',
+                borderBottom: '1px solid #e2e8f0',
+              }}
+            >
+              <div>
+                <h3
+                  id="edit-item-modal-title"
+                  style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}
+                >
+                  Editar Item de Catálogo
+                </h3>
+                <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                  SKU: <strong>{editingItem.sku}</strong>
+                </span>
+              </div>
+              <button
+                type="button"
+                aria-label="Fechar modal"
+                onClick={() => setEditingItem(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  color: '#64748b',
+                  cursor: 'pointer',
+                  padding: '0.25rem 0.5rem',
+                  borderRadius: '4px',
+                  lineHeight: 1,
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                updateMutation.mutate();
+              }}
+              style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}
+            >
+              <div className="form-grid">
+                <label>
+                  SKU Interno *
+                  <input
+                    type="text"
+                    required
+                    value={editSku}
+                    onChange={(e) => setEditSku(e.target.value)}
+                  />
+                </label>
+                <label>
+                  Tipo *
+                  <select
+                    value={editKind}
+                    onChange={(e) => setEditKind(e.target.value as 'MATERIAL' | 'SERVICE')}
+                  >
+                    <option value="MATERIAL">Material / Equipamento</option>
+                    <option value="SERVICE">Serviço / Mão de Obra</option>
+                  </select>
+                </label>
+                <label>
+                  Categoria *
+                  <select value={editCategory} onChange={(e) => setEditCategory(e.target.value)}>
+                    <option value="MODULE">Módulo Solar Fotovoltaico</option>
+                    <option value="INVERTER">Inversor / Microinversor</option>
+                    <option value="STRUCTURE">Estrutura de Fixação</option>
+                    <option value="CABLE_ELECTRICAL">Cabos e Proteções Elétricas</option>
+                    <option value="BATTERY">Bateria / Armazenamento</option>
+                    <option value="SERVICE_INSTALLATION">Serviço de Instalação</option>
+                    <option value="SERVICE_ENGINEERING">Serviço de Engenharia / Homologação</option>
+                    <option value="OTHER">Outros Suprimentos</option>
+                  </select>
+                </label>
+                <label>
+                  Nome do Item *
+                  <input
+                    type="text"
+                    required
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                  />
+                </label>
+                <label>
+                  Fabricante
+                  <input
+                    type="text"
+                    value={editManufacturer}
+                    onChange={(e) => setEditManufacturer(e.target.value)}
+                  />
+                </label>
+                <label>
+                  Modelo
+                  <input
+                    type="text"
+                    value={editModel}
+                    onChange={(e) => setEditModel(e.target.value)}
+                  />
+                </label>
+                <label>
+                  Unidade de Medida *
+                  <input
+                    type="text"
+                    required
+                    value={editUnitOfMeasure}
+                    onChange={(e) => setEditUnitOfMeasure(e.target.value)}
+                  />
+                </label>
+                <label>
+                  Potência Nominal (Wp)
+                  <input
+                    type="number"
+                    step="1"
+                    min="0"
+                    placeholder="Ex: 630"
+                    value={editPowerRatingWp}
+                    onChange={(e) => setEditPowerRatingWp(e.target.value)}
+                  />
+                </label>
+                <label>
+                  Potência Nominal (kW)
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Ex: 5.0"
+                    value={editPowerRatingKw}
+                    onChange={(e) => setEditPowerRatingKw(e.target.value)}
+                  />
+                </label>
+                <label>
+                  Custo de Referência (R$) *
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    required
+                    value={editReferenceCost}
+                    onChange={(e) => setEditReferenceCost(e.target.value)}
+                  />
+                </label>
+                <label>
+                  Preço de Venda Referência (R$)
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={editReferencePrice}
+                    onChange={(e) => setEditReferencePrice(e.target.value)}
+                  />
+                </label>
+                <label>
+                  Situação *
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value as 'ACTIVE' | 'INACTIVE')}
+                  >
+                    <option value="ACTIVE">Ativo</option>
+                    <option value="INACTIVE">Inativo</option>
+                  </select>
+                </label>
+              </div>
+
+              {/* Modal Actions */}
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '0.75rem',
+                  marginTop: '1rem',
+                  paddingTop: '1rem',
+                  borderTop: '1px solid #e2e8f0',
+                }}
+              >
+                <button
+                  type="button"
+                  style={{
+                    background: '#ffffff',
+                    color: '#334155',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '6px',
+                    padding: '0.5rem 1rem',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => setEditingItem(null)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={updateMutation.isPending}
+                  style={{
+                    background: '#087443',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '0.5rem 1.25rem',
+                    fontWeight: 600,
+                    cursor: updateMutation.isPending ? 'not-allowed' : 'pointer',
+                    opacity: updateMutation.isPending ? 0.7 : 1,
+                  }}
+                >
+                  {updateMutation.isPending ? 'Salvando…' : 'Salvar Alterações'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

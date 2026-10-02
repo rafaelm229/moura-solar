@@ -68,7 +68,13 @@ export interface TechnicalSnapshot {
 export interface CommercialSnapshot {
   contractTotal?: string;
   paymentMethod?: string;
-  milestones?: Array<{ stage: string; percent: string; amount: string }>;
+  milestones?: Array<{
+    stage: string;
+    percent: string;
+    amount: string;
+    due?: string;
+    condition?: string;
+  }>;
 }
 
 export interface ClausesSnapshot {
@@ -152,6 +158,14 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
   const [roofType, setRoofType] = useState('Cerâmico');
   const [contractNotes, setContractNotes] = useState('');
 
+  // Payment configuration state (Anexo III)
+  const [isEditingPayment, setIsEditingPayment] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<string>('PIX');
+  const [downPaymentAmount, setDownPaymentAmount] = useState<string>('');
+  const [milestones, setMilestones] = useState<
+    Array<{ stage: string; percent: string; amount: string; due: string; condition: string }>
+  >([]);
+
   // Delivery state
   const [isDelivering, setIsDelivering] = useState(false);
   const [deliveryChannel, setDeliveryChannel] = useState<
@@ -197,6 +211,27 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
     ? allows(me.data, 'contracts:download', false) || me.data.roleName === 'Administrador'
     : true;
 
+  interface ProposalSummary {
+    id: string;
+    versions?: Array<{
+      id: string;
+      status: string;
+      finalPrice?: number | string;
+      totalInvestmentAmount?: number | string;
+    }>;
+  }
+
+  // Fetch proposals to know proposal total & initial payment values
+  const { data: proposals = [] } = useQuery({
+    queryKey: ['proposals', opportunityId],
+    queryFn: () =>
+      result(
+        api.GET('/api/v1/opportunities/{opportunityId}/proposals', {
+          params: { path: { opportunityId } },
+        }),
+      ) as unknown as Promise<ProposalSummary[]>,
+  });
+
   // Fetch contracts
   const { data: contracts = [], isLoading } = useQuery({
     queryKey: ['contracts', opportunityId],
@@ -210,22 +245,144 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
 
   const contract = contracts[0]; // Active contract for this opportunity
 
+  const acceptedProposal =
+    proposals.flatMap((p) => p.versions || []).find((v) => v.status === 'ACCEPTED') ||
+    proposals[0]?.versions?.[0];
+  const finalPriceNum =
+    Number(
+      contract?.acceptedProposalVersion?.finalPrice ||
+        acceptedProposal?.finalPrice ||
+        acceptedProposal?.totalInvestmentAmount,
+    ) || 35000;
+
+  const getStandardMilestones = (total: number, method = 'PIX') => {
+    if (method === 'FINANCIAMENTO') {
+      return [
+        {
+          stage: 'Sinal / Entrada',
+          percent: '10%',
+          amount: `R$ ${(total * 0.1).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          due: 'Na assinatura do contrato',
+          condition: 'Assinatura do contrato e comprovação do sinal',
+        },
+        {
+          stage: 'Liberação do Financiamento Bancário',
+          percent: '90%',
+          amount: `R$ ${(total * 0.9).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          due: 'Após aprovação da CCB pelo banco parceiro',
+          condition: 'Emissão e liquidação do contrato de financiamento solar',
+        },
+      ];
+    }
+    return [
+      {
+        stage: 'Assinatura do Contrato',
+        percent: '30%',
+        amount: `R$ ${(total * 0.3).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        due: 'Na assinatura do contrato',
+        condition: 'Assinatura formal do instrumento contratual',
+      },
+      {
+        stage: 'Faturamento e Entrega dos Equipamentos',
+        percent: '40%',
+        amount: `R$ ${(total * 0.4).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        due: 'Na entrega dos equipamentos',
+        condition: 'Módulos e inversores descarregados e conferidos na obra',
+      },
+      {
+        stage: 'Conclusão da Instalação',
+        percent: '20%',
+        amount: `R$ ${(total * 0.2).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        due: 'No término da montagem física',
+        condition: 'Termo de conclusão de montagem e comissionamento assinado',
+      },
+      {
+        stage: 'Homologação e Troca do Medidor',
+        percent: '10%',
+        amount: `R$ ${(total * 0.1).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        due: 'Após homologação pela concessionária',
+        condition: 'Parecer de acesso aprovado e medidor bidirecional instalado',
+      },
+    ];
+  };
+
+  const initMilestonesForCreation = () => {
+    if (milestones.length === 0) {
+      setMilestones(getStandardMilestones(finalPriceNum, paymentMethod));
+      setDownPaymentAmount((finalPriceNum * 0.3).toFixed(2));
+    }
+    setIsCreating(true);
+  };
+
+  const openEditPaymentModal = () => {
+    const activeVer = contract?.versions?.[0];
+    const snap = activeVer?.commercialSnapshot;
+    if (snap?.paymentMethod) {
+      setPaymentMethod(snap.paymentMethod);
+    }
+    if (Array.isArray(snap?.milestones) && snap.milestones.length > 0) {
+      setMilestones(
+        snap.milestones.map((m) => ({
+          stage: m.stage || '',
+          percent: m.percent || '',
+          amount: m.amount || '',
+          due: m.due || 'Conforme cronograma',
+          condition: m.condition || 'Conclusão da etapa',
+        })),
+      );
+    } else {
+      setMilestones(getStandardMilestones(finalPriceNum, snap?.paymentMethod || 'PIX'));
+    }
+    setIsEditingPayment(true);
+  };
+
   // Mutations
   const createMutation = useMutation({
-    mutationFn: () =>
-      result(
+    mutationFn: () => {
+      const activeMilestones =
+        milestones.length > 0 ? milestones : getStandardMilestones(finalPriceNum, paymentMethod);
+      return result(
         api.POST('/api/v1/contracts', {
           body: {
             opportunityId,
             signingCity,
             roofType,
             notes: contractNotes || undefined,
+            paymentMethod,
+            downPaymentAmount: Number(downPaymentAmount) || undefined,
+            installmentCount: activeMilestones.length,
+            milestones: activeMilestones,
           },
         }),
-      ),
+      );
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contracts', opportunityId] });
       setIsCreating(false);
+      onRefresh?.();
+    },
+  });
+
+  const updatePaymentMutation = useMutation({
+    mutationFn: () => {
+      if (!contract) return Promise.reject(new Error('Contrato não selecionado'));
+      const activeMilestones =
+        milestones.length > 0 ? milestones : getStandardMilestones(finalPriceNum, paymentMethod);
+      return result(
+        api.PATCH('/api/v1/contracts/{id}/draft', {
+          params: { path: { id: contract.id } },
+          body: {
+            paymentMethod,
+            downPaymentAmount: Number(downPaymentAmount) || undefined,
+            installmentCount: activeMilestones.length,
+            milestones: activeMilestones,
+          },
+        }),
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contracts', opportunityId] });
+      setIsEditingPayment(false);
       onRefresh?.();
     },
   });
@@ -418,7 +575,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
             <button
               type="button"
               className="btn btn--primary"
-              onClick={() => setIsCreating(true)}
+              onClick={initMilestonesForCreation}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -487,7 +644,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
             <button
               type="button"
               className="btn btn--primary"
-              onClick={() => setIsCreating(true)}
+              onClick={initMilestonesForCreation}
               style={{
                 marginTop: '0.75rem',
                 backgroundColor: '#087443',
@@ -557,6 +714,25 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
 
               {/* Action buttons */}
               <div style={{ display: 'flex', gap: '0.625rem', flexWrap: 'wrap' }}>
+                {!readonly && (contract.state === 'READY' || contract.state === 'DRAFT') && (
+                  <button
+                    type="button"
+                    className="btn btn--secondary"
+                    onClick={openEditPaymentModal}
+                    style={{
+                      backgroundColor: '#f0fdf4',
+                      color: '#087443',
+                      border: '1.5px solid #087443',
+                      fontWeight: 700,
+                      padding: '0.5rem 1rem',
+                      fontSize: '0.875rem',
+                      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                    }}
+                  >
+                    💳 Ajustar Parcelas & Forma de Pagamento (Anexo III)
+                  </button>
+                )}
+
                 {!readonly &&
                   (contract.state === 'READY' || contract.state === 'SENT') &&
                   canSend && (
@@ -1310,6 +1486,30 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                       </div>
                     ))}
                   </div>
+
+                  {!readonly && (contract.state === 'READY' || contract.state === 'DRAFT') && (
+                    <button
+                      type="button"
+                      onClick={openEditPaymentModal}
+                      style={{
+                        marginTop: '0.5rem',
+                        backgroundColor: '#f0fdf4',
+                        color: '#15803d',
+                        border: '1px solid #86efac',
+                        borderRadius: '4px',
+                        padding: '0.4rem 0.75rem',
+                        fontSize: '0.8125rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        width: 'fit-content',
+                      }}
+                    >
+                      ✏️ Ajustar Parcelas e Forma de Pagamento (Anexo III)
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -1494,14 +1694,43 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
       {/* MODAL 1: Create Contract */}
       {isCreating && (
         <div className="modal-backdrop">
-          <div className="modal-card" style={{ maxWidth: '520px', width: '90%' }}>
-            <h3 style={{ margin: '0 0 1rem 0' }}>📄 Gerar Contrato Comercial Moura Solar</h3>
+          <div
+            className="modal-card"
+            style={{ maxWidth: '680px', width: '92%', maxHeight: '90vh', overflowY: 'auto' }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '0.75rem',
+              }}
+            >
+              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>
+                📄 Gerar Contrato Comercial Moura Solar
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsCreating(false)}
+                aria-label="Fechar modal"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                  padding: '0.25rem',
+                  lineHeight: 1,
+                }}
+              >
+                ✕
+              </button>
+            </div>
             <p
               style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '0 0 1.25rem 0' }}
             >
-              Este assistente gera a minuta em formato oficial DOCX (com os placeholders de
-              qualificação, anexo I, II, III e IV preenchidos) e PDF pronto para coleta de
-              assinatura.
+              Gera a minuta contratual padrão com 14 cláusulas e Anexos I, II, III e IV. Defina a
+              forma de pagamento e os marcos (Anexo III) antes de prosseguir com a emissão.
             </p>
 
             <form
@@ -1509,39 +1738,234 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 e.preventDefault();
                 createMutation.mutate();
               }}
-              style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
             >
-              <label
-                className="form-label"
-                style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                  gap: '0.75rem',
+                }}
               >
-                Cidade de Assinatura do Contrato
-                <input
-                  type="text"
-                  className="form-input"
-                  value={signingCity}
-                  onChange={(e) => setSigningCity(e.target.value)}
-                  required
-                />
-              </label>
-
-              <label
-                className="form-label"
-                style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}
-              >
-                Tipo de Telhado / Superfície de Fixação
-                <select
-                  className="form-input"
-                  value={roofType}
-                  onChange={(e) => setRoofType(e.target.value)}
+                <label
+                  className="form-label"
+                  style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}
                 >
-                  <option value="Cerâmico">Cerâmico (Telha Colonial / Francesa)</option>
-                  <option value="Fibrocimento">Fibrocimento / Madeira</option>
-                  <option value="Metálico">Metálico / Trapezoidal</option>
-                  <option value="Solo">Solo / Monoposte</option>
-                  <option value="Laje">Laje Plana de Concreto</option>
-                </select>
-              </label>
+                  Cidade de Assinatura do Contrato
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={signingCity}
+                    onChange={(e) => setSigningCity(e.target.value)}
+                    required
+                  />
+                </label>
+
+                <label
+                  className="form-label"
+                  style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}
+                >
+                  Tipo de Telhado / Superfície de Fixação
+                  <select
+                    className="form-input"
+                    value={roofType}
+                    onChange={(e) => setRoofType(e.target.value)}
+                  >
+                    <option value="Cerâmico">Cerâmico (Telha Colonial / Francesa)</option>
+                    <option value="Fibrocimento">Fibrocimento / Madeira</option>
+                    <option value="Metálico">Metálico / Trapezoidal</option>
+                    <option value="Solo">Solo / Monoposte</option>
+                    <option value="Laje">Laje Plana de Concreto</option>
+                  </select>
+                </label>
+              </div>
+
+              {/* Seção Anexo III - Forma de Pagamento e Parcelas */}
+              <div
+                style={{
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '6px',
+                  padding: '1rem',
+                  backgroundColor: '#f8fafc',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.75rem',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '0.5rem',
+                  }}
+                >
+                  <div style={{ fontWeight: 700, fontSize: '0.9375rem', color: '#087443' }}>
+                    💰 Anexo III — Condições de Pagamento & Parcelas
+                  </div>
+                  <div style={{ fontSize: '0.8125rem', color: '#475569' }}>
+                    Valor Total Proposta:{' '}
+                    <strong>
+                      R${' '}
+                      {finalPriceNum.toLocaleString('pt-BR', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </strong>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gap: '0.75rem',
+                  }}
+                >
+                  <label
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.25rem',
+                      fontSize: '0.8125rem',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Forma de Pagamento
+                    <select
+                      className="form-input"
+                      value={paymentMethod}
+                      onChange={(e) => {
+                        const newMethod = e.target.value;
+                        setPaymentMethod(newMethod);
+                        setMilestones(getStandardMilestones(finalPriceNum, newMethod));
+                      }}
+                    >
+                      <option value="PIX">À Vista (PIX / Transferência Bancária)</option>
+                      <option value="FINANCIAMENTO">Financiamento Bancário (Solar)</option>
+                      <option value="CARTAO">Cartão de Crédito / Parcelado</option>
+                      <option value="PERSONALIZADO">Personalizado por Marcos da Obra</option>
+                    </select>
+                  </label>
+
+                  <label
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.25rem',
+                      fontSize: '0.8125rem',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Valor da Entrada (R$)
+                    <input
+                      type="number"
+                      step="0.01"
+                      className="form-input"
+                      placeholder="Ex: 5000.00"
+                      value={downPaymentAmount}
+                      onChange={(e) => setDownPaymentAmount(e.target.value)}
+                    />
+                  </label>
+                </div>
+
+                {/* Tabela interativa de marcos */}
+                <div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '0.4rem',
+                    }}
+                  >
+                    <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#334155' }}>
+                      Marcos de Pagamento (Anexo III)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setMilestones(getStandardMilestones(finalPriceNum, paymentMethod))
+                      }
+                      style={{
+                        background: '#ffffff',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '4px',
+                        padding: '0.2rem 0.5rem',
+                        fontSize: '0.75rem',
+                        color: '#087443',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      ↺ Recalcular Padrão
+                    </button>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {milestones.map((m, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '4px',
+                          padding: '0.5rem',
+                          display: 'grid',
+                          gridTemplateColumns: '2fr 1fr 1.5fr',
+                          gap: '0.5rem',
+                          alignItems: 'center',
+                          fontSize: '0.8125rem',
+                        }}
+                      >
+                        <input
+                          type="text"
+                          className="form-input"
+                          style={{ fontSize: '0.75rem', padding: '0.3rem' }}
+                          value={m.stage}
+                          onChange={(e) => {
+                            const updated = [...milestones];
+                            const current = updated[idx];
+                            if (current) {
+                              updated[idx] = { ...current, stage: e.target.value };
+                              setMilestones(updated);
+                            }
+                          }}
+                        />
+                        <input
+                          type="text"
+                          className="form-input"
+                          style={{ fontSize: '0.75rem', padding: '0.3rem' }}
+                          value={m.percent}
+                          onChange={(e) => {
+                            const updated = [...milestones];
+                            const current = updated[idx];
+                            if (current) {
+                              updated[idx] = { ...current, percent: e.target.value };
+                              setMilestones(updated);
+                            }
+                          }}
+                        />
+                        <input
+                          type="text"
+                          className="form-input"
+                          style={{ fontSize: '0.75rem', padding: '0.3rem' }}
+                          value={m.amount}
+                          onChange={(e) => {
+                            const updated = [...milestones];
+                            const current = updated[idx];
+                            if (current) {
+                              updated[idx] = { ...current, amount: e.target.value };
+                              setMilestones(updated);
+                            }
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
 
               <label
                 className="form-label"
@@ -1550,7 +1974,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 Observações e Condições Especiais
                 <textarea
                   className="form-input"
-                  rows={3}
+                  rows={2}
                   placeholder="Ex.: Incluso seguro de montagem por 12 meses e garantia dos inversores."
                   value={contractNotes}
                   onChange={(e) => setContractNotes(e.target.value)}
@@ -1571,6 +1995,13 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                   type="button"
                   className="btn btn--subtle"
                   onClick={() => setIsCreating(false)}
+                  style={{
+                    backgroundColor: '#ffffff',
+                    color: '#334155',
+                    border: '1px solid #cbd5e1',
+                    fontWeight: 600,
+                    padding: '0.5rem 1rem',
+                  }}
                 >
                   Cancelar
                 </button>
@@ -1578,6 +2009,14 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                   type="submit"
                   className="btn btn--primary"
                   disabled={createMutation.isPending}
+                  style={{
+                    backgroundColor: '#087443',
+                    color: '#ffffff',
+                    fontWeight: 700,
+                    padding: '0.5rem 1.25rem',
+                    border: 'none',
+                    borderRadius: '6px',
+                  }}
                 >
                   {createMutation.isPending ? 'Gerando Minutas...' : 'Confirmar e Emitir Contrato'}
                 </button>
@@ -1587,11 +2026,293 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
         </div>
       )}
 
-      {/* MODAL 2: Record Delivery */}
+      {/* MODAL 2: Edit Payment Terms & Milestones (Anexo III) */}
+      {isEditingPayment && (
+        <div className="modal-backdrop">
+          <div
+            className="modal-card"
+            style={{ maxWidth: '680px', width: '92%', maxHeight: '90vh', overflowY: 'auto' }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '0.75rem',
+              }}
+            >
+              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>
+                💳 Condições de Pagamento & Parcelas (Anexo III)
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsEditingPayment(false)}
+                aria-label="Fechar modal"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                  padding: '0.25rem',
+                  lineHeight: 1,
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '0 0 1rem 0' }}>
+              Conforme a regra do processo, as parcelas e formas de pagamento devem ser confirmadas
+              antes do envio do contrato para assinatura. Ao salvar, as minutas DOCX e PDF e o plano
+              financeiro serão atualizados.
+            </p>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                updatePaymentMutation.mutate();
+              }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+            >
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: '0.75rem',
+                }}
+              >
+                <label
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.25rem',
+                    fontSize: '0.8125rem',
+                    fontWeight: 600,
+                  }}
+                >
+                  Forma de Pagamento
+                  <select
+                    className="form-input"
+                    value={paymentMethod}
+                    onChange={(e) => {
+                      const newMethod = e.target.value;
+                      setPaymentMethod(newMethod);
+                      setMilestones(getStandardMilestones(finalPriceNum, newMethod));
+                    }}
+                  >
+                    <option value="PIX">À Vista (PIX / Transferência Bancária)</option>
+                    <option value="FINANCIAMENTO">Financiamento Bancário (Solar)</option>
+                    <option value="CARTAO">Cartão de Crédito / Parcelado</option>
+                    <option value="PERSONALIZADO">Personalizado por Marcos da Obra</option>
+                  </select>
+                </label>
+
+                <label
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.25rem',
+                    fontSize: '0.8125rem',
+                    fontWeight: 600,
+                  }}
+                >
+                  Valor da Entrada (R$)
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="form-input"
+                    placeholder="Ex: 5000.00"
+                    value={downPaymentAmount}
+                    onChange={(e) => setDownPaymentAmount(e.target.value)}
+                  />
+                </label>
+              </div>
+
+              {/* Tabela de Marcos */}
+              <div
+                style={{
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '6px',
+                  padding: '1rem',
+                  backgroundColor: '#f8fafc',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '0.5rem',
+                  }}
+                >
+                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#087443' }}>
+                    Cronograma de Parcelas / Marcos
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setMilestones(getStandardMilestones(finalPriceNum, paymentMethod))
+                    }
+                    style={{
+                      background: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '4px',
+                      padding: '0.25rem 0.5rem',
+                      fontSize: '0.75rem',
+                      color: '#087443',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    ↺ Restaurar Proporções Padrão
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {milestones.map((m, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        backgroundColor: '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '4px',
+                        padding: '0.5rem',
+                        display: 'grid',
+                        gridTemplateColumns: '2fr 1fr 1.5fr',
+                        gap: '0.5rem',
+                        alignItems: 'center',
+                        fontSize: '0.8125rem',
+                      }}
+                    >
+                      <input
+                        type="text"
+                        className="form-input"
+                        style={{ fontSize: '0.75rem', padding: '0.3rem' }}
+                        value={m.stage}
+                        placeholder="Etapa / Marco"
+                        onChange={(e) => {
+                          const updated = [...milestones];
+                          const current = updated[idx];
+                          if (current) {
+                            updated[idx] = { ...current, stage: e.target.value };
+                            setMilestones(updated);
+                          }
+                        }}
+                      />
+                      <input
+                        type="text"
+                        className="form-input"
+                        style={{ fontSize: '0.75rem', padding: '0.3rem' }}
+                        value={m.percent}
+                        placeholder="%"
+                        onChange={(e) => {
+                          const updated = [...milestones];
+                          const current = updated[idx];
+                          if (current) {
+                            updated[idx] = { ...current, percent: e.target.value };
+                            setMilestones(updated);
+                          }
+                        }}
+                      />
+                      <input
+                        type="text"
+                        className="form-input"
+                        style={{ fontSize: '0.75rem', padding: '0.3rem' }}
+                        value={m.amount}
+                        placeholder="R$ Valor"
+                        onChange={(e) => {
+                          const updated = [...milestones];
+                          const current = updated[idx];
+                          if (current) {
+                            updated[idx] = { ...current, amount: e.target.value };
+                            setMilestones(updated);
+                          }
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {updatePaymentMutation.error && <Feedback error={updatePaymentMutation.error} />}
+
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '0.5rem',
+                  marginTop: '0.5rem',
+                }}
+              >
+                <button
+                  type="button"
+                  className="btn btn--subtle"
+                  onClick={() => setIsEditingPayment(false)}
+                  style={{
+                    backgroundColor: '#ffffff',
+                    color: '#334155',
+                    border: '1px solid #cbd5e1',
+                    fontWeight: 600,
+                    padding: '0.5rem 1rem',
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn--primary"
+                  disabled={updatePaymentMutation.isPending}
+                  style={{
+                    backgroundColor: '#087443',
+                    color: '#ffffff',
+                    fontWeight: 700,
+                    padding: '0.5rem 1.25rem',
+                    border: 'none',
+                    borderRadius: '6px',
+                  }}
+                >
+                  {updatePaymentMutation.isPending
+                    ? 'Salvando...'
+                    : 'Salvar Condições e Atualizar Minutas'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: Record Delivery */}
       {isDelivering && (
         <div className="modal-backdrop">
           <div className="modal-card" style={{ maxWidth: '480px', width: '90%' }}>
-            <h3 style={{ margin: '0 0 1rem 0' }}>📤 Registrar Envio do Contrato</h3>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1rem',
+              }}
+            >
+              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>
+                📤 Registrar Envio do Contrato
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsDelivering(false)}
+                aria-label="Fechar modal"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                  padding: '0.25rem',
+                  lineHeight: 1,
+                }}
+              >
+                ✕
+              </button>
+            </div>
             <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '0 0 1rem 0' }}>
               Registre o canal e destinatário para fins de auditoria e acompanhamento comercial.
             </p>
@@ -1665,6 +2386,13 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                   type="button"
                   className="btn btn--subtle"
                   onClick={() => setIsDelivering(false)}
+                  style={{
+                    backgroundColor: '#ffffff',
+                    color: '#334155',
+                    border: '1px solid #cbd5e1',
+                    fontWeight: 600,
+                    padding: '0.5rem 1rem',
+                  }}
                 >
                   Cancelar
                 </button>
@@ -1672,6 +2400,14 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                   type="submit"
                   className="btn btn--primary"
                   disabled={deliverMutation.isPending}
+                  style={{
+                    backgroundColor: '#087443',
+                    color: '#ffffff',
+                    fontWeight: 700,
+                    padding: '0.5rem 1.25rem',
+                    border: 'none',
+                    borderRadius: '6px',
+                  }}
                 >
                   {deliverMutation.isPending ? 'Registrando...' : 'Registrar Envio'}
                 </button>
@@ -1681,11 +2417,38 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
         </div>
       )}
 
-      {/* MODAL 3: Upload Signed Contract */}
+      {/* MODAL 4: Upload Signed Contract */}
       {isUploading && (
         <div className="modal-backdrop">
           <div className="modal-card" style={{ maxWidth: '480px', width: '90%' }}>
-            <h3 style={{ margin: '0 0 1rem 0' }}>📥 Anexar Via Assinada pelo Cliente</h3>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1rem',
+              }}
+            >
+              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>
+                📥 Anexar Via Assinada pelo Cliente
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsUploading(false)}
+                aria-label="Fechar modal"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                  padding: '0.25rem',
+                  lineHeight: 1,
+                }}
+              >
+                ✕
+              </button>
+            </div>
             <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '0 0 1rem 0' }}>
               O envio da via assinada moverá o contrato para <strong>SIGNED_UPLOADED</strong>. O
               Gate C será liberado apenas após a conferência formal.
@@ -1745,6 +2508,13 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                   type="button"
                   className="btn btn--subtle"
                   onClick={() => setIsUploading(false)}
+                  style={{
+                    backgroundColor: '#ffffff',
+                    color: '#334155',
+                    border: '1px solid #cbd5e1',
+                    fontWeight: 600,
+                    padding: '0.5rem 1rem',
+                  }}
                 >
                   Cancelar
                 </button>
@@ -1752,6 +2522,14 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                   type="submit"
                   className="btn btn--primary"
                   disabled={uploadMutation.isPending || !uploadBase64}
+                  style={{
+                    backgroundColor: '#0284c7',
+                    color: '#ffffff',
+                    fontWeight: 700,
+                    padding: '0.5rem 1.25rem',
+                    border: 'none',
+                    borderRadius: '6px',
+                  }}
                 >
                   {uploadMutation.isPending ? 'Enviando...' : 'Anexar Documento'}
                 </button>
@@ -1761,11 +2539,38 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
         </div>
       )}
 
-      {/* MODAL 4: Formal Conference Checklist (Gate C) */}
+      {/* MODAL 5: Formal Conference Checklist (Gate C) */}
       {isReviewing && (
         <div className="modal-backdrop">
           <div className="modal-card" style={{ maxWidth: '540px', width: '90%' }}>
-            <h3 style={{ margin: '0 0 0.5rem 0' }}>🔍 Conferência Formal de Assinatura (Gate C)</h3>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '0.5rem',
+              }}
+            >
+              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>
+                🔍 Conferência Formal de Assinatura (Gate C)
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsReviewing(false)}
+                aria-label="Fechar modal"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                  padding: '0.25rem',
+                  lineHeight: 1,
+                }}
+              >
+                ✕
+              </button>
+            </div>
             <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '0 0 1rem 0' }}>
               SPEC-007 Item 10: Realize a conferência do documento assinado em relação à versão
               gerada antes de homologar e liberar o estágio VENDIDO.
@@ -1995,6 +2800,13 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                   type="button"
                   className="btn btn--subtle"
                   onClick={() => setIsReviewing(false)}
+                  style={{
+                    backgroundColor: '#ffffff',
+                    color: '#334155',
+                    border: '1px solid #cbd5e1',
+                    fontWeight: 600,
+                    padding: '0.5rem 1rem',
+                  }}
                 >
                   Cancelar
                 </button>
@@ -2007,6 +2819,14 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                       (!checkParties || !checkPages || !checkVersion || !checkSignatures)) ||
                     (reviewDecision === 'REJECTED' && !rejectionReason.trim())
                   }
+                  style={{
+                    backgroundColor: reviewDecision === 'VERIFIED' ? '#15803d' : '#ef4444',
+                    color: '#ffffff',
+                    fontWeight: 700,
+                    padding: '0.5rem 1.25rem',
+                    border: 'none',
+                    borderRadius: '6px',
+                  }}
                 >
                   {reviewMutation.isPending
                     ? 'Homologando...'

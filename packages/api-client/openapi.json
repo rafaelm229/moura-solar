@@ -2245,6 +2245,47 @@
           }
         ],
         "tags": ["design"]
+      },
+      "patch": {
+        "operationId": "DesignController_patchCatalogItem",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCatalogItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItemViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["design"]
       }
     },
     "/api/v1/designs/suggest": {
@@ -7396,6 +7437,16 @@
       "UpdateCatalogItemDto": {
         "type": "object",
         "properties": {
+          "sku": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["MATERIAL", "SERVICE"]
+          },
+          "category": {
+            "type": "string"
+          },
           "name": {
             "type": "string"
           },
@@ -7403,6 +7454,9 @@
             "type": "string"
           },
           "model": {
+            "type": "string"
+          },
+          "unitOfMeasure": {
             "type": "string"
           },
           "powerRatingWp": {
@@ -7425,8 +7479,7 @@
             "type": "number",
             "example": 1
           }
-        },
-        "required": ["expectedVersion"]
+        }
       },
       "SuggestDesignDto": {
         "type": "object",
@@ -8052,6 +8105,37 @@
         },
         "required": ["reason"]
       },
+      "ContractMilestoneDto": {
+        "type": "object",
+        "properties": {
+          "stage": {
+            "type": "string",
+            "description": "Nome do marco ou etapa",
+            "example": "Assinatura do Contrato"
+          },
+          "percent": {
+            "type": "string",
+            "description": "Percentual do valor total",
+            "example": "30%"
+          },
+          "amount": {
+            "type": "string",
+            "description": "Valor em reais do marco",
+            "example": "R$ 10.500,00"
+          },
+          "due": {
+            "type": "string",
+            "description": "Vencimento",
+            "example": "Na assinatura do contrato"
+          },
+          "condition": {
+            "type": "string",
+            "description": "Condição para liberação",
+            "example": "Assinatura formal do instrumento pelas partes"
+          }
+        },
+        "required": ["stage", "percent", "amount"]
+      },
       "CreateContractDto": {
         "type": "object",
         "properties": {
@@ -8075,6 +8159,25 @@
           "roofType": {
             "type": "string",
             "description": "Tipo de telhado/superfície para instalação"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "description": "Forma de pagamento (PIX, Financiamento, Boleto, etc.)"
+          },
+          "downPaymentAmount": {
+            "type": "number",
+            "description": "Valor da entrada em reais"
+          },
+          "installmentCount": {
+            "type": "number",
+            "description": "Quantidade de parcelas"
+          },
+          "milestones": {
+            "description": "Marcos de pagamento detalhados (Anexo III)",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContractMilestoneDto"
+            }
           }
         },
         "required": ["opportunityId"]
@@ -8105,6 +8208,25 @@
           "observations": {
             "type": "string",
             "description": "Observações gerais"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "description": "Forma de pagamento (ex.: PIX, FINANCIAMENTO, CARTAO, BOLETO, PERSONALIZADO)"
+          },
+          "downPaymentAmount": {
+            "type": "number",
+            "description": "Valor de entrada em R$"
+          },
+          "installmentCount": {
+            "type": "number",
+            "description": "Quantidade de parcelas"
+          },
+          "milestones": {
+            "description": "Marcos de pagamento detalhados (Anexo III)",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContractMilestoneDto"
+            }
           }
         }
       },

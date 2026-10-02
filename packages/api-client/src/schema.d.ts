@@ -753,7 +753,7 @@ export interface paths {
     delete?: never;
     options?: never;
     head?: never;
-    patch?: never;
+    patch: operations['DesignController_patchCatalogItem'];
     trace?: never;
   };
   '/api/v1/designs/suggest': {
@@ -2770,9 +2770,14 @@ export interface components {
       referencePrice?: number;
     };
     UpdateCatalogItemDto: {
+      sku?: string;
+      /** @enum {string} */
+      kind?: 'MATERIAL' | 'SERVICE';
+      category?: string;
       name?: string;
       manufacturer?: string;
       model?: string;
+      unitOfMeasure?: string;
       powerRatingWp?: number;
       powerRatingKw?: number;
       referenceCost?: number;
@@ -2780,7 +2785,7 @@ export interface components {
       /** @enum {string} */
       status?: 'ACTIVE' | 'INACTIVE';
       /** @example 1 */
-      expectedVersion: number;
+      expectedVersion?: number;
     };
     SuggestDesignDto: {
       /** @example 600 */
@@ -3012,6 +3017,33 @@ export interface components {
       /** @description Observações complementares da recusa */
       notes?: string;
     };
+    ContractMilestoneDto: {
+      /**
+       * @description Nome do marco ou etapa
+       * @example Assinatura do Contrato
+       */
+      stage: string;
+      /**
+       * @description Percentual do valor total
+       * @example 30%
+       */
+      percent: string;
+      /**
+       * @description Valor em reais do marco
+       * @example R$ 10.500,00
+       */
+      amount: string;
+      /**
+       * @description Vencimento
+       * @example Na assinatura do contrato
+       */
+      due?: string;
+      /**
+       * @description Condição para liberação
+       * @example Assinatura formal do instrumento pelas partes
+       */
+      condition?: string;
+    };
     CreateContractDto: {
       /** @description ID da oportunidade comercial */
       opportunityId: string;
@@ -3026,6 +3058,14 @@ export interface components {
       notes?: string;
       /** @description Tipo de telhado/superfície para instalação */
       roofType?: string;
+      /** @description Forma de pagamento (PIX, Financiamento, Boleto, etc.) */
+      paymentMethod?: string;
+      /** @description Valor da entrada em reais */
+      downPaymentAmount?: number;
+      /** @description Quantidade de parcelas */
+      installmentCount?: number;
+      /** @description Marcos de pagamento detalhados (Anexo III) */
+      milestones?: components['schemas']['ContractMilestoneDto'][];
     };
     UpdateContractDraftDto: {
       /** @description Snapshot ou ajustes das partes envolvidas */
@@ -3040,6 +3080,14 @@ export interface components {
       clausesSnapshot?: Record<string, never>;
       /** @description Observações gerais */
       observations?: string;
+      /** @description Forma de pagamento (ex.: PIX, FINANCIAMENTO, CARTAO, BOLETO, PERSONALIZADO) */
+      paymentMethod?: string;
+      /** @description Valor de entrada em R$ */
+      downPaymentAmount?: number;
+      /** @description Quantidade de parcelas */
+      installmentCount?: number;
+      /** @description Marcos de pagamento detalhados (Anexo III) */
+      milestones?: components['schemas']['ContractMilestoneDto'][];
     };
     RequestContractReviewDto: {
       /** @description Justificativa para a solicitação de revisão jurídica/comercial */
@@ -5351,6 +5399,31 @@ export interface operations {
     };
   };
   DesignController_updateCatalogItem: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateCatalogItemDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CatalogItemViewDto'];
+        };
+      };
+    };
+  };
+  DesignController_patchCatalogItem: {
     parameters: {
       query?: never;
       header?: never;

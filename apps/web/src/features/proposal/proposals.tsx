@@ -499,7 +499,16 @@ export function Proposals({
               >
                 <button
                   type="button"
-                  style={{ background: 'var(--color-surface)', color: 'var(--text-primary)' }}
+                  className="btn btn--subtle"
+                  style={{
+                    backgroundColor: '#ffffff',
+                    color: '#334155',
+                    border: '1px solid #cbd5e1',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '6px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
                   onClick={() => setIsCreating(false)}
                 >
                   Cancelar
@@ -1142,9 +1151,15 @@ export function Proposals({
                           >
                             <button
                               type="button"
+                              className="btn btn--subtle"
                               style={{
-                                background: 'var(--color-surface)',
-                                color: 'var(--text-primary)',
+                                backgroundColor: '#ffffff',
+                                color: '#334155',
+                                border: '1px solid #cbd5e1',
+                                padding: '0.45rem 1rem',
+                                borderRadius: '6px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
                               }}
                               onClick={() => setDeliveryVersionId(null)}
                             >
@@ -1362,9 +1377,15 @@ export function Proposals({
                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                           <button
                             type="button"
+                            className="btn btn--subtle"
                             style={{
-                              background: 'var(--color-surface)',
-                              color: 'var(--text-primary)',
+                              backgroundColor: '#ffffff',
+                              color: '#334155',
+                              border: '1px solid #cbd5e1',
+                              padding: '0.45rem 1rem',
+                              borderRadius: '6px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
                             }}
                             onClick={() => setNewVersionParentId(null)}
                           >

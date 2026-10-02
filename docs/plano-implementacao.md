@@ -30,11 +30,11 @@ O desenvolvimento começa validando os riscos que quebraram a versão anterior:
 | M3    | Consumo, dimensionamento solar e composição de custos   | M2, SPEC-005                    | Concluído |
 | M4    | Propostas comerciais, motor PDF institucional e aceite  | M3, SPEC-006                    | Concluído |
 | M5    | Contratos comerciais, minutas DOCX/PDF, upload e Gate C | M4, SPEC-007                    | Concluído |
-| M6    | Contas, parcelas, recebimentos, comissões e margem      | M5, SPEC-008                    | A iniciar |
-| M7    | Materiais, depósitos, compras, reservas e custo médio   | M6, SPEC-009                    | Planejado |
-| M8    | Engenharia, homologação, agenda e instalação            | M7, SPEC-010                    | Planejado |
-| M9    | Pós-venda, garantia, monitoramento e desempenho         | M8, SPEC-011                    | Planejado |
-| M10   | Automações, indicadores e operação assistida            | M2–M9, SPEC-012                 | Planejado |
+| M6    | Contas, parcelas, recebimentos, comissões e margem      | M5, SPEC-008                    | Concluído |
+| M7    | Materiais, depósitos, compras, reservas e custo médio   | M6, SPEC-009                    | Concluído |
+| M8    | Engenharia, homologação, agenda e instalação            | M7, SPEC-010                    | Concluído |
+| M9    | Pós-venda, garantia, monitoramento e desempenho         | M8, SPEC-011                    | Concluído |
+| M10   | Automações, indicadores e operação assistida            | M2–M9, SPEC-012                 | Concluído |
 | M11   | Aplicativo React Native complementar                    | Web operacional e APIs estáveis | Planejado |
 
 ## M0 — Fundação executável
@@ -110,18 +110,18 @@ M2 e M3 formam a primeira liberação interna. A ordem detalhada está em
 Saída: no desktop, o vendedor cria cliente e proposta; no celular, outro usuário
 autorizado visualiza exatamente os mesmos dados e o mesmo PDF.
 
-## M4 a M9
+## M4 a M10 — Jornada Operacional e Gestão Completa
 
-Cada marco seguinte só começa após seus gates anteriores estarem cobertos por
-testes. Integrações serão realizadas por casos de uso e eventos, não por leitura
-direta de tabelas privadas.
+Cada marco foi concluído com gates cobertos por testes de integração e unitários.
+As integrações são realizadas por casos de uso e eventos auditados:
 
-- M4 congela versões contratuais e evidencia aceite.
-- M5 torna a aprovação financeiramente operacional.
-- M6 conecta custo, disponibilidade, reserva e compra.
-- M7 executa engenharia e instalação com rastreabilidade de campo.
-- M8 fecha garantia, suporte e acompanhamento.
-- M9 adiciona automações depois que eventos e estados estiverem estáveis.
+- M4: Propostas comerciais, motor PDF institucional e aceite formal do cliente.
+- M5: Contratos comerciais, minutas DOCX/PDF oficiais, upload assinado e superação do Gate C.
+- M6: Governança financeira, contas a receber, parcelas, liquidações, Gate FINANCIAL, contas a pagar e fluxo de caixa.
+- M7: Gestão de estoque, suprimentos, compras, lotes com rastreio de números de série e reserva para obras (Gate D).
+- M8: Engenharia, homologação em concessionárias, agendamento de OS com checklist técnico de campo e comissionamento.
+- M9: Pós-venda, tickets de suporte com SLA, garantias de serviço/fabricante, telemetria de usinas e orçamentos integrados.
+- M10: Central de Atenção com deduplicação de alertas, motor de automações com regras versionadas, central de notificações e metas executivas.
 
 ## Estratégia de branches e entregas
 

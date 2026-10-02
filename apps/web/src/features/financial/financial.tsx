@@ -1175,7 +1175,27 @@ export function OpportunityFinancial({
               gap: '1rem',
             }}
           >
-            <h3 style={{ margin: 0 }}>Gerar / Repactuar Plano de Pagamento</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem' }}>
+                Gerar / Repactuar Plano de Pagamento
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowGeneratePlanModal(false)}
+                aria-label="Fechar modal"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                  padding: '0.25rem',
+                  lineHeight: 1,
+                }}
+              >
+                ✕
+              </button>
+            </div>
             <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>
               Define a entrada e a quantidade de parcelas. O Gate Financeiro exigirá a liquidação da
               entrada para liberação do projeto.
@@ -1270,10 +1290,12 @@ export function OpportunityFinancial({
                 type="button"
                 onClick={() => setShowGeneratePlanModal(false)}
                 style={{
-                  background: '#f1f5f9',
-                  border: 'none',
+                  background: '#ffffff',
+                  color: '#334155',
+                  border: '1px solid #cbd5e1',
                   padding: '0.5rem 1rem',
-                  borderRadius: '4px',
+                  borderRadius: '6px',
+                  fontWeight: 600,
                   cursor: 'pointer',
                 }}
               >
@@ -1326,7 +1348,25 @@ export function OpportunityFinancial({
               gap: '1rem',
             }}
           >
-            <h3 style={{ margin: 0 }}>Registrar Recebimento de Cliente</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem' }}>Registrar Recebimento de Cliente</h3>
+              <button
+                type="button"
+                onClick={() => setShowReceiptModal(false)}
+                aria-label="Fechar modal"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                  padding: '0.25rem',
+                  lineHeight: 1,
+                }}
+              >
+                ✕
+              </button>
+            </div>
 
             <label
               style={{
@@ -1446,10 +1486,12 @@ export function OpportunityFinancial({
                 type="button"
                 onClick={() => setShowReceiptModal(false)}
                 style={{
-                  background: '#f1f5f9',
-                  border: 'none',
+                  background: '#ffffff',
+                  color: '#334155',
+                  border: '1px solid #cbd5e1',
                   padding: '0.5rem 1rem',
-                  borderRadius: '4px',
+                  borderRadius: '6px',
+                  fontWeight: 600,
                   cursor: 'pointer',
                 }}
               >
@@ -1502,7 +1544,27 @@ export function OpportunityFinancial({
               gap: '1rem',
             }}
           >
-            <h3 style={{ margin: 0, color: '#991b1b' }}>Estornar Recebimento</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, color: '#991b1b', fontSize: '1.25rem' }}>
+                Estornar Recebimento
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowReverseModal(null)}
+                aria-label="Fechar modal"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                  padding: '0.25rem',
+                  lineHeight: 1,
+                }}
+              >
+                ✕
+              </button>
+            </div>
             <p style={{ margin: 0, fontSize: '0.85rem', color: '#475569' }}>
               O estorno reabrirá os saldos das parcelas afetadas e gerará um movimento compensatório
               de saída no caixa operacional.
@@ -1532,10 +1594,12 @@ export function OpportunityFinancial({
                 type="button"
                 onClick={() => setShowReverseModal(null)}
                 style={{
-                  background: '#f1f5f9',
-                  border: 'none',
+                  background: '#ffffff',
+                  color: '#334155',
+                  border: '1px solid #cbd5e1',
                   padding: '0.5rem 1rem',
-                  borderRadius: '4px',
+                  borderRadius: '6px',
+                  fontWeight: 600,
                   cursor: 'pointer',
                 }}
               >
@@ -1588,7 +1652,25 @@ export function OpportunityFinancial({
               gap: '1rem',
             }}
           >
-            <h3 style={{ margin: 0 }}>Cadastrar Custo ou Conta a Pagar</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem' }}>Cadastrar Custo ou Conta a Pagar</h3>
+              <button
+                type="button"
+                onClick={() => setShowPayableModal(false)}
+                aria-label="Fechar modal"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                  padding: '0.25rem',
+                  lineHeight: 1,
+                }}
+              >
+                ✕
+              </button>
+            </div>
 
             <label
               style={{
@@ -1704,10 +1786,12 @@ export function OpportunityFinancial({
                 type="button"
                 onClick={() => setShowPayableModal(false)}
                 style={{
-                  background: '#f1f5f9',
-                  border: 'none',
+                  background: '#ffffff',
+                  color: '#334155',
+                  border: '1px solid #cbd5e1',
                   padding: '0.5rem 1rem',
-                  borderRadius: '4px',
+                  borderRadius: '6px',
+                  fontWeight: 600,
                   cursor: 'pointer',
                 }}
               >
@@ -1765,7 +1849,25 @@ export function OpportunityFinancial({
               gap: '1rem',
             }}
           >
-            <h3 style={{ margin: 0 }}>Registrar Pagamento de Despesa</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem' }}>Registrar Pagamento de Despesa</h3>
+              <button
+                type="button"
+                onClick={() => setShowPaymentModal(false)}
+                aria-label="Fechar modal"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                  padding: '0.25rem',
+                  lineHeight: 1,
+                }}
+              >
+                ✕
+              </button>
+            </div>
 
             <label
               style={{
@@ -1860,10 +1962,12 @@ export function OpportunityFinancial({
                 type="button"
                 onClick={() => setShowPaymentModal(false)}
                 style={{
-                  background: '#f1f5f9',
-                  border: 'none',
+                  background: '#ffffff',
+                  color: '#334155',
+                  border: '1px solid #cbd5e1',
                   padding: '0.5rem 1rem',
-                  borderRadius: '4px',
+                  borderRadius: '6px',
+                  fontWeight: 600,
                   cursor: 'pointer',
                 }}
               >
@@ -1916,7 +2020,23 @@ export function OpportunityFinancial({
               gap: '1rem',
             }}
           >
-            <h3 style={{ margin: 0 }}>Adicionar Comissão Comercial</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0 }}>Adicionar Comissão Comercial</h3>
+              <button
+                type="button"
+                onClick={() => setShowCommissionModal(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                }}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
 
             <label
               style={{
@@ -2005,10 +2125,12 @@ export function OpportunityFinancial({
                 type="button"
                 onClick={() => setShowCommissionModal(false)}
                 style={{
-                  background: '#f1f5f9',
-                  border: 'none',
+                  background: '#ffffff',
+                  color: '#334155',
+                  border: '1px solid #cbd5e1',
                   padding: '0.5rem 1rem',
-                  borderRadius: '4px',
+                  borderRadius: '6px',
+                  fontWeight: 600,
                   cursor: 'pointer',
                 }}
               >
@@ -2343,7 +2465,23 @@ export function GlobalFinancialDashboard() {
               gap: '1rem',
             }}
           >
-            <h3 style={{ margin: 0 }}>Cadastrar Conta Financeira</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0 }}>Cadastrar Conta Financeira</h3>
+              <button
+                type="button"
+                onClick={() => setShowAccountModal(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                }}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
 
             <label
               style={{
@@ -2425,10 +2563,12 @@ export function GlobalFinancialDashboard() {
                 type="button"
                 onClick={() => setShowAccountModal(false)}
                 style={{
-                  background: '#f1f5f9',
-                  border: 'none',
+                  background: '#ffffff',
+                  color: '#334155',
+                  border: '1px solid #cbd5e1',
                   padding: '0.5rem 1rem',
-                  borderRadius: '4px',
+                  borderRadius: '6px',
+                  fontWeight: 600,
                   cursor: 'pointer',
                 }}
               >

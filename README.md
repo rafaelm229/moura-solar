@@ -48,13 +48,18 @@ pnpm dev
 
 ## Estado do projeto
 
-O projeto possui a fundação executável e os marcos M1 a M5 implementados e validados:
+O projeto possui a fundação executável e os marcos M1 a M10 implementados e validados:
 
 - **M1:** Identidade, Autenticação, Perfis, Sessões e RBAC (SPEC-002)
 - **M2:** Comercial: Clientes, Unidades Consumidoras e Oportunidades (SPEC-004)
 - **M3:** Engenharia e Design: Consumo Energético, Dimensionamento Fotovoltaico e Custos (SPEC-005)
 - **M4:** Propostas Comerciais, Motor de PDF e Aceite Formal (SPEC-006)
-- **M5:** Contratos Comerciais, Minutas DOCX/PDF, Upload de Assinados e Gate C (SPEC-007)
+- **M5:** Contratos Comerciais, Minutas DOCX/PDF Oficiais, Upload de Assinados e Gate C (SPEC-007)
+- **M6:** Governança Financeira, Contas a Receber, Parcelas, Recebimentos, Gate FINANCIAL, Contas a Pagar e Fluxo de Caixa (SPEC-008)
+- **M7:** Estoque, Compras, Suprimentos, Depósitos, Custo Médio Ponderado e Reserva de Obras (SPEC-009)
+- **M8:** Engenharia, Homologação em Concessionárias, OS de Instalação, Checklists de Campo e Comissionamento (SPEC-010)
+- **M9:** Pós-Venda, Suporte com SLA, Garantias, Monitoramento de Usinas e Telemetria (SPEC-011)
+- **M10:** Central de Atenção, Motor de Automações com Regras Versionadas, Central de Notificações e Metas (SPEC-012)
 
 Nenhuma funcionalidade é considerada aprovada somente por existir na interface: toda ação respeita regras de negócio, persiste no PostgreSQL com transações atômicas e proteção contra TOCTOU, armazena documentos autenticados no S3/MinIO com AWS Signature V4, produz eventos auditáveis em `audit_events` e atualiza a esteira real do CRM.
 

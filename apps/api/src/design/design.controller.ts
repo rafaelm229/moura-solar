@@ -6,6 +6,7 @@ import {
   HttpCode,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Put,
   Query,
@@ -152,6 +153,19 @@ export class DesignController {
   @ApiBody({ type: UpdateCatalogItemDto })
   @ApiOkResponse({ type: CatalogItemViewDto })
   async updateCatalogItem(
+    @Req() req: IdentityRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateCatalogItemDto,
+  ): Promise<CatalogItemViewDto> {
+    return this.service.updateCatalogItem(req.actor, id, dto, req.requestId);
+  }
+
+  @Patch('catalog/:id')
+  @RequirePermission('catalog:manage')
+  @HttpCode(200)
+  @ApiBody({ type: UpdateCatalogItemDto })
+  @ApiOkResponse({ type: CatalogItemViewDto })
+  async patchCatalogItem(
     @Req() req: IdentityRequest,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateCatalogItemDto,

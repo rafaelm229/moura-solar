@@ -34,6 +34,65 @@ export class ContractService {
     private readonly financial: FinancialService,
   ) {}
 
+  private buildTemplateData(
+    code: string,
+    partySnapshot: any,
+    technicalSnapshot: any,
+    commercialSnapshot: any,
+    scopeSnapshot: any,
+    clausesSnapshot: any,
+  ): ContractTemplateData {
+    return {
+      contractNumber: code,
+      signingDate: new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long' }).format(new Date()),
+      city: clausesSnapshot?.city || 'Recife',
+      company: partySnapshot?.company,
+      client: partySnapshot?.client,
+      utility: partySnapshot?.utility,
+      project: {
+        type: technicalSnapshot?.projectType || 'Sistema Fotovoltaico Conectado à Rede (On-Grid)',
+        systemPowerKwp: technicalSnapshot?.systemPowerKwp || '7.20 kWp',
+        estimatedMonthlyGenerationKwh:
+          technicalSnapshot?.estimatedMonthlyGenerationKwh || '960 kWh/mês',
+        estimatedAnnualGenerationKwh:
+          technicalSnapshot?.estimatedAnnualGenerationKwh || '11520 kWh/ano',
+        installationAddress:
+          technicalSnapshot?.installationAddress || partySnapshot?.client?.address || '',
+        roofType: technicalSnapshot?.roofType || 'Cerâmico',
+        estimatedAreaM2: technicalSnapshot?.estimatedAreaM2 || '36 m²',
+      },
+      commercial: {
+        contractTotal: commercialSnapshot?.contractTotal || 'R$ 0,00',
+        paymentMethod: commercialSnapshot?.paymentMethod || 'PIX',
+        lateInterestMonthly: commercialSnapshot?.lateInterestMonthly || '1,0%',
+        adjustmentIndex: commercialSnapshot?.adjustmentIndex || 'IPCA (IBGE)',
+        commercialValidity: commercialSnapshot?.commercialValidity || '30 dias',
+        specialConditions: commercialSnapshot?.specialConditions || 'Sem condições especiais',
+        milestones: commercialSnapshot?.milestones || [],
+      },
+      deadlines: clausesSnapshot?.deadlines || {
+        equipmentDeliveryDays: '30 dias úteis',
+        installationDays: '10 dias úteis',
+        documentationDays: '15 dias úteis',
+        installationWarrantyMonths: '12 meses',
+      },
+      bom: technicalSnapshot?.bom || {
+        moduleBrandModel: 'Canadian Solar CS6W-550MS',
+        modulePowerW: '550 W',
+        moduleQuantity: '13',
+        inverterBrandModel: 'Growatt MIN 6000TL-X',
+        inverterPowerKw: '6.0 kW',
+        inverterQuantity: '1',
+      },
+      generationMonthly: technicalSnapshot?.generationMonthly,
+      scope: scopeSnapshot || {},
+      witnesses: clausesSnapshot?.witnesses,
+      supportChannels:
+        clausesSnapshot?.supportChannels ||
+        'suporte@mourasolar.com.br | (81) 3456-7890 | WhatsApp (81) 98765-4321',
+    };
+  }
+
   async createContract(organizationId: string, userId: string, dto: CreateContractDto) {
     const opp = await this.prisma.opportunity.findFirst({
       where: { id: dto.opportunityId, organizationId },
@@ -147,41 +206,116 @@ export class ContractService {
     const finalPriceNum = Number(acceptedProposalVersion.finalPrice);
     const formattedTotal = `R$ ${finalPriceNum.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-    const p1Amount = finalPriceNum * 0.3;
-    const p2Amount = finalPriceNum * 0.4;
-    const p3Amount = finalPriceNum * 0.2;
-    const p4Amount = finalPriceNum * 0.1;
+    // 1. Verificar plano de pagamento existente no banco para a oportunidade
+    const existingPaymentPlan = await this.prisma.paymentPlan.findFirst({
+      where: { opportunityId: opp.id, status: { in: ['ACTIVE', 'COMPLETED'] } },
+      include: { receivables: { orderBy: { installmentNumber: 'asc' } } },
+    });
 
-    const milestones = [
-      {
+    let paymentMethod = dto.paymentMethod || 'Transferência Bancária / Financiamento Solar';
+    let milestones: Array<{
+      stage: string;
+      percent: string;
+      amount: string;
+      due: string;
+      condition: string;
+    }> = [];
+
+    if (dto.milestones && Array.isArray(dto.milestones) && dto.milestones.length > 0) {
+      milestones = dto.milestones.map((m) => ({
+        stage: m.stage,
+        percent: m.percent,
+        amount: m.amount,
+        due: m.due || 'Conforme cronograma',
+        condition: m.condition || 'Conclusão da etapa',
+      }));
+    } else if (existingPaymentPlan && existingPaymentPlan.receivables.length > 0) {
+      paymentMethod = existingPaymentPlan.paymentMethod || paymentMethod;
+      const planTotal = Number(existingPaymentPlan.totalAmount) || finalPriceNum;
+      milestones = existingPaymentPlan.receivables.map((r) => {
+        const amt = Number(r.originalAmount);
+        const pct = planTotal > 0 ? Math.round((amt / planTotal) * 100) : 0;
+        const dueFormatted = r.dueDate
+          ? new Intl.DateTimeFormat('pt-BR').format(new Date(r.dueDate))
+          : 'A combinar';
+        return {
+          stage: r.title,
+          percent: `${pct}%`,
+          amount: `R$ ${amt.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          due: dueFormatted,
+          condition:
+            r.notes ||
+            (r.installmentNumber === 1
+              ? 'Na assinatura do contrato'
+              : `Parcela ${r.installmentNumber}`),
+        };
+      });
+    } else if (dto.downPaymentAmount !== undefined && dto.downPaymentAmount > 0) {
+      const down = Math.min(dto.downPaymentAmount, finalPriceNum);
+      const remaining = finalPriceNum - down;
+      const count = dto.installmentCount && dto.installmentCount > 1 ? dto.installmentCount - 1 : 1;
+      const remPerInstallment = count > 0 ? remaining / count : 0;
+
+      const downPct = Math.round((down / finalPriceNum) * 100);
+      milestones.push({
         stage: 'Entrada / Assinatura',
-        percent: '30%',
-        amount: `R$ ${p1Amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        percent: `${downPct}%`,
+        amount: `R$ ${down.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
         due: 'Na assinatura do contrato',
         condition: 'Assinatura e envio do contrato formal',
-      },
-      {
-        stage: 'Entrega dos Equipamentos',
-        percent: '40%',
-        amount: `R$ ${p2Amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-        due: 'Na entrega dos materiais no imóvel',
-        condition: 'Conferência física dos módulos e inversor',
-      },
-      {
-        stage: 'Conclusão da Instalação',
-        percent: '20%',
-        amount: `R$ ${p3Amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-        due: 'No término da montagem física',
-        condition: 'Termo de comissionamento emitido',
-      },
-      {
-        stage: 'Troca do Medidor / Acesso',
-        percent: '10%',
-        amount: `R$ ${p4Amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-        due: 'Após homologação pela concessionária',
-        condition: 'Parecer de acesso e troca do medidor bidirecional',
-      },
-    ];
+      });
+
+      for (let i = 0; i < count; i++) {
+        const remPct = Math.round((remPerInstallment / finalPriceNum) * 100);
+        milestones.push({
+          stage: count === 1 ? 'Saldo Final na Conclusão' : `Parcela ${i + 2}`,
+          percent: `${remPct}%`,
+          amount: `R$ ${remPerInstallment.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          due: `Em ${(i + 1) * 30} dias`,
+          condition:
+            count === 1
+              ? 'Conclusão da instalação e termo emitido'
+              : `Vencimento em ${(i + 1) * 30} dias`,
+        });
+      }
+    } else {
+      // Padrão Moura Solar 4 Marcos
+      const p1Amount = finalPriceNum * 0.3;
+      const p2Amount = finalPriceNum * 0.4;
+      const p3Amount = finalPriceNum * 0.2;
+      const p4Amount = finalPriceNum * 0.1;
+
+      milestones = [
+        {
+          stage: 'Entrada / Assinatura',
+          percent: '30%',
+          amount: `R$ ${p1Amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          due: 'Na assinatura do contrato',
+          condition: 'Assinatura e envio do contrato formal',
+        },
+        {
+          stage: 'Entrega dos Equipamentos',
+          percent: '40%',
+          amount: `R$ ${p2Amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          due: 'Na entrega dos materiais no imóvel',
+          condition: 'Conferência física dos módulos e inversor',
+        },
+        {
+          stage: 'Conclusão da Instalação',
+          percent: '20%',
+          amount: `R$ ${p3Amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          due: 'No término da montagem física',
+          condition: 'Termo de comissionamento emitido',
+        },
+        {
+          stage: 'Troca do Medidor / Acesso',
+          percent: '10%',
+          amount: `R$ ${p4Amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          due: 'Após homologação pela concessionária',
+          condition: 'Parecer de acesso e troca do medidor bidirecional',
+        },
+      ];
+    }
 
     const partySnapshot = {
       company: {
@@ -260,7 +394,7 @@ export class ContractService {
     const commercialSnapshot = {
       contractTotal: formattedTotal,
       contractTotalNumber: finalPriceNum,
-      paymentMethod: 'Transferência Bancária / Financiamento Solar',
+      paymentMethod,
       lateInterestMonthly: '1% ao mês acrescido de multa moratória de 2%',
       adjustmentIndex: 'IPCA / IBGE',
       commercialValidity: '10 dias úteis',
@@ -290,47 +424,17 @@ export class ContractService {
         installationWarrantyMonths: '12',
       },
       supportChannels: 'suporte@mourasolar.com.br | (81) 3456-7890 | WhatsApp (81) 98765-4321',
-      witnesses: {
-        witness1Name: 'Mariana Costa Moura',
-        witness1Cpf: '111.222.333-44',
-        witness2Name: 'João Pedro Santos',
-        witness2Cpf: '555.666.777-88',
-      },
       city: dto.signingCity || 'Recife',
     };
 
-    const templateData: ContractTemplateData = {
-      contractNumber: code,
-      signingDate: new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long' }).format(new Date()),
-      city: clausesSnapshot.city,
-      company: partySnapshot.company,
-      client: partySnapshot.client,
-      utility: partySnapshot.utility,
-      project: {
-        type: technicalSnapshot.projectType,
-        systemPowerKwp: technicalSnapshot.systemPowerKwp,
-        estimatedMonthlyGenerationKwh: technicalSnapshot.estimatedMonthlyGenerationKwh,
-        estimatedAnnualGenerationKwh: technicalSnapshot.estimatedAnnualGenerationKwh,
-        installationAddress: technicalSnapshot.installationAddress,
-        roofType: technicalSnapshot.roofType,
-        estimatedAreaM2: technicalSnapshot.estimatedAreaM2,
-      },
-      commercial: {
-        contractTotal: commercialSnapshot.contractTotal,
-        paymentMethod: commercialSnapshot.paymentMethod,
-        lateInterestMonthly: commercialSnapshot.lateInterestMonthly,
-        adjustmentIndex: commercialSnapshot.adjustmentIndex,
-        commercialValidity: commercialSnapshot.commercialValidity,
-        specialConditions: commercialSnapshot.specialConditions,
-        milestones: commercialSnapshot.milestones,
-      },
-      deadlines: clausesSnapshot.deadlines,
-      bom: technicalSnapshot.bom,
-      generationMonthly: technicalSnapshot.generationMonthly,
-      scope: scopeSnapshot,
-      witnesses: clausesSnapshot.witnesses,
-      supportChannels: clausesSnapshot.supportChannels,
-    };
+    const templateData = this.buildTemplateData(
+      code,
+      partySnapshot,
+      technicalSnapshot,
+      commercialSnapshot,
+      scopeSnapshot,
+      clausesSnapshot,
+    );
 
     // Generate documents
     const docxBuffer = await this.generator.generateDocx(templateData);
@@ -455,6 +559,61 @@ export class ContractService {
               evidenceSummary: `Contrato ${currentCode} emitido e aguardando assinatura formal`,
             },
           });
+
+          // Ensure PaymentPlan exists with the contract's defined milestones
+          const existingPlan = await tx.paymentPlan.findFirst({
+            where: { opportunityId: opp.id, status: { in: ['ACTIVE', 'COMPLETED'] } },
+          });
+
+          if (!existingPlan && milestones.length > 0 && milestones[0]) {
+            const firstMilestone = milestones[0];
+            const p1Parsed = parseFloat(
+              firstMilestone.amount.replace(/[^0-9,-]+/g, '').replace(',', '.'),
+            );
+            const downPayment =
+              dto.downPaymentAmount !== undefined
+                ? dto.downPaymentAmount
+                : !isNaN(p1Parsed)
+                  ? p1Parsed
+                  : finalPriceNum * 0.3;
+
+            await tx.paymentPlan.create({
+              data: {
+                organizationId,
+                opportunityId: opp.id,
+                contractId: createdContract.id,
+                totalAmount: finalPriceNum,
+                downPaymentAmount: downPayment,
+                installmentCount: milestones.length,
+                paymentMethod: dto.paymentMethod || paymentMethod || 'PIX',
+                status: 'ACTIVE',
+                receivables: {
+                  create: milestones.map((m, idx) => {
+                    const parsedAmt = parseFloat(
+                      m.amount.replace(/[^0-9,-]+/g, '').replace(',', '.'),
+                    );
+                    const amt =
+                      !isNaN(parsedAmt) && parsedAmt > 0
+                        ? parsedAmt
+                        : finalPriceNum / milestones.length;
+                    const dueDate = new Date();
+                    dueDate.setDate(dueDate.getDate() + idx * 30);
+                    return {
+                      organizationId,
+                      opportunityId: opp.id,
+                      installmentNumber: idx + 1,
+                      title: m.stage,
+                      originalAmount: amt,
+                      outstandingAmount: amt,
+                      dueDate,
+                      status: 'OPEN',
+                      notes: m.condition,
+                    };
+                  }),
+                },
+              },
+            });
+          }
 
           // Create activity for contract review & signature collection
           await tx.activity.create({
@@ -606,17 +765,192 @@ export class ContractService {
       throw new NotFoundException('Versão do contrato não encontrada');
     }
 
-    const updatedVersion = await this.prisma.contractVersion.update({
+    let commercialSnapshot = (dto.commercialSnapshot ?? activeVersion.commercialSnapshot) as any;
+    if (dto.milestones || dto.paymentMethod) {
+      commercialSnapshot = {
+        ...commercialSnapshot,
+        paymentMethod: dto.paymentMethod ?? commercialSnapshot?.paymentMethod ?? 'PIX',
+        milestones: dto.milestones ?? commercialSnapshot?.milestones ?? [],
+      };
+    }
+    const partySnapshot = (dto.partySnapshot ?? activeVersion.partySnapshot) as any;
+    const technicalSnapshot = (dto.technicalSnapshot ?? activeVersion.technicalSnapshot) as any;
+    const scopeSnapshot = (dto.scopeSnapshot ?? activeVersion.scopeSnapshot) as any;
+    const clausesSnapshot = (dto.clausesSnapshot ?? activeVersion.clausesSnapshot) as any;
+
+    // Regenerate contract documents (DOCX and PDF) with updated terms
+    const templateData = this.buildTemplateData(
+      contract.code,
+      partySnapshot,
+      technicalSnapshot,
+      commercialSnapshot,
+      scopeSnapshot,
+      clausesSnapshot,
+    );
+
+    const docxBuffer = await this.generator.generateDocx(templateData);
+    const pdfBuffer = await this.generator.generatePdf(templateData);
+
+    const docxHash = this.generator.computeHash(docxBuffer);
+    const pdfHash = this.generator.computeHash(pdfBuffer);
+
+    const docxKey = `contracts/${contract.id}/v${activeVersion.versionNumber}/contrato-${contract.code}.docx`;
+    const pdfKey = `contracts/${contract.id}/v${activeVersion.versionNumber}/contrato-${contract.code}.pdf`;
+
+    await this.storage.upload(
+      'moura-solar-contracts',
+      docxKey,
+      docxBuffer,
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    );
+    await this.storage.upload('moura-solar-contracts', pdfKey, pdfBuffer, 'application/pdf');
+
+    await this.prisma.contractDocument.deleteMany({
+      where: { contractVersionId: activeVersion.id },
+    });
+
+    await this.prisma.contractDocument.createMany({
+      data: [
+        {
+          organizationId,
+          contractVersionId: activeVersion.id,
+          type: 'DOCX_CONTRACT',
+          fileName: `contrato-${contract.code}.docx`,
+          fileSize: docxBuffer.length,
+          mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          s3Bucket: 'moura-solar-contracts',
+          s3Key: docxKey,
+          contentHash: docxHash,
+          generationStatus: 'READY',
+        },
+        {
+          organizationId,
+          contractVersionId: activeVersion.id,
+          type: 'PDF_CONTRACT',
+          fileName: `contrato-${contract.code}.pdf`,
+          fileSize: pdfBuffer.length,
+          mimeType: 'application/pdf',
+          s3Bucket: 'moura-solar-contracts',
+          s3Key: pdfKey,
+          contentHash: pdfHash,
+          generationStatus: 'READY',
+        },
+      ],
+    });
+
+    await this.prisma.contractVersion.update({
       where: { id: activeVersion.id },
       data: {
-        partySnapshot: (dto.partySnapshot ?? activeVersion.partySnapshot) as any,
-        technicalSnapshot: (dto.technicalSnapshot ?? activeVersion.technicalSnapshot) as any,
-        commercialSnapshot: (dto.commercialSnapshot ?? activeVersion.commercialSnapshot) as any,
-        scopeSnapshot: (dto.scopeSnapshot ?? activeVersion.scopeSnapshot) as any,
-        clausesSnapshot: (dto.clausesSnapshot ?? activeVersion.clausesSnapshot) as any,
+        partySnapshot,
+        technicalSnapshot,
+        commercialSnapshot,
+        scopeSnapshot,
+        clausesSnapshot,
+        contentHash: pdfHash,
         observations: dto.observations ?? activeVersion.observations,
       },
     });
+
+    // Synchronize PaymentPlan with new terms & milestones
+    const finalPriceNum =
+      Number(contract.acceptedProposalVersion?.finalPrice) ||
+      parseFloat(
+        String(commercialSnapshot?.contractTotal || '')
+          .replace(/[^0-9,-]+/g, '')
+          .replace(',', '.'),
+      ) ||
+      0;
+
+    const milestones = commercialSnapshot?.milestones || [];
+    if (milestones.length > 0 && finalPriceNum > 0 && milestones[0]) {
+      const firstMilestone = milestones[0];
+      const p1Parsed = parseFloat(
+        firstMilestone.amount.replace(/[^0-9,-]+/g, '').replace(',', '.'),
+      );
+      const downPayment =
+        dto.downPaymentAmount !== undefined
+          ? dto.downPaymentAmount
+          : !isNaN(p1Parsed)
+            ? p1Parsed
+            : finalPriceNum * 0.3;
+
+      const existingPlan = await this.prisma.paymentPlan.findFirst({
+        where: { opportunityId: contract.opportunityId },
+      });
+
+      if (existingPlan) {
+        await this.prisma.receivable.deleteMany({
+          where: { paymentPlanId: existingPlan.id, status: 'OPEN' },
+        });
+        await this.prisma.paymentPlan.update({
+          where: { id: existingPlan.id },
+          data: {
+            totalAmount: finalPriceNum,
+            downPaymentAmount: downPayment,
+            installmentCount: milestones.length,
+            paymentMethod: dto.paymentMethod || commercialSnapshot.paymentMethod || 'PIX',
+            status: 'ACTIVE',
+            receivables: {
+              create: milestones.map((m: any, idx: number) => {
+                const parsedAmt = parseFloat(m.amount.replace(/[^0-9,-]+/g, '').replace(',', '.'));
+                const amt =
+                  !isNaN(parsedAmt) && parsedAmt > 0
+                    ? parsedAmt
+                    : finalPriceNum / milestones.length;
+                const dueDate = new Date();
+                dueDate.setDate(dueDate.getDate() + idx * 30);
+                return {
+                  organizationId,
+                  opportunityId: contract.opportunityId,
+                  installmentNumber: idx + 1,
+                  title: m.stage,
+                  originalAmount: amt,
+                  outstandingAmount: amt,
+                  dueDate,
+                  status: 'OPEN',
+                  notes: m.condition,
+                };
+              }),
+            },
+          },
+        });
+      } else {
+        await this.prisma.paymentPlan.create({
+          data: {
+            organizationId,
+            opportunityId: contract.opportunityId,
+            contractId: contract.id,
+            totalAmount: finalPriceNum,
+            downPaymentAmount: downPayment,
+            installmentCount: milestones.length,
+            paymentMethod: dto.paymentMethod || commercialSnapshot.paymentMethod || 'PIX',
+            status: 'ACTIVE',
+            receivables: {
+              create: milestones.map((m: any, idx: number) => {
+                const parsedAmt = parseFloat(m.amount.replace(/[^0-9,-]+/g, '').replace(',', '.'));
+                const amt =
+                  !isNaN(parsedAmt) && parsedAmt > 0
+                    ? parsedAmt
+                    : finalPriceNum / milestones.length;
+                const dueDate = new Date();
+                dueDate.setDate(dueDate.getDate() + idx * 30);
+                return {
+                  organizationId,
+                  opportunityId: contract.opportunityId,
+                  installmentNumber: idx + 1,
+                  title: m.stage,
+                  originalAmount: amt,
+                  outstandingAmount: amt,
+                  dueDate,
+                  status: 'OPEN',
+                  notes: m.condition,
+                };
+              }),
+            },
+          },
+        });
+      }
+    }
 
     return this.getContract(organizationId, id);
   }
@@ -666,6 +1000,21 @@ export class ContractService {
     dto: RecordContractDeliveryDto,
   ) {
     const contract = await this.getContract(organizationId, contractId);
+
+    // Regra de negócio obrigatória: condições de pagamento e parcelas devem estar definidas antes do envio para assinatura
+    const latestVersion = contract.versions?.[0];
+    const commercialSnap = latestVersion?.commercialSnapshot as any;
+    const hasMilestones =
+      Array.isArray(commercialSnap?.milestones) && commercialSnap.milestones.length > 0;
+    const existingPlan = await this.prisma.paymentPlan.findFirst({
+      where: { opportunityId: contract.opportunityId, status: { in: ['ACTIVE', 'COMPLETED'] } },
+    });
+
+    if (!hasMilestones && !existingPlan) {
+      throw new BadRequestException(
+        'O plano de pagamento e as parcelas (Anexo III) devem ser cadastrados antes do envio do contrato para assinatura.',
+      );
+    }
 
     const sentAt = new Date();
 

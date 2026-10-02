@@ -22,6 +22,36 @@ export enum SignedReviewDecision {
   REJECTED = 'REJECTED',
 }
 
+export class ContractMilestoneDto {
+  @ApiProperty({ description: 'Nome do marco ou etapa', example: 'Assinatura do Contrato' })
+  @IsString()
+  @IsNotEmpty()
+  stage!: string;
+
+  @ApiProperty({ description: 'Percentual do valor total', example: '30%' })
+  @IsString()
+  @IsNotEmpty()
+  percent!: string;
+
+  @ApiProperty({ description: 'Valor em reais do marco', example: 'R$ 10.500,00' })
+  @IsString()
+  @IsNotEmpty()
+  amount!: string;
+
+  @ApiPropertyOptional({ description: 'Vencimento', example: 'Na assinatura do contrato' })
+  @IsString()
+  @IsOptional()
+  due?: string;
+
+  @ApiPropertyOptional({
+    description: 'Condição para liberação',
+    example: 'Assinatura formal do instrumento pelas partes',
+  })
+  @IsString()
+  @IsOptional()
+  condition?: string;
+}
+
 export class CreateContractDto {
   @ApiProperty({ description: 'ID da oportunidade comercial' })
   @IsUUID()
@@ -50,6 +80,26 @@ export class CreateContractDto {
   @IsString()
   @IsOptional()
   roofType?: string;
+
+  @ApiPropertyOptional({ description: 'Forma de pagamento (PIX, Financiamento, Boleto, etc.)' })
+  @IsString()
+  @IsOptional()
+  paymentMethod?: string;
+
+  @ApiPropertyOptional({ description: 'Valor da entrada em reais' })
+  @IsOptional()
+  downPaymentAmount?: number;
+
+  @ApiPropertyOptional({ description: 'Quantidade de parcelas' })
+  @IsOptional()
+  installmentCount?: number;
+
+  @ApiPropertyOptional({
+    description: 'Marcos de pagamento detalhados (Anexo III)',
+    type: () => [ContractMilestoneDto],
+  })
+  @IsOptional()
+  milestones?: ContractMilestoneDto[];
 }
 
 export class UpdateContractDraftDto {
@@ -84,6 +134,28 @@ export class UpdateContractDraftDto {
   @IsString()
   @IsOptional()
   observations?: string;
+
+  @ApiPropertyOptional({
+    description: 'Forma de pagamento (ex.: PIX, FINANCIAMENTO, CARTAO, BOLETO, PERSONALIZADO)',
+  })
+  @IsString()
+  @IsOptional()
+  paymentMethod?: string;
+
+  @ApiPropertyOptional({ description: 'Valor de entrada em R$' })
+  @IsOptional()
+  downPaymentAmount?: number;
+
+  @ApiPropertyOptional({ description: 'Quantidade de parcelas' })
+  @IsOptional()
+  installmentCount?: number;
+
+  @ApiPropertyOptional({
+    description: 'Marcos de pagamento detalhados (Anexo III)',
+    type: () => [ContractMilestoneDto],
+  })
+  @IsOptional()
+  milestones?: ContractMilestoneDto[];
 }
 
 export class RequestContractReviewDto {

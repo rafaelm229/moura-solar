@@ -1166,9 +1166,25 @@ export function EngineeringManagement() {
               gap: '1rem',
             }}
           >
-            <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>
-              Novo Projeto Operacional
-            </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>
+                Novo Projeto Operacional
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowProjectModal(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                }}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Oportunidade Comercial</label>
@@ -1264,12 +1280,15 @@ export function EngineeringManagement() {
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
               <button
+                type="button"
                 onClick={() => setShowProjectModal(false)}
                 style={{
-                  background: '#f1f5f9',
-                  border: 'none',
+                  background: '#ffffff',
+                  color: '#334155',
+                  border: '1px solid #cbd5e1',
                   padding: '0.5rem 1rem',
                   borderRadius: '6px',
+                  fontWeight: 600,
                   cursor: 'pointer',
                 }}
               >
@@ -1319,9 +1338,25 @@ export function EngineeringManagement() {
               gap: '1rem',
             }}
           >
-            <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>
-              Novo Projeto Executivo (Engenharia)
-            </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>
+                Novo Projeto Executivo (Engenharia)
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowDesignModal(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                }}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
@@ -1413,12 +1448,15 @@ export function EngineeringManagement() {
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
               <button
+                type="button"
                 onClick={() => setShowDesignModal(false)}
                 style={{
-                  background: '#f1f5f9',
-                  border: 'none',
+                  background: '#ffffff',
+                  color: '#334155',
+                  border: '1px solid #cbd5e1',
                   padding: '0.5rem 1rem',
                   borderRadius: '6px',
+                  fontWeight: 600,
                   cursor: 'pointer',
                 }}
               >
@@ -1468,9 +1506,25 @@ export function EngineeringManagement() {
               gap: '1rem',
             }}
           >
-            <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>
-              Agendar Ordem de Serviço
-            </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>
+                Agendar Ordem de Serviço
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowWorkOrderModal(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                }}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.5rem' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
@@ -1528,12 +1582,15 @@ export function EngineeringManagement() {
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
               <button
+                type="button"
                 onClick={() => setShowWorkOrderModal(false)}
                 style={{
-                  background: '#f1f5f9',
-                  border: 'none',
+                  background: '#ffffff',
+                  color: '#334155',
+                  border: '1px solid #cbd5e1',
                   padding: '0.5rem 1rem',
                   borderRadius: '6px',
+                  fontWeight: 600,
                   cursor: 'pointer',
                 }}
               >
@@ -1583,9 +1640,25 @@ export function EngineeringManagement() {
               gap: '1rem',
             }}
           >
-            <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>
-              Atualizar Parecer da Concessionária
-            </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>
+                Atualizar Parecer da Concessionária
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowHomologationModal(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                }}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>
@@ -1654,12 +1727,15 @@ export function EngineeringManagement() {
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
               <button
+                type="button"
                 onClick={() => setShowHomologationModal(false)}
                 style={{
-                  background: '#f1f5f9',
-                  border: 'none',
+                  background: '#ffffff',
+                  color: '#334155',
+                  border: '1px solid #cbd5e1',
                   padding: '0.5rem 1rem',
                   borderRadius: '6px',
+                  fontWeight: 600,
                   cursor: 'pointer',
                 }}
               >
@@ -1709,9 +1785,25 @@ export function EngineeringManagement() {
               gap: '1rem',
             }}
           >
-            <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>
-              Termo de Entrega & Aceite da Usina
-            </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>
+                Termo de Entrega & Aceite da Usina
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowHandoverModal(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                }}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0.5rem' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
@@ -1793,12 +1885,15 @@ export function EngineeringManagement() {
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
               <button
+                type="button"
                 onClick={() => setShowHandoverModal(false)}
                 style={{
-                  background: '#f1f5f9',
-                  border: 'none',
+                  background: '#ffffff',
+                  color: '#334155',
+                  border: '1px solid #cbd5e1',
                   padding: '0.5rem 1rem',
                   borderRadius: '6px',
+                  fontWeight: 600,
                   cursor: 'pointer',
                 }}
               >

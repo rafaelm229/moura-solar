@@ -467,7 +467,7 @@ export class DesignService {
     if (!item) {
       fail('CATALOG_ITEM_NOT_FOUND', 'Item de catálogo não encontrado.', 404);
     }
-    if (item.version !== dto.expectedVersion) {
+    if (dto.expectedVersion !== undefined && item.version !== dto.expectedVersion) {
       fail(
         'CONCURRENCY_CONFLICT',
         `O item de catálogo foi alterado por outro usuário (versão atual: ${item.version}, esperada: ${dto.expectedVersion}).`,
@@ -479,15 +479,19 @@ export class DesignService {
       const updated = await tx.catalogItem.update({
         where: { id },
         data: {
+          sku: dto.sku !== undefined ? dto.sku : item.sku,
+          kind: dto.kind !== undefined ? (dto.kind as any) : item.kind,
+          category: dto.category !== undefined ? (dto.category as any) : item.category,
           name: dto.name !== undefined ? dto.name : item.name,
           manufacturer: dto.manufacturer !== undefined ? dto.manufacturer : item.manufacturer,
           model: dto.model !== undefined ? dto.model : item.model,
+          unitOfMeasure: dto.unitOfMeasure !== undefined ? dto.unitOfMeasure : item.unitOfMeasure,
           powerRatingWp: dto.powerRatingWp !== undefined ? dto.powerRatingWp : item.powerRatingWp,
           powerRatingKw: dto.powerRatingKw !== undefined ? dto.powerRatingKw : item.powerRatingKw,
           referenceCost: dto.referenceCost !== undefined ? dto.referenceCost : item.referenceCost,
           referencePrice:
             dto.referencePrice !== undefined ? dto.referencePrice : item.referencePrice,
-          status: dto.status !== undefined ? dto.status : item.status,
+          status: dto.status !== undefined ? (dto.status as any) : item.status,
           version: { increment: 1 },
         },
       });

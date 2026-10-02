@@ -796,7 +796,28 @@ export function Activities() {
             boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
           }}
         >
-          <h3 id="complete-modal-title">Concluir Atividade</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 id="complete-modal-title" style={{ margin: 0 }}>
+              Concluir Atividade
+            </h3>
+            <button
+              type="button"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                fontSize: '1.25rem',
+                cursor: 'pointer',
+              }}
+              onClick={() => {
+                setIsCompleting(false);
+                setSelectedActivity(null);
+              }}
+              aria-label="Fechar"
+            >
+              ✕
+            </button>
+          </div>
           <p style={{ color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
             Atividade: <strong>{selectedActivity.subject}</strong>
           </p>
@@ -963,7 +984,28 @@ export function Activities() {
             boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
           }}
         >
-          <h3 id="reschedule-modal-title">Reagendar Atividade</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 id="reschedule-modal-title" style={{ margin: 0 }}>
+              Reagendar Atividade
+            </h3>
+            <button
+              type="button"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                fontSize: '1.25rem',
+                cursor: 'pointer',
+              }}
+              onClick={() => {
+                setIsRescheduling(false);
+                setSelectedActivity(null);
+              }}
+              aria-label="Fechar"
+            >
+              ✕
+            </button>
+          </div>
           <p style={{ color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
             Atividade: <strong>{selectedActivity.subject}</strong>
           </p>
@@ -1041,9 +1083,28 @@ export function Activities() {
             boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
           }}
         >
-          <h3 id="cancel-modal-title" style={{ color: 'var(--status-danger)' }}>
-            Cancelar Atividade
-          </h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 id="cancel-modal-title" style={{ color: 'var(--status-danger)', margin: 0 }}>
+              Cancelar Atividade
+            </h3>
+            <button
+              type="button"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                fontSize: '1.25rem',
+                cursor: 'pointer',
+              }}
+              onClick={() => {
+                setIsCanceling(false);
+                setSelectedActivity(null);
+              }}
+              aria-label="Fechar"
+            >
+              ✕
+            </button>
+          </div>
           <p style={{ marginTop: '0.5rem' }}>
             Tem certeza de que deseja cancelar a atividade{' '}
             <strong>&ldquo;{selectedActivity.subject}&rdquo;</strong>?

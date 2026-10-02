@@ -1,8 +1,27 @@
 import { Injectable } from '@nestjs/common';
 import { createHash } from 'node:crypto';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const _PDFDocument = require('pdfkit');
 const PDFDocument: any = _PDFDocument.default ?? _PDFDocument;
+
+function resolveAssetPath(subpath: string): string {
+  const candidates = [
+    join(process.cwd(), subpath),
+    join(process.cwd(), 'apps/api', subpath),
+    join(process.cwd(), '..', subpath),
+    join(__dirname, '../../', subpath),
+    join(__dirname, '../../../apps/api', subpath),
+  ];
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return candidates[0] ?? subpath;
+}
 
 export interface ProposalPdfData {
   proposalCode: string;
@@ -108,22 +127,33 @@ export class PdfService {
         const borderColor = '#e2e8f0';
 
         // --- 1. HEADER ---
-        doc.rect(45, 40, 505, 5).fill(primaryColor);
+        doc.rect(45, 40, 505, 4).fill(primaryColor);
 
-        doc.moveDown(0.8);
+        try {
+          const logoPath = resolveAssetPath('assets/moura-solar-logo.png');
+          if (existsSync(logoPath)) {
+            doc.image(logoPath, 45, 50, { width: 50 });
+          }
+        } catch {
+          // Ignored
+        }
+
         doc
-          .fontSize(20)
+          .fontSize(16)
           .font('Helvetica-Bold')
           .fillColor(primaryDark)
-          .text('MOURA SOLAR', { continued: true });
+          .text('MOURA SOLAR', 105, 52, { continued: true });
         doc
-          .fontSize(10)
+          .fontSize(8.5)
           .font('Helvetica')
           .fillColor(textMuted)
-          .text('  |  ENGENHARIA E ENERGIA FOTOVOLTAICA', { align: 'left' });
+          .text('  |  ENGENHARIA E ENERGIA FOTOVOLTAICA');
 
-        doc.moveDown(0.3);
-        doc.fontSize(14).font('Helvetica-Bold').fillColor(primaryColor).text('PROPOSTA COMERCIAL');
+        doc
+          .fontSize(11)
+          .font('Helvetica-Bold')
+          .fillColor(primaryColor)
+          .text('PROPOSTA COMERCIAL INSTITUCIONAL', 105, 70);
 
         // Document Meta Box
         const metaY = 55;

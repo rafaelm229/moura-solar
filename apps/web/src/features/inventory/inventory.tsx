@@ -149,6 +149,22 @@ export function InventoryManagement() {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [receivingOrder, setReceivingOrder] = useState<PurchaseOrderView | null>(null);
 
+  // Edit Catalog Item Modal from Inventory
+  const [editingCatalogItem, setEditingCatalogItem] = useState<{
+    id: string;
+    sku: string;
+    name: string;
+    category: string;
+    unitOfMeasure: string;
+    referenceCost: number | string;
+    manufacturer?: string | null;
+    model?: string | null;
+  } | null>(null);
+  const [editCatName, setEditCatName] = useState('');
+  const [editCatCost, setEditCatCost] = useState('');
+  const [editCatPrice, setEditCatPrice] = useState('');
+  const [editCatUom, setEditCatUom] = useState('UN');
+
   // Filters state
   const [selectedLocation, setSelectedLocation] = useState<string>('');
   const [searchItem, setSearchItem] = useState<string>('');
@@ -284,6 +300,28 @@ export function InventoryManagement() {
   });
 
   // Mutations
+  const updateCatalogItemMutation = useMutation({
+    mutationFn: async () => {
+      if (!editingCatalogItem) return;
+      await result(
+        api.PUT('/api/v1/catalog/{id}', {
+          params: { path: { id: editingCatalogItem.id } },
+          body: {
+            name: editCatName,
+            referenceCost: parseFloat(editCatCost) || 0,
+            referencePrice: editCatPrice ? parseFloat(editCatPrice) : undefined,
+            unitOfMeasure: editCatUom,
+          },
+        }),
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['catalog-items'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-balances'] });
+      setEditingCatalogItem(null);
+    },
+  });
+
   const createLocationMutation = useMutation({
     mutationFn: () =>
       result(
@@ -758,13 +796,14 @@ export function InventoryManagement() {
                   <th style={{ padding: '0.75rem', textAlign: 'right' }}>Disponível</th>
                   <th style={{ padding: '0.75rem', textAlign: 'right' }}>Custo Médio</th>
                   <th style={{ padding: '0.75rem', textAlign: 'right' }}>Valor Total</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'center' }}>Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredBalances.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={9}
+                      colSpan={10}
                       style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}
                     >
                       Nenhum saldo encontrado para os filtros selecionados.
@@ -815,6 +854,37 @@ export function InventoryManagement() {
                         </td>
                         <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: 600 }}>
                           {formatBRL(Number(b.physicalOnHand) * Number(b.averageCost))}
+                        </td>
+                        <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                          {b.catalogItem && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingCatalogItem(b.catalogItem!);
+                                setEditCatName(b.catalogItem!.name);
+                                setEditCatCost(
+                                  String(b.catalogItem!.referenceCost ?? b.averageCost ?? ''),
+                                );
+                                setEditCatPrice('');
+                                setEditCatUom(b.catalogItem!.unitOfMeasure || 'UN');
+                              }}
+                              style={{
+                                background: '#f8fafc',
+                                color: '#087443',
+                                border: '1px solid #087443',
+                                padding: '0.3rem 0.6rem',
+                                borderRadius: '4px',
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.25rem',
+                              }}
+                            >
+                              ✏️ Editar
+                            </button>
+                          )}
                         </td>
                       </tr>
                     );
@@ -1429,9 +1499,27 @@ export function InventoryManagement() {
               gap: '1rem',
             }}
           >
-            <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>
-              Novo Local / Depósito
-            </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>
+                Novo Local / Depósito
+              </h3>
+              <button
+                type="button"
+                aria-label="Fechar modal"
+                onClick={() => setShowLocationModal(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  color: '#64748b',
+                  cursor: 'pointer',
+                  padding: '0.25rem',
+                  lineHeight: 1,
+                }}
+              >
+                ✕
+              </button>
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label style={{ fontSize: '0.875rem', fontWeight: 600 }}>
                 Código (Identificador)
@@ -1487,12 +1575,15 @@ export function InventoryManagement() {
               }}
             >
               <button
+                type="button"
                 onClick={() => setShowLocationModal(false)}
                 style={{
-                  background: '#f1f5f9',
-                  border: 'none',
+                  background: '#ffffff',
+                  color: '#334155',
+                  border: '1px solid #cbd5e1',
                   padding: '0.5rem 1rem',
                   borderRadius: '6px',
+                  fontWeight: 500,
                   cursor: 'pointer',
                 }}
               >
@@ -1544,9 +1635,27 @@ export function InventoryManagement() {
               overflowY: 'auto',
             }}
           >
-            <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>
-              Registrar Movimentação
-            </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>
+                Registrar Movimentação
+              </h3>
+              <button
+                type="button"
+                aria-label="Fechar modal"
+                onClick={() => setShowMovementModal(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  color: '#64748b',
+                  cursor: 'pointer',
+                  padding: '0.25rem',
+                  lineHeight: 1,
+                }}
+              >
+                ✕
+              </button>
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label style={{ fontSize: '0.875rem', fontWeight: 600 }}>Tipo de Movimentação</label>
               <select
@@ -1677,12 +1786,15 @@ export function InventoryManagement() {
               }}
             >
               <button
+                type="button"
                 onClick={() => setShowMovementModal(false)}
                 style={{
-                  background: '#f1f5f9',
-                  border: 'none',
+                  background: '#ffffff',
+                  color: '#334155',
+                  border: '1px solid #cbd5e1',
                   padding: '0.5rem 1rem',
                   borderRadius: '6px',
+                  fontWeight: 500,
                   cursor: 'pointer',
                 }}
               >
@@ -1732,7 +1844,25 @@ export function InventoryManagement() {
               gap: '1rem',
             }}
           >
-            <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>Novo Fornecedor</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>Novo Fornecedor</h3>
+              <button
+                type="button"
+                aria-label="Fechar modal"
+                onClick={() => setShowSupplierModal(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  color: '#64748b',
+                  cursor: 'pointer',
+                  padding: '0.25rem',
+                  lineHeight: 1,
+                }}
+              >
+                ✕
+              </button>
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                 <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Código</label>
@@ -1839,12 +1969,15 @@ export function InventoryManagement() {
               }}
             >
               <button
+                type="button"
                 onClick={() => setShowSupplierModal(false)}
                 style={{
-                  background: '#f1f5f9',
-                  border: 'none',
+                  background: '#ffffff',
+                  color: '#334155',
+                  border: '1px solid #cbd5e1',
                   padding: '0.5rem 1rem',
                   borderRadius: '6px',
+                  fontWeight: 500,
                   cursor: 'pointer',
                 }}
               >
@@ -1894,9 +2027,27 @@ export function InventoryManagement() {
               gap: '1rem',
             }}
           >
-            <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>
-              Nova Ordem de Compra
-            </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>
+                Nova Ordem de Compra
+              </h3>
+              <button
+                type="button"
+                aria-label="Fechar modal"
+                onClick={() => setShowPurchaseModal(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  color: '#64748b',
+                  cursor: 'pointer',
+                  padding: '0.25rem',
+                  lineHeight: 1,
+                }}
+              >
+                ✕
+              </button>
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                 <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Código Pedido</label>
@@ -1988,12 +2139,15 @@ export function InventoryManagement() {
               }}
             >
               <button
+                type="button"
                 onClick={() => setShowPurchaseModal(false)}
                 style={{
-                  background: '#f1f5f9',
-                  border: 'none',
+                  background: '#ffffff',
+                  color: '#334155',
+                  border: '1px solid #cbd5e1',
                   padding: '0.5rem 1rem',
                   borderRadius: '6px',
+                  fontWeight: 500,
                   cursor: 'pointer',
                 }}
               >
@@ -2043,9 +2197,27 @@ export function InventoryManagement() {
               gap: '1rem',
             }}
           >
-            <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>
-              Recebimento Físico: {receivingOrder.code}
-            </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>
+                Recebimento Físico: {receivingOrder.code}
+              </h3>
+              <button
+                type="button"
+                aria-label="Fechar modal"
+                onClick={() => setReceivingOrder(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  color: '#64748b',
+                  cursor: 'pointer',
+                  padding: '0.25rem',
+                  lineHeight: 1,
+                }}
+              >
+                ✕
+              </button>
+            </div>
             <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
               Fornecedor: {receivingOrder.supplier?.tradeName || receivingOrder.supplier?.name}
             </span>
@@ -2111,12 +2283,15 @@ export function InventoryManagement() {
               }}
             >
               <button
+                type="button"
                 onClick={() => setReceivingOrder(null)}
                 style={{
-                  background: '#f1f5f9',
-                  border: 'none',
+                  background: '#ffffff',
+                  color: '#334155',
+                  border: '1px solid #cbd5e1',
                   padding: '0.5rem 1rem',
                   borderRadius: '6px',
+                  fontWeight: 500,
                   cursor: 'pointer',
                 }}
               >
@@ -2138,6 +2313,179 @@ export function InventoryManagement() {
                 {receiveGoodsMutation.isPending ? 'Confirmando...' : 'Confirmar Entrada no Estoque'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDITAR PRODUTO DO CATÁLOGO A PARTIR DO ESTOQUE */}
+      {editingCatalogItem && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="edit-catalog-modal-title"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.5)',
+            backdropFilter: 'blur(3px)',
+            display: 'grid',
+            placeItems: 'center',
+            zIndex: 1050,
+            padding: '1rem',
+          }}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '10px',
+              maxWidth: '520px',
+              width: '100%',
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.15)',
+              border: '1px solid #e2e8f0',
+              padding: '1.5rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                borderBottom: '1px solid #e2e8f0',
+                paddingBottom: '0.75rem',
+              }}
+            >
+              <div>
+                <h3
+                  id="edit-catalog-modal-title"
+                  style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}
+                >
+                  Editar Produto do Catálogo
+                </h3>
+                <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                  SKU: <strong>{editingCatalogItem.sku}</strong> ({editingCatalogItem.category})
+                </span>
+              </div>
+              <button
+                type="button"
+                aria-label="Fechar modal"
+                onClick={() => setEditingCatalogItem(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  color: '#64748b',
+                  cursor: 'pointer',
+                  padding: '0.25rem',
+                  lineHeight: 1,
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <Feedback error={updateCatalogItemMutation.error} />
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                updateCatalogItemMutation.mutate();
+              }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <label style={{ fontSize: '0.875rem', fontWeight: 600 }}>Nome Descritivo *</label>
+                <input
+                  type="text"
+                  required
+                  value={editCatName}
+                  onChange={(e) => setEditCatName(e.target.value)}
+                  style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <label style={{ fontSize: '0.875rem', fontWeight: 600 }}>Custo Ref. (R$) *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    required
+                    value={editCatCost}
+                    onChange={(e) => setEditCatCost(e.target.value)}
+                    style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <label style={{ fontSize: '0.875rem', fontWeight: 600 }}>Preço Ref. (R$)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Opcional"
+                    value={editCatPrice}
+                    onChange={(e) => setEditCatPrice(e.target.value)}
+                    style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <label style={{ fontSize: '0.875rem', fontWeight: 600 }}>Unidade de Medida</label>
+                <input
+                  type="text"
+                  value={editCatUom}
+                  onChange={(e) => setEditCatUom(e.target.value)}
+                  style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                />
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '0.75rem',
+                  marginTop: '0.5rem',
+                  paddingTop: '0.75rem',
+                  borderTop: '1px solid #e2e8f0',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setEditingCatalogItem(null)}
+                  style={{
+                    background: '#ffffff',
+                    color: '#334155',
+                    border: '1px solid #cbd5e1',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '6px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={updateCatalogItemMutation.isPending}
+                  style={{
+                    background: '#087443',
+                    color: '#ffffff',
+                    border: 'none',
+                    padding: '0.5rem 1.25rem',
+                    borderRadius: '6px',
+                    fontWeight: 600,
+                    cursor: updateCatalogItemMutation.isPending ? 'not-allowed' : 'pointer',
+                    opacity: updateCatalogItemMutation.isPending ? 0.7 : 1,
+                  }}
+                >
+                  {updateCatalogItemMutation.isPending ? 'Salvando...' : 'Salvar Alterações'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -1797,9 +1797,32 @@ export function AfterSalesManagement() {
               overflowY: 'auto',
             }}
           >
-            <h2 style={{ margin: '0 0 1rem 0', fontSize: '1.25rem', fontWeight: 700 }}>
-              Abrir Chamado de Suporte
-            </h2>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1rem',
+              }}
+            >
+              <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>
+                Abrir Chamado de Suporte
+              </h2>
+              <button
+                type="button"
+                onClick={() => setIsNewTicketOpen(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                }}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
 
             <form
               onSubmit={(e) => {
@@ -1948,10 +1971,12 @@ export function AfterSalesManagement() {
                   type="button"
                   onClick={() => setIsNewTicketOpen(false)}
                   style={{
-                    background: '#f1f5f9',
-                    border: 'none',
+                    background: '#ffffff',
+                    color: '#334155',
+                    border: '1px solid #cbd5e1',
                     padding: '0.5rem 1rem',
                     borderRadius: '6px',
+                    fontWeight: 600,
                     cursor: 'pointer',
                   }}
                 >
@@ -2221,7 +2246,30 @@ export function AfterSalesManagement() {
               padding: '1.5rem',
             }}
           >
-            <h3 style={{ margin: '0 0 1rem 0' }}>Triagem Técnica</h3>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1rem',
+              }}
+            >
+              <h3 style={{ margin: 0 }}>Triagem Técnica</h3>
+              <button
+                type="button"
+                onClick={() => setIsTriageOpen(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                }}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -2290,10 +2338,13 @@ export function AfterSalesManagement() {
                   type="button"
                   onClick={() => setIsTriageOpen(false)}
                   style={{
-                    border: 'none',
-                    background: '#f1f5f9',
+                    background: '#ffffff',
+                    color: '#334155',
+                    border: '1px solid #cbd5e1',
                     padding: '0.5rem 1rem',
                     borderRadius: '6px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
                   }}
                 >
                   Cancelar
@@ -2339,7 +2390,30 @@ export function AfterSalesManagement() {
               padding: '1.5rem',
             }}
           >
-            <h3 style={{ margin: '0 0 1rem 0' }}>Registrar Interação / Orientação</h3>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1rem',
+              }}
+            >
+              <h3 style={{ margin: 0 }}>Registrar Interação / Orientação</h3>
+              <button
+                type="button"
+                onClick={() => setIsInteractionOpen(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                }}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -2404,10 +2478,13 @@ export function AfterSalesManagement() {
                   type="button"
                   onClick={() => setIsInteractionOpen(false)}
                   style={{
-                    border: 'none',
-                    background: '#f1f5f9',
+                    background: '#ffffff',
+                    color: '#334155',
+                    border: '1px solid #cbd5e1',
                     padding: '0.5rem 1rem',
                     borderRadius: '6px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
                   }}
                 >
                   Cancelar
@@ -2453,7 +2530,30 @@ export function AfterSalesManagement() {
               padding: '1.5rem',
             }}
           >
-            <h3 style={{ margin: '0 0 1rem 0' }}>Alterar Estado do Chamado</h3>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1rem',
+              }}
+            >
+              <h3 style={{ margin: 0 }}>Alterar Estado do Chamado</h3>
+              <button
+                type="button"
+                onClick={() => setIsStatusOpen(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                }}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -2544,10 +2644,13 @@ export function AfterSalesManagement() {
                   type="button"
                   onClick={() => setIsStatusOpen(false)}
                   style={{
-                    border: 'none',
-                    background: '#f1f5f9',
+                    background: '#ffffff',
+                    color: '#334155',
+                    border: '1px solid #cbd5e1',
                     padding: '0.5rem 1rem',
                     borderRadius: '6px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
                   }}
                 >
                   Cancelar
@@ -2593,7 +2696,30 @@ export function AfterSalesManagement() {
               padding: '1.5rem',
             }}
           >
-            <h3 style={{ margin: '0 0 1rem 0' }}>Emitir Orçamento de Visita Técnica</h3>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1rem',
+              }}
+            >
+              <h3 style={{ margin: 0 }}>Emitir Orçamento de Visita Técnica</h3>
+              <button
+                type="button"
+                onClick={() => setIsNewQuoteOpen(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                }}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -2730,10 +2856,13 @@ export function AfterSalesManagement() {
                   type="button"
                   onClick={() => setIsNewQuoteOpen(false)}
                   style={{
-                    border: 'none',
-                    background: '#f1f5f9',
+                    background: '#ffffff',
+                    color: '#334155',
+                    border: '1px solid #cbd5e1',
                     padding: '0.5rem 1rem',
                     borderRadius: '6px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
                   }}
                 >
                   Cancelar
@@ -2779,7 +2908,30 @@ export function AfterSalesManagement() {
               padding: '1.5rem',
             }}
           >
-            <h3 style={{ margin: '0 0 0.5rem 0' }}>Aprovar e Aceitar Orçamento</h3>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '0.5rem',
+              }}
+            >
+              <h3 style={{ margin: 0 }}>Aprovar e Aceitar Orçamento</h3>
+              <button
+                type="button"
+                onClick={() => setSelectedQuoteToAccept(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                }}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
             <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0 0 1rem 0' }}>
               O aceite deste orçamento provisionará automaticamente uma{' '}
               <strong>Ordem de Serviço (M8)</strong> para a equipe técnica e um{' '}
@@ -2844,10 +2996,13 @@ export function AfterSalesManagement() {
                   type="button"
                   onClick={() => setSelectedQuoteToAccept(null)}
                   style={{
-                    border: 'none',
-                    background: '#f1f5f9',
+                    background: '#ffffff',
+                    color: '#334155',
+                    border: '1px solid #cbd5e1',
                     padding: '0.5rem 1rem',
                     borderRadius: '6px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
                   }}
                 >
                   Cancelar
@@ -2893,7 +3048,30 @@ export function AfterSalesManagement() {
               padding: '1.5rem',
             }}
           >
-            <h3 style={{ margin: '0 0 1rem 0' }}>Lançar Leitura de Geração Solar</h3>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1rem',
+              }}
+            >
+              <h3 style={{ margin: 0 }}>Lançar Leitura de Geração Solar</h3>
+              <button
+                type="button"
+                onClick={() => setIsNewReadingOpen(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                }}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -2983,10 +3161,13 @@ export function AfterSalesManagement() {
                   type="button"
                   onClick={() => setIsNewReadingOpen(false)}
                   style={{
-                    border: 'none',
-                    background: '#f1f5f9',
+                    background: '#ffffff',
+                    color: '#334155',
+                    border: '1px solid #cbd5e1',
                     padding: '0.5rem 1rem',
                     borderRadius: '6px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
                   }}
                 >
                   Cancelar
@@ -3032,7 +3213,30 @@ export function AfterSalesManagement() {
               padding: '1.5rem',
             }}
           >
-            <h3 style={{ margin: '0 0 1rem 0' }}>Registrar Desconexão / Queda Wi-Fi</h3>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1rem',
+              }}
+            >
+              <h3 style={{ margin: 0 }}>Registrar Desconexão / Queda Wi-Fi</h3>
+              <button
+                type="button"
+                onClick={() => setIsNewIncidentOpen(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                }}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -3084,10 +3288,13 @@ export function AfterSalesManagement() {
                   type="button"
                   onClick={() => setIsNewIncidentOpen(false)}
                   style={{
-                    border: 'none',
-                    background: '#f1f5f9',
+                    background: '#ffffff',
+                    color: '#334155',
+                    border: '1px solid #cbd5e1',
                     padding: '0.5rem 1rem',
                     borderRadius: '6px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
                   }}
                 >
                   Cancelar
@@ -3133,7 +3340,30 @@ export function AfterSalesManagement() {
               padding: '1.5rem',
             }}
           >
-            <h3 style={{ margin: '0 0 1rem 0' }}>Restabelecer Conexão Wi-Fi</h3>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1rem',
+              }}
+            >
+              <h3 style={{ margin: 0 }}>Restabelecer Conexão Wi-Fi</h3>
+              <button
+                type="button"
+                onClick={() => setSelectedIncidentToRestore(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                }}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -3175,10 +3405,13 @@ export function AfterSalesManagement() {
                   type="button"
                   onClick={() => setSelectedIncidentToRestore(null)}
                   style={{
-                    border: 'none',
-                    background: '#f1f5f9',
+                    background: '#ffffff',
+                    color: '#334155',
+                    border: '1px solid #cbd5e1',
                     padding: '0.5rem 1rem',
                     borderRadius: '6px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
                   }}
                 >
                   Cancelar
@@ -3224,7 +3457,30 @@ export function AfterSalesManagement() {
               padding: '1.5rem',
             }}
           >
-            <h3 style={{ margin: '0 0 1rem 0' }}>Configurar Sistema de Monitoramento</h3>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1rem',
+              }}
+            >
+              <h3 style={{ margin: 0 }}>Configurar Sistema de Monitoramento</h3>
+              <button
+                type="button"
+                onClick={() => setIsConfigMonitoringOpen(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                }}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -3327,10 +3583,13 @@ export function AfterSalesManagement() {
                   type="button"
                   onClick={() => setIsConfigMonitoringOpen(false)}
                   style={{
-                    border: 'none',
-                    background: '#f1f5f9',
+                    background: '#ffffff',
+                    color: '#334155',
+                    border: '1px solid #cbd5e1',
                     padding: '0.5rem 1rem',
                     borderRadius: '6px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
                   }}
                 >
                   Cancelar
@@ -3376,7 +3635,30 @@ export function AfterSalesManagement() {
               padding: '1.5rem',
             }}
           >
-            <h3 style={{ margin: '0 0 1rem 0' }}>Cadastrar Termo de Garantia</h3>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1rem',
+              }}
+            >
+              <h3 style={{ margin: 0 }}>Cadastrar Termo de Garantia</h3>
+              <button
+                type="button"
+                onClick={() => setIsNewWarrantyOpen(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                }}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -3550,10 +3832,13 @@ export function AfterSalesManagement() {
                   type="button"
                   onClick={() => setIsNewWarrantyOpen(false)}
                   style={{
-                    border: 'none',
-                    background: '#f1f5f9',
+                    background: '#ffffff',
+                    color: '#334155',
+                    border: '1px solid #cbd5e1',
                     padding: '0.5rem 1rem',
                     borderRadius: '6px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
                   }}
                 >
                   Cancelar
@@ -3599,7 +3884,30 @@ export function AfterSalesManagement() {
               padding: '1.5rem',
             }}
           >
-            <h3 style={{ margin: '0 0 1rem 0' }}>Abrir Sinistro / Solicitação de RMA</h3>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1rem',
+              }}
+            >
+              <h3 style={{ margin: 0 }}>Abrir Sinistro / Solicitação de RMA</h3>
+              <button
+                type="button"
+                onClick={() => setIsNewClaimOpen(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                }}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -3665,10 +3973,13 @@ export function AfterSalesManagement() {
                   type="button"
                   onClick={() => setIsNewClaimOpen(false)}
                   style={{
-                    border: 'none',
-                    background: '#f1f5f9',
+                    background: '#ffffff',
+                    color: '#334155',
+                    border: '1px solid #cbd5e1',
                     padding: '0.5rem 1rem',
                     borderRadius: '6px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
                   }}
                 >
                   Cancelar

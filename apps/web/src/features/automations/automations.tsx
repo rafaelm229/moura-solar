@@ -1882,11 +1882,32 @@ export function AutomationsManagement() {
               boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
             }}
           >
-            <h3
-              style={{ margin: '0 0 1rem', fontSize: '1.25rem', fontWeight: 700, color: '#102a23' }}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1rem',
+              }}
             >
-              Novo Item de Atenção
-            </h3>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#102a23' }}>
+                Novo Item de Atenção
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsNewAttentionItemOpen(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                }}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -2133,16 +2154,39 @@ export function AutomationsManagement() {
               boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
             }}
           >
-            <h3
+            <div
               style={{
-                margin: '0 0 0.5rem',
-                fontSize: '1.25rem',
-                fontWeight: 700,
-                color: '#102a23',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '0.5rem',
               }}
             >
-              Resolver Item de Atenção
-            </h3>
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: '1.25rem',
+                  fontWeight: 700,
+                  color: '#102a23',
+                }}
+              >
+                Resolver Item de Atenção
+              </h3>
+              <button
+                type="button"
+                onClick={() => setSelectedAttentionItemForResolution(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                }}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
             <p style={{ fontSize: '0.875rem', color: '#64748b', margin: '0 0 1rem' }}>
               Justifique formalmente a resolução de{' '}
               <strong>{selectedAttentionItemForResolution.title}</strong>.
@@ -2252,16 +2296,39 @@ export function AutomationsManagement() {
               boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
             }}
           >
-            <h3
+            <div
               style={{
-                margin: '0 0 0.5rem',
-                fontSize: '1.25rem',
-                fontWeight: 700,
-                color: '#dc2626',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '0.5rem',
               }}
             >
-              Descartar Item de Atenção
-            </h3>
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: '1.25rem',
+                  fontWeight: 700,
+                  color: '#dc2626',
+                }}
+              >
+                Descartar Item de Atenção
+              </h3>
+              <button
+                type="button"
+                onClick={() => setSelectedAttentionItemForDiscard(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                }}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
             <p style={{ fontSize: '0.875rem', color: '#64748b', margin: '0 0 1rem' }}>
               Informe o motivo para descarte de{' '}
               <strong>{selectedAttentionItemForDiscard.title}</strong>.
@@ -2373,11 +2440,32 @@ export function AutomationsManagement() {
               boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
             }}
           >
-            <h3
-              style={{ margin: '0 0 1rem', fontSize: '1.25rem', fontWeight: 700, color: '#102a23' }}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1rem',
+              }}
             >
-              Nova Regra de Automação
-            </h3>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#102a23' }}>
+                Nova Regra de Automação
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsNewRuleOpen(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                }}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -2577,11 +2665,32 @@ export function AutomationsManagement() {
               boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
             }}
           >
-            <h3
-              style={{ margin: '0 0 1rem', fontSize: '1.25rem', fontWeight: 700, color: '#102a23' }}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1rem',
+              }}
             >
-              Cadastrar Nova Meta
-            </h3>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#102a23' }}>
+                Cadastrar Nova Meta
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsNewGoalOpen(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                }}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -2818,16 +2927,39 @@ export function AutomationsManagement() {
               boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
             }}
           >
-            <h3
+            <div
               style={{
-                margin: '0 0 0.5rem',
-                fontSize: '1.25rem',
-                fontWeight: 700,
-                color: '#102a23',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '0.5rem',
               }}
             >
-              Horário Silencioso & Preferências
-            </h3>
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: '1.25rem',
+                  fontWeight: 700,
+                  color: '#102a23',
+                }}
+              >
+                Horário Silencioso & Preferências
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsPreferencesOpen(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                }}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
             <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0 0 1rem' }}>
               Defina a janela de repouso na qual notificações operacionais não urgentes serão
               pausadas.

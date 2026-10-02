@@ -223,6 +223,21 @@ export class UpdateCatalogItemDto {
   @ApiPropertyOptional({ type: String })
   @IsOptional()
   @IsString()
+  sku?: string;
+
+  @ApiPropertyOptional({ enum: ['MATERIAL', 'SERVICE'], type: String })
+  @IsOptional()
+  @IsIn(['MATERIAL', 'SERVICE'])
+  kind?: string;
+
+  @ApiPropertyOptional({ type: String })
+  @IsOptional()
+  @IsString()
+  category?: string;
+
+  @ApiPropertyOptional({ type: String })
+  @IsOptional()
+  @IsString()
   name?: string;
 
   @ApiPropertyOptional({ type: String })
@@ -234,6 +249,11 @@ export class UpdateCatalogItemDto {
   @IsOptional()
   @IsString()
   model?: string;
+
+  @ApiPropertyOptional({ type: String })
+  @IsOptional()
+  @IsString()
+  unitOfMeasure?: string;
 
   @ApiPropertyOptional({ type: Number })
   @IsOptional()
@@ -264,9 +284,10 @@ export class UpdateCatalogItemDto {
   @IsIn(['ACTIVE', 'INACTIVE'])
   status?: string;
 
-  @ApiProperty({ example: 1 })
+  @ApiPropertyOptional({ example: 1, type: Number })
+  @IsOptional()
   @IsNumber()
-  expectedVersion!: number;
+  expectedVersion?: number;
 }
 
 export class CatalogItemViewDto {
