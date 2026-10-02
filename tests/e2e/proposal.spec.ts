@@ -4,6 +4,7 @@ const password = 'E2e-test-password-2026';
 
 for (const [width, height] of [
   [360, 800],
+  [768, 1024],
   [1440, 900],
 ]) {
   test(`full proposal commercial lifecycle (PDF, delivery tracking, Gate B, formal acceptance) at ${width}px`, async ({
@@ -158,7 +159,10 @@ for (const [width, height] of [
     await expect(page.getByRole('button', { name: '📥 Baixar PDF' }).first()).toBeVisible();
 
     // 8. Gate B: Record Delivery (WhatsApp)
-    await page.getByRole('button', { name: '📤 Registrar Envio' }).first().click();
+    await page
+      .getByRole('button', { name: /Registrar Envio/ })
+      .first()
+      .click();
     await expect(
       page.getByRole('heading', { name: 'Registrar Envio da Proposta (Gate B)' }),
     ).toBeVisible();
@@ -178,7 +182,10 @@ for (const [width, height] of [
     await expect(page.getByText('PROPOSTA_APRESENTADA').first()).toBeVisible();
 
     // 9. Record Formal Customer Acceptance
-    await page.getByRole('button', { name: '✓ Registrar Aceite Formal' }).first().click();
+    await page
+      .getByRole('button', { name: /Registrar Aceite Formal/ })
+      .first()
+      .click();
     await expect(
       page.getByRole('heading', { name: 'Registrar Aceite Formal do Cliente' }),
     ).toBeVisible();

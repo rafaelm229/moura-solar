@@ -4,6 +4,7 @@ const password = 'E2e-test-password-2026';
 
 for (const [width, height] of [
   [360, 800],
+  [768, 1024],
   [1440, 900],
 ]) {
   test(`engineer/seller journey for sizing, consumption history, and margin governance at ${width}px`, async ({
@@ -47,7 +48,7 @@ for (const [width, height] of [
       .fill(`Solar Residencial Silva ${width}`);
     await page
       .getByLabel('Telefone / WhatsApp')
-      .fill(`(31) 97777-${width.toString().padStart(4, '0')}`);
+      .fill(`(31) 95555-${width.toString().padStart(4, '0')}`);
     await page.getByLabel('Cidade').fill('Belo Horizonte');
     await page.getByRole('button', { name: 'Salvar Cliente' }).click();
 

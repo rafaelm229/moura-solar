@@ -17,6 +17,7 @@ try {
 
 for (const [width, height] of [
   [360, 800],
+  [768, 1024],
   [1440, 900],
 ]) {
   test(`full contract lifecycle (DOCX/PDF engine, delivery, signed upload, conference checklist, Gate C to VENDIDO) at ${width}px`, async ({
@@ -143,13 +144,19 @@ for (const [width, height] of [
     await expect(page.getByText('READY').first()).toBeVisible();
 
     // Send proposal delivery
-    await page.getByRole('button', { name: '📤 Registrar Envio' }).first().click();
+    await page
+      .getByRole('button', { name: /Registrar Envio/ })
+      .first()
+      .click();
     await page.getByLabel('Destinatário *').fill(`(81) 98888-${width.toString().padStart(4, '0')}`);
     await page.getByRole('button', { name: 'Confirmar Envio' }).click();
     await expect(page.getByText('SENT').first()).toBeVisible();
 
     // Accept proposal
-    await page.getByRole('button', { name: '✓ Registrar Aceite Formal' }).first().click();
+    await page
+      .getByRole('button', { name: /Registrar Aceite Formal/ })
+      .first()
+      .click();
     await page.getByLabel('Nome do Decisor / Signatário *').fill(`Decisor Contrato ${width}`);
     await page.getByRole('button', { name: 'Confirmar Aceite Formal' }).first().click();
     await expect(page.getByText('CONTRATADA (ACEITE FORMAL)')).toBeVisible();
@@ -181,11 +188,14 @@ for (const [width, height] of [
     // Verify DOCX and PDF download links
     await expect(page.getByText('Minuta Editável (DOCX)')).toBeVisible();
     await expect(page.getByText('Contrato Formal (PDF)')).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Baixar DOCX' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Baixar PDF' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Baixar DOCX' }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Baixar PDF' }).first()).toBeVisible();
 
     // 10. Record Delivery
-    await page.getByRole('button', { name: '📤 Registrar Envio' }).click();
+    await page
+      .getByRole('button', { name: /Registrar Envio/ })
+      .first()
+      .click();
     await expect(page.getByRole('heading', { name: 'Registrar Envio do Contrato' })).toBeVisible();
 
     await page.getByLabel('Destinatário').fill(`(81) 97777-${width.toString().padStart(4, '0')}`);
