@@ -167,3 +167,7 @@ duplicadas ou arquivos monolíticos não serão copiados.
 4. Importação validada dos dados necessários.
 5. Expansão gradual por perfil e módulo usando feature flags.
 6. Desativação da versão anterior somente após reconciliação e plano de retorno.
+
+## Evolução posterior à base M1–M10
+
+A proposta de UX, dossiê e importação segue o [plano incremental específico](plano-evolucao-ux-documentos-contas.md), com [rastreabilidade](matriz-rastreabilidade-evolucao.md). Os lotes 0–7 não renumeram os marcos M0–M11 nem declaram implementadas as SPEC-013 a SPEC-015. Aguardar revisão documental e visual antes da implementação.
