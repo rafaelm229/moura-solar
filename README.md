@@ -134,3 +134,16 @@ Nenhuma funcionalidade é considerada aprovada somente por existir na interface:
 - [Plano de implementação](docs/plano-implementacao.md)
 - [Execução da primeira fatia vertical](docs/fatia-vertical-001-execucao.md)
 - [Definition of Done](docs/definition-of-done.md)
+
+## Evolução proposta — UX, documentos e contas
+
+Documentação em proposta para revisão; não altera o status histórico dos marcos acima.
+
+- [Plano incremental e baseline](docs/plano-evolucao-ux-documentos-contas.md)
+- [Matriz de rastreabilidade](docs/matriz-rastreabilidade-evolucao.md)
+- [Revisão e validações documentais](docs/revisao-evolucao-ux-documentos-contas.md)
+- [SPEC-013 — Dossiê documental](specs/SPEC-013-dossie-documental/spec.md)
+- [SPEC-014 — Importação assistida de contas](specs/SPEC-014-importacao-contas-energia/spec.md)
+- [SPEC-015 — UX da jornada operacional](specs/SPEC-015-ux-jornada-operacional/spec.md)
+- [ADR-003 — Dossiê e persistência documental](docs/adr/ADR-003-dossie-e-persistencia-documental.md)
+- [ADR-004 — Importação assistida durável](docs/adr/ADR-004-importacao-assistida-duravel.md)
