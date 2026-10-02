@@ -13,6 +13,7 @@ import { FinancialModule } from './financial/financial.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { EngineeringModule } from './engineering/engineering.module';
 import { AfterSalesModule } from './after-sales/after-sales.module';
+import { AutomationsModule } from './automations/automations.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { AfterSalesModule } from './after-sales/after-sales.module';
     InventoryModule,
     EngineeringModule,
     AfterSalesModule,
+    AutomationsModule,
   ],
 })
 export class AppModule {}
