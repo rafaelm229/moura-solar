@@ -1940,6 +1940,310 @@ export interface paths {
     patch: operations['AfterSalesController_restoreConnectivityIncident'];
     trace?: never;
   };
+  '/api/v1/automations/attention-items': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['AutomationsController_listAttentionItems'];
+    put?: never;
+    post: operations['AutomationsController_createAttentionItem'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/automations/attention-items/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['AutomationsController_getAttentionItem'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/automations/attention-items/{id}/status': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['AutomationsController_updateAttentionItem'];
+    trace?: never;
+  };
+  '/api/v1/automations/attention-items/{id}/resolve': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['AutomationsController_resolveAttentionItem'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/automations/attention-items/{id}/discard': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['AutomationsController_discardAttentionItem'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/automations/rules': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['AutomationsController_listRules'];
+    put?: never;
+    post: operations['AutomationsController_createRule'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/automations/rules/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['AutomationsController_getRule'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/automations/rules/{id}/status': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['AutomationsController_updateRuleStatus'];
+    trace?: never;
+  };
+  '/api/v1/automations/events/evaluate': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['AutomationsController_evaluateEvent'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/automations/executions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['AutomationsController_listExecutions'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/automations/executions/{id}/reprocess': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['AutomationsController_reprocessExecution'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/automations/notifications': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['AutomationsController_listNotifications'];
+    put?: never;
+    post: operations['AutomationsController_createNotification'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/automations/notifications/unread-count': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['AutomationsController_getUnreadCount'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/automations/notifications/{id}/read': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['AutomationsController_markNotificationRead'];
+    trace?: never;
+  };
+  '/api/v1/automations/notifications/mark-all-read': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['AutomationsController_markAllNotificationsRead'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/automations/notification-preferences': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['AutomationsController_getPreferences'];
+    put: operations['AutomationsController_updatePreference'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/automations/indicators': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['AutomationsController_getIndicators'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/automations/goals': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['AutomationsController_listGoals'];
+    put?: never;
+    post: operations['AutomationsController_createGoal'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/automations/projections/recalculate': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['AutomationsController_recalculateProjections'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3503,6 +3807,233 @@ export interface components {
     RestoreConnectivityIncidentDto: {
       /** @description Método de resolução (ex: Roteiro remoto via WPS aplicado com sucesso) */
       resolutionMethod: string;
+    };
+    CreateAttentionItemDto: {
+      /**
+       * @description Tipo da origem
+       * @example OPPORTUNITY
+       */
+      sourceType: string;
+      /**
+       * @description Identificador do objeto de origem
+       * @example d3b07384-d113-4c91-9c32-b7e316a1c111
+       */
+      sourceId: string;
+      /**
+       * @description Tipo do item
+       * @example ALERT
+       * @enum {string}
+       */
+      kind: 'TASK' | 'ALERT' | 'APPROVAL' | 'SLA_RISK' | 'EXPIRING';
+      /**
+       * @description Severidade
+       * @default MEDIUM
+       * @enum {string}
+       */
+      severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+      /** @description Título da pendência ou alerta */
+      title: string;
+      /** @description Descrição detalhada e contexto acionável */
+      description?: string;
+      /**
+       * @description Código do motivo
+       * @example COMMERCIAL_INACTIVITY_7D
+       */
+      reasonCode: string;
+      /**
+       * @description Chave única para agregação e deduplicação
+       * @example opp-inactivity-d3b07384
+       */
+      deduplicationKey: string;
+      /** @description Prazo limite para resolução */
+      dueAt?: string;
+      /** @description UUID do usuário responsável */
+      assigneeId?: string;
+      /** @description UUID do time responsável */
+      teamId?: string;
+    };
+    UpdateAttentionItemStatusDto: {
+      /**
+       * @description Novo status
+       * @enum {string}
+       */
+      status?: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'DISCARDED';
+      /** @description UUID do usuário atribuído */
+      assigneeId?: string;
+      /** @description UUID do time atribuído */
+      teamId?: string;
+    };
+    ResolveAttentionItemDto: {
+      /**
+       * @description Motivo obrigatório da resolução
+       * @example Contato realizado com cliente e agendada nova visita.
+       */
+      resolutionReason: string;
+    };
+    DiscardAttentionItemDto: {
+      /**
+       * @description Motivo obrigatório do descarte justificado
+       * @example Oportunidade foi cancelada pelo cliente por motivos pessoais.
+       */
+      resolutionReason: string;
+    };
+    CreateAutomationRuleDto: {
+      /**
+       * @description Identificador único da regra
+       * @example RULE_PROPOSAL_EXPIRING_ALERT
+       */
+      ruleKey: string;
+      /**
+       * @description Nome amigável da regra
+       * @example Alerta de Proposta Prestes a Vencer
+       */
+      name: string;
+      /** @description Descrição da regra */
+      description?: string;
+      /**
+       * @description Evento acionador
+       * @example PROPOSAL_EXPIRING_SOON
+       */
+      triggerEvent: string;
+      /**
+       * @description Condições JSON para disparo
+       * @example {
+       *       "daysUntilExpiration": 3
+       *     }
+       */
+      conditions?: {
+        [key: string]: unknown;
+      };
+      /**
+       * @description Ações a serem executadas
+       * @example [
+       *       {
+       *         "type": "CREATE_ATTENTION_ITEM",
+       *         "params": {
+       *           "severity": "HIGH",
+       *           "kind": "ALERT"
+       *         }
+       *       }
+       *     ]
+       */
+      actions?: {
+        [key: string]: unknown;
+      }[];
+      /** @description Início da vigência */
+      validFrom?: string;
+      /** @description Término da vigência */
+      validTo?: string;
+      /**
+       * @description Fuso horário
+       * @default America/Sao_Paulo
+       */
+      timezone: string;
+    };
+    UpdateAutomationRuleStatusDto: {
+      /**
+       * @description Novo status da regra
+       * @enum {string}
+       */
+      status: 'ACTIVE' | 'PAUSED' | 'DRAFT' | 'TERMINATED';
+    };
+    EvaluateEventDto: {
+      /**
+       * @description Nome do evento de domínio
+       * @example PROPOSAL_ACCEPTED
+       */
+      eventName: string;
+      /** @description ID do evento gerador */
+      eventId?: string;
+      /** @description Carga de dados do evento */
+      payload: Record<string, never>;
+      /**
+       * @description Chave de idempotência para garantir execução única
+       * @example evt-prop-acc-102938
+       */
+      idempotencyKey: string;
+      /** @description Trace ID para correlação de observabilidade */
+      traceId?: string;
+    };
+    CreateNotificationDto: {
+      /** @description UUID do usuário destinatário */
+      recipientId: string;
+      /**
+       * @description Canal de entrega
+       * @default INTERNAL
+       * @enum {string}
+       */
+      channel: 'INTERNAL' | 'EMAIL' | 'PUSH';
+      /** @description Assunto da notificação */
+      subject: string;
+      /** @description Corpo da notificação */
+      body: string;
+      /** @description Metadados contextuais (mínimo, sem segredos) */
+      payload?: Record<string, never>;
+      /** @description Chave de idempotência */
+      idempotencyKey?: string;
+      /** @description Data/hora agendada para envio */
+      scheduledAt?: string;
+    };
+    UpdateNotificationPreferenceDto: {
+      /**
+       * @description Categoria de notificação
+       * @enum {string}
+       */
+      category: 'COMMERCIAL' | 'OPERATIONAL' | 'FINANCIAL' | 'SYSTEM';
+      /**
+       * @description Canal
+       * @enum {string}
+       */
+      channel: 'INTERNAL' | 'EMAIL' | 'PUSH';
+      /** @description Se ativado ou silenciado */
+      enabled: boolean;
+      /**
+       * @description Início do horário silencioso (HH:MM)
+       * @example 22:00
+       */
+      quietHoursStart?: string;
+      /**
+       * @description Término do horário silencioso (HH:MM)
+       * @example 07:00
+       */
+      quietHoursEnd?: string;
+      /**
+       * @description Fuso horário
+       * @default America/Sao_Paulo
+       */
+      timezone: string;
+    };
+    CreateGoalDto: {
+      /**
+       * @description Chave da métrica
+       * @example SALES_VALUE
+       */
+      metricKey: string;
+      /**
+       * @description Nome da meta
+       * @example Meta de Vendas - Outubro 2026
+       */
+      name: string;
+      /**
+       * @description Escopo
+       * @default ORGANIZATION
+       * @enum {string}
+       */
+      scopeType: 'ORGANIZATION' | 'TEAM' | 'USER';
+      /** @description ID do escopo (ex: UUID do time ou usuário) */
+      scopeId?: string;
+      /** @description Início do período da meta */
+      periodStart: string;
+      /** @description Término do período da meta */
+      periodEnd: string;
+      /** @description Valor alvo numérico */
+      targetValue: number;
+      /**
+       * @description Unidade da meta
+       * @default BRL
+       * @enum {string}
+       */
+      unit: 'BRL' | 'COUNT' | 'PERCENT' | 'KWH';
     };
   };
   responses: never;
@@ -6752,6 +7283,488 @@ export interface operations {
         'application/json': components['schemas']['RestoreConnectivityIncidentDto'];
       };
     };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AutomationsController_listAttentionItems: {
+    parameters: {
+      query?: {
+        status?: string;
+        severity?: string;
+        kind?: string;
+        sourceType?: string;
+        assigneeId?: string;
+        teamId?: string;
+        search?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AutomationsController_createAttentionItem: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateAttentionItemDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AutomationsController_getAttentionItem: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AutomationsController_updateAttentionItem: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateAttentionItemStatusDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AutomationsController_resolveAttentionItem: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ResolveAttentionItemDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AutomationsController_discardAttentionItem: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['DiscardAttentionItemDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AutomationsController_listRules: {
+    parameters: {
+      query?: {
+        status?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AutomationsController_createRule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateAutomationRuleDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AutomationsController_getRule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AutomationsController_updateRuleStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateAutomationRuleStatusDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AutomationsController_evaluateEvent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['EvaluateEventDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AutomationsController_listExecutions: {
+    parameters: {
+      query?: {
+        ruleVersionId?: string;
+        status?: string;
+        limit?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AutomationsController_reprocessExecution: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AutomationsController_listNotifications: {
+    parameters: {
+      query?: {
+        status?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AutomationsController_createNotification: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateNotificationDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AutomationsController_getUnreadCount: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AutomationsController_markNotificationRead: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AutomationsController_markAllNotificationsRead: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AutomationsController_getPreferences: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AutomationsController_updatePreference: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateNotificationPreferenceDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AutomationsController_getIndicators: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AutomationsController_listGoals: {
+    parameters: {
+      query?: {
+        status?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AutomationsController_createGoal: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateGoalDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AutomationsController_recalculateProjections: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
     responses: {
       200: {
         headers: {

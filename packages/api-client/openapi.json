@@ -5093,6 +5093,685 @@
         ],
         "tags": ["Pós-Venda, Suporte & Monitoramento"]
       }
+    },
+    "/api/v1/automations/attention-items": {
+      "get": {
+        "operationId": "AutomationsController_listAttentionItems",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "severity",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sourceType",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "assigneeId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "teamId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Automações, Notificações, Gestão & Observabilidade"]
+      },
+      "post": {
+        "operationId": "AutomationsController_createAttentionItem",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAttentionItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Automações, Notificações, Gestão & Observabilidade"]
+      }
+    },
+    "/api/v1/automations/attention-items/{id}": {
+      "get": {
+        "operationId": "AutomationsController_getAttentionItem",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Automações, Notificações, Gestão & Observabilidade"]
+      }
+    },
+    "/api/v1/automations/attention-items/{id}/status": {
+      "patch": {
+        "operationId": "AutomationsController_updateAttentionItem",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAttentionItemStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Automações, Notificações, Gestão & Observabilidade"]
+      }
+    },
+    "/api/v1/automations/attention-items/{id}/resolve": {
+      "post": {
+        "operationId": "AutomationsController_resolveAttentionItem",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveAttentionItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Automações, Notificações, Gestão & Observabilidade"]
+      }
+    },
+    "/api/v1/automations/attention-items/{id}/discard": {
+      "post": {
+        "operationId": "AutomationsController_discardAttentionItem",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscardAttentionItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Automações, Notificações, Gestão & Observabilidade"]
+      }
+    },
+    "/api/v1/automations/rules": {
+      "get": {
+        "operationId": "AutomationsController_listRules",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Automações, Notificações, Gestão & Observabilidade"]
+      },
+      "post": {
+        "operationId": "AutomationsController_createRule",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAutomationRuleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Automações, Notificações, Gestão & Observabilidade"]
+      }
+    },
+    "/api/v1/automations/rules/{id}": {
+      "get": {
+        "operationId": "AutomationsController_getRule",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Automações, Notificações, Gestão & Observabilidade"]
+      }
+    },
+    "/api/v1/automations/rules/{id}/status": {
+      "patch": {
+        "operationId": "AutomationsController_updateRuleStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAutomationRuleStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Automações, Notificações, Gestão & Observabilidade"]
+      }
+    },
+    "/api/v1/automations/events/evaluate": {
+      "post": {
+        "operationId": "AutomationsController_evaluateEvent",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluateEventDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Automações, Notificações, Gestão & Observabilidade"]
+      }
+    },
+    "/api/v1/automations/executions": {
+      "get": {
+        "operationId": "AutomationsController_listExecutions",
+        "parameters": [
+          {
+            "name": "ruleVersionId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Automações, Notificações, Gestão & Observabilidade"]
+      }
+    },
+    "/api/v1/automations/executions/{id}/reprocess": {
+      "post": {
+        "operationId": "AutomationsController_reprocessExecution",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Automações, Notificações, Gestão & Observabilidade"]
+      }
+    },
+    "/api/v1/automations/notifications": {
+      "get": {
+        "operationId": "AutomationsController_listNotifications",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Automações, Notificações, Gestão & Observabilidade"]
+      },
+      "post": {
+        "operationId": "AutomationsController_createNotification",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateNotificationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Automações, Notificações, Gestão & Observabilidade"]
+      }
+    },
+    "/api/v1/automations/notifications/unread-count": {
+      "get": {
+        "operationId": "AutomationsController_getUnreadCount",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Automações, Notificações, Gestão & Observabilidade"]
+      }
+    },
+    "/api/v1/automations/notifications/{id}/read": {
+      "patch": {
+        "operationId": "AutomationsController_markNotificationRead",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Automações, Notificações, Gestão & Observabilidade"]
+      }
+    },
+    "/api/v1/automations/notifications/mark-all-read": {
+      "post": {
+        "operationId": "AutomationsController_markAllNotificationsRead",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Automações, Notificações, Gestão & Observabilidade"]
+      }
+    },
+    "/api/v1/automations/notification-preferences": {
+      "get": {
+        "operationId": "AutomationsController_getPreferences",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Automações, Notificações, Gestão & Observabilidade"]
+      },
+      "put": {
+        "operationId": "AutomationsController_updatePreference",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateNotificationPreferenceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Automações, Notificações, Gestão & Observabilidade"]
+      }
+    },
+    "/api/v1/automations/indicators": {
+      "get": {
+        "operationId": "AutomationsController_getIndicators",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Automações, Notificações, Gestão & Observabilidade"]
+      }
+    },
+    "/api/v1/automations/goals": {
+      "get": {
+        "operationId": "AutomationsController_listGoals",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Automações, Notificações, Gestão & Observabilidade"]
+      },
+      "post": {
+        "operationId": "AutomationsController_createGoal",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGoalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Automações, Notificações, Gestão & Observabilidade"]
+      }
+    },
+    "/api/v1/automations/projections/recalculate": {
+      "post": {
+        "operationId": "AutomationsController_recalculateProjections",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Automações, Notificações, Gestão & Observabilidade"]
+      }
     }
   },
   "info": {
@@ -8807,6 +9486,321 @@
           }
         },
         "required": ["resolutionMethod"]
+      },
+      "CreateAttentionItemDto": {
+        "type": "object",
+        "properties": {
+          "sourceType": {
+            "type": "string",
+            "description": "Tipo da origem",
+            "example": "OPPORTUNITY"
+          },
+          "sourceId": {
+            "type": "string",
+            "description": "Identificador do objeto de origem",
+            "example": "d3b07384-d113-4c91-9c32-b7e316a1c111"
+          },
+          "kind": {
+            "type": "string",
+            "description": "Tipo do item",
+            "enum": ["TASK", "ALERT", "APPROVAL", "SLA_RISK", "EXPIRING"],
+            "example": "ALERT"
+          },
+          "severity": {
+            "type": "string",
+            "description": "Severidade",
+            "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
+            "default": "MEDIUM"
+          },
+          "title": {
+            "type": "string",
+            "description": "Título da pendência ou alerta"
+          },
+          "description": {
+            "type": "string",
+            "description": "Descrição detalhada e contexto acionável"
+          },
+          "reasonCode": {
+            "type": "string",
+            "description": "Código do motivo",
+            "example": "COMMERCIAL_INACTIVITY_7D"
+          },
+          "deduplicationKey": {
+            "type": "string",
+            "description": "Chave única para agregação e deduplicação",
+            "example": "opp-inactivity-d3b07384"
+          },
+          "dueAt": {
+            "type": "string",
+            "description": "Prazo limite para resolução"
+          },
+          "assigneeId": {
+            "type": "string",
+            "description": "UUID do usuário responsável"
+          },
+          "teamId": {
+            "type": "string",
+            "description": "UUID do time responsável"
+          }
+        },
+        "required": ["sourceType", "sourceId", "kind", "title", "reasonCode", "deduplicationKey"]
+      },
+      "UpdateAttentionItemStatusDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Novo status",
+            "enum": ["OPEN", "IN_PROGRESS", "RESOLVED", "DISCARDED"]
+          },
+          "assigneeId": {
+            "type": "string",
+            "description": "UUID do usuário atribuído"
+          },
+          "teamId": {
+            "type": "string",
+            "description": "UUID do time atribuído"
+          }
+        }
+      },
+      "ResolveAttentionItemDto": {
+        "type": "object",
+        "properties": {
+          "resolutionReason": {
+            "type": "string",
+            "description": "Motivo obrigatório da resolução",
+            "example": "Contato realizado com cliente e agendada nova visita."
+          }
+        },
+        "required": ["resolutionReason"]
+      },
+      "DiscardAttentionItemDto": {
+        "type": "object",
+        "properties": {
+          "resolutionReason": {
+            "type": "string",
+            "description": "Motivo obrigatório do descarte justificado",
+            "example": "Oportunidade foi cancelada pelo cliente por motivos pessoais."
+          }
+        },
+        "required": ["resolutionReason"]
+      },
+      "CreateAutomationRuleDto": {
+        "type": "object",
+        "properties": {
+          "ruleKey": {
+            "type": "string",
+            "description": "Identificador único da regra",
+            "example": "RULE_PROPOSAL_EXPIRING_ALERT"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome amigável da regra",
+            "example": "Alerta de Proposta Prestes a Vencer"
+          },
+          "description": {
+            "type": "string",
+            "description": "Descrição da regra"
+          },
+          "triggerEvent": {
+            "type": "string",
+            "description": "Evento acionador",
+            "example": "PROPOSAL_EXPIRING_SOON"
+          },
+          "conditions": {
+            "type": "object",
+            "description": "Condições JSON para disparo",
+            "additionalProperties": true,
+            "example": {
+              "daysUntilExpiration": 3
+            }
+          },
+          "actions": {
+            "type": "array",
+            "description": "Ações a serem executadas",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "example": [
+              {
+                "type": "CREATE_ATTENTION_ITEM",
+                "params": {
+                  "severity": "HIGH",
+                  "kind": "ALERT"
+                }
+              }
+            ]
+          },
+          "validFrom": {
+            "type": "string",
+            "description": "Início da vigência"
+          },
+          "validTo": {
+            "type": "string",
+            "description": "Término da vigência"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "Fuso horário",
+            "default": "America/Sao_Paulo"
+          }
+        },
+        "required": ["ruleKey", "name", "triggerEvent"]
+      },
+      "UpdateAutomationRuleStatusDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Novo status da regra",
+            "enum": ["ACTIVE", "PAUSED", "DRAFT", "TERMINATED"]
+          }
+        },
+        "required": ["status"]
+      },
+      "EvaluateEventDto": {
+        "type": "object",
+        "properties": {
+          "eventName": {
+            "type": "string",
+            "description": "Nome do evento de domínio",
+            "example": "PROPOSAL_ACCEPTED"
+          },
+          "eventId": {
+            "type": "string",
+            "description": "ID do evento gerador"
+          },
+          "payload": {
+            "type": "object",
+            "description": "Carga de dados do evento"
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "description": "Chave de idempotência para garantir execução única",
+            "example": "evt-prop-acc-102938"
+          },
+          "traceId": {
+            "type": "string",
+            "description": "Trace ID para correlação de observabilidade"
+          }
+        },
+        "required": ["eventName", "payload", "idempotencyKey"]
+      },
+      "CreateNotificationDto": {
+        "type": "object",
+        "properties": {
+          "recipientId": {
+            "type": "string",
+            "description": "UUID do usuário destinatário"
+          },
+          "channel": {
+            "type": "string",
+            "description": "Canal de entrega",
+            "enum": ["INTERNAL", "EMAIL", "PUSH"],
+            "default": "INTERNAL"
+          },
+          "subject": {
+            "type": "string",
+            "description": "Assunto da notificação"
+          },
+          "body": {
+            "type": "string",
+            "description": "Corpo da notificação"
+          },
+          "payload": {
+            "type": "object",
+            "description": "Metadados contextuais (mínimo, sem segredos)"
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "description": "Chave de idempotência"
+          },
+          "scheduledAt": {
+            "type": "string",
+            "description": "Data/hora agendada para envio"
+          }
+        },
+        "required": ["recipientId", "subject", "body"]
+      },
+      "UpdateNotificationPreferenceDto": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "description": "Categoria de notificação",
+            "enum": ["COMMERCIAL", "OPERATIONAL", "FINANCIAL", "SYSTEM"]
+          },
+          "channel": {
+            "type": "string",
+            "description": "Canal",
+            "enum": ["INTERNAL", "EMAIL", "PUSH"]
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Se ativado ou silenciado"
+          },
+          "quietHoursStart": {
+            "type": "string",
+            "description": "Início do horário silencioso (HH:MM)",
+            "example": "22:00"
+          },
+          "quietHoursEnd": {
+            "type": "string",
+            "description": "Término do horário silencioso (HH:MM)",
+            "example": "07:00"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "Fuso horário",
+            "default": "America/Sao_Paulo"
+          }
+        },
+        "required": ["category", "channel", "enabled"]
+      },
+      "CreateGoalDto": {
+        "type": "object",
+        "properties": {
+          "metricKey": {
+            "type": "string",
+            "description": "Chave da métrica",
+            "example": "SALES_VALUE"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome da meta",
+            "example": "Meta de Vendas - Outubro 2026"
+          },
+          "scopeType": {
+            "type": "string",
+            "description": "Escopo",
+            "enum": ["ORGANIZATION", "TEAM", "USER"],
+            "default": "ORGANIZATION"
+          },
+          "scopeId": {
+            "type": "string",
+            "description": "ID do escopo (ex: UUID do time ou usuário)"
+          },
+          "periodStart": {
+            "type": "string",
+            "description": "Início do período da meta"
+          },
+          "periodEnd": {
+            "type": "string",
+            "description": "Término do período da meta"
+          },
+          "targetValue": {
+            "type": "number",
+            "description": "Valor alvo numérico"
+          },
+          "unit": {
+            "type": "string",
+            "description": "Unidade da meta",
+            "enum": ["BRL", "COUNT", "PERCENT", "KWH"],
+            "default": "BRL"
+          }
+        },
+        "required": ["metricKey", "name", "periodStart", "periodEnd", "targetValue"]
       }
     }
   }
