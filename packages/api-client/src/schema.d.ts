@@ -2261,6 +2261,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/customers/{customerId}/document-context': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['DossierController_uploadContext'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/opportunities/{opportunityId}/documents': {
     parameters: {
       query?: never;
@@ -2358,6 +2374,102 @@ export interface paths {
     put?: never;
     /** Cadastrar representante legal ou técnico do cliente */
     post: operations['DossierController_createRepresentative'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/documents/{documentId}/versions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['DossierController_replace'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/documents/{documentId}/history': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['DossierController_history'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/document-uploads/{versionId}/cancel': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['DossierController_cancel'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/document-uploads/{versionId}/reconcile': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['DossierController_reconcile'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/dossier/proposal-documents/{documentId}/content': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['DossierController_proposalContent'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/dossier/contract-documents/{documentId}/content': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['DossierController_contractContent'];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -4209,7 +4321,7 @@ export interface components {
       originalName: string;
       fileSize: number;
       declaredMime: string;
-      verifiedMime?: Record<string, never>;
+      verifiedMime?: string | null;
       sha256: string;
       persistenceState: string;
       createdAt: string;
@@ -4222,18 +4334,31 @@ export interface components {
       contractIds: string[];
     };
     DossierDocumentViewDto: {
+      metadataVersion: number;
+      contentUrl?: string;
       id: string;
       /** @enum {string} */
       origin: 'DOSSIER' | 'PROPOSAL_DOCUMENT' | 'CONTRACT_DOCUMENT';
       category: string;
       title: string;
       status: string;
-      purpose?: Record<string, never>;
+      purpose?: string | null;
       createdAt: string;
       updatedAt: string;
       createdBy: string;
       currentVersion?: components['schemas']['DossierVersionViewDto'];
       links: components['schemas']['DossierDocumentLinksDto'];
+    };
+    DocumentContextOptionDto: {
+      id: string;
+      title: string;
+    };
+    DossierUploadContextDto: {
+      categories: string[];
+      requiresWorkOrder: boolean;
+      requiresOpportunity: boolean;
+      workOrders: components['schemas']['DocumentContextOptionDto'][];
+      opportunities: components['schemas']['DocumentContextOptionDto'][];
     };
     CreateDocumentUploadDto: {
       /**
@@ -4271,12 +4396,7 @@ export interface components {
        * @example application/pdf
        * @enum {string}
        */
-      declaredMime:
-        | 'application/pdf'
-        | 'image/jpeg'
-        | 'image/png'
-        | 'image/webp'
-        | 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      declaredMime: 'application/pdf' | 'image/jpeg' | 'image/png';
       /**
        * @description Tamanho do arquivo em bytes (máximo 20 MiB)
        * @example 1048576
@@ -4310,6 +4430,7 @@ export interface components {
       fileBase64?: string;
     };
     ArchiveDocumentDto: {
+      expectedVersion: number;
       /** @description Motivo do arquivamento do documento */
       reason?: string;
     };
@@ -4317,7 +4438,7 @@ export interface components {
       id: string;
       customerId: string;
       name: string;
-      documentNumber?: Record<string, never>;
+      documentNumber?: string | null;
       role: string;
       createdAt: string;
       updatedAt: string;
@@ -4341,6 +4462,81 @@ export interface components {
         | 'TECHNICAL_RESPONSIBLE'
         | 'FINANCIAL_CONTACT'
         | 'OTHER';
+    };
+    CreateDocumentVersionDto: {
+      /**
+       * @description Título identificador do documento no dossiê
+       * @example Conta Cemig - Jan/2026
+       */
+      title: string;
+      /**
+       * @description Categoria documental no dossiê
+       * @example UTILITY_BILL
+       * @enum {string}
+       */
+      category:
+        | 'IDENTITY'
+        | 'CORPORATE'
+        | 'REPRESENTATION'
+        | 'UTILITY_BILL'
+        | 'UC_DOCUMENT'
+        | 'COMMERCIAL_PROPOSAL'
+        | 'CONTRACT_ANNEX'
+        | 'PHOTO_BEFORE'
+        | 'PHOTO_DURING'
+        | 'PHOTO_AFTER'
+        | 'ART'
+        | 'HOMOLOGATION'
+        | 'DELIVERY_REPORT'
+        | 'OTHER';
+      /**
+       * @description Nome original do arquivo enviado
+       * @example conta-cemig-jan2026.pdf
+       */
+      fileName: string;
+      /**
+       * @description MIME type declarado pelo cliente
+       * @example application/pdf
+       * @enum {string}
+       */
+      declaredMime: 'application/pdf' | 'image/jpeg' | 'image/png';
+      /**
+       * @description Tamanho do arquivo em bytes (máximo 20 MiB)
+       * @example 1048576
+       */
+      fileSize: number;
+      /** @description Hash SHA-256 do arquivo se já computado */
+      sha256?: string;
+      /** @description Finalidade específica do documento */
+      purpose?: string;
+      /** @description Conteúdo em base64 (para upload direto via API) */
+      fileBase64?: string;
+      /** @description ID da Unidade Consumidora vinculada */
+      utilityUnitId?: string;
+      /** @description ID da Oportunidade vinculada */
+      opportunityId?: string;
+      /** @description ID do Projeto Operacional vinculado */
+      projectId?: string;
+      /** @description ID do Representante vinculado */
+      representativeId?: string;
+      /** @description ID do Contrato vinculado */
+      contractId?: string;
+      /** @description ID da Ordem de Serviço vinculada */
+      workOrderId?: string;
+      /** @description Fase da foto de execução (BEFORE, DURING, AFTER) */
+      phase?: string;
+      expectedVersion: number;
+    };
+    DossierHistoryEventDto: {
+      action: string;
+      actorId?: string | null;
+      createdAt: string;
+    };
+    DossierHistoryViewDto: {
+      metadataVersion: number;
+      archiveReason?: string | null;
+      versions: components['schemas']['DossierVersionViewDto'][];
+      events: components['schemas']['DossierHistoryEventDto'][];
     };
   };
   responses: never;
@@ -8135,6 +8331,27 @@ export interface operations {
       };
     };
   };
+  DossierController_uploadContext: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        customerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DossierUploadContextDto'];
+        };
+      };
+    };
+  };
   DossierController_listOpportunityDocuments: {
     parameters: {
       query?: {
@@ -8162,7 +8379,9 @@ export interface operations {
   DossierController_createDocumentUpload: {
     parameters: {
       query?: never;
-      header?: never;
+      header: {
+        'idempotency-key': string;
+      };
       path: {
         customerId: string;
       };
@@ -8187,7 +8406,9 @@ export interface operations {
   DossierController_completeDocumentUpload: {
     parameters: {
       query?: never;
-      header?: never;
+      header: {
+        'idempotency-key': string;
+      };
       path: {
         versionId: string;
       };
@@ -8234,7 +8455,9 @@ export interface operations {
   DossierController_archiveDocument: {
     parameters: {
       query?: never;
-      header?: never;
+      header: {
+        'idempotency-key': string;
+      };
       path: {
         documentId: string;
       };
@@ -8278,7 +8501,9 @@ export interface operations {
   DossierController_createRepresentative: {
     parameters: {
       query?: never;
-      header?: never;
+      header: {
+        'idempotency-key': string;
+      };
       path: {
         customerId: string;
       };
@@ -8297,6 +8522,144 @@ export interface operations {
         content: {
           'application/json': components['schemas']['RepresentativeViewDto'];
         };
+      };
+    };
+  };
+  DossierController_replace: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+      };
+      path: {
+        documentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateDocumentVersionDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DossierDocumentViewDto'];
+        };
+      };
+    };
+  };
+  DossierController_history: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        documentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DossierHistoryViewDto'];
+        };
+      };
+    };
+  };
+  DossierController_cancel: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+      };
+      path: {
+        versionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CompleteUploadDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DossierController_reconcile: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+      };
+      path: {
+        versionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DossierDocumentViewDto'];
+        };
+      };
+    };
+  };
+  DossierController_proposalContent: {
+    parameters: {
+      query: {
+        purpose: string;
+      };
+      header?: never;
+      path: {
+        documentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DossierController_contractContent: {
+    parameters: {
+      query: {
+        purpose: string;
+      };
+      header?: never;
+      path: {
+        documentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };

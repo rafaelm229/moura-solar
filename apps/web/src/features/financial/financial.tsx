@@ -542,7 +542,8 @@ export function OpportunityFinancial({
               setShowGeneratePlanModal(true);
             }}
           >
-            <Icon name="payments" size={16} /> {summary?.activePaymentPlan ? 'Repactuar Plano' : 'Gerar Plano de Parcelas'}
+            <Icon name="payments" size={16} />{' '}
+            {summary?.activePaymentPlan ? 'Repactuar Plano' : 'Gerar Plano de Parcelas'}
           </button>
         </div>
       </div>
@@ -615,7 +616,16 @@ export function OpportunityFinancial({
             {formatBRL(indicators?.openReceivables)}
           </div>
           {indicators?.overdueReceivables ? (
-            <span style={{ fontSize: '0.75rem', color: '#dc2626', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+            <span
+              style={{
+                fontSize: '0.75rem',
+                color: '#dc2626',
+                fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.25rem',
+              }}
+            >
               <Icon name="warning" size={14} /> {formatBRL(indicators.overdueReceivables)} vencido
             </span>
           ) : (

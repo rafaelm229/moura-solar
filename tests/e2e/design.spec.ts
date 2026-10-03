@@ -73,7 +73,7 @@ for (const [width, height] of [
     ).toBeVisible();
 
     // 5. Navigate to Consumo & Vistoria sub-tab
-    await page.getByRole('button', { name: '⚡ Consumo & Vistoria' }).click();
+    await page.getByRole('button', { name: 'Consumo & Vistoria' }).click();
 
     // Create and link utility unit
     await page.getByRole('button', { name: '+ Cadastrar Nova Unidade Consumidora' }).click();
@@ -112,7 +112,7 @@ for (const [width, height] of [
     await expect(page.getByText('Vistoria Concluída')).toBeVisible();
 
     // 6. Navigate to Dimensionamento & Custos sub-tab
-    await page.getByRole('button', { name: '☀️ Dimensionamento & Custos' }).click();
+    await page.getByRole('button', { name: 'Dimensionamento & Custos' }).click();
 
     // Assistant pre-fills target kWh
     await expect(page.getByLabel('Geração Mensal Alvo (kWh/mês) *')).toHaveValue('600');

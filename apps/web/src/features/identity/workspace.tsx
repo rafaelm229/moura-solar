@@ -35,11 +35,41 @@ export interface Destination {
 }
 
 const destinations: Destination[] = [
-  { id: 'sessions', label: 'Minhas sessões', permission: 'sessions:read_own', organization: false, icon: 'verified' },
-  { id: 'members', label: 'Pessoas', permission: 'users:manage', organization: true, icon: 'person' },
-  { id: 'teams', label: 'Equipes', permission: 'teams:manage', organization: true, icon: 'business' },
-  { id: 'audit', label: 'Auditoria', permission: 'audit:read', organization: false, icon: 'history' },
-  { id: 'customers', label: 'Clientes', permission: 'customers:read', organization: false, icon: 'person' },
+  {
+    id: 'sessions',
+    label: 'Minhas sessões',
+    permission: 'sessions:read_own',
+    organization: false,
+    icon: 'verified',
+  },
+  {
+    id: 'members',
+    label: 'Pessoas',
+    permission: 'users:manage',
+    organization: true,
+    icon: 'person',
+  },
+  {
+    id: 'teams',
+    label: 'Equipes',
+    permission: 'teams:manage',
+    organization: true,
+    icon: 'business',
+  },
+  {
+    id: 'audit',
+    label: 'Auditoria',
+    permission: 'audit:read',
+    organization: false,
+    icon: 'history',
+  },
+  {
+    id: 'customers',
+    label: 'Clientes',
+    permission: 'customers:read',
+    organization: false,
+    icon: 'person',
+  },
   {
     id: 'opportunities',
     label: 'Oportunidades',
@@ -47,8 +77,20 @@ const destinations: Destination[] = [
     organization: false,
     icon: 'trending_up',
   },
-  { id: 'activities', label: 'Atividades', permission: 'activities:manage', organization: false, icon: 'checklist' },
-  { id: 'financial', label: 'Financeiro', permission: 'finance:read', organization: false, icon: 'payments' },
+  {
+    id: 'activities',
+    label: 'Atividades',
+    permission: 'activities:manage',
+    organization: false,
+    icon: 'checklist',
+  },
+  {
+    id: 'financial',
+    label: 'Financeiro',
+    permission: 'finance:read',
+    organization: false,
+    icon: 'payments',
+  },
   {
     id: 'inventory',
     label: 'Estoque & Compras',
@@ -77,7 +119,13 @@ const destinations: Destination[] = [
     organization: false,
     icon: 'bolt',
   },
-  { id: 'catalog', label: 'Catálogo', permission: 'catalog:read', organization: false, icon: 'solar_power' },
+  {
+    id: 'catalog',
+    label: 'Catálogo',
+    permission: 'catalog:read',
+    organization: false,
+    icon: 'solar_power',
+  },
   { id: 'roles', label: 'Papéis', permission: 'roles:manage', organization: true, icon: 'badge' },
 ];
 function Application() {
@@ -245,7 +293,9 @@ function Application() {
           client.setQueryData(['me'], context);
           if (
             returnToTab &&
-            destinations.some((d) => d.id === returnToTab && allows(context, d.permission, d.organization))
+            destinations.some(
+              (d) => d.id === returnToTab && allows(context, d.permission, d.organization),
+            )
           ) {
             switchTab(returnToTab, true);
             setReturnToTab(null);
@@ -261,9 +311,12 @@ function Application() {
   const permitted = navigation.some((item) => item.id === tab);
 
   // Role-oriented mobile shortcut priorities (A-03, UX-08)
-  const isSeller = allows(context, 'customers:read', false) && !allows(context, 'users:manage', true);
-  const isFinancial = allows(context, 'finance:read', false) && !allows(context, 'users:manage', true);
-  const isInventory = allows(context, 'inventory:read', false) && !allows(context, 'users:manage', true);
+  const isSeller =
+    allows(context, 'customers:read', false) && !allows(context, 'users:manage', true);
+  const isFinancial =
+    allows(context, 'finance:read', false) && !allows(context, 'users:manage', true);
+  const isInventory =
+    allows(context, 'inventory:read', false) && !allows(context, 'users:manage', true);
 
   let primaryMobileIds: string[];
   if (isSeller) {
@@ -293,7 +346,14 @@ function Application() {
           Ir para conteúdo
         </a>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <strong style={{ color: '#087443', fontSize: '1.125rem', fontWeight: 800, letterSpacing: '-0.02em' }}>
+          <strong
+            style={{
+              color: '#087443',
+              fontSize: '1.125rem',
+              fontWeight: 800,
+              letterSpacing: '-0.02em',
+            }}
+          >
             Moura Solar
           </strong>
           <span

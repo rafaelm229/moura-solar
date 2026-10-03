@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { promises as fs } from 'node:fs';
 import { basename, join } from 'node:path';
@@ -135,144 +135,83 @@ export class StorageService {
     if (lower === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
       return buffer[0] === 0x50 && buffer[1] === 0x4b;
     }
-    return true;
+    return false;
   }
 
-  async upload(
+  private async request(
+    method: string,
     bucket: string,
-    key: string,
-    buffer: Buffer,
-    mimeType = 'application/pdf',
-  ): Promise<{
-    bucket: string;
-    key: string;
-    sha256: string;
-    byteSize: number;
-    backend: 'MINIO' | 'S3' | 'LEGACY_LOCAL';
-  }> {
-    const sha256 = this.computeHash(buffer);
-    const byteSize = buffer.length;
+    key = '',
+    buffer?: Buffer,
+    mimeType?: string,
+  ) {
     const endpoint = this.config.get<string>('S3_ENDPOINT');
     const accessKey = this.config.get<string>('S3_ACCESS_KEY');
     const secretKey = this.config.get<string>('S3_SECRET_KEY');
-
-    // Attempt S3 upload if credentials and endpoint are configured
-    if (endpoint && accessKey && secretKey && !endpoint.includes('localhost:9000/mock')) {
-      try {
-        const uploadUrl = `${endpoint.replace(/\/$/, '')}/${bucket}/${key}`;
-        const headers = this.signRequest({
-          method: 'PUT',
-          url: uploadUrl,
-          body: buffer,
-          headers: {
-            'content-type': mimeType,
-            'content-length': buffer.length.toString(),
-          },
-          accessKey,
-          secretKey,
-        });
-
-        const res = await fetch(uploadUrl, {
-          method: 'PUT',
-          headers,
-          body: new Uint8Array(buffer),
-          signal: AbortSignal.timeout(5000),
-        });
-
-        // If bucket doesn't exist yet, attempt to create it and retry upload once
-        if (res.status === 404) {
-          const createBucketUrl = `${endpoint.replace(/\/$/, '')}/${bucket}`;
-          const createBucketHeaders = this.signRequest({
-            method: 'PUT',
-            url: createBucketUrl,
-            accessKey,
-            secretKey,
-          });
-          const createRes = await fetch(createBucketUrl, {
-            method: 'PUT',
-            headers: createBucketHeaders,
-            signal: AbortSignal.timeout(3000),
-          });
-          if (createRes.ok || createRes.status === 200) {
-            const retryHeaders = this.signRequest({
-              method: 'PUT',
-              url: uploadUrl,
-              body: buffer,
-              headers: {
-                'content-type': mimeType,
-                'content-length': buffer.length.toString(),
-              },
-              accessKey,
-              secretKey,
-            });
-            const retryRes = await fetch(uploadUrl, {
-              method: 'PUT',
-              headers: retryHeaders,
-              body: new Uint8Array(buffer),
-              signal: AbortSignal.timeout(5000),
-            });
-            if (retryRes.ok || retryRes.status === 200 || retryRes.status === 201) {
-              const backend = endpoint.includes('minio') ? 'MINIO' : 'S3';
-              return { bucket, key, sha256, byteSize, backend };
-            }
+    if (!endpoint || !accessKey || !secretKey)
+      throw new ServiceUnavailableException('Armazenamento não configurado.');
+    const url = `${endpoint.replace(/\/$/, '')}/${encodeURIComponent(bucket)}${key ? '/' + key.split('/').map(encodeURIComponent).join('/') : ''}`;
+    const headers = this.signRequest({
+      method,
+      url,
+      body: buffer,
+      accessKey,
+      secretKey,
+      headers: buffer
+        ? {
+            'content-type': mimeType ?? 'application/octet-stream',
+            'content-length': String(buffer.length),
+            'if-none-match': '*',
           }
-        }
-
-        if (res.ok || res.status === 200 || res.status === 201) {
-          const backend = endpoint.includes('minio') ? 'MINIO' : 'S3';
-          return { bucket, key, sha256, byteSize, backend };
-        }
-
-        this.logger.warn(`S3 upload returned HTTP ${res.status}: ${res.statusText}`);
-      } catch (err: any) {
-        this.logger.warn(
-          `S3 upload not available (${err.message}), persisting to local storage engine.`,
-        );
-      }
+        : {},
+    });
+    try {
+      return await fetch(url, {
+        method,
+        headers,
+        body: buffer ? new Uint8Array(buffer) : undefined,
+        signal: AbortSignal.timeout(10_000),
+      });
+    } catch {
+      throw new ServiceUnavailableException('Armazenamento indisponível. Tente novamente.');
     }
-
-    // Persist to reliable local storage engine fallback
-    await this.ensureFallbackDir();
-    const filePath = join(this.fallbackDir, `${bucket}_${key.replace(/\//g, '_')}`);
-    await fs.writeFile(filePath, buffer);
-    return { bucket, key, sha256, byteSize, backend: 'LEGACY_LOCAL' };
   }
 
-  async download(bucket: string, key: string): Promise<Buffer> {
-    const endpoint = this.config.get<string>('S3_ENDPOINT');
-    const accessKey = this.config.get<string>('S3_ACCESS_KEY');
-    const secretKey = this.config.get<string>('S3_SECRET_KEY');
-
-    if (endpoint && accessKey && secretKey && !endpoint.includes('localhost:9000/mock')) {
-      try {
-        const downloadUrl = `${endpoint.replace(/\/$/, '')}/${bucket}/${key}`;
-        const headers = this.signRequest({
-          method: 'GET',
-          url: downloadUrl,
-          accessKey,
-          secretKey,
-        });
-
-        const res = await fetch(downloadUrl, {
-          method: 'GET',
-          headers,
-          signal: AbortSignal.timeout(5000),
-        });
-
-        if (res.ok) {
-          const arrayBuffer = await res.arrayBuffer();
-          return Buffer.from(arrayBuffer);
-        }
-      } catch (err: any) {
-        this.logger.debug(`S3 download failed (${err.message}), falling back to disk.`);
-      }
+  async upload(bucket: string, key: string, buffer: Buffer, mimeType = 'application/pdf') {
+    const sha256 = this.computeHash(buffer);
+    let response = await this.request('PUT', bucket, key, buffer, mimeType);
+    if (response.status === 404) {
+      const created = await this.request('PUT', bucket);
+      if (!created.ok && created.status !== 409)
+        throw new ServiceUnavailableException('Armazenamento indisponível.');
+      response = await this.request('PUT', bucket, key, buffer, mimeType);
     }
+    if (!response.ok && response.status !== 412)
+      throw new ServiceUnavailableException('Armazenamento indisponível.');
+    const persisted = await this.download(bucket, key, 'S3');
+    if (persisted.length !== buffer.length || this.computeHash(persisted) !== sha256)
+      throw new ServiceUnavailableException('Integridade do arquivo persistido inválida.');
+    const backend =
+      this.config.get<string>('S3_BACKEND') === 'S3' ? ('S3' as const) : ('MINIO' as const);
+    return { bucket, key, sha256, byteSize: buffer.length, backend };
+  }
 
+  async download(bucket: string, key: string, backend?: string): Promise<Buffer> {
+    if (backend !== 'LEGACY_LOCAL') {
+      try {
+        const response = await this.request('GET', bucket, key);
+        if (response.ok) return Buffer.from(await response.arrayBuffer());
+      } catch {
+        // Only records without backend identification may use the legacy reader.
+      }
+      if (backend)
+        throw new ServiceUnavailableException('Arquivo indisponível no backend registrado.');
+    }
     const filePath = join(this.fallbackDir, `${bucket}_${key.replace(/\//g, '_')}`);
     try {
       return await fs.readFile(filePath);
     } catch {
-      throw new Error(`Arquivo não encontrado no armazenamento: ${bucket}/${key}`);
+      throw new ServiceUnavailableException('Arquivo legado indisponível.');
     }
   }
 }

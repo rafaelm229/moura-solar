@@ -20,8 +20,8 @@ async function bootstrap(): Promise<void> {
 
   const log = pino();
   app.use(helmet());
-  app.useBodyParser('json', { limit: '25mb' });
-  app.useBodyParser('urlencoded', { limit: '25mb', extended: true });
+  app.useBodyParser('json', { limit: '29mb' });
+  app.useBodyParser('urlencoded', { limit: '29mb', extended: true });
   app.enableCors({ origin: config.getOrThrow<string>('WEB_ORIGIN'), credentials: true });
   app.use((request: Request, response: Response, next: NextFunction) => {
     const incoming = request.header('x-request-id');
