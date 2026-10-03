@@ -10,6 +10,7 @@ import { SolarDesigner } from '../design/solar-designer';
 import { Proposals } from '../proposal/proposals';
 import { ContractsView } from '../contract/contracts';
 import { OpportunityFinancial } from '../financial/financial';
+import { CustomerDossier } from './dossier';
 import type { Schemas } from '@moura-solar/api-client';
 
 type Opportunity = Schemas['OpportunityViewDto'];
@@ -25,7 +26,7 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
   const [search, setSearch] = useState('');
   const [selectedOpp, setSelectedOpp] = useState<Opportunity | null>(null);
   const [oppTab, setOppTab] = useState<
-    'commercial' | 'consumption' | 'design' | 'proposals' | 'contracts' | 'financial'
+    'commercial' | 'consumption' | 'design' | 'proposals' | 'contracts' | 'financial' | 'dossier'
   >('commercial');
   const [isCreating, setIsCreating] = useState(!!initialCustomerId);
 
@@ -536,6 +537,20 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
             >
               <Icon name="payments" size={16} /> Financeiro & Margem
             </button>
+            <button
+              type="button"
+              aria-current={oppTab === 'dossier' ? 'page' : undefined}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                background: oppTab === 'dossier' ? 'var(--brand-primary)' : 'var(--color-surface)',
+                color: oppTab === 'dossier' ? 'var(--color-surface)' : 'var(--text-primary)',
+              }}
+              onClick={() => setOppTab('dossier')}
+            >
+              <Icon name="folder" size={16} /> Dossiê Documental
+            </button>
           </div>
 
           {oppTab === 'commercial' && (
@@ -777,6 +792,16 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
                   queryClient.invalidateQueries({ queryKey: ['opportunity', selectedOpp.id] });
                   queryClient.invalidateQueries({ queryKey: ['opportunities'] });
                 }}
+              />
+            </div>
+          )}
+
+          {oppTab === 'dossier' && (
+            <div style={{ marginTop: '1rem' }}>
+              <CustomerDossier
+                customerId={selectedOpp.customerId}
+                opportunityId={selectedOpp.id}
+                title={`Dossiê Documental — ${selectedOpp.code}`}
               />
             </div>
           )}

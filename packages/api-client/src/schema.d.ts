@@ -2244,6 +2244,126 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/customers/{customerId}/documents': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Listar documentos do dossiê do cliente (incluindo propostas e contratos) */
+    get: operations['DossierController_listCustomerDocuments'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/opportunities/{opportunityId}/documents': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Listar documentos do dossiê vinculados a uma oportunidade */
+    get: operations['DossierController_listOpportunityDocuments'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/customers/{customerId}/document-uploads': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Iniciar upload ou registrar documento no dossiê do cliente */
+    post: operations['DossierController_createDocumentUpload'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/document-uploads/{versionId}/complete': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Concluir upload e validar persistência do arquivo */
+    post: operations['DossierController_completeDocumentUpload'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/documents/{documentId}/versions/{versionId}/content': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Obter stream ou download do arquivo de uma versão documental */
+    get: operations['DossierController_downloadContent'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/documents/{documentId}/archive': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Arquivar logicamente documento do dossiê */
+    post: operations['DossierController_archiveDocument'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/customers/{customerId}/representatives': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Listar representantes legais ou técnicos do cliente */
+    get: operations['DossierController_listRepresentatives'];
+    put?: never;
+    /** Cadastrar representante legal ou técnico do cliente */
+    post: operations['DossierController_createRepresentative'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4082,6 +4202,145 @@ export interface components {
        * @enum {string}
        */
       unit: 'BRL' | 'COUNT' | 'PERCENT' | 'KWH';
+    };
+    DossierVersionViewDto: {
+      id: string;
+      versionNumber: number;
+      originalName: string;
+      fileSize: number;
+      declaredMime: string;
+      verifiedMime?: Record<string, never>;
+      sha256: string;
+      persistenceState: string;
+      createdAt: string;
+    };
+    DossierDocumentLinksDto: {
+      utilityUnitIds: string[];
+      opportunityIds: string[];
+      projectIds: string[];
+      representativeIds: string[];
+      contractIds: string[];
+    };
+    DossierDocumentViewDto: {
+      id: string;
+      /** @enum {string} */
+      origin: 'DOSSIER' | 'PROPOSAL_DOCUMENT' | 'CONTRACT_DOCUMENT';
+      category: string;
+      title: string;
+      status: string;
+      purpose?: Record<string, never>;
+      createdAt: string;
+      updatedAt: string;
+      createdBy: string;
+      currentVersion?: components['schemas']['DossierVersionViewDto'];
+      links: components['schemas']['DossierDocumentLinksDto'];
+    };
+    CreateDocumentUploadDto: {
+      /**
+       * @description Título identificador do documento no dossiê
+       * @example Conta Cemig - Jan/2026
+       */
+      title: string;
+      /**
+       * @description Categoria documental no dossiê
+       * @example UTILITY_BILL
+       * @enum {string}
+       */
+      category:
+        | 'IDENTITY'
+        | 'CORPORATE'
+        | 'REPRESENTATION'
+        | 'UTILITY_BILL'
+        | 'UC_DOCUMENT'
+        | 'COMMERCIAL_PROPOSAL'
+        | 'CONTRACT_ANNEX'
+        | 'PHOTO_BEFORE'
+        | 'PHOTO_DURING'
+        | 'PHOTO_AFTER'
+        | 'ART'
+        | 'HOMOLOGATION'
+        | 'DELIVERY_REPORT'
+        | 'OTHER';
+      /**
+       * @description Nome original do arquivo enviado
+       * @example conta-cemig-jan2026.pdf
+       */
+      fileName: string;
+      /**
+       * @description MIME type declarado pelo cliente
+       * @example application/pdf
+       * @enum {string}
+       */
+      declaredMime:
+        | 'application/pdf'
+        | 'image/jpeg'
+        | 'image/png'
+        | 'image/webp'
+        | 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      /**
+       * @description Tamanho do arquivo em bytes (máximo 20 MiB)
+       * @example 1048576
+       */
+      fileSize: number;
+      /** @description Hash SHA-256 do arquivo se já computado */
+      sha256?: string;
+      /** @description Finalidade específica do documento */
+      purpose?: string;
+      /** @description Conteúdo em base64 (para upload direto via API) */
+      fileBase64?: string;
+      /** @description ID da Unidade Consumidora vinculada */
+      utilityUnitId?: string;
+      /** @description ID da Oportunidade vinculada */
+      opportunityId?: string;
+      /** @description ID do Projeto Operacional vinculado */
+      projectId?: string;
+      /** @description ID do Representante vinculado */
+      representativeId?: string;
+      /** @description ID do Contrato vinculado */
+      contractId?: string;
+      /** @description ID da Ordem de Serviço vinculada */
+      workOrderId?: string;
+      /** @description Fase da foto de execução (BEFORE, DURING, AFTER) */
+      phase?: string;
+    };
+    CompleteUploadDto: {
+      /** @description Versão esperada para verificação concorrente */
+      expectedVersion?: number;
+      /** @description Conteúdo em base64 se enviado na conclusão */
+      fileBase64?: string;
+    };
+    ArchiveDocumentDto: {
+      /** @description Motivo do arquivamento do documento */
+      reason?: string;
+    };
+    RepresentativeViewDto: {
+      id: string;
+      customerId: string;
+      name: string;
+      documentNumber?: Record<string, never>;
+      role: string;
+      createdAt: string;
+      updatedAt: string;
+    };
+    CustomerRepresentativeDto: {
+      /**
+       * @description Nome do representante legal/técnico
+       * @example Carlos Alberto Silva
+       */
+      name: string;
+      /** @description CPF ou CNPJ do representante */
+      documentNumber?: string;
+      /**
+       * @description Papel do representante
+       * @example LEGAL_REPRESENTATIVE
+       * @enum {string}
+       */
+      role:
+        | 'LEGAL_REPRESENTATIVE'
+        | 'ATTORNEY'
+        | 'TECHNICAL_RESPONSIBLE'
+        | 'FINANCIAL_CONTACT'
+        | 'OTHER';
     };
   };
   responses: never;
@@ -7844,6 +8103,200 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  DossierController_listCustomerDocuments: {
+    parameters: {
+      query?: {
+        category?: string;
+        status?: string;
+        utilityUnitId?: string;
+        opportunityId?: string;
+        projectId?: string;
+        from?: string;
+        to?: string;
+      };
+      header?: never;
+      path: {
+        customerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DossierDocumentViewDto'][];
+        };
+      };
+    };
+  };
+  DossierController_listOpportunityDocuments: {
+    parameters: {
+      query?: {
+        category?: string;
+        status?: string;
+      };
+      header?: never;
+      path: {
+        opportunityId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DossierDocumentViewDto'][];
+        };
+      };
+    };
+  };
+  DossierController_createDocumentUpload: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        customerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateDocumentUploadDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DossierDocumentViewDto'];
+        };
+      };
+    };
+  };
+  DossierController_completeDocumentUpload: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        versionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CompleteUploadDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DossierDocumentViewDto'];
+        };
+      };
+    };
+  };
+  DossierController_downloadContent: {
+    parameters: {
+      query?: {
+        purpose?: 'VIEW' | 'DOWNLOAD';
+      };
+      header?: never;
+      path: {
+        documentId: string;
+        versionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DossierController_archiveDocument: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        documentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['ArchiveDocumentDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DossierController_listRepresentatives: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        customerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RepresentativeViewDto'][];
+        };
+      };
+    };
+  };
+  DossierController_createRepresentative: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        customerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CustomerRepresentativeDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RepresentativeViewDto'];
+        };
       };
     };
   };

@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, result, allows } from '../identity/client';
 import { Feedback } from '../identity/feedback';
 import { Icon } from '../../components/icons/material-symbol';
-import { Modal } from '../../components/ui/modal';
 
 export interface ContractDocumentView {
   id: string;

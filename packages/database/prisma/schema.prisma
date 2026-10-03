@@ -82,6 +82,10 @@ model Organization {
   notificationPreferences NotificationPreference[]
   goalVersions           GoalVersion[]
   metricProjections      MetricProjection[]
+  dossierDocuments       DossierDocument[]
+  storedObjects          StoredObject[]
+  customerRepresentatives CustomerRepresentative[]
+  documentAccessEvents   DocumentAccessEvent[]
 
   @@map("organizations")
 }
@@ -295,6 +299,8 @@ model Customer {
   opportunities     Opportunity[]
   activities        Activity[]
   supportTickets    SupportTicket[]
+  dossierDocuments  DossierDocument[]
+  customerRepresentatives CustomerRepresentative[]
 
   @@index([organizationId, status])
   @@index([organizationId, taxId])
@@ -365,6 +371,7 @@ model UtilityUnit {
   opportunities   Opportunity[]
   energyReadings  EnergyReading[]
   surveys         Survey[]
+  documentLinks   DocumentUtilityUnitLink[]
 
   @@index([organizationId, externalCode])
   @@index([customerId])
@@ -414,6 +421,7 @@ model Opportunity {
   purchaseOrders       PurchaseOrder[]
   serializedAssets     SerializedAsset[]
   operationalProject   OperationalProject?
+  dossierLinks         DocumentOpportunityLink[]
 
   @@unique([organizationId, code])
   @@index([organizationId, state])
@@ -807,6 +815,7 @@ model Contract {
   signedReviews              SignedContractReview[]
   projectGates               ProjectGate[]
   paymentPlans               PaymentPlan[]
+  dossierLinks               DocumentContractLink[]
 
   @@unique([organizationId, code])
   @@index([opportunityId])
@@ -1481,6 +1490,7 @@ model OperationalProject {
   supportTickets                SupportTicket[]
   warrantyCoverages             WarrantyCoverage[]
   monitoringSystem              MonitoringSystem?
+  documentLinks                 DocumentProjectLink[]
 
   @@unique([organizationId, code])
   @@index([organizationId, state])
@@ -1563,6 +1573,7 @@ model WorkOrder {
   assignedTeam     Team?                    @relation(fields: [assignedTeamId], references: [id])
   checklistItems   WorkOrderChecklistItem[]
   serviceVisitQuotes ServiceVisitQuote[]
+  documentLinks      DocumentWorkOrderLink[]
 
   @@unique([organizationId, code])
   @@index([organizationId, state])
@@ -2003,6 +2014,190 @@ model MetricProjection {
   @@unique([organizationId, metricKey, period])
   @@index([period])
   @@map("metric_projections")
+}
+
+// ==========================================
+// SPEC-013: Dossiê Documental Permanente e Armazenamento Durável
+// ==========================================
+
+model DossierDocument {
+  id             String                        @id @default(uuid()) @db.Uuid
+  organizationId String                        @map("organization_id") @db.Uuid
+  customerId     String                        @map("customer_id") @db.Uuid
+  category       String
+  title          String
+  status         String                        @default("ACTIVE") // ACTIVE, ARCHIVED
+  purpose        String?
+  createdBy      String                        @map("created_by")
+  createdAt      DateTime                      @default(now()) @map("created_at")
+  updatedAt      DateTime                      @updatedAt @map("updated_at")
+
+  organization        Organization              @relation(fields: [organizationId], references: [id])
+  customer            Customer                  @relation(fields: [customerId], references: [id])
+  versions            DossierDocumentVersion[]
+  utilityUnitLinks    DocumentUtilityUnitLink[]
+  opportunityLinks    DocumentOpportunityLink[]
+  projectLinks        DocumentProjectLink[]
+  representativeLinks DocumentRepresentativeLink[]
+  contractLinks       DocumentContractLink[]
+  workOrderLinks      DocumentWorkOrderLink[]
+
+  @@index([organizationId, customerId])
+  @@index([category, status])
+  @@map("dossier_documents")
+}
+
+model DossierDocumentVersion {
+  id               String          @id @default(uuid()) @db.Uuid
+  documentId       String          @map("document_id") @db.Uuid
+  versionNumber    Int             @map("version_number")
+  originalName     String          @map("original_name")
+  fileSize         Int             @map("file_size")
+  declaredMime     String          @map("declared_mime")
+  verifiedMime     String?         @map("verified_mime")
+  sha256           String
+  persistenceState String          @default("PENDING_UPLOAD") @map("persistence_state") // PENDING_UPLOAD, READY, FAILED
+  storedObjectId   String?         @map("stored_object_id") @db.Uuid
+  authorId         String          @map("author_id")
+  createdAt        DateTime        @default(now()) @map("created_at")
+
+  document         DossierDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  storedObject     StoredObject?   @relation(fields: [storedObjectId], references: [id])
+
+  @@unique([documentId, versionNumber])
+  @@index([sha256])
+  @@map("dossier_document_versions")
+}
+
+model StoredObject {
+  id             String                   @id @default(uuid()) @db.Uuid
+  organizationId String                   @map("organization_id") @db.Uuid
+  backend        String                   @default("MINIO") // MINIO, S3, LEGACY_LOCAL
+  bucket         String
+  key            String
+  sha256         String
+  byteSize       Int                      @map("byte_size")
+  verified       Boolean                  @default(false)
+  scanResult     String?                  @map("scan_result") // CLEAN, SUSPICIOUS, UNCHECKED
+  createdAt      DateTime                 @default(now()) @map("created_at")
+
+  organization     Organization            @relation(fields: [organizationId], references: [id])
+  documentVersions DossierDocumentVersion[]
+
+  @@unique([bucket, key])
+  @@index([organizationId, sha256])
+  @@map("stored_objects")
+}
+
+model CustomerRepresentative {
+  id             String                       @id @default(uuid()) @db.Uuid
+  organizationId String                       @map("organization_id") @db.Uuid
+  customerId     String                       @map("customer_id") @db.Uuid
+  name           String
+  documentNumber String?                      @map("document_number")
+  role           String                       @default("LEGAL_REPRESENTATIVE") // LEGAL_REPRESENTATIVE, ATTORNEY, TECHNICAL_RESPONSIBLE, FINANCIAL_CONTACT, OTHER
+  createdAt      DateTime                     @default(now()) @map("created_at")
+  updatedAt      DateTime                     @updatedAt @map("updated_at")
+
+  organization   Organization                 @relation(fields: [organizationId], references: [id])
+  customer       Customer                     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  documentLinks  DocumentRepresentativeLink[]
+
+  @@index([organizationId, customerId])
+  @@map("customer_representatives")
+}
+
+model DocumentRepresentativeLink {
+  id               String                 @id @default(uuid()) @db.Uuid
+  documentId       String                 @map("document_id") @db.Uuid
+  representativeId String                 @map("representative_id") @db.Uuid
+
+  document         DossierDocument        @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  representative   CustomerRepresentative @relation(fields: [representativeId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, representativeId])
+  @@map("document_representative_links")
+}
+
+model DocumentUtilityUnitLink {
+  id            String          @id @default(uuid()) @db.Uuid
+  documentId    String          @map("document_id") @db.Uuid
+  utilityUnitId String          @map("utility_unit_id") @db.Uuid
+
+  document      DossierDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  utilityUnit   UtilityUnit     @relation(fields: [utilityUnitId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, utilityUnitId])
+  @@map("document_utility_unit_links")
+}
+
+model DocumentOpportunityLink {
+  id            String          @id @default(uuid()) @db.Uuid
+  documentId    String          @map("document_id") @db.Uuid
+  opportunityId String          @map("opportunity_id") @db.Uuid
+
+  document      DossierDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  opportunity   Opportunity     @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, opportunityId])
+  @@map("document_opportunity_links")
+}
+
+model DocumentProjectLink {
+  id         String             @id @default(uuid()) @db.Uuid
+  documentId String             @map("document_id") @db.Uuid
+  projectId  String             @map("project_id") @db.Uuid
+
+  document   DossierDocument    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  project    OperationalProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, projectId])
+  @@map("document_project_links")
+}
+
+model DocumentWorkOrderLink {
+  id          String          @id @default(uuid()) @db.Uuid
+  documentId  String          @map("document_id") @db.Uuid
+  workOrderId String          @map("work_order_id") @db.Uuid
+  phase       String?
+
+  document    DossierDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  workOrder   WorkOrder       @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, workOrderId])
+  @@map("document_work_order_links")
+}
+
+model DocumentContractLink {
+  id         String          @id @default(uuid()) @db.Uuid
+  documentId String          @map("document_id") @db.Uuid
+  contractId String          @map("contract_id") @db.Uuid
+
+  document   DossierDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  contract   Contract        @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, contractId])
+  @@map("document_contract_links")
+}
+
+model DocumentAccessEvent {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  actorId        String       @map("actor_id")
+  targetType     String       @map("target_type") // DOSSIER, PROPOSAL, CONTRACT
+  targetId       String       @map("target_id")
+  versionId      String?      @map("version_id")
+  purpose        String       @default("VIEW") // VIEW, DOWNLOAD
+  outcome        String       @default("SUCCESS") // SUCCESS, DENIED, ERROR
+  ipAddress      String?      @map("ip_address")
+  userAgent      String?      @map("user_agent")
+  occurredAt     DateTime     @default(now()) @map("occurred_at")
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, targetId])
+  @@index([actorId, occurredAt])
+  @@map("document_access_events")
 }
 
 

@@ -5813,6 +5813,400 @@
         ],
         "tags": ["Automações, Notificações, Gestão & Observabilidade"]
       }
+    },
+    "/api/v1/customers/{customerId}/documents": {
+      "get": {
+        "operationId": "DossierController_listCustomerDocuments",
+        "parameters": [
+          {
+            "name": "customerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "utilityUnitId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "opportunityId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DossierDocumentViewDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Listar documentos do dossiê do cliente (incluindo propostas e contratos)",
+        "tags": ["dossier"]
+      }
+    },
+    "/api/v1/opportunities/{opportunityId}/documents": {
+      "get": {
+        "operationId": "DossierController_listOpportunityDocuments",
+        "parameters": [
+          {
+            "name": "opportunityId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DossierDocumentViewDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Listar documentos do dossiê vinculados a uma oportunidade",
+        "tags": ["dossier"]
+      }
+    },
+    "/api/v1/customers/{customerId}/document-uploads": {
+      "post": {
+        "operationId": "DossierController_createDocumentUpload",
+        "parameters": [
+          {
+            "name": "customerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDocumentUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DossierDocumentViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Iniciar upload ou registrar documento no dossiê do cliente",
+        "tags": ["dossier"]
+      }
+    },
+    "/api/v1/document-uploads/{versionId}/complete": {
+      "post": {
+        "operationId": "DossierController_completeDocumentUpload",
+        "parameters": [
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DossierDocumentViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Concluir upload e validar persistência do arquivo",
+        "tags": ["dossier"]
+      }
+    },
+    "/api/v1/documents/{documentId}/versions/{versionId}/content": {
+      "get": {
+        "operationId": "DossierController_downloadContent",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "purpose",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": ["VIEW", "DOWNLOAD"],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Obter stream ou download do arquivo de uma versão documental",
+        "tags": ["dossier"]
+      }
+    },
+    "/api/v1/documents/{documentId}/archive": {
+      "post": {
+        "operationId": "DossierController_archiveDocument",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArchiveDocumentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Arquivar logicamente documento do dossiê",
+        "tags": ["dossier"]
+      }
+    },
+    "/api/v1/customers/{customerId}/representatives": {
+      "get": {
+        "operationId": "DossierController_listRepresentatives",
+        "parameters": [
+          {
+            "name": "customerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RepresentativeViewDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Listar representantes legais ou técnicos do cliente",
+        "tags": ["dossier"]
+      },
+      "post": {
+        "operationId": "DossierController_createRepresentative",
+        "parameters": [
+          {
+            "name": "customerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerRepresentativeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RepresentativeViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Cadastrar representante legal ou técnico do cliente",
+        "tags": ["dossier"]
+      }
     }
   },
   "info": {
@@ -9923,6 +10317,310 @@
           }
         },
         "required": ["metricKey", "name", "periodStart", "periodEnd", "targetValue"]
+      },
+      "DossierVersionViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "versionNumber": {
+            "type": "number"
+          },
+          "originalName": {
+            "type": "string"
+          },
+          "fileSize": {
+            "type": "number"
+          },
+          "declaredMime": {
+            "type": "string"
+          },
+          "verifiedMime": {
+            "type": "object"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "persistenceState": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "versionNumber",
+          "originalName",
+          "fileSize",
+          "declaredMime",
+          "sha256",
+          "persistenceState",
+          "createdAt"
+        ]
+      },
+      "DossierDocumentLinksDto": {
+        "type": "object",
+        "properties": {
+          "utilityUnitIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "opportunityIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "projectIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "representativeIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "contractIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "utilityUnitIds",
+          "opportunityIds",
+          "projectIds",
+          "representativeIds",
+          "contractIds"
+        ]
+      },
+      "DossierDocumentViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "origin": {
+            "type": "string",
+            "enum": ["DOSSIER", "PROPOSAL_DOCUMENT", "CONTRACT_DOCUMENT"]
+          },
+          "category": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "object"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "currentVersion": {
+            "$ref": "#/components/schemas/DossierVersionViewDto"
+          },
+          "links": {
+            "$ref": "#/components/schemas/DossierDocumentLinksDto"
+          }
+        },
+        "required": [
+          "id",
+          "origin",
+          "category",
+          "title",
+          "status",
+          "createdAt",
+          "updatedAt",
+          "createdBy",
+          "links"
+        ]
+      },
+      "CreateDocumentUploadDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Título identificador do documento no dossiê",
+            "example": "Conta Cemig - Jan/2026"
+          },
+          "category": {
+            "type": "string",
+            "description": "Categoria documental no dossiê",
+            "enum": [
+              "IDENTITY",
+              "CORPORATE",
+              "REPRESENTATION",
+              "UTILITY_BILL",
+              "UC_DOCUMENT",
+              "COMMERCIAL_PROPOSAL",
+              "CONTRACT_ANNEX",
+              "PHOTO_BEFORE",
+              "PHOTO_DURING",
+              "PHOTO_AFTER",
+              "ART",
+              "HOMOLOGATION",
+              "DELIVERY_REPORT",
+              "OTHER"
+            ],
+            "example": "UTILITY_BILL"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "Nome original do arquivo enviado",
+            "example": "conta-cemig-jan2026.pdf"
+          },
+          "declaredMime": {
+            "type": "string",
+            "description": "MIME type declarado pelo cliente",
+            "enum": [
+              "application/pdf",
+              "image/jpeg",
+              "image/png",
+              "image/webp",
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            ],
+            "example": "application/pdf"
+          },
+          "fileSize": {
+            "type": "number",
+            "description": "Tamanho do arquivo em bytes (máximo 20 MiB)",
+            "example": 1048576
+          },
+          "sha256": {
+            "type": "string",
+            "description": "Hash SHA-256 do arquivo se já computado"
+          },
+          "purpose": {
+            "type": "string",
+            "description": "Finalidade específica do documento"
+          },
+          "fileBase64": {
+            "type": "string",
+            "description": "Conteúdo em base64 (para upload direto via API)"
+          },
+          "utilityUnitId": {
+            "type": "string",
+            "description": "ID da Unidade Consumidora vinculada"
+          },
+          "opportunityId": {
+            "type": "string",
+            "description": "ID da Oportunidade vinculada"
+          },
+          "projectId": {
+            "type": "string",
+            "description": "ID do Projeto Operacional vinculado"
+          },
+          "representativeId": {
+            "type": "string",
+            "description": "ID do Representante vinculado"
+          },
+          "contractId": {
+            "type": "string",
+            "description": "ID do Contrato vinculado"
+          },
+          "workOrderId": {
+            "type": "string",
+            "description": "ID da Ordem de Serviço vinculada"
+          },
+          "phase": {
+            "type": "string",
+            "description": "Fase da foto de execução (BEFORE, DURING, AFTER)"
+          }
+        },
+        "required": ["title", "category", "fileName", "declaredMime", "fileSize"]
+      },
+      "CompleteUploadDto": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "number",
+            "description": "Versão esperada para verificação concorrente"
+          },
+          "fileBase64": {
+            "type": "string",
+            "description": "Conteúdo em base64 se enviado na conclusão"
+          }
+        }
+      },
+      "ArchiveDocumentDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Motivo do arquivamento do documento"
+          }
+        }
+      },
+      "RepresentativeViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "customerId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "documentNumber": {
+            "type": "object"
+          },
+          "role": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "customerId", "name", "role", "createdAt", "updatedAt"]
+      },
+      "CustomerRepresentativeDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Nome do representante legal/técnico",
+            "example": "Carlos Alberto Silva"
+          },
+          "documentNumber": {
+            "type": "string",
+            "description": "CPF ou CNPJ do representante"
+          },
+          "role": {
+            "type": "string",
+            "description": "Papel do representante",
+            "enum": [
+              "LEGAL_REPRESENTATIVE",
+              "ATTORNEY",
+              "TECHNICAL_RESPONSIBLE",
+              "FINANCIAL_CONTACT",
+              "OTHER"
+            ],
+            "example": "LEGAL_REPRESENTATIVE"
+          }
+        },
+        "required": ["name", "role"]
       }
     }
   }

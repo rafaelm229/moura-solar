@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, result, allows } from '../identity/client';
 import { Feedback } from '../identity/feedback';
+import { CustomerDossier } from './dossier';
 import type { Schemas } from '@moura-solar/api-client';
 
 type Customer = Schemas['CustomerViewDto'];
@@ -486,6 +487,10 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
               )}
             </div>
             <Feedback error={archiveMutation.error || restoreMutation.error} />
+
+            <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--color-border-subtle, #e0e0e0)', paddingTop: '1.5rem' }}>
+              <CustomerDossier customerId={selectedCustomer.id} />
+            </div>
           </div>
         </section>
       )}
