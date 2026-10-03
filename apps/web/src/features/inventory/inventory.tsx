@@ -1,8 +1,9 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, result } from '../identity/client';
 import { Feedback } from '../identity/feedback';
+import { Icon } from '../../components/icons/material-symbol';
 
 export type LocationType = 'WAREHOUSE' | 'VEHICLE' | 'TRANSIT' | 'QUARANTINE';
 export type MovementType =
@@ -134,6 +135,10 @@ export interface CatalogItemView {
   name: string;
   category: string;
   referenceCost?: number | string | null;
+  referencePrice?: number | string | null;
+  unitOfMeasure?: string | null;
+  manufacturer?: string | null;
+  model?: string | null;
 }
 
 export function InventoryManagement() {
@@ -155,8 +160,9 @@ export function InventoryManagement() {
     sku: string;
     name: string;
     category: string;
-    unitOfMeasure: string;
-    referenceCost: number | string;
+    unitOfMeasure?: string | null;
+    referenceCost?: number | string | null;
+    referencePrice?: number | string | null;
     manufacturer?: string | null;
     model?: string | null;
   } | null>(null);
@@ -164,6 +170,22 @@ export function InventoryManagement() {
   const [editCatCost, setEditCatCost] = useState('');
   const [editCatPrice, setEditCatPrice] = useState('');
   const [editCatUom, setEditCatUom] = useState('UN');
+
+  // Close modals on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowLocationModal(false);
+        setShowMovementModal(false);
+        setShowSupplierModal(false);
+        setShowPurchaseModal(false);
+        setReceivingOrder(null);
+        setEditingCatalogItem(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Filters state
   const [selectedLocation, setSelectedLocation] = useState<string>('');
@@ -742,36 +764,60 @@ export function InventoryManagement() {
               </label>
             </div>
 
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
               <button
-                onClick={() => setShowLocationModal(true)}
+                type="button"
+                onClick={() => {
+                  if (catalogQuery.data && catalogQuery.data.length > 0) {
+                    const first = catalogQuery.data[0];
+                    setEditingCatalogItem(first);
+                    setEditCatName(first.name);
+                    setEditCatCost(String(first.referenceCost || ''));
+                    setEditCatPrice(String(first.referencePrice || ''));
+                    setEditCatUom(first.unitOfMeasure || 'UN');
+                  }
+                }}
+                className="btn btn--secondary"
                 style={{
-                  background: '#ffffff',
-                  color: '#087443',
-                  border: '1px solid #087443',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '6px',
+                  padding: '0.5rem 0.875rem',
                   fontSize: '0.875rem',
                   fontWeight: 600,
-                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
                 }}
               >
-                + Novo Depósito / Local
+                <Icon name="inventory_2" size={16} /> Editar Produto do Catálogo
               </button>
               <button
-                onClick={() => setShowMovementModal(true)}
+                type="button"
+                onClick={() => setShowLocationModal(true)}
+                className="btn btn--secondary"
                 style={{
-                  background: '#087443',
-                  color: '#ffffff',
-                  border: 'none',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '6px',
+                  padding: '0.5rem 0.875rem',
                   fontSize: '0.875rem',
                   fontWeight: 600,
-                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
                 }}
               >
-                + Registrar Movimentação
+                <Icon name="add" size={16} /> Novo Local
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowMovementModal(true)}
+                className="btn btn--primary"
+                style={{
+                  padding: '0.5rem 1rem',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                }}
+              >
+                <Icon name="sync" size={16} /> Registrar Movimentação
               </button>
             </div>
           </div>
@@ -847,7 +893,14 @@ export function InventoryManagement() {
                             color: isLow ? '#b91c1c' : '#15803d',
                           }}
                         >
-                          {Number(b.available)} {isLow && '⚠️'}
+                          {Number(b.available)}{' '}
+                          {isLow && (
+                            <Icon
+                              name="warning"
+                              size={14}
+                              style={{ display: 'inline', verticalAlign: 'middle', marginLeft: '0.25rem' }}
+                            />
+                          )}
                         </td>
                         <td style={{ padding: '0.75rem', textAlign: 'right' }}>
                           {formatBRL(b.averageCost)}
@@ -859,6 +912,7 @@ export function InventoryManagement() {
                           {b.catalogItem && (
                             <button
                               type="button"
+                              className="btn btn--secondary"
                               onClick={() => {
                                 setEditingCatalogItem(b.catalogItem!);
                                 setEditCatName(b.catalogItem!.name);
@@ -869,20 +923,15 @@ export function InventoryManagement() {
                                 setEditCatUom(b.catalogItem!.unitOfMeasure || 'UN');
                               }}
                               style={{
-                                background: '#f8fafc',
-                                color: '#087443',
-                                border: '1px solid #087443',
                                 padding: '0.3rem 0.6rem',
-                                borderRadius: '4px',
                                 fontSize: '0.75rem',
                                 fontWeight: 600,
-                                cursor: 'pointer',
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: '0.25rem',
                               }}
                             >
-                              ✏️ Editar
+                              <Icon name="edit" size={14} /> Editar
                             </button>
                           )}
                         </td>
@@ -1428,12 +1477,12 @@ export function InventoryManagement() {
                       <td style={{ padding: '0.75rem' }}>{s.catalogItem?.manufacturer || '-'}</td>
                       <td style={{ padding: '0.75rem' }}>
                         {s.location ? (
-                          <span>
-                            📦 <strong>{s.location.code}</strong> - {s.location.name}
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <Icon name="inventory_2" size={14} /> <strong>{s.location.code}</strong> - {s.location.name}
                           </span>
                         ) : s.opportunity ? (
-                          <span>
-                            ⚡ <strong>{s.opportunity.code}</strong> - {s.opportunity.title}
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <Icon name="bolt" size={14} /> <strong>{s.opportunity.code}</strong> - {s.opportunity.title}
                           </span>
                         ) : (
                           '-'
@@ -1478,46 +1527,70 @@ export function InventoryManagement() {
       {/* MODAL: NOVO LOCAL/DEPÓSITO */}
       {showLocationModal && (
         <div
+          role="dialog"
+          aria-modal="true"
+          className="modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowLocationModal(false);
+          }}
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.5)',
+            background: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(3px)',
             display: 'grid',
             placeItems: 'center',
-            zIndex: 100,
+            zIndex: 1050,
+            padding: '1rem',
           }}
         >
           <div
+            className="modal-card"
             style={{
               background: '#ffffff',
               padding: '1.5rem',
-              borderRadius: '8px',
+              borderRadius: '12px',
               maxWidth: '480px',
               width: '90%',
               display: 'flex',
               flexDirection: 'column',
               gap: '1rem',
+              border: '1px solid #d9e2de',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>
-                Novo Local / Depósito
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: '1.25rem',
+                  color: '#0f172a',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                }}
+              >
+                <Icon name="location_on" size={20} /> Novo Local / Depósito
               </h3>
               <button
                 type="button"
                 aria-label="Fechar modal"
                 onClick={() => setShowLocationModal(false)}
+                className="btn btn--subtle"
                 style={{
-                  background: 'transparent',
-                  border: 'none',
-                  fontSize: '1.25rem',
-                  color: '#64748b',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '2rem',
+                  height: '2rem',
+                  padding: 0,
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#f1f5f9',
+                  color: '#334155',
                   cursor: 'pointer',
-                  padding: '0.25rem',
-                  lineHeight: 1,
                 }}
               >
-                ✕
+                <Icon name="close" size={18} />
               </button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -1612,20 +1685,29 @@ export function InventoryManagement() {
       {/* MODAL: NOVA MOVIMENTAÇÃO */}
       {showMovementModal && (
         <div
+          role="dialog"
+          aria-modal="true"
+          className="modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowMovementModal(false);
+          }}
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.5)',
+            background: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(3px)',
             display: 'grid',
             placeItems: 'center',
-            zIndex: 100,
+            zIndex: 1050,
+            padding: '1rem',
           }}
         >
           <div
+            className="modal-card"
             style={{
               background: '#ffffff',
               padding: '1.5rem',
-              borderRadius: '8px',
+              borderRadius: '12px',
               maxWidth: '540px',
               width: '90%',
               display: 'flex',
@@ -1633,27 +1715,42 @@ export function InventoryManagement() {
               gap: '1rem',
               maxHeight: '90vh',
               overflowY: 'auto',
+              border: '1px solid #d9e2de',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>
-                Registrar Movimentação
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: '1.25rem',
+                  color: '#0f172a',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                }}
+              >
+                <Icon name="sync" size={20} /> Registrar Movimentação
               </h3>
               <button
                 type="button"
                 aria-label="Fechar modal"
                 onClick={() => setShowMovementModal(false)}
+                className="btn btn--subtle"
                 style={{
-                  background: 'transparent',
-                  border: 'none',
-                  fontSize: '1.25rem',
-                  color: '#64748b',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '2rem',
+                  height: '2rem',
+                  padding: 0,
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#f1f5f9',
+                  color: '#334155',
                   cursor: 'pointer',
-                  padding: '0.25rem',
-                  lineHeight: 1,
                 }}
               >
-                ✕
+                <Icon name="close" size={18} />
               </button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -1823,44 +1920,70 @@ export function InventoryManagement() {
       {/* MODAL: NOVO FORNECEDOR */}
       {showSupplierModal && (
         <div
+          role="dialog"
+          aria-modal="true"
+          className="modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowSupplierModal(false);
+          }}
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.5)',
+            background: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(3px)',
             display: 'grid',
             placeItems: 'center',
-            zIndex: 100,
+            zIndex: 1050,
+            padding: '1rem',
           }}
         >
           <div
+            className="modal-card"
             style={{
               background: '#ffffff',
               padding: '1.5rem',
-              borderRadius: '8px',
+              borderRadius: '12px',
               maxWidth: '480px',
               width: '90%',
               display: 'flex',
               flexDirection: 'column',
               gap: '1rem',
+              border: '1px solid #d9e2de',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>Novo Fornecedor</h3>
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: '1.25rem',
+                  color: '#0f172a',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                }}
+              >
+                <Icon name="business" size={20} /> Novo Fornecedor
+              </h3>
               <button
                 type="button"
                 aria-label="Fechar modal"
                 onClick={() => setShowSupplierModal(false)}
+                className="btn btn--subtle"
                 style={{
-                  background: 'transparent',
-                  border: 'none',
-                  fontSize: '1.25rem',
-                  color: '#64748b',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '2rem',
+                  height: '2rem',
+                  padding: 0,
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#f1f5f9',
+                  color: '#334155',
                   cursor: 'pointer',
-                  padding: '0.25rem',
-                  lineHeight: 1,
                 }}
               >
-                ✕
+                <Icon name="close" size={18} />
               </button>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
@@ -2006,46 +2129,70 @@ export function InventoryManagement() {
       {/* MODAL: NOVA ORDEM DE COMPRA */}
       {showPurchaseModal && (
         <div
+          role="dialog"
+          aria-modal="true"
+          className="modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowPurchaseModal(false);
+          }}
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.5)',
+            background: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(3px)',
             display: 'grid',
             placeItems: 'center',
-            zIndex: 100,
+            zIndex: 1050,
+            padding: '1rem',
           }}
         >
           <div
+            className="modal-card"
             style={{
               background: '#ffffff',
               padding: '1.5rem',
-              borderRadius: '8px',
+              borderRadius: '12px',
               maxWidth: '520px',
               width: '90%',
               display: 'flex',
               flexDirection: 'column',
               gap: '1rem',
+              border: '1px solid #d9e2de',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>
-                Nova Ordem de Compra
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: '1.25rem',
+                  color: '#0f172a',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                }}
+              >
+                <Icon name="description" size={20} /> Nova Ordem de Compra
               </h3>
               <button
                 type="button"
                 aria-label="Fechar modal"
                 onClick={() => setShowPurchaseModal(false)}
+                className="btn btn--subtle"
                 style={{
-                  background: 'transparent',
-                  border: 'none',
-                  fontSize: '1.25rem',
-                  color: '#64748b',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '2rem',
+                  height: '2rem',
+                  padding: 0,
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#f1f5f9',
+                  color: '#334155',
                   cursor: 'pointer',
-                  padding: '0.25rem',
-                  lineHeight: 1,
                 }}
               >
-                ✕
+                <Icon name="close" size={18} />
               </button>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
@@ -2176,46 +2323,70 @@ export function InventoryManagement() {
       {/* MODAL: RECEBER MERCADORIA NO GALPÃO */}
       {receivingOrder && (
         <div
+          role="dialog"
+          aria-modal="true"
+          className="modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setReceivingOrder(null);
+          }}
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.5)',
+            background: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(3px)',
             display: 'grid',
             placeItems: 'center',
-            zIndex: 100,
+            zIndex: 1050,
+            padding: '1rem',
           }}
         >
           <div
+            className="modal-card"
             style={{
               background: '#ffffff',
               padding: '1.5rem',
-              borderRadius: '8px',
+              borderRadius: '12px',
               maxWidth: '540px',
               width: '90%',
               display: 'flex',
               flexDirection: 'column',
               gap: '1rem',
+              border: '1px solid #d9e2de',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>
-                Recebimento Físico: {receivingOrder.code}
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: '1.25rem',
+                  color: '#0f172a',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                }}
+              >
+                <Icon name="inventory_2" size={20} /> Recebimento Físico: {receivingOrder.code}
               </h3>
               <button
                 type="button"
                 aria-label="Fechar modal"
                 onClick={() => setReceivingOrder(null)}
+                className="btn btn--subtle"
                 style={{
-                  background: 'transparent',
-                  border: 'none',
-                  fontSize: '1.25rem',
-                  color: '#64748b',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '2rem',
+                  height: '2rem',
+                  padding: 0,
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#f1f5f9',
+                  color: '#334155',
                   cursor: 'pointer',
-                  padding: '0.25rem',
-                  lineHeight: 1,
                 }}
               >
-                ✕
+                <Icon name="close" size={18} />
               </button>
             </div>
             <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
@@ -2323,10 +2494,14 @@ export function InventoryManagement() {
           role="dialog"
           aria-modal="true"
           aria-labelledby="edit-catalog-modal-title"
+          className="modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setEditingCatalogItem(null);
+          }}
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(15, 23, 42, 0.5)',
+            background: 'rgba(15, 23, 42, 0.65)',
             backdropFilter: 'blur(3px)',
             display: 'grid',
             placeItems: 'center',
@@ -2335,13 +2510,14 @@ export function InventoryManagement() {
           }}
         >
           <div
+            className="modal-card"
             style={{
               background: '#ffffff',
-              borderRadius: '10px',
+              borderRadius: '12px',
               maxWidth: '520px',
               width: '100%',
               boxShadow: '0 20px 25px -5px rgba(0,0,0,0.15)',
-              border: '1px solid #e2e8f0',
+              border: '1px solid #d9e2de',
               padding: '1.5rem',
               display: 'flex',
               flexDirection: 'column',
@@ -2360,9 +2536,16 @@ export function InventoryManagement() {
               <div>
                 <h3
                   id="edit-catalog-modal-title"
-                  style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}
+                  style={{
+                    margin: 0,
+                    fontSize: '1.25rem',
+                    color: '#0f172a',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                  }}
                 >
-                  Editar Produto do Catálogo
+                  <Icon name="inventory_2" size={20} /> Editar Produto do Catálogo
                 </h3>
                 <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
                   SKU: <strong>{editingCatalogItem.sku}</strong> ({editingCatalogItem.category})
@@ -2372,17 +2555,22 @@ export function InventoryManagement() {
                 type="button"
                 aria-label="Fechar modal"
                 onClick={() => setEditingCatalogItem(null)}
+                className="btn btn--subtle"
                 style={{
-                  background: 'transparent',
-                  border: 'none',
-                  fontSize: '1.25rem',
-                  color: '#64748b',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '2rem',
+                  height: '2rem',
+                  padding: 0,
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#f1f5f9',
+                  color: '#334155',
                   cursor: 'pointer',
-                  padding: '0.25rem',
-                  lineHeight: 1,
                 }}
               >
-                ✕
+                <Icon name="close" size={18} />
               </button>
             </div>
 

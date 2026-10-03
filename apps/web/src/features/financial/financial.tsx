@@ -1,8 +1,9 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, result } from '../identity/client';
 import { Feedback } from '../identity/feedback';
+import { Icon } from '../../components/icons/material-symbol';
 
 export interface ReceivableView {
   id: string;
@@ -157,6 +158,22 @@ export function OpportunityFinancial({
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showCommissionModal, setShowCommissionModal] = useState(false);
   const [showReverseModal, setShowReverseModal] = useState<{ receiptId: string } | null>(null);
+
+  // Close modals on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowGeneratePlanModal(false);
+        setShowReceiptModal(false);
+        setShowPayableModal(false);
+        setShowPaymentModal(false);
+        setShowCommissionModal(false);
+        setShowReverseModal(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Form states
   type PaymentMethodType =
@@ -437,8 +454,12 @@ export function OpportunityFinancial({
               marginBottom: '0.25rem',
             }}
           >
-            <span style={{ fontSize: '1.25rem' }}>
-              {financialGate?.status === 'SATISFIED' ? '🛡️' : '⏳'}
+            <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+              {financialGate?.status === 'SATISFIED' ? (
+                <Icon name="verified" size={20} style={{ color: '#16a34a' }} />
+              ) : (
+                <Icon name="schedule" size={20} style={{ color: '#d97706' }} />
+              )}
             </span>
             <strong style={{ fontSize: '1.05rem', color: '#1e293b' }}>
               Gate Financeiro {opportunityCode ? `[${opportunityCode}]` : ''} (Down Payment / Sinal)
@@ -480,6 +501,9 @@ export function OpportunityFinancial({
               borderRadius: '6px',
               border: 'none',
               cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
             }}
             onClick={() => {
               // Pre-select first open receivable (typically down payment)
@@ -493,7 +517,7 @@ export function OpportunityFinancial({
               setShowReceiptModal(true);
             }}
           >
-            💵 Registrar Recebimento
+            <Icon name="payments" size={16} /> Registrar Recebimento
           </button>
 
           <button
@@ -506,6 +530,9 @@ export function OpportunityFinancial({
               borderRadius: '6px',
               border: 'none',
               cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
             }}
             onClick={() => {
               if (summary?.activePaymentPlan) {
@@ -515,7 +542,7 @@ export function OpportunityFinancial({
               setShowGeneratePlanModal(true);
             }}
           >
-            ⚙️ {summary?.activePaymentPlan ? 'Repactuar Plano' : 'Gerar Plano de Parcelas'}
+            <Icon name="payments" size={16} /> {summary?.activePaymentPlan ? 'Repactuar Plano' : 'Gerar Plano de Parcelas'}
           </button>
         </div>
       </div>
@@ -588,8 +615,8 @@ export function OpportunityFinancial({
             {formatBRL(indicators?.openReceivables)}
           </div>
           {indicators?.overdueReceivables ? (
-            <span style={{ fontSize: '0.75rem', color: '#dc2626', fontWeight: 600 }}>
-              ⚠️ {formatBRL(indicators.overdueReceivables)} vencido
+            <span style={{ fontSize: '0.75rem', color: '#dc2626', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+              <Icon name="warning" size={14} /> {formatBRL(indicators.overdueReceivables)} vencido
             </span>
           ) : (
             <span style={{ fontSize: '0.75rem', color: '#16a34a' }}>Sem parcelas vencidas</span>
@@ -667,49 +694,58 @@ export function OpportunityFinancial({
         <button
           type="button"
           style={{
-            background: activeTab === 'receivables' ? '#0284c7' : 'transparent',
+            background: activeTab === 'receivables' ? '#087443' : 'transparent',
             color: activeTab === 'receivables' ? '#ffffff' : '#475569',
-            border: 'none',
+            border: activeTab === 'receivables' ? '1px solid #065f36' : '1px solid #cbd5e1',
             padding: '0.5rem 1rem',
             borderRadius: '6px',
             fontWeight: 600,
             cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.4rem',
           }}
           onClick={() => setActiveTab('receivables')}
         >
-          📑 Contas a Receber ({receivables.length})
+          <Icon name="receipt_long" size={16} /> Contas a Receber ({receivables.length})
         </button>
 
         <button
           type="button"
           style={{
-            background: activeTab === 'payables' ? '#0284c7' : 'transparent',
+            background: activeTab === 'payables' ? '#087443' : 'transparent',
             color: activeTab === 'payables' ? '#ffffff' : '#475569',
-            border: 'none',
+            border: activeTab === 'payables' ? '1px solid #065f36' : '1px solid #cbd5e1',
             padding: '0.5rem 1rem',
             borderRadius: '6px',
             fontWeight: 600,
             cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.4rem',
           }}
           onClick={() => setActiveTab('payables')}
         >
-          📤 Custos & Contas a Pagar ({payables.length})
+          <Icon name="attach_money" size={16} /> Custos & Contas a Pagar ({payables.length})
         </button>
 
         <button
           type="button"
           style={{
-            background: activeTab === 'commissions' ? '#0284c7' : 'transparent',
+            background: activeTab === 'commissions' ? '#087443' : 'transparent',
             color: activeTab === 'commissions' ? '#ffffff' : '#475569',
-            border: 'none',
+            border: activeTab === 'commissions' ? '1px solid #065f36' : '1px solid #cbd5e1',
             padding: '0.5rem 1rem',
             borderRadius: '6px',
             fontWeight: 600,
             cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.4rem',
           }}
           onClick={() => setActiveTab('commissions')}
         >
-          🤝 Comissões ({commissions.length})
+          <Icon name="badge" size={16} /> Comissões ({commissions.length})
         </button>
       </div>
 
@@ -1152,48 +1188,70 @@ export function OpportunityFinancial({
       {/* MODAL 1: GENERATE / ADJUST PAYMENT PLAN */}
       {showGeneratePlanModal && (
         <div
-          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          className="modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowGeneratePlanModal(false);
+          }}
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(3px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 1000,
+            zIndex: 1050,
+            padding: '1rem',
           }}
         >
           <div
+            className="modal-card"
             style={{
               backgroundColor: '#fff',
               padding: '1.5rem',
-              borderRadius: '8px',
+              borderRadius: '12px',
               maxWidth: '480px',
               width: '90%',
               display: 'flex',
               flexDirection: 'column',
               gap: '1rem',
+              border: '1px solid #d9e2de',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: '1.25rem' }}>
-                Gerar / Repactuar Plano de Pagamento
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: '1.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                }}
+              >
+                <Icon name="payments" size={20} /> Gerar / Repactuar Plano de Pagamento
               </h3>
               <button
                 type="button"
                 onClick={() => setShowGeneratePlanModal(false)}
                 aria-label="Fechar modal"
+                className="btn btn--subtle"
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '1.25rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '2rem',
+                  height: '2rem',
+                  padding: 0,
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#f1f5f9',
+                  color: '#334155',
                   cursor: 'pointer',
-                  color: '#64748b',
-                  padding: '0.25rem',
-                  lineHeight: 1,
                 }}
               >
-                ✕
+                <Icon name="close" size={18} />
               </button>
             </div>
             <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>
@@ -1325,46 +1383,70 @@ export function OpportunityFinancial({
       {/* MODAL 2: RECORD RECEIPT */}
       {showReceiptModal && (
         <div
-          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          className="modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowReceiptModal(false);
+          }}
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(3px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 1000,
+            zIndex: 1050,
+            padding: '1rem',
           }}
         >
           <div
+            className="modal-card"
             style={{
               backgroundColor: '#fff',
               padding: '1.5rem',
-              borderRadius: '8px',
+              borderRadius: '12px',
               maxWidth: '480px',
               width: '90%',
               display: 'flex',
               flexDirection: 'column',
               gap: '1rem',
+              border: '1px solid #d9e2de',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: '1.25rem' }}>Registrar Recebimento de Cliente</h3>
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: '1.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                }}
+              >
+                <Icon name="payments" size={20} /> Registrar Recebimento de Cliente
+              </h3>
               <button
                 type="button"
                 onClick={() => setShowReceiptModal(false)}
                 aria-label="Fechar modal"
+                className="btn btn--subtle"
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '1.25rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '2rem',
+                  height: '2rem',
+                  padding: 0,
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#f1f5f9',
+                  color: '#334155',
                   cursor: 'pointer',
-                  color: '#64748b',
-                  padding: '0.25rem',
-                  lineHeight: 1,
                 }}
               >
-                ✕
+                <Icon name="close" size={18} />
               </button>
             </div>
 
@@ -1521,48 +1603,71 @@ export function OpportunityFinancial({
       {/* MODAL 3: REVERSE RECEIPT */}
       {showReverseModal && (
         <div
-          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          className="modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowReverseModal(null);
+          }}
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(3px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 1000,
+            zIndex: 1050,
+            padding: '1rem',
           }}
         >
           <div
+            className="modal-card"
             style={{
               backgroundColor: '#fff',
               padding: '1.5rem',
-              borderRadius: '8px',
-              maxWidth: '420px',
+              borderRadius: '12px',
+              maxWidth: '440px',
               width: '90%',
               display: 'flex',
               flexDirection: 'column',
               gap: '1rem',
+              border: '1px solid #fecaca',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, color: '#991b1b', fontSize: '1.25rem' }}>
-                Estornar Recebimento
+              <h3
+                style={{
+                  margin: 0,
+                  color: '#991b1b',
+                  fontSize: '1.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                }}
+              >
+                <Icon name="warning" size={20} /> Estornar Recebimento
               </h3>
               <button
                 type="button"
                 onClick={() => setShowReverseModal(null)}
                 aria-label="Fechar modal"
+                className="btn btn--subtle"
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '1.25rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '2rem',
+                  height: '2rem',
+                  padding: 0,
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#f1f5f9',
+                  color: '#475569',
                   cursor: 'pointer',
-                  color: '#64748b',
-                  padding: '0.25rem',
-                  lineHeight: 1,
                 }}
               >
-                ✕
+                <Icon name="close" size={18} />
               </button>
             </div>
             <p style={{ margin: 0, fontSize: '0.85rem', color: '#475569' }}>
@@ -1593,15 +1698,7 @@ export function OpportunityFinancial({
               <button
                 type="button"
                 onClick={() => setShowReverseModal(null)}
-                style={{
-                  background: '#ffffff',
-                  color: '#334155',
-                  border: '1px solid #cbd5e1',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '6px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
+                className="btn btn--secondary"
               >
                 Voltar
               </button>
@@ -1609,15 +1706,7 @@ export function OpportunityFinancial({
                 type="button"
                 disabled={reverseReceiptMutation.isPending || !reverseReason.trim()}
                 onClick={() => reverseReceiptMutation.mutate(showReverseModal.receiptId)}
-                style={{
-                  background: '#dc2626',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                }}
+                className="btn btn--danger"
               >
                 {reverseReceiptMutation.isPending ? 'Estornando…' : 'Confirmar Estorno'}
               </button>
@@ -1629,46 +1718,70 @@ export function OpportunityFinancial({
       {/* MODAL 4: CREATE PAYABLE */}
       {showPayableModal && (
         <div
-          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          className="modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowPayableModal(false);
+          }}
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(3px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 1000,
+            zIndex: 1050,
+            padding: '1rem',
           }}
         >
           <div
+            className="modal-card"
             style={{
               backgroundColor: '#fff',
               padding: '1.5rem',
-              borderRadius: '8px',
+              borderRadius: '12px',
               maxWidth: '480px',
               width: '90%',
               display: 'flex',
               flexDirection: 'column',
               gap: '1rem',
+              border: '1px solid #d9e2de',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: '1.25rem' }}>Cadastrar Custo ou Conta a Pagar</h3>
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: '1.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                }}
+              >
+                <Icon name="attach_money" size={20} /> Cadastrar Custo ou Conta a Pagar
+              </h3>
               <button
                 type="button"
                 onClick={() => setShowPayableModal(false)}
                 aria-label="Fechar modal"
+                className="btn btn--subtle"
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '1.25rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '2rem',
+                  height: '2rem',
+                  padding: 0,
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#f1f5f9',
+                  color: '#475569',
                   cursor: 'pointer',
-                  color: '#64748b',
-                  padding: '0.25rem',
-                  lineHeight: 1,
                 }}
               >
-                ✕
+                <Icon name="close" size={18} />
               </button>
             </div>
 
@@ -1785,15 +1898,7 @@ export function OpportunityFinancial({
               <button
                 type="button"
                 onClick={() => setShowPayableModal(false)}
-                style={{
-                  background: '#ffffff',
-                  color: '#334155',
-                  border: '1px solid #cbd5e1',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '6px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
+                className="btn btn--secondary"
               >
                 Cancelar
               </button>
@@ -1806,15 +1911,7 @@ export function OpportunityFinancial({
                   !payableDueDate
                 }
                 onClick={() => createPayableMutation.mutate()}
-                style={{
-                  background: '#0284c7',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                }}
+                className="btn btn--primary"
               >
                 {createPayableMutation.isPending ? 'Salvando…' : 'Cadastrar Obrigação'}
               </button>
@@ -1826,46 +1923,70 @@ export function OpportunityFinancial({
       {/* MODAL 5: RECORD PAYMENT */}
       {showPaymentModal && (
         <div
-          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          className="modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowPaymentModal(false);
+          }}
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(3px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 1000,
+            zIndex: 1050,
+            padding: '1rem',
           }}
         >
           <div
+            className="modal-card"
             style={{
               backgroundColor: '#fff',
               padding: '1.5rem',
-              borderRadius: '8px',
+              borderRadius: '12px',
               maxWidth: '480px',
               width: '90%',
               display: 'flex',
               flexDirection: 'column',
               gap: '1rem',
+              border: '1px solid #d9e2de',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: '1.25rem' }}>Registrar Pagamento de Despesa</h3>
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: '1.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                }}
+              >
+                <Icon name="credit_card" size={20} /> Registrar Pagamento de Despesa
+              </h3>
               <button
                 type="button"
                 onClick={() => setShowPaymentModal(false)}
                 aria-label="Fechar modal"
+                className="btn btn--subtle"
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '1.25rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '2rem',
+                  height: '2rem',
+                  padding: 0,
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#f1f5f9',
+                  color: '#475569',
                   cursor: 'pointer',
-                  color: '#64748b',
-                  padding: '0.25rem',
-                  lineHeight: 1,
                 }}
               >
-                ✕
+                <Icon name="close" size={18} />
               </button>
             </div>
 
@@ -1961,15 +2082,7 @@ export function OpportunityFinancial({
               <button
                 type="button"
                 onClick={() => setShowPaymentModal(false)}
-                style={{
-                  background: '#ffffff',
-                  color: '#334155',
-                  border: '1px solid #cbd5e1',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '6px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
+                className="btn btn--secondary"
               >
                 Cancelar
               </button>
@@ -1977,15 +2090,7 @@ export function OpportunityFinancial({
                 type="button"
                 disabled={recordPaymentMutation.isPending || !paymentAmount}
                 onClick={() => recordPaymentMutation.mutate()}
-                style={{
-                  background: '#0284c7',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                }}
+                className="btn btn--primary"
               >
                 {recordPaymentMutation.isPending ? 'Liquidando…' : 'Confirmar Pagamento'}
               </button>
@@ -1997,44 +2102,70 @@ export function OpportunityFinancial({
       {/* MODAL 6: CONFIGURE COMMISSION */}
       {showCommissionModal && (
         <div
-          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          className="modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowCommissionModal(false);
+          }}
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(3px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 1000,
+            zIndex: 1050,
+            padding: '1rem',
           }}
         >
           <div
+            className="modal-card"
             style={{
               backgroundColor: '#fff',
               padding: '1.5rem',
-              borderRadius: '8px',
+              borderRadius: '12px',
               maxWidth: '420px',
               width: '90%',
               display: 'flex',
               flexDirection: 'column',
               gap: '1rem',
+              border: '1px solid #d9e2de',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0 }}>Adicionar Comissão Comercial</h3>
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: '1.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                }}
+              >
+                <Icon name="payments" size={20} /> Adicionar Comissão Comercial
+              </h3>
               <button
                 type="button"
                 onClick={() => setShowCommissionModal(false)}
+                className="btn btn--subtle"
                 style={{
-                  background: 'transparent',
-                  border: 'none',
-                  fontSize: '1.25rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '2rem',
+                  height: '2rem',
+                  padding: 0,
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#f1f5f9',
+                  color: '#475569',
                   cursor: 'pointer',
-                  color: '#64748b',
                 }}
                 aria-label="Fechar"
               >
-                ✕
+                <Icon name="close" size={18} />
               </button>
             </div>
 
@@ -2124,15 +2255,7 @@ export function OpportunityFinancial({
               <button
                 type="button"
                 onClick={() => setShowCommissionModal(false)}
-                style={{
-                  background: '#ffffff',
-                  color: '#334155',
-                  border: '1px solid #cbd5e1',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '6px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
+                className="btn btn--secondary"
               >
                 Cancelar
               </button>
@@ -2140,15 +2263,7 @@ export function OpportunityFinancial({
                 type="button"
                 disabled={configureCommissionMutation.isPending || !commBeneficiary || !commPercent}
                 onClick={() => configureCommissionMutation.mutate()}
-                style={{
-                  background: '#0284c7',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                }}
+                className="btn btn--primary"
               >
                 {configureCommissionMutation.isPending ? 'Salvando…' : 'Salvar Comissão'}
               </button>
@@ -2167,6 +2282,17 @@ export function GlobalFinancialDashboard() {
   const [accountBank, setAccountBank] = useState('');
   const [accountAgency, setAccountAgency] = useState('');
   const [accountNum, setAccountNum] = useState('');
+
+  // Handle Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowAccountModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const cashFlowQuery = useQuery({
     queryKey: ['cash-flow'],
@@ -2442,44 +2568,70 @@ export function GlobalFinancialDashboard() {
       {/* MODAL: NOVA CONTA */}
       {showAccountModal && (
         <div
-          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          className="modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowAccountModal(false);
+          }}
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(3px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 1000,
+            zIndex: 1050,
+            padding: '1rem',
           }}
         >
           <div
+            className="modal-card"
             style={{
               backgroundColor: '#fff',
               padding: '1.5rem',
-              borderRadius: '8px',
+              borderRadius: '12px',
               maxWidth: '420px',
               width: '90%',
               display: 'flex',
               flexDirection: 'column',
               gap: '1rem',
+              border: '1px solid #d9e2de',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0 }}>Cadastrar Conta Financeira</h3>
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: '1.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                }}
+              >
+                <Icon name="payments" size={20} /> Cadastrar Conta Financeira
+              </h3>
               <button
                 type="button"
                 onClick={() => setShowAccountModal(false)}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  fontSize: '1.25rem',
-                  cursor: 'pointer',
-                  color: '#64748b',
-                }}
                 aria-label="Fechar"
+                className="btn btn--subtle"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '2rem',
+                  height: '2rem',
+                  padding: 0,
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#f1f5f9',
+                  color: '#475569',
+                  cursor: 'pointer',
+                }}
               >
-                ✕
+                <Icon name="close" size={18} />
               </button>
             </div>
 
@@ -2562,15 +2714,7 @@ export function GlobalFinancialDashboard() {
               <button
                 type="button"
                 onClick={() => setShowAccountModal(false)}
-                style={{
-                  background: '#ffffff',
-                  color: '#334155',
-                  border: '1px solid #cbd5e1',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '6px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
+                className="btn btn--secondary"
               >
                 Cancelar
               </button>
@@ -2578,15 +2722,7 @@ export function GlobalFinancialDashboard() {
                 type="button"
                 disabled={createAccountMutation.isPending || !accountName}
                 onClick={() => createAccountMutation.mutate()}
-                style={{
-                  background: '#0284c7',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                }}
+                className="btn btn--primary"
               >
                 {createAccountMutation.isPending ? 'Salvando…' : 'Salvar Conta'}
               </button>

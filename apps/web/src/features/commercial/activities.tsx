@@ -1,8 +1,9 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, result, allows } from '../identity/client';
 import { Feedback } from '../identity/feedback';
+import { Icon } from '../../components/icons/material-symbol';
 import type { Schemas } from '@moura-solar/api-client';
 
 type Activity = Schemas['ActivityViewDto'];
@@ -36,6 +37,21 @@ export function Activities() {
   const [isCompleting, setIsCompleting] = useState(false);
   const [isRescheduling, setIsRescheduling] = useState(false);
   const [isCanceling, setIsCanceling] = useState(false);
+
+  // Close modals on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsCreating(false);
+        setIsCompleting(false);
+        setIsRescheduling(false);
+        setIsCanceling(false);
+        setSelectedActivity(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Create form state
   const [newType, setNewType] = useState<
@@ -318,17 +334,29 @@ export function Activities() {
               marginBottom: '1rem',
             }}
           >
-            <h3 id="create-activity-title">Agendar Nova Atividade</h3>
+            <h3 id="create-activity-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <Icon name="add" size={20} /> Agendar Nova Atividade
+            </h3>
             <button
+              type="button"
+              className="btn btn--subtle"
               style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--text-secondary)',
-                fontSize: '1.25rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '2rem',
+                height: '2rem',
+                padding: 0,
+                borderRadius: '6px',
+                border: '1px solid #cbd5e1',
+                backgroundColor: '#f1f5f9',
+                color: '#475569',
+                cursor: 'pointer',
               }}
               onClick={() => setIsCreating(false)}
+              aria-label="Fechar"
             >
-              ✕
+              <Icon name="close" size={18} />
             </button>
           </div>
 
@@ -426,16 +454,12 @@ export function Activities() {
             >
               <button
                 type="button"
-                style={{
-                  background: 'transparent',
-                  border: '1px solid var(--color-border)',
-                  color: 'var(--text-primary)',
-                }}
+                className="btn btn--secondary"
                 onClick={() => setIsCreating(false)}
               >
                 Cancelar
               </button>
-              <button type="submit" disabled={createMutation.isPending}>
+              <button type="submit" className="btn btn--primary" disabled={createMutation.isPending}>
                 {createMutation.isPending ? 'Salvando…' : 'Agendar Atividade'}
               </button>
             </div>
@@ -593,9 +617,11 @@ export function Activities() {
                             style={{
                               padding: '0.25rem 0.5rem',
                               fontSize: '0.8125rem',
-                              background: 'transparent',
+                              background: '#fff',
                               color: 'var(--status-danger)',
-                              borderColor: 'var(--status-danger)',
+                              border: '1px solid #fca5a5',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
                             }}
                             onClick={() => {
                               setSelectedActivity(act);
@@ -760,9 +786,11 @@ export function Activities() {
                       style={{
                         padding: '0.5rem',
                         fontSize: '0.8125rem',
-                        background: 'transparent',
+                        background: '#fff',
                         color: 'var(--status-danger)',
-                        borderColor: 'var(--status-danger)',
+                        border: '1px solid #fca5a5',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
                       }}
                       onClick={() => {
                         setSelectedActivity(act);
@@ -781,45 +809,85 @@ export function Activities() {
 
       {/* COMPLETE MODAL */}
       {isCompleting && selectedActivity && (
-        <section
+        <div
           role="dialog"
           aria-labelledby="complete-modal-title"
           aria-modal="true"
-          className="auth-card"
+          className="modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsCompleting(false);
+              setSelectedActivity(null);
+            }
+          }}
           style={{
             position: 'fixed',
             inset: 0,
-            margin: 'auto',
-            maxHeight: '90vh',
-            overflowY: 'auto',
-            zIndex: 100,
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(3px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1050,
+            padding: '1rem',
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 id="complete-modal-title" style={{ margin: 0 }}>
-              Concluir Atividade
-            </h3>
-            <button
-              type="button"
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--text-secondary)',
-                fontSize: '1.25rem',
-                cursor: 'pointer',
-              }}
-              onClick={() => {
-                setIsCompleting(false);
-                setSelectedActivity(null);
-              }}
-              aria-label="Fechar"
-            >
-              ✕
-            </button>
-          </div>
-          <p style={{ color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-            Atividade: <strong>{selectedActivity.subject}</strong>
+          <div
+            className="modal-card"
+            style={{
+              backgroundColor: '#fff',
+              padding: '1.5rem',
+              borderRadius: '12px',
+              maxWidth: '520px',
+              width: '90%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem',
+              border: '1px solid #d9e2de',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3
+                id="complete-modal-title"
+                style={{
+                  margin: 0,
+                  fontSize: '1.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                }}
+              >
+                <Icon name="check_circle" size={20} /> Concluir Atividade
+              </h3>
+              <button
+                type="button"
+                className="btn btn--subtle"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '2rem',
+                  height: '2rem',
+                  padding: 0,
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#f1f5f9',
+                  color: '#475569',
+                  cursor: 'pointer',
+                }}
+                onClick={() => {
+                  setIsCompleting(false);
+                  setSelectedActivity(null);
+                }}
+                aria-label="Fechar"
+              >
+                <Icon name="close" size={18} />
+              </button>
+            </div>
+            <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: '0.875rem' }}>
+              Atividade: <strong>{selectedActivity.subject}</strong>
           </p>
 
           <form
@@ -940,11 +1008,7 @@ export function Activities() {
             >
               <button
                 type="button"
-                style={{
-                  background: 'transparent',
-                  border: '1px solid var(--color-border)',
-                  color: 'var(--text-primary)',
-                }}
+                className="btn btn--secondary"
                 onClick={() => {
                   setIsCompleting(false);
                   setSelectedActivity(null);
@@ -955,196 +1019,272 @@ export function Activities() {
               <button
                 type="submit"
                 disabled={completeMutation.isPending}
-                style={{
-                  background: 'var(--status-success)',
-                  borderColor: 'var(--status-success)',
-                }}
+                className="btn btn--primary"
               >
                 {completeMutation.isPending ? 'Concluindo…' : 'Confirmar Conclusão'}
               </button>
             </div>
           </form>
-        </section>
+          </div>
+        </div>
       )}
 
       {/* RESCHEDULE MODAL */}
       {isRescheduling && selectedActivity && (
-        <section
+        <div
           role="dialog"
           aria-labelledby="reschedule-modal-title"
           aria-modal="true"
-          className="auth-card"
+          className="modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsRescheduling(false);
+              setSelectedActivity(null);
+            }
+          }}
           style={{
             position: 'fixed',
             inset: 0,
-            margin: 'auto',
-            maxHeight: '90vh',
-            overflowY: 'auto',
-            zIndex: 100,
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(3px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1050,
+            padding: '1rem',
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 id="reschedule-modal-title" style={{ margin: 0 }}>
-              Reagendar Atividade
-            </h3>
-            <button
-              type="button"
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--text-secondary)',
-                fontSize: '1.25rem',
-                cursor: 'pointer',
-              }}
-              onClick={() => {
-                setIsRescheduling(false);
-                setSelectedActivity(null);
-              }}
-              aria-label="Fechar"
-            >
-              ✕
-            </button>
-          </div>
-          <p style={{ color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-            Atividade: <strong>{selectedActivity.subject}</strong>
-          </p>
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              rescheduleMutation.mutate();
+          <div
+            className="modal-card"
+            style={{
+              backgroundColor: '#fff',
+              padding: '1.5rem',
+              borderRadius: '12px',
+              maxWidth: '480px',
+              width: '90%',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem',
+              border: '1px solid #d9e2de',
             }}
           >
-            <label>
-              Nova Data e Hora *
-              <input
-                type="datetime-local"
-                required
-                value={rescheduleDueAt}
-                onChange={(e) => setRescheduleDueAt(e.target.value)}
-              />
-            </label>
-
-            <label>
-              Motivo do Reagendamento
-              <textarea
-                rows={3}
-                value={rescheduleNotes}
-                onChange={(e) => setRescheduleNotes(e.target.value)}
-                placeholder="ex: Cliente indisponível hoje, pediu para ligar na quinta"
-              />
-            </label>
-
-            <div
-              style={{
-                display: 'flex',
-                gap: '1rem',
-                justifyContent: 'flex-end',
-                marginTop: '1.5rem',
-              }}
-            >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3
+                id="reschedule-modal-title"
+                style={{
+                  margin: 0,
+                  fontSize: '1.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                }}
+              >
+                <Icon name="schedule" size={20} /> Reagendar Atividade
+              </h3>
               <button
                 type="button"
+                className="btn btn--subtle"
                 style={{
-                  background: 'transparent',
-                  border: '1px solid var(--color-border)',
-                  color: 'var(--text-primary)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '2rem',
+                  height: '2rem',
+                  padding: 0,
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#f1f5f9',
+                  color: '#475569',
+                  cursor: 'pointer',
                 }}
                 onClick={() => {
                   setIsRescheduling(false);
                   setSelectedActivity(null);
                 }}
+                aria-label="Fechar"
               >
-                Cancelar
-              </button>
-              <button type="submit" disabled={rescheduleMutation.isPending}>
-                {rescheduleMutation.isPending ? 'Salvando…' : 'Confirmar Reagendamento'}
+                <Icon name="close" size={18} />
               </button>
             </div>
-          </form>
-        </section>
+            <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: '0.875rem' }}>
+              Atividade: <strong>{selectedActivity.subject}</strong>
+            </p>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                rescheduleMutation.mutate();
+              }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+            >
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.85rem' }}>
+                Nova Data e Hora *
+                <input
+                  type="datetime-local"
+                  required
+                  value={rescheduleDueAt}
+                  onChange={(e) => setRescheduleDueAt(e.target.value)}
+                  style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                />
+              </label>
+
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.85rem' }}>
+                Motivo do Reagendamento
+                <textarea
+                  rows={3}
+                  value={rescheduleNotes}
+                  onChange={(e) => setRescheduleNotes(e.target.value)}
+                  placeholder="ex: Cliente indisponível hoje, pediu para ligar na quinta"
+                  style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                />
+              </label>
+
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '0.5rem',
+                  justifyContent: 'flex-end',
+                  marginTop: '0.5rem',
+                }}
+              >
+                <button
+                  type="button"
+                  className="btn btn--secondary"
+                  onClick={() => {
+                    setIsRescheduling(false);
+                    setSelectedActivity(null);
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={rescheduleMutation.isPending}
+                  className="btn btn--primary"
+                >
+                  {rescheduleMutation.isPending ? 'Salvando…' : 'Confirmar Reagendamento'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {/* CANCEL MODAL */}
       {isCanceling && selectedActivity && (
-        <section
+        <div
           role="dialog"
           aria-labelledby="cancel-modal-title"
           aria-modal="true"
-          className="auth-card"
+          className="modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsCanceling(false);
+              setSelectedActivity(null);
+            }
+          }}
           style={{
             position: 'fixed',
             inset: 0,
-            margin: 'auto',
-            maxHeight: '90vh',
-            overflowY: 'auto',
-            zIndex: 100,
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(3px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1050,
+            padding: '1rem',
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 id="cancel-modal-title" style={{ color: 'var(--status-danger)', margin: 0 }}>
-              Cancelar Atividade
-            </h3>
-            <button
-              type="button"
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--text-secondary)',
-                fontSize: '1.25rem',
-                cursor: 'pointer',
-              }}
-              onClick={() => {
-                setIsCanceling(false);
-                setSelectedActivity(null);
-              }}
-              aria-label="Fechar"
-            >
-              ✕
-            </button>
-          </div>
-          <p style={{ marginTop: '0.5rem' }}>
-            Tem certeza de que deseja cancelar a atividade{' '}
-            <strong>&ldquo;{selectedActivity.subject}&rdquo;</strong>?
-          </p>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-            Esta ação atualizará o status da atividade para Cancelada de forma auditável.
-          </p>
-
           <div
+            className="modal-card"
             style={{
+              backgroundColor: '#fff',
+              padding: '1.5rem',
+              borderRadius: '12px',
+              maxWidth: '440px',
+              width: '90%',
               display: 'flex',
+              flexDirection: 'column',
               gap: '1rem',
-              justifyContent: 'flex-end',
-              marginTop: '1.5rem',
+              border: '1px solid #fecaca',
             }}
           >
-            <button
-              type="button"
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3
+                id="cancel-modal-title"
+                style={{
+                  color: 'var(--status-danger)',
+                  margin: 0,
+                  fontSize: '1.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                }}
+              >
+                <Icon name="warning" size={20} /> Cancelar Atividade
+              </h3>
+              <button
+                type="button"
+                className="btn btn--subtle"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '2rem',
+                  height: '2rem',
+                  padding: 0,
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#f1f5f9',
+                  color: '#475569',
+                  cursor: 'pointer',
+                }}
+                onClick={() => {
+                  setIsCanceling(false);
+                  setSelectedActivity(null);
+                }}
+                aria-label="Fechar"
+              >
+                <Icon name="close" size={18} />
+              </button>
+            </div>
+            <p style={{ margin: 0, fontSize: '0.9rem' }}>
+              Tem certeza de que deseja cancelar a atividade{' '}
+              <strong>&ldquo;{selectedActivity.subject}&rdquo;</strong>?
+            </p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0 }}>
+              Esta ação atualizará o status da atividade para Cancelada de forma auditável.
+            </p>
+
+            <div
               style={{
-                background: 'transparent',
-                border: '1px solid var(--color-border)',
-                color: 'var(--text-primary)',
-              }}
-              onClick={() => {
-                setIsCanceling(false);
-                setSelectedActivity(null);
+                display: 'flex',
+                gap: '0.5rem',
+                justifyContent: 'flex-end',
+                marginTop: '0.5rem',
               }}
             >
-              Voltar
-            </button>
-            <button
-              type="button"
-              disabled={cancelMutation.isPending}
-              style={{ background: 'var(--status-danger)', borderColor: 'var(--status-danger)' }}
-              onClick={() => cancelMutation.mutate()}
-            >
-              {cancelMutation.isPending ? 'Cancelando…' : 'Confirmar Cancelamento'}
-            </button>
+              <button
+                type="button"
+                className="btn btn--secondary"
+                onClick={() => {
+                  setIsCanceling(false);
+                  setSelectedActivity(null);
+                }}
+              >
+                Voltar
+              </button>
+              <button
+                type="button"
+                disabled={cancelMutation.isPending}
+                className="btn btn--danger"
+                onClick={() => cancelMutation.mutate()}
+              >
+                {cancelMutation.isPending ? 'Cancelando…' : 'Confirmar Cancelamento'}
+              </button>
+            </div>
           </div>
-        </section>
+        </div>
       )}
     </div>
   );

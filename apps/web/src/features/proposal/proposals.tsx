@@ -1,8 +1,9 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, result, allows } from '../identity/client';
 import { Feedback } from '../identity/feedback';
+import { Icon } from '../../components/icons/material-symbol';
 import type { Schemas } from '@moura-solar/api-client';
 
 export interface ProposalDocumentView {
@@ -122,6 +123,21 @@ export function Proposals({
 
   // Downloading state
   const [downloadingVersionId, setDownloadingVersionId] = useState<string | null>(null);
+
+  // Close creation panel or modals on Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsCreating(false);
+        setDeliveryVersionId(null);
+        setAcceptVersionId(null);
+        setRejectVersionId(null);
+        setNewVersionParentId(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Queries
   const me = useQuery({
@@ -393,19 +409,29 @@ export function Proposals({
               marginBottom: '1rem',
             }}
           >
-            <h4 style={{ margin: 0 }}>Emitir Nova Proposta Comercial (PDF)</h4>
+            <h4 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <Icon name="description" size={20} /> Emitir Nova Proposta Comercial (PDF)
+            </h4>
             <button
               type="button"
+              className="btn btn--subtle"
               style={{
-                background: 'transparent',
-                color: 'var(--text-secondary)',
-                border: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '2rem',
+                height: '2rem',
+                padding: 0,
+                borderRadius: '6px',
+                border: '1px solid #cbd5e1',
+                backgroundColor: '#f1f5f9',
+                color: '#475569',
                 cursor: 'pointer',
-                fontSize: '1rem',
               }}
               onClick={() => setIsCreating(false)}
+              aria-label="Fechar"
             >
-              ✕ Fechar
+              <Icon name="close" size={18} />
             </button>
           </div>
 
@@ -421,11 +447,13 @@ export function Proposals({
                 border: '1px solid var(--status-danger)',
               }}
             >
-              <strong>⚠️ Nenhum dimensionamento aprovado disponível</strong>
+              <strong style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Icon name="warning" size={18} /> Nenhum dimensionamento aprovado disponível
+              </strong>
               <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.875rem' }}>
                 Para emitir uma proposta comercial oficial com PDF, você precisa primeiro aprovar
                 uma versão de dimensionamento técnico na aba{' '}
-                <strong>&quot;☀️ Dimensionamento & Custos&quot;</strong>.
+                <strong>&quot;Dimensionamento & Custos&quot;</strong>.
               </p>
             </div>
           ) : (
@@ -544,7 +572,9 @@ export function Proposals({
             background: 'var(--color-surface)',
           }}
         >
-          <span style={{ fontSize: '2.5rem' }}>📄</span>
+          <div style={{ marginBottom: '0.5rem' }}>
+            <Icon name="description" size={48} style={{ color: '#94a3b8' }} />
+          </div>
           <h4 style={{ margin: '0.5rem 0' }}>Nenhuma proposta emitida</h4>
           <p className="device" style={{ maxWidth: '28rem', margin: '0 auto 1.5rem auto' }}>
             Converta dimensionamentos aprovados em propostas comerciais formais completas com PDF
@@ -783,7 +813,9 @@ export function Proposals({
                         }}
                       >
                         <div>
-                          <span>📄 {doc.fileName}</span>{' '}
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                            <Icon name="description" size={16} /> {doc.fileName}
+                          </span>{' '}
                           <span className="device">
                             ({Math.round(doc.fileSize / 1024)} KB | Hash:{' '}
                             {doc.contentHash.slice(0, 10)}…)
@@ -801,7 +833,8 @@ export function Proposals({
                           onClick={() => handleDownloadPdf(version)}
                           disabled={downloadingVersionId === version.id}
                         >
-                          {downloadingVersionId === version.id ? 'Baixando…' : '📥 Baixar PDF'}
+                          <Icon name="download" size={14} />
+                          {downloadingVersionId === version.id ? 'Baixando…' : 'Baixar PDF'}
                         </button>
                       </div>
                     )}
@@ -819,7 +852,9 @@ export function Proposals({
                           fontSize: '0.875rem',
                         }}
                       >
-                        <strong>✅ Proposta Comercial Aceita Formalmente</strong>
+                        <strong style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <Icon name="check_circle" size={18} /> Proposta Comercial Aceita Formalmente
+                        </strong>
                         <div>
                           Aceito por <strong>{acceptance.acceptedByName}</strong> em{' '}
                           {new Date(acceptance.acceptedAt).toLocaleString('pt-BR')} via{' '}
@@ -846,7 +881,9 @@ export function Proposals({
                           fontSize: '0.875rem',
                         }}
                       >
-                        <strong>❌ Proposta Rejeitada</strong>
+                        <strong style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <Icon name="close" size={18} /> Proposta Rejeitada
+                        </strong>
                         <div>Motivo: {version.rejectionReason}</div>
                       </div>
                     )}
@@ -875,12 +912,12 @@ export function Proposals({
                               }}
                             >
                               <span>
-                                📤{' '}
+                                <Icon name="send" size={14} style={{ marginRight: '0.35rem' }} />
                                 {del.channel === 'WHATSAPP'
-                                  ? '📱 WhatsApp'
+                                  ? 'WhatsApp'
                                   : del.channel === 'EMAIL'
-                                    ? '✉️ E-mail'
-                                    : '🤝 Presencial'}
+                                    ? 'E-mail'
+                                    : 'Presencial'}
                                 : <strong>{del.recipient}</strong> (
                                 {new Date(del.sentAt).toLocaleString('pt-BR')})
                               </span>
@@ -909,7 +946,7 @@ export function Proposals({
                               color: 'var(--brand-primary-strong, #045c34)',
                             }}
                           >
-                            <span style={{ fontSize: '1.25rem' }}>👉</span>
+                            <Icon name="arrow_forward" size={20} />
                             <div>
                               <strong>Próximo Passo Comercial:</strong> Envie a proposta ao cliente
                               e registre o canal de entrega abaixo para liberar o{' '}
@@ -933,7 +970,7 @@ export function Proposals({
                               color: '#15803d',
                             }}
                           >
-                            <span style={{ fontSize: '1.25rem' }}>🎯</span>
+                            <Icon name="verified" size={20} />
                             <div>
                               <strong>Proposta Entregue ao Cliente!</strong> Assim que o cliente der
                               o retorno positivo, registre o <strong>Aceite Formal</strong> no botão
@@ -966,6 +1003,9 @@ export function Proposals({
                               fontSize: '0.875rem',
                               minHeight: 'auto',
                               fontWeight: 600,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.4rem',
                               backgroundColor: isReady
                                 ? 'var(--brand-primary, #087443)'
                                 : undefined,
@@ -981,7 +1021,7 @@ export function Proposals({
                               setRejectVersionId(null);
                             }}
                           >
-                            📤{' '}
+                            <Icon name="send" size={16} />
                             {isReady
                               ? '1. Registrar Envio ao Cliente (Gate B)'
                               : 'Registrar Novo Envio'}
@@ -1012,7 +1052,7 @@ export function Proposals({
                                 setRejectVersionId(null);
                               }}
                             >
-                              ✓ Registrar Aceite Formal do Cliente
+                              <Icon name="check" size={18} /> Registrar Aceite Formal do Cliente
                             </button>
                           ) : (
                             <button
@@ -1030,9 +1070,12 @@ export function Proposals({
                                 fontWeight: 600,
                                 cursor: 'not-allowed',
                                 opacity: 0.65,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.4rem',
                               }}
                             >
-                              ✓ Registrar Aceite Formal (Aguardando Envio)
+                              <Icon name="schedule" size={16} /> Registrar Aceite Formal (Aguardando Envio)
                             </button>
                           ))}
 
@@ -1048,6 +1091,9 @@ export function Proposals({
                               color: '#b91c1c',
                               border: '1px solid #ef4444',
                               fontWeight: 600,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.4rem',
                             }}
                             onClick={() => {
                               setRejectVersionId(version.id);
@@ -1055,7 +1101,7 @@ export function Proposals({
                               setAcceptVersionId(null);
                             }}
                           >
-                            ✕ Registrar Rejeição
+                            <Icon name="close" size={16} /> Registrar Rejeição
                           </button>
                         )}
 

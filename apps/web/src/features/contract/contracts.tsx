@@ -1,8 +1,10 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, result, allows } from '../identity/client';
 import { Feedback } from '../identity/feedback';
+import { Icon } from '../../components/icons/material-symbol';
+import { Modal } from '../../components/ui/modal';
 
 export interface ContractDocumentView {
   id: string;
@@ -86,6 +88,10 @@ export interface ClausesSnapshot {
   };
   city?: string;
 }
+
+const formatBRL = (val: number) =>
+  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+
 
 export interface ContractVersionView {
   id: string;
@@ -189,6 +195,21 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
   const [reviewDecision, setReviewDecision] = useState<'VERIFIED' | 'REJECTED'>('VERIFIED');
   const [rejectionReason, setRejectionReason] = useState('');
   const [reviewNotes, setReviewNotes] = useState('');
+
+  // Close open modals on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsCreating(false);
+        setIsEditingPayment(false);
+        setIsDelivering(false);
+        setIsUploading(false);
+        setIsReviewing(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Identity and permissions
   const me = useQuery({
@@ -559,13 +580,13 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 <span
                   style={{ color: '#16a34a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                 >
-                  ✅ Gate C Superado — Contrato Ativo e Verificado
+                  <Icon name="verified" size={18} /> Gate C Superado — Contrato Ativo e Verificado
                 </span>
               ) : (
                 <span
                   style={{ color: '#ca8a04', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                 >
-                  ⏳ Gate C Pendente — Aguardando Assinatura e Conferência Formal
+                  <Icon name="schedule" size={18} /> Gate C Pendente — Aguardando Assinatura e Conferência Formal
                 </span>
               )}
             </div>
@@ -624,7 +645,9 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
             gap: '1rem',
           }}
         >
-          <div style={{ fontSize: '2.5rem' }}>📝</div>
+          <div>
+            <Icon name="description" size={48} style={{ color: '#94a3b8' }} />
+          </div>
           <div style={{ fontWeight: 600, fontSize: '1.125rem' }}>
             Nenhum contrato formal gerado ainda
           </div>
@@ -680,7 +703,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span style={{ fontSize: '1.5rem' }}>📄</span>
+                <Icon name="description" size={24} style={{ color: '#087443' }} />
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span style={{ fontSize: '1.25rem', fontWeight: 700 }}>{contract.code}</span>
@@ -727,9 +750,12 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                       padding: '0.5rem 1rem',
                       fontSize: '0.875rem',
                       boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
                     }}
                   >
-                    💳 Ajustar Parcelas & Forma de Pagamento (Anexo III)
+                    <Icon name="credit_card" size={16} /> Ajustar Parcelas & Forma de Pagamento (Anexo III)
                   </button>
                 )}
 
@@ -747,9 +773,12 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                         fontWeight: 600,
                         padding: '0.5rem 1rem',
                         fontSize: '0.875rem',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
                       }}
                     >
-                      📤 Registrar Envio
+                      <Icon name="send" size={16} /> Registrar Envio
                     </button>
                   )}
 
@@ -770,9 +799,12 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                         padding: '0.5rem 1rem',
                         fontSize: '0.875rem',
                         boxShadow: '0 1px 3px rgba(0, 0, 0, 0.12)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
                       }}
                     >
-                      📥 Anexar Via Assinada
+                      <Icon name="upload_file" size={16} /> Anexar Via Assinada
                     </button>
                   )}
 
@@ -796,9 +828,12 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                       padding: '0.5rem 1.1rem',
                       fontSize: '0.875rem',
                       boxShadow: '0 2px 4px rgba(0, 0, 0, 0.18)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
                     }}
                   >
-                    🔍 Conferência de Assinatura (Gate C)
+                    <Icon name="search" size={16} /> Conferência de Assinatura (Gate C)
                   </button>
                 )}
               </div>
@@ -820,8 +855,8 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
               >
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>
-                    📝 Minuta Editável (DOCX)
+                  <div style={{ fontWeight: 600, fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <Icon name="description" size={16} /> Minuta Editável (DOCX)
                   </div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                     {docxDoc
@@ -853,8 +888,8 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
               >
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>
-                    📄 Contrato Formal (PDF)
+                  <div style={{ fontWeight: 600, fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <Icon name="description" size={16} /> Contrato Formal (PDF)
                   </div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                     {pdfDoc
@@ -887,8 +922,8 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                   style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                 >
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#16a34a' }}>
-                      ✍️ Via Assinada Anexada
+                    <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#16a34a', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <Icon name="verified" size={16} /> Via Assinada Anexada
                     </div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                       {Math.round(signedDoc.fileSize / 1024)} KB • {signedDoc.fileName}
@@ -939,7 +974,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                   gap: '0.5rem',
                 }}
               >
-                🎯 Etapas e Ações do Contrato (Gate C)
+                <Icon name="checklist" size={20} /> Etapas e Ações do Contrato (Gate C)
               </h3>
               <p
                 style={{
@@ -1017,9 +1052,12 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                         border: '1px solid #0369a1',
                         fontWeight: 600,
                         textDecoration: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
                       }}
                     >
-                      📄 Baixar PDF
+                      <Icon name="download" size={14} /> Baixar PDF
                     </a>
                   )}
                   {docxDoc && canDownload && (
@@ -1035,9 +1073,12 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                         border: '1px solid #cbd5e1',
                         fontWeight: 600,
                         textDecoration: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
                       }}
                     >
-                      📝 Baixar DOCX
+                      <Icon name="download" size={14} /> Baixar DOCX
                     </a>
                   )}
                 </div>
@@ -1050,6 +1091,10 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                   contract.deliveries &&
                   contract.deliveries.length > 0;
                 const isCurrent = contract.state === 'READY';
+                const hasMilestones = Boolean(
+                  activeVersion?.commercialSnapshot?.milestones &&
+                    activeVersion.commercialSnapshot.milestones.length > 0,
+                );
                 return (
                   <div
                     style={{
@@ -1094,7 +1139,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                             backgroundColor: isSent ? '#dcfce7' : isCurrent ? '#e2f3e9' : '#f1f5f9',
                           }}
                         >
-                          {isSent ? '✓ Enviado' : isCurrent ? '👉 Ação Pendente' : 'Pendente'}
+                          {isSent ? '✓ Enviado' : isCurrent ? 'Ação Pendente' : 'Pendente'}
                         </span>
                       </div>
                       <p style={{ margin: 0, fontSize: '0.8125rem', color: '#475569' }}>
@@ -1102,13 +1147,43 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                           ? `Enviado via ${contract.deliveries[0]?.channel} para ${contract.deliveries[0]?.recipient}.`
                           : 'Envie a minuta ao cliente e registre o canal (WhatsApp/E-mail) para controle de prazos.'}
                       </p>
+
+                      {isCurrent && (
+                        <div
+                          style={{
+                            marginTop: '0.5rem',
+                            padding: '0.35rem 0.6rem',
+                            borderRadius: '4px',
+                            fontSize: '0.75rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                            backgroundColor: hasMilestones ? '#f0fdf4' : '#fffbeb',
+                            color: hasMilestones ? '#166534' : '#92400e',
+                            border: hasMilestones ? '1px solid #bbf7d0' : '1px solid #fde68a',
+                          }}
+                        >
+                          <Icon name={hasMilestones ? 'verified' : 'warning'} size={14} />
+                          <span>
+                            {hasMilestones
+                              ? `${activeVersion?.commercialSnapshot?.milestones?.length} parcela(s) configurada(s) no Anexo III`
+                              : 'Atenção: Configure as parcelas antes de registrar o envio'}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {!readonly && canSend && (
                       <button
                         type="button"
                         className={isCurrent ? 'btn btn--primary' : 'btn btn--secondary'}
-                        onClick={() => setIsDelivering(true)}
+                        onClick={() => {
+                          if (!hasMilestones) {
+                            openEditPaymentModal();
+                          } else {
+                            setIsDelivering(true);
+                          }
+                        }}
                         style={{
                           fontSize: '0.8125rem',
                           padding: '0.5rem 0.9rem',
@@ -1117,9 +1192,20 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                           color: isCurrent ? '#ffffff' : '#087443',
                           border: isCurrent ? '1px solid #045c34' : '1.5px solid #087443',
                           boxShadow: isCurrent ? '0 2px 4px rgba(0, 0, 0, 0.15)' : 'none',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.35rem',
                         }}
                       >
-                        📤 {isSent ? 'Registrar Novo Envio' : 'Registrar Envio da Minuta'}
+                        <Icon name={!hasMilestones ? 'payments' : 'send'} size={16} />
+                        <span>
+                          {!hasMilestones
+                            ? 'Configurar Parcelas (Anexo III)'
+                            : isSent
+                              ? 'Registrar Novo Envio'
+                              : 'Registrar Envio da Minuta'}
+                        </span>
                       </button>
                     )}
                   </div>
@@ -1182,7 +1268,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                           {hasUploaded
                             ? '✓ Anexado'
                             : isCurrent
-                              ? '👉 Ação Pendente'
+                              ? 'Ação Pendente'
                               : 'Aguardando'}
                         </span>
                       </div>
@@ -1207,9 +1293,13 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                             color: hasUploaded ? '#0284c7' : '#ffffff',
                             border: hasUploaded ? '1.5px solid #0284c7' : '1px solid #0369a1',
                             boxShadow: hasUploaded ? 'none' : '0 2px 4px rgba(0, 0, 0, 0.15)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
                           }}
                         >
-                          📥 {hasUploaded ? 'Substituir Via Assinada' : 'Anexar Contrato Assinado'}
+                          <Icon name="upload_file" size={14} />
+                          {hasUploaded ? 'Substituir Via Assinada' : 'Anexar Contrato Assinado'}
                         </button>
                       </div>
                     )}
@@ -1274,10 +1364,10 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                           }}
                         >
                           {isSatisfied
-                            ? '✅ Gate C Liberado'
+                            ? '✓ Gate C Liberado'
                             : isReadyForReview
-                              ? '⭐ Pronto p/ Conferência'
-                              : '🔒 Bloqueado'}
+                              ? 'Pronto p/ Conferência'
+                              : 'Bloqueado'}
                         </span>
                       </div>
                       <p style={{ margin: 0, fontSize: '0.8125rem', color: '#475569' }}>
@@ -1309,9 +1399,12 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                           color: '#ffffff',
                           border: '1px solid #166534',
                           boxShadow: '0 2px 6px rgba(0, 0, 0, 0.18)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.4rem',
                         }}
                       >
-                        🔍 Realizar Conferência Gate C
+                        <Icon name="search" size={16} /> Realizar Conferência Gate C
                       </button>
                     )}
 
@@ -1342,9 +1435,12 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                     margin: '0 0 0.75rem 0',
                     fontSize: '0.9375rem',
                     color: 'var(--text-primary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
                   }}
                 >
-                  👤 Partes Contratantes
+                  <Icon name="person" size={18} /> Partes Contratantes
                 </h4>
                 <div
                   style={{
@@ -1392,9 +1488,12 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                     margin: '0 0 0.75rem 0',
                     fontSize: '0.9375rem',
                     color: 'var(--text-primary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
                   }}
                 >
-                  ⚡ Solução Técnica & Equipamentos (Anexo I)
+                  <Icon name="bolt" size={18} /> Solução Técnica & Equipamentos (Anexo I)
                 </h4>
                 <div
                   style={{
@@ -1437,9 +1536,12 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                     margin: '0 0 0.75rem 0',
                     fontSize: '0.9375rem',
                     color: 'var(--text-primary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
                   }}
                 >
-                  💰 Investimento & Cronograma Financeiro
+                  <Icon name="payments" size={18} /> Investimento & Cronograma Financeiro
                 </h4>
                 <div
                   style={{
@@ -1507,7 +1609,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                         width: 'fit-content',
                       }}
                     >
-                      ✏️ Ajustar Parcelas e Forma de Pagamento (Anexo III)
+                      <Icon name="edit" size={16} /> Ajustar Parcelas e Forma de Pagamento (Anexo III)
                     </button>
                   )}
                 </div>
@@ -1567,8 +1669,16 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
           >
             {/* Deliveries */}
             <div className="card" style={{ padding: '1.25rem' }}>
-              <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.9375rem' }}>
-                📤 Histórico de Envios ao Cliente
+              <h4
+                style={{
+                  margin: '0 0 0.75rem 0',
+                  fontSize: '0.9375rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                }}
+              >
+                <Icon name="send" size={18} /> Histórico de Envios ao Cliente
               </h4>
               {contract.deliveries?.length === 0 ? (
                 <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
@@ -1619,8 +1729,16 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
 
             {/* Signed Reviews History */}
             <div className="card" style={{ padding: '1.25rem' }}>
-              <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.9375rem' }}>
-                🔍 Histórico de Conferência de Assinaturas
+              <h4
+                style={{
+                  margin: '0 0 0.75rem 0',
+                  fontSize: '0.9375rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                }}
+              >
+                <Icon name="search" size={18} /> Histórico de Conferência de Assinaturas
               </h4>
               {contract.signedReviews?.length === 0 ? (
                 <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
@@ -1648,11 +1766,22 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                         }}
                       >
                         <span
-                          style={{ color: rev.decision === 'VERIFIED' ? '#16a34a' : '#ef4444' }}
+                          style={{
+                            color: rev.decision === 'VERIFIED' ? '#16a34a' : '#ef4444',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.25rem',
+                          }}
                         >
-                          {rev.decision === 'VERIFIED'
-                            ? '✅ Aprovado (VERIFIED)'
-                            : '❌ Rejeitado (REJECTED)'}
+                          {rev.decision === 'VERIFIED' ? (
+                            <>
+                              <Icon name="verified" size={16} /> Aprovado (VERIFIED)
+                            </>
+                          ) : (
+                            <>
+                              <Icon name="close" size={16} /> Rejeitado (REJECTED)
+                            </>
+                          )}
                         </span>
                         <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
                           {new Intl.DateTimeFormat('pt-BR', {
@@ -1693,7 +1822,12 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
 
       {/* MODAL 1: Create Contract */}
       {isCreating && (
-        <div className="modal-backdrop">
+        <div
+          className="modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsCreating(false);
+          }}
+        >
           <div
             className="modal-card"
             style={{ maxWidth: '680px', width: '92%', maxHeight: '90vh', overflowY: 'auto' }}
@@ -1706,24 +1840,38 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 marginBottom: '0.75rem',
               }}
             >
-              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>
-                📄 Gerar Contrato Comercial Moura Solar
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: '1.25rem',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                }}
+              >
+                <Icon name="description" size={20} /> Gerar Contrato Comercial Moura Solar
               </h3>
               <button
                 type="button"
                 onClick={() => setIsCreating(false)}
                 aria-label="Fechar modal"
+                className="btn btn--subtle"
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '1.25rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '2rem',
+                  height: '2rem',
+                  padding: 0,
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#f1f5f9',
+                  color: '#334155',
                   cursor: 'pointer',
-                  color: '#64748b',
-                  padding: '0.25rem',
-                  lineHeight: 1,
                 }}
               >
-                ✕
+                <Icon name="close" size={18} />
               </button>
             </div>
             <p
@@ -1801,8 +1949,8 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                     gap: '0.5rem',
                   }}
                 >
-                  <div style={{ fontWeight: 700, fontSize: '0.9375rem', color: '#087443' }}>
-                    💰 Anexo III — Condições de Pagamento & Parcelas
+                  <div style={{ fontWeight: 700, fontSize: '0.9375rem', color: '#087443', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Icon name="payments" size={18} /> Anexo III — Condições de Pagamento & Parcelas
                   </div>
                   <div style={{ fontSize: '0.8125rem', color: '#475569' }}>
                     Valor Total Proposta:{' '}
@@ -2028,7 +2176,12 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
 
       {/* MODAL 2: Edit Payment Terms & Milestones (Anexo III) */}
       {isEditingPayment && (
-        <div className="modal-backdrop">
+        <div
+          className="modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsEditingPayment(false);
+          }}
+        >
           <div
             className="modal-card"
             style={{ maxWidth: '680px', width: '92%', maxHeight: '90vh', overflowY: 'auto' }}
@@ -2041,24 +2194,38 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 marginBottom: '0.75rem',
               }}
             >
-              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>
-                💳 Condições de Pagamento & Parcelas (Anexo III)
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: '1.25rem',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                }}
+              >
+                <Icon name="payments" size={20} /> Condições de Pagamento & Parcelas (Anexo III)
               </h3>
               <button
                 type="button"
                 onClick={() => setIsEditingPayment(false)}
                 aria-label="Fechar modal"
+                className="btn btn--subtle"
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '1.25rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '2rem',
+                  height: '2rem',
+                  padding: 0,
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#f1f5f9',
+                  color: '#334155',
                   cursor: 'pointer',
-                  color: '#64748b',
-                  padding: '0.25rem',
-                  lineHeight: 1,
                 }}
               >
-                ✕
+                <Icon name="close" size={18} />
               </button>
             </div>
             <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '0 0 1rem 0' }}>
@@ -2283,8 +2450,13 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
 
       {/* MODAL 3: Record Delivery */}
       {isDelivering && (
-        <div className="modal-backdrop">
-          <div className="modal-card" style={{ maxWidth: '480px', width: '90%' }}>
+        <div
+          className="modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsDelivering(false);
+          }}
+        >
+          <div className="modal-card" style={{ maxWidth: '520px', width: '92%' }}>
             <div
               style={{
                 display: 'flex',
@@ -2293,29 +2465,175 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 marginBottom: '1rem',
               }}
             >
-              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>
-                📤 Registrar Envio do Contrato
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: '1.25rem',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                }}
+              >
+                <Icon name="send" size={20} /> Registrar Envio do Contrato
               </h3>
               <button
                 type="button"
                 onClick={() => setIsDelivering(false)}
                 aria-label="Fechar modal"
+                className="btn btn--subtle"
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '1.25rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '2rem',
+                  height: '2rem',
+                  padding: 0,
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#f1f5f9',
+                  color: '#334155',
                   cursor: 'pointer',
-                  color: '#64748b',
-                  padding: '0.25rem',
-                  lineHeight: 1,
                 }}
               >
-                ✕
+                <Icon name="close" size={18} />
               </button>
             </div>
             <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '0 0 1rem 0' }}>
               Registre o canal e destinatário para fins de auditoria e acompanhamento comercial.
             </p>
+
+            {/* Verificação Prévia Obrigatória das Condições de Pagamento e Parcelas (Anexo III) */}
+            <div
+              style={{
+                padding: '0.875rem',
+                backgroundColor: '#f8fafc',
+                border: '1px solid #cbd5e1',
+                borderRadius: '8px',
+                marginBottom: '1rem',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '0.5rem',
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: '0.875rem',
+                    fontWeight: 700,
+                    color: '#102a23',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                  }}
+                >
+                  <Icon name="payments" size={16} /> Condições de Pagamento (Anexo III)
+                </span>
+                {!readonly && (contract.state === 'READY' || contract.state === 'DRAFT') && (
+                  <button
+                    type="button"
+                    className="btn btn--subtle"
+                    style={{
+                      fontSize: '0.75rem',
+                      padding: '0.25rem 0.5rem',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.25rem',
+                    }}
+                    onClick={() => {
+                      setIsDelivering(false);
+                      openEditPaymentModal();
+                    }}
+                  >
+                    <Icon name="edit" size={14} /> Alterar Parcelas
+                  </button>
+                )}
+              </div>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                  gap: '0.4rem',
+                  fontSize: '0.8125rem',
+                }}
+              >
+                <div>
+                  <span style={{ color: '#64748b' }}>Forma:</span>{' '}
+                  <strong>
+                    {activeVersion?.commercialSnapshot?.paymentMethod || 'À Vista (PIX)'}
+                  </strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748b' }}>Total Contratado:</span>{' '}
+                  <strong style={{ color: '#15803d' }}>
+                    {activeVersion?.commercialSnapshot?.contractTotal ||
+                      formatBRL(Number(contract.acceptedProposalVersion?.finalPrice) || 0)}
+                  </strong>
+                </div>
+              </div>
+
+              {/* Resumo das Parcelas */}
+              {activeVersion?.commercialSnapshot?.milestones &&
+              activeVersion.commercialSnapshot.milestones.length > 0 ? (
+                <div
+                  style={{
+                    marginTop: '0.5rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.25rem',
+                    borderTop: '1px dashed #cbd5e1',
+                    paddingTop: '0.5rem',
+                  }}
+                >
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569' }}>
+                    {activeVersion.commercialSnapshot.milestones.length} parcela(s) vinculada(s) à
+                    minuta:
+                  </span>
+                  {activeVersion.commercialSnapshot.milestones.map((m, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        padding: '0.2rem 0.4rem',
+                        backgroundColor: '#ffffff',
+                        borderRadius: '4px',
+                        border: '1px solid #e2e8f0',
+                        fontSize: '0.75rem',
+                      }}
+                    >
+                      <span>
+                        {m.stage} ({m.percent})
+                      </span>
+                      <strong>{m.amount}</strong>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div
+                  style={{
+                    marginTop: '0.5rem',
+                    padding: '0.5rem',
+                    backgroundColor: '#fef2f2',
+                    border: '1px solid #fecaca',
+                    borderRadius: '6px',
+                    color: '#991b1b',
+                    fontSize: '0.75rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                  }}
+                >
+                  <Icon name="warning" size={16} />
+                  <span>Nenhum marco cadastrado! É obrigatório configurar antes de enviar.</span>
+                </div>
+              )}
+            </div>
 
             <form
               onSubmit={(e) => {
@@ -2399,7 +2717,11 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 <button
                   type="submit"
                   className="btn btn--primary"
-                  disabled={deliverMutation.isPending}
+                  disabled={
+                    deliverMutation.isPending ||
+                    !activeVersion?.commercialSnapshot?.milestones ||
+                    activeVersion.commercialSnapshot.milestones.length === 0
+                  }
                   style={{
                     backgroundColor: '#087443',
                     color: '#ffffff',
@@ -2409,7 +2731,12 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                     borderRadius: '6px',
                   }}
                 >
-                  {deliverMutation.isPending ? 'Registrando...' : 'Registrar Envio'}
+                  {deliverMutation.isPending
+                    ? 'Registrando...'
+                    : !activeVersion?.commercialSnapshot?.milestones ||
+                        activeVersion.commercialSnapshot.milestones.length === 0
+                      ? 'Defina as Parcelas para Enviar'
+                      : 'Registrar Envio'}
                 </button>
               </div>
             </form>
@@ -2419,7 +2746,12 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
 
       {/* MODAL 4: Upload Signed Contract */}
       {isUploading && (
-        <div className="modal-backdrop">
+        <div
+          className="modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsUploading(false);
+          }}
+        >
           <div className="modal-card" style={{ maxWidth: '480px', width: '90%' }}>
             <div
               style={{
@@ -2429,24 +2761,38 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 marginBottom: '1rem',
               }}
             >
-              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>
-                📥 Anexar Via Assinada pelo Cliente
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: '1.25rem',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                }}
+              >
+                <Icon name="upload_file" size={20} /> Anexar Via Assinada pelo Cliente
               </h3>
               <button
                 type="button"
                 onClick={() => setIsUploading(false)}
                 aria-label="Fechar modal"
+                className="btn btn--subtle"
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '1.25rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '2rem',
+                  height: '2rem',
+                  padding: 0,
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#f1f5f9',
+                  color: '#334155',
                   cursor: 'pointer',
-                  color: '#64748b',
-                  padding: '0.25rem',
-                  lineHeight: 1,
                 }}
               >
-                ✕
+                <Icon name="close" size={18} />
               </button>
             </div>
             <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '0 0 1rem 0' }}>
@@ -2488,7 +2834,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 <textarea
                   className="form-input"
                   rows={2}
-                  placeholder="Ex.: Assinado pelo titular e 2 testemunhas via DocuSign/físico."
+                  placeholder="Ex.: Assinado digitalmente pelo contratante via DocuSign/Gov.br ou via física com rubricas."
                   value={uploadNotes}
                   onChange={(e) => setUploadNotes(e.target.value)}
                 />
@@ -2541,7 +2887,12 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
 
       {/* MODAL 5: Formal Conference Checklist (Gate C) */}
       {isReviewing && (
-        <div className="modal-backdrop">
+        <div
+          className="modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsReviewing(false);
+          }}
+        >
           <div className="modal-card" style={{ maxWidth: '540px', width: '90%' }}>
             <div
               style={{
@@ -2551,24 +2902,38 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 marginBottom: '0.5rem',
               }}
             >
-              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>
-                🔍 Conferência Formal de Assinatura (Gate C)
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: '1.25rem',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                }}
+              >
+                <Icon name="checklist" size={20} /> Conferência Formal de Assinatura (Gate C)
               </h3>
               <button
                 type="button"
                 onClick={() => setIsReviewing(false)}
                 aria-label="Fechar modal"
+                className="btn btn--subtle"
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '1.25rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '2rem',
+                  height: '2rem',
+                  padding: 0,
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#f1f5f9',
+                  color: '#334155',
                   cursor: 'pointer',
-                  color: '#64748b',
-                  padding: '0.25rem',
-                  lineHeight: 1,
                 }}
               >
-                ✕
+                <Icon name="close" size={18} />
               </button>
             </div>
             <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '0 0 1rem 0' }}>
@@ -2673,8 +3038,8 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                     style={{ marginTop: '0.2rem' }}
                   />
                   <span>
-                    <strong>4. Legibilidade das Assinaturas:</strong> Assinaturas do contratante e
-                    das testemunhas estão legíveis e identificadas.
+                    <strong>4. Legibilidade da Assinatura:</strong> Assinatura do contratante está
+                    legível e devidamente identificada.
                   </span>
                 </label>
               </div>
@@ -2710,9 +3075,12 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                       style={{
                         fontWeight: 600,
                         color: reviewDecision === 'VERIFIED' ? '#15803d' : 'inherit',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
                       }}
                     >
-                      ✅ Aprovar e Liberar Gate C
+                      <Icon name="check_circle" size={16} /> Aprovar e Liberar Gate C
                     </span>
                   </label>
 
@@ -2743,9 +3111,12 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                       style={{
                         fontWeight: 600,
                         color: reviewDecision === 'REJECTED' ? '#b91c1c' : 'inherit',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
                       }}
                     >
-                      ❌ Rejeitar Documento
+                      <Icon name="close" size={16} /> Rejeitar Documento
                     </span>
                   </label>
                 </div>
@@ -2765,7 +3136,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                   <textarea
                     className="form-input"
                     rows={2}
-                    placeholder="Ex.: Falta rubrica na página 3 ou assinatura ilegível da testemunha 1."
+                    placeholder="Ex.: Falta rubrica na página 3 ou assinatura divergente do titular."
                     value={rejectionReason}
                     onChange={(e) => setRejectionReason(e.target.value)}
                     required
