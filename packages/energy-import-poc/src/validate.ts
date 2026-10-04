@@ -83,9 +83,15 @@ export function validateManifestAndPolicy(
   policy: ExperimentPolicy,
 ): void {
   invariant(manifest.schemaVersion === '1', 'Unsupported corpus schemaVersion');
+  invariant(id.test(manifest.corpusId), 'Corpus ID is invalid');
   invariant(manifest.purpose === 'ENERGY_BILL_EXTRACTION_POC', 'Corpus purpose is invalid');
   invariant(manifest.authorization.approved, 'Corpus authorization is not approved');
   invariant(manifest.authorization.privacyReviewed, 'Corpus privacy review is missing');
+  invariant(
+    typeof manifest.authorization.approvedByRole === 'string' &&
+      manifest.authorization.approvedByRole.trim().length > 0,
+    'Corpus approver role is required',
+  );
   invariant(
     !Number.isNaN(Date.parse(manifest.authorization.approvedAt)),
     'Corpus approval date is invalid',
@@ -95,7 +101,7 @@ export function validateManifestAndPolicy(
   invariant(policy.schemaVersion === '1', 'Unsupported policy schemaVersion');
   invariant(decimal.test(policy.approvedBudget.amount), 'Approved budget must be a decimal string');
   invariant(
-    policy.approvedBudget.currency.length === 3,
+    /^[A-Z]{3}$/.test(policy.approvedBudget.currency),
     'Approved budget currency must be ISO-like',
   );
   invariant(policy.goals.length > 0, 'At least one quality goal is required');
