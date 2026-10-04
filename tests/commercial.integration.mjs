@@ -63,6 +63,7 @@ class Client {
 
 const admin = new Client();
 const seller = new Client();
+const otherSeller = new Client();
 
 before(async () => {
   const migration = spawnSync('pnpm', ['db:deploy'], { env, encoding: 'utf8' });
@@ -131,6 +132,28 @@ before(async () => {
     password,
   });
   assert.equal(sellerLogin.status, 201);
+
+  const secondInvite = await admin.call(
+    'identity/invitations',
+    'POST',
+    {
+      email: 'seller-two.comm@example.test',
+      name: 'Segundo Vendedor Commercial',
+      roleId: sellerRole.id,
+    },
+    { 'idempotency-key': randomUUID() },
+  );
+  assert.equal(secondInvite.status, 201);
+  const secondAccept = await otherSeller.call('identity/accept-link', 'POST', {
+    token: secondInvite.body.token,
+    password,
+  });
+  assert.equal(secondAccept.status, 201);
+  const secondLogin = await otherSeller.call('identity/login', 'POST', {
+    email: 'seller-two.comm@example.test',
+    password,
+  });
+  assert.equal(secondLogin.status, 201);
 });
 
 after(async () => {
@@ -217,6 +240,206 @@ test('utility unit rejects duplicate code for same distributor', async () => {
   });
   assert.equal(u2.status, 409);
   assert.equal(u2.body.code, 'UTILITY_UNIT_ALREADY_EXISTS');
+});
+
+test('utility units and opportunities keep customer ownership inside the organization', async () => {
+  const customerA = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: 'Cliente Contexto A',
+  });
+  const customerB = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: 'Cliente Contexto B',
+  });
+  assert.equal(customerA.status, 201);
+  assert.equal(customerB.status, 201);
+
+  const addressB = await seller.call(`customers/${customerB.body.id}/addresses`, 'POST', {
+    postalCode: '30140071',
+    street: 'Rua de teste',
+    number: '10',
+    city: 'Belo Horizonte',
+    state: 'MG',
+  });
+  assert.equal(addressB.status, 201);
+
+  const crossCustomerAddress = await seller.call(
+    `customers/${customerA.body.id}/utility-units`,
+    'POST',
+    { distributorName: 'CEMIG Contexto', addressId: addressB.body.id },
+  );
+  assert.equal(crossCustomerAddress.status, 404);
+  assert.equal(crossCustomerAddress.body.code, 'ADDRESS_NOT_FOUND');
+
+  const unitB = await seller.call(`customers/${customerB.body.id}/utility-units`, 'POST', {
+    distributorName: 'CEMIG Contexto',
+    externalCode: 'CONTEXT-UNIT-B',
+  });
+  assert.equal(unitB.status, 201);
+
+  const crossCustomerOpportunity = await seller.call('opportunities', 'POST', {
+    customerId: customerA.body.id,
+    utilityUnitId: unitB.body.id,
+    title: 'Oportunidade sem vínculo cruzado',
+    needSummary: 'Validar o vínculo de propriedade',
+    firstActivity: {
+      type: 'CALL',
+      subject: 'Confirmar propriedade da unidade',
+      dueAt: new Date(Date.now() + 86400000).toISOString(),
+    },
+  });
+  assert.equal(crossCustomerOpportunity.status, 404);
+  assert.equal(crossCustomerOpportunity.body.code, 'UTILITY_UNIT_NOT_FOUND');
+
+  const opportunity = await seller.call('opportunities', 'POST', {
+    customerId: customerA.body.id,
+    title: 'Oportunidade com vínculo válido',
+    needSummary: 'Validar o vínculo de propriedade',
+    firstActivity: {
+      type: 'CALL',
+      subject: 'Confirmar propriedade da unidade',
+      dueAt: new Date(Date.now() + 86400000).toISOString(),
+    },
+  });
+  assert.equal(opportunity.status, 201);
+
+  const crossCustomerUpdate = await seller.call(`opportunities/${opportunity.body.id}`, 'PATCH', {
+    expectedVersion: 1,
+    utilityUnitId: unitB.body.id,
+  });
+  assert.equal(crossCustomerUpdate.status, 404);
+  assert.equal(crossCustomerUpdate.body.code, 'UTILITY_UNIT_NOT_FOUND');
+
+  const unitA = await seller.call(`customers/${customerA.body.id}/utility-units`, 'POST', {
+    distributorName: 'CEMIG Contexto',
+    externalCode: 'CONTEXT-UNIT-A',
+  });
+  assert.equal(unitA.status, 201);
+
+  const validOpportunity = await seller.call('opportunities', 'POST', {
+    customerId: customerA.body.id,
+    utilityUnitId: unitA.body.id,
+    title: 'Oportunidade com UC do mesmo cliente',
+    needSummary: 'Vínculo válido no mesmo cliente',
+    firstActivity: {
+      type: 'CALL',
+      subject: 'Coletar dados da unidade',
+      dueAt: new Date(Date.now() + 86400000).toISOString(),
+    },
+  });
+  assert.equal(validOpportunity.status, 201);
+  assert.equal(validOpportunity.body.utilityUnitId, unitA.body.id);
+
+  const validUpdate = await seller.call(`opportunities/${opportunity.body.id}`, 'PATCH', {
+    expectedVersion: 1,
+    utilityUnitId: unitA.body.id,
+  });
+  assert.equal(validUpdate.status, 200);
+  assert.equal(validUpdate.body.utilityUnitId, unitA.body.id);
+
+  const saved = await db.opportunity.findUnique({ where: { id: opportunity.body.id } });
+  assert.equal(saved.customerId, customerA.body.id);
+  assert.equal(saved.utilityUnitId, unitA.body.id);
+});
+
+test('creating a utility unit and linking it to an opportunity is atomic and idempotent', async () => {
+  const customer = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: 'Cliente Vinculação Atômica',
+  });
+  assert.equal(customer.status, 201);
+
+  const opportunity = await seller.call('opportunities', 'POST', {
+    customerId: customer.body.id,
+    title: 'Oportunidade para UC atômica',
+    needSummary: 'Criar e vincular em um comando',
+    firstActivity: {
+      type: 'CALL',
+      subject: 'Confirmar dados da UC',
+      dueAt: new Date(Date.now() + 86400000).toISOString(),
+    },
+  });
+  assert.equal(opportunity.status, 201);
+
+  const payload = {
+    expectedVersion: 1,
+    distributorName: 'CEMIG Atomicidade',
+    externalCode: 'ATOMIC-UC-01',
+  };
+  const idempotencyKey = 'atomic-utility-unit-001';
+  const stale = await seller.call(
+    `opportunities/${opportunity.body.id}/utility-unit`,
+    'POST',
+    { ...payload, expectedVersion: 2 },
+    { 'idempotency-key': 'atomic-utility-unit-stale' },
+  );
+  assert.equal(stale.status, 409);
+  assert.equal(stale.body.code, 'CONCURRENT_MODIFICATION');
+  assert.equal(await db.utilityUnit.count({ where: { externalCode: payload.externalCode } }), 0);
+
+  const created = await seller.call(
+    `opportunities/${opportunity.body.id}/utility-unit`,
+    'POST',
+    payload,
+    { 'idempotency-key': idempotencyKey },
+  );
+  assert.equal(created.status, 201);
+
+  const replay = await seller.call(
+    `opportunities/${opportunity.body.id}/utility-unit`,
+    'POST',
+    payload,
+    { 'idempotency-key': idempotencyKey },
+  );
+  assert.equal(replay.status, 201);
+  assert.equal(replay.body.id, created.body.id);
+
+  const changedPayload = await seller.call(
+    `opportunities/${opportunity.body.id}/utility-unit`,
+    'POST',
+    { ...payload, externalCode: 'ATOMIC-UC-02' },
+    { 'idempotency-key': idempotencyKey },
+  );
+  assert.equal(changedPayload.status, 409);
+  assert.equal(changedPayload.body.code, 'IDEMPOTENCY_CONFLICT');
+
+  const savedOpportunity = await db.opportunity.findUnique({ where: { id: opportunity.body.id } });
+  assert.equal(savedOpportunity.utilityUnitId, created.body.id);
+  assert.equal(savedOpportunity.version, 2);
+  assert.equal(await db.utilityUnit.count({ where: { customerId: customer.body.id } }), 1);
+});
+
+test('atomic utility unit creation enforces the opportunity owner scope', async () => {
+  const customer = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: 'Cliente Escopo do Vendedor',
+  });
+  assert.equal(customer.status, 201);
+  const opportunity = await seller.call('opportunities', 'POST', {
+    customerId: customer.body.id,
+    title: 'Oportunidade de outro vendedor',
+    needSummary: 'Confirmar escopo efetivo do vendedor',
+    firstActivity: {
+      type: 'CALL',
+      subject: 'Confirmar permissões da oportunidade',
+      dueAt: new Date(Date.now() + 86400000).toISOString(),
+    },
+  });
+  assert.equal(opportunity.status, 201);
+
+  const denied = await otherSeller.call(
+    `opportunities/${opportunity.body.id}/utility-unit`,
+    'POST',
+    {
+      expectedVersion: 1,
+      distributorName: 'CEMIG Escopo',
+      externalCode: 'SCOPE-DENIED-01',
+    },
+    { 'idempotency-key': 'utility-unit-scope-denied' },
+  );
+  assert.equal(denied.status, 403);
+  assert.equal(denied.body.code, 'ACCESS_DENIED');
+  assert.equal(await db.utilityUnit.count({ where: { customerId: customer.body.id } }), 0);
 });
 
 test('opportunity creation is atomic with first activity; transition requires explicit command', async () => {

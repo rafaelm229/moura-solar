@@ -43,4 +43,6 @@ Validação local em Node 22.22.1, pnpm 11.25.0 e PostgreSQL 17 isolado.
 ## Capturas representativas
 
 - [Dimensionamento, Consumo e Precificação — 360 px (Mobile)](dimensionamento-360.png)
+- [Dimensionamento, Consumo e Precificação — 768 px (Tablet)](dimensionamento-768.png)
+- [Dimensionamento, Consumo e Precificação — 1024 px (Notebook)](dimensionamento-1024.png)
 - [Dimensionamento, Consumo e Precificação — 1440 px (Desktop)](dimensionamento-1440.png)

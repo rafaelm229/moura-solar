@@ -10,6 +10,8 @@ import { cookieValue, fail } from './security';
 export const Public = () => SetMetadata('identity.public', true);
 export const RequirePermission = (permission: string, organization = true) =>
   SetMetadata('identity.permission', { permission, organization });
+export const RequirePermissions = (...permissions: string[]) =>
+  SetMetadata('identity.permissions', permissions);
 export type IdentityRequest = Request & { actor: ContextDto };
 @Injectable()
 export class IdentityGuard implements CanActivate {
@@ -35,19 +37,29 @@ export class IdentityGuard implements CanActivate {
       permission: string;
       organization: boolean;
     }>('identity.permission', targets);
-    if (
+    const requiredPermissions = this.reflector.getAllAndOverride<string[]>(
+      'identity.permissions',
+      targets,
+    );
+    const missingPermission = requiredPermissions?.find(
+      (permission) => !request.actor.grants.some((grant) => grant.permission === permission),
+    );
+    const missingSinglePermission =
       required &&
       !request.actor.grants.some(
         (g) =>
           g.permission === required.permission &&
           (!required.organization || g.scope === 'organization'),
       )
-    ) {
+        ? required.permission
+        : undefined;
+    const deniedPermission = missingPermission ?? missingSinglePermission;
+    if (deniedPermission) {
       await this.store.audit(
         this.store.db,
         'identity.access_denied',
         request.actor,
-        required.permission,
+        deniedPermission,
         request.requestId ?? 'unknown',
       );
       fail('ACCESS_DENIED', 'Você não tem permissão para esta ação.', 403);
