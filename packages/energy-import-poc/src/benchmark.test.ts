@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { describe, it } from 'node:test';
 import { benchmark } from './benchmark.js';
 import type { AdapterRunSet, CorpusManifest, ExperimentPolicy } from './types.js';
@@ -8,6 +9,8 @@ const document = (index: number): CorpusManifest['documents'][number] => ({
   distributor: index % 2 ? 'DIST_A' : 'DIST_B',
   format: index % 2 ? 'DIGITAL_PDF' : 'PHOTO',
   quality: 'GOOD',
+  mimeType: 'application/pdf',
+  sha256: createHash('sha256').update(`sample-${index}`).digest('hex'),
   pageCount: 1,
   labels: [
     {
@@ -82,9 +85,26 @@ describe('energy import PoC benchmark', () => {
     assert.equal(report.totals.costPerSucceededDocument, '0.010000');
     assert.equal(report.totals.latencyP95Ms, 100);
     assert.equal(report.totals.criticalErrors, 0);
+    assert.equal(report.totals.unknown, 0);
     assert.equal(report.byField['utilityUnit.externalCode']?.exactRate, 1);
     assert.equal(report.byQuality['GOOD']?.coverage, 1);
     assert.equal(report.recommendation, 'CONTINUE');
+  });
+
+  it('stops when an accepted external operation has an unknown result', () => {
+    const report = benchmark(
+      manifest,
+      runSet((set) => {
+        set.runs[0]!.outcome = 'UNKNOWN';
+        set.runs[0]!.errorCode = 'EXTRACTION_TIMEOUT';
+        set.runs[0]!.candidates = [];
+      }),
+      policy,
+    );
+    assert.equal(report.totals.unknown, 1);
+    assert.equal(report.totals.unknownRate, 0.025);
+    assert.equal(report.gates.find((gate) => gate.name === 'unknownResults')?.passed, false);
+    assert.equal(report.recommendation, 'STOP');
   });
 
   it('counts missing, wrong units and manual fallback without hiding failed samples', () => {
@@ -93,8 +113,10 @@ describe('energy import PoC benchmark', () => {
       runSet((set) => {
         const first = set.runs[0]!;
         first.outcome = 'FALLBACK_MANUAL';
-        first.candidates = [first.candidates[0]!, { ...first.candidates[1]!, unit: 'MWh' }];
-        set.runs[1]!.candidates = [];
+        first.errorCode = 'MANUAL_FALLBACK';
+        first.candidates = [];
+        const second = set.runs[1]!;
+        second.candidates = [second.candidates[0]!, { ...second.candidates[1]!, unit: 'MWh' }];
       }),
       policy,
     );

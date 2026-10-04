@@ -12,10 +12,15 @@ export interface SubmitReceipt {
   submittedAt: string;
 }
 
+export interface ProviderUsage {
+  chargedPages: number;
+  cost: { amount: string; currency: string };
+}
+
 export type PollResult<TRaw> =
   | { state: 'PENDING' }
-  | { state: 'SUCCEEDED'; raw: TRaw; chargedPages: number; providerLatencyMs: number }
-  | { state: 'FAILED'; errorCode: string; retryable: boolean };
+  | { state: 'SUCCEEDED'; raw: TRaw; usage: ProviderUsage }
+  | { state: 'FAILED'; errorCode: string; retryable: boolean; usage: ProviderUsage };
 
 /**
  * Experimental provider boundary. Implementations receive bytes selected by the
@@ -29,6 +34,7 @@ export interface ExtractionPocAdapter<TRaw> {
     region: string;
     languageMode: string;
   };
+  estimateUsage(input: Pick<PocDocumentInput, 'pageCount'>): ProviderUsage;
   submit(input: PocDocumentInput, correlationId: string): Promise<SubmitReceipt>;
   poll(operationId: string): Promise<PollResult<TRaw>>;
   cancel(operationId: string): Promise<void>;

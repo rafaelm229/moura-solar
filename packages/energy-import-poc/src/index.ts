@@ -1,9 +1,14 @@
 export { benchmark } from './benchmark.js';
-export { validateInputs } from './validate.js';
+export { AzureDocumentIntelligenceAdapter } from './azure-adapter.js';
+export { createLocalDocumentLoader, runExperiment } from './runner.js';
+export { validateInputs, validateManifestAndPolicy } from './validate.js';
 export type {
   ExtractionPocAdapter,
   PocDocumentInput,
   PollResult,
+  ProviderUsage,
   SubmitReceipt,
 } from './adapter.js';
+export type { DocumentLoader, ExperimentRunnerOptions } from './runner.js';
+export type { AzureDocumentIntelligenceConfig } from './azure-adapter.js';
 export * from './types.js';

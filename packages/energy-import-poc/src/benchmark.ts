@@ -7,6 +7,7 @@ import type {
   SliceMetrics,
 } from './types.js';
 import { validateInputs } from './validate.js';
+import { microsToMoney, moneyToMicros } from './money.js';
 
 type Count = Omit<SliceMetrics, 'exactRate' | 'coverage'>;
 
@@ -18,12 +19,6 @@ const empty = (): Count => ({
   missing: 0,
   unexpected: 0,
 });
-const decimalToMicros = (value: string) => {
-  const [whole = '0', fraction = ''] = value.split('.');
-  return BigInt(whole) * 1_000_000n + BigInt((fraction + '000000').slice(0, 6));
-};
-const microsToDecimal = (value: bigint) =>
-  `${value / 1_000_000n}.${(value % 1_000_000n).toString().padStart(6, '0')}`;
 const metric = (count: Count): SliceMetrics => ({
   ...count,
   exactRate: count.expected ? count.exact / count.expected : null,
@@ -72,17 +67,19 @@ export function benchmark(
   let chargedPages = 0;
   let succeeded = 0;
   let failed = 0;
+  let unknown = 0;
   let fallbackManual = 0;
   let criticalErrors = 0;
   const latencies: number[] = [];
 
   for (const document of manifest.documents) {
     const run = runSet.runs.find((entry) => entry.sampleId === document.sampleId)!;
-    totalCost += decimalToMicros(run.cost.amount);
+    totalCost += moneyToMicros(run.cost.amount);
     chargedPages += run.chargedPages;
     latencies.push(run.latencyMs);
     if (run.outcome === 'SUCCEEDED') succeeded += 1;
     if (run.outcome === 'FAILED') failed += 1;
+    if (run.outcome === 'UNKNOWN') unknown += 1;
     if (run.outcome === 'FALLBACK_MANUAL') fallbackManual += 1;
     const distributor = byDistributor.get(document.distributor) ?? empty();
     const format = byFormat.get(document.format) ?? empty();
@@ -114,7 +111,7 @@ export function benchmark(
         criticalErrors += 1;
     }
   }
-  const budget = decimalToMicros(policy.approvedBudget.amount);
+  const budget = moneyToMicros(policy.approvedBudget.amount);
   const gates = policy.goals.flatMap((goal) => {
     const actual = metric(byField.get(goal.field) ?? empty());
     return [
@@ -142,10 +139,16 @@ export function benchmark(
     {
       name: 'approvedBudget',
       passed: totalCost <= budget,
-      actual: microsToDecimal(totalCost),
+      actual: microsToMoney(totalCost),
       target: policy.approvedBudget.amount,
     },
   );
+  gates.push({
+    name: 'unknownResults',
+    passed: unknown === 0,
+    actual: String(unknown),
+    target: '0',
+  });
   const allPassed = gates.every((gate) => gate.passed);
   const distributorCounts = new Map<string, number>();
   for (const document of manifest.documents)
@@ -163,13 +166,15 @@ export function benchmark(
       succeeded,
       fallbackManual,
       failed,
+      unknown,
       latencyP50Ms: percentile(latencies, 0.5),
       latencyP95Ms: percentile(latencies, 0.95),
       chargedPages,
-      cost: { amount: microsToDecimal(totalCost), currency: policy.approvedBudget.currency },
-      costPerSucceededDocument: succeeded ? microsToDecimal(totalCost / BigInt(succeeded)) : null,
+      cost: { amount: microsToMoney(totalCost), currency: policy.approvedBudget.currency },
+      costPerSucceededDocument: succeeded ? microsToMoney(totalCost / BigInt(succeeded)) : null,
       criticalErrors,
       fallbackManualRate: fallbackManual / manifest.documents.length,
+      unknownRate: unknown / manifest.documents.length,
     },
     byField: Object.fromEntries([...byField].map(([name, value]) => [name, metric(value)])),
     byDistributor: Object.fromEntries(

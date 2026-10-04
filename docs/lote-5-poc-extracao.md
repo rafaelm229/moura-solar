@@ -22,7 +22,9 @@ O pacote `@moura-solar/energy-import-poc` recebe três JSONs:
 2. resultados normalizados do adapter com modelo, versão, região, idioma, latência, páginas cobradas, custo e candidatos com página/origem;
 3. política aprovada com orçamento, campos críticos e metas de cobertura/acerto exato.
 
-Adapters implementam `submit`, `poll`, `cancel` e `normalize`, com identidade imutável de modelo/versão/região. Recebem os bytes selecionados pelo harness e um ID de correlação; não aceitam URL arbitrária e não possuem acesso a comandos ou dados operacionais da plataforma.
+Adapters implementam `estimateUsage`, `submit`, `poll`, `cancel` e `normalize`, com identidade imutável de modelo/versão/região. Recebem os bytes selecionados pelo harness e um ID de correlação sem dados pessoais; não aceitam URL arbitrária e não possuem acesso a comandos ou dados operacionais da plataforma.
+
+O executor confere o SHA-256 e o limite de 20 MiB antes de transmitir cada documento. A execução é serial e consulta a estimativa por página antes de cada envio; quando a próxima operação ultrapassaria o teto aprovado, ela e as restantes seguem para revisão manual sem chamada externa. Um envio aceito que expira, uma falha de rede durante o envio ou uma resposta cujo custo não pode ser confirmado produz `UNKNOWN`, tenta excluir o resultado remoto e interrompe novos envios. Isso evita repetir uma operação possivelmente cobrada. Erros locais anteriores ao envio permanecem `FAILED`.
 
 O relatório calcula cobertura, acerto exato, correções, ausências e candidatos inesperados por campo, distribuidora, formato e qualidade; p50/p95; páginas, custo total e custo por sucesso; taxa de fallback manual e erros críticos. Qualquer distribuidora com menos de 20 documentos resulta em `INCONCLUSIVE`. Metas não atingidas, erro crítico ou custo acima do teto resulta em `STOP` quando a amostra mínima foi atendida.
 
@@ -44,9 +46,9 @@ O arquivo de saída é criado com permissão privada e o comando falha se o cami
 ## Candidatos revalidados
 
 - Google Document AI: [`batchProcess`](https://docs.cloud.google.com/document-ai/docs/send-request) devolve operação assíncrona e grava resultado em Cloud Storage; fixar processor version e região. A [lista de processadores](https://docs.cloud.google.com/document-ai/docs/processors-list) inclui português no OCR, mas mantém o Custom Extractor generativo com suporte oficial apenas em inglês. Não tratar OCR em português como prova de extração estruturada. A [documentação de segurança](https://docs.cloud.google.com/document-ai/docs/security) informa o tratamento temporário do batch e deve ser confrontada com os termos da conta/região escolhida.
-- Azure Document Intelligence: API [`2024-11-30`](https://learn.microsoft.com/en-us/rest/api/aiservices/document-models/analyze-document?view=rest-aiservices-v4.0+%282024-11-30%29) usa POST de análise e GET do resultado; fixar `modelId`, versão e região. [Read/Layout lista português](https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/language-support-ocr?preserve-view=true&tabs=read-hand%2Clayout-print%2Cgeneral&view=doc-intel-3.1.0) como candidato a leitura e estrutura, sem presumir especialização em conta de energia brasileira. A política publicada informa retenção temporária de 24 horas e oferece [`Delete Analyze Result`](https://learn.microsoft.com/en-us/rest/api/aiservices/document-models/delete-analyze-result?view=rest-aiservices-v4.0+%282024-11-30%29); a execução deve registrar a exclusão antecipada.
+- Azure Document Intelligence: API [`2024-11-30`](https://learn.microsoft.com/en-us/rest/api/aiservices/document-models/analyze-document?view=rest-aiservices-v4.0+%282024-11-30%29) usa POST de análise e GET do resultado; fixar `modelId`, versão e região. O adapter candidato restringe chamadas a endpoint HTTPS `*.cognitiveservices.azure.com`, envia somente `base64Source`, valida a URL de operação devolvida e executa exclusão antecipada em melhor esforço. [Read/Layout lista português](https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/language-support-ocr?preserve-view=true&tabs=read-hand%2Clayout-print%2Cgeneral&view=doc-intel-3.1.0) como candidato a leitura e estrutura, sem presumir especialização em conta de energia brasileira. A política publicada informa retenção temporária de 24 horas e oferece [`Delete Analyze Result`](https://learn.microsoft.com/en-us/rest/api/aiservices/document-models/delete-analyze-result?view=rest-aiservices-v4.0+%282024-11-30%29); a execução deve registrar a exclusão antecipada.
 
-Antes da primeira chamada, revisar termos, região, exclusão/retention do resultado e cálculo atual do SKU no console contratual. A referência pública de preço não substitui orçamento aprovado. Não há credenciais ou endpoint de fornecedor neste incremento.
+O custo produzido pelo adapter Azure é uma estimativa baseada no valor por página aprovado na configuração, não uma medição de faturamento do fornecedor. Antes da primeira chamada, revisar termos, região, exclusão/retenção do resultado e cálculo atual do SKU no console contratual. A referência pública de preço não substitui orçamento aprovado. Depois da execução, reconciliar páginas e custo estimado com o faturamento. Não há credenciais ou endpoint privado de fornecedor neste incremento.
 
 ## Próxima evidência
 
@@ -55,6 +57,7 @@ Após receber as decisões, criar adapters experimentais fora do runtime operaci
 ## Validação desta preparação
 
 - `pnpm check`: formato, lint, tipos, testes e build aprovados nos nove pacotes do monorepo;
-- benchmark: 5 casos aprovados para gates, custo, unidade incorreta, fallback, corpus não autorizado, amostra insuficiente e entrada incompleta;
+- benchmark e executor: casos automatizados para gates, custo, unidade incorreta, fallback, resultado desconhecido, corpus não autorizado, amostra insuficiente, entrada incompleta, integridade dos bytes, teto preventivo e interrupção após operação ambígua;
+- adapter Azure: transporte exercitado somente com HTTP simulado, incluindo host fixo, corpo `base64Source`, consulta, custo estimado e rejeição de redirecionamento;
 - nenhum documento, credencial, endpoint privado ou resultado de fornecedor foi incluído;
 - nenhuma chamada externa de extração ou cobrança foi realizada.

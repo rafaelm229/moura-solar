@@ -22,13 +22,15 @@ export const fieldNames = [
 export type FieldName = (typeof fieldNames)[number];
 export type DocumentFormat = 'DIGITAL_PDF' | 'SCANNED_PDF' | 'PHOTO';
 export type DocumentQuality = 'GOOD' | 'POOR' | 'ROTATED';
-export type Outcome = 'SUCCEEDED' | 'FAILED' | 'FALLBACK_MANUAL';
+export type Outcome = 'SUCCEEDED' | 'FAILED' | 'UNKNOWN' | 'FALLBACK_MANUAL';
 
 export interface CorpusDocument {
   sampleId: string;
   distributor: string;
   format: DocumentFormat;
   quality: DocumentQuality;
+  mimeType: 'application/pdf' | 'image/jpeg' | 'image/png';
+  sha256: string;
   pageCount: number;
   labels: Array<{ key: string; field: FieldName; value: string; unit?: string; page: number }>;
 }
@@ -112,6 +114,7 @@ export interface BenchmarkReport {
     succeeded: number;
     fallbackManual: number;
     failed: number;
+    unknown: number;
     latencyP50Ms: number | null;
     latencyP95Ms: number | null;
     chargedPages: number;
@@ -119,6 +122,7 @@ export interface BenchmarkReport {
     costPerSucceededDocument: string | null;
     criticalErrors: number;
     fallbackManualRate: number;
+    unknownRate: number;
   };
   byField: Record<string, SliceMetrics>;
   byDistributor: Record<string, SliceMetrics>;
