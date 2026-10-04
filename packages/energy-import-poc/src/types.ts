@@ -103,11 +103,12 @@ export interface SliceMetrics {
   missing: number;
   unexpected: number;
   exactRate: number | null;
+  correctionRate: number | null;
   coverage: number | null;
 }
 
 export interface BenchmarkReport {
-  schemaVersion: '1';
+  schemaVersion: '2';
   corpusId: string;
   adapter: AdapterRunSet['adapter'];
   totals: {
@@ -124,6 +125,9 @@ export interface BenchmarkReport {
     criticalErrors: number;
     fallbackManualRate: number;
     unknownRate: number;
+    historyMonthsExpected: number;
+    historyMonthsDetected: number;
+    historyMonthCoverage: number | null;
   };
   byField: Record<string, SliceMetrics>;
   byDistributor: Record<string, SliceMetrics>;

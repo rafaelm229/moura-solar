@@ -125,8 +125,46 @@ describe('energy import PoC benchmark', () => {
     assert.equal(report.totals.fallbackManualRate, 0.025);
     assert.equal(report.totals.criticalErrors, 3);
     assert.equal(report.byField['bill.consumptionKwh']?.corrections, 1);
+    assert.equal(report.byField['bill.consumptionKwh']?.correctionRate, 1 / 40);
     assert.equal(report.byField['utilityUnit.externalCode']?.missing, 1);
     assert.equal(report.recommendation, 'STOP');
+  });
+
+  it('reports coverage of expected historical months per document', () => {
+    const historicalLabels = [
+      {
+        key: 'history_month_2026_06',
+        field: 'history.referenceMonth' as const,
+        value: '2026-06',
+        page: 1,
+      },
+      {
+        key: 'history_month_2026_07',
+        field: 'history.referenceMonth' as const,
+        value: '2026-07',
+        page: 1,
+      },
+    ];
+    const historicalManifest: CorpusManifest = {
+      ...manifest,
+      documents: manifest.documents.map((entry, index) =>
+        index === 0 ? { ...entry, labels: [...entry.labels, ...historicalLabels] } : entry,
+      ),
+    };
+    const historicalRuns = runSet();
+    historicalRuns.runs[0]!.candidates.push(
+      { ...historicalLabels[0]! },
+      {
+        key: 'history_month_unexpected',
+        field: 'history.referenceMonth',
+        value: '2026-08',
+        page: 1,
+      },
+    );
+    const report = benchmark(historicalManifest, historicalRuns, policy);
+    assert.equal(report.totals.historyMonthsExpected, 2);
+    assert.equal(report.totals.historyMonthsDetected, 1);
+    assert.equal(report.totals.historyMonthCoverage, 0.5);
   });
 
   it('refuses an unapproved corpus before producing metrics', () => {

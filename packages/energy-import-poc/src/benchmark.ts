@@ -9,7 +9,7 @@ import type {
 import { validateInputs } from './validate.js';
 import { microsToMoney, moneyToMicros } from './money.js';
 
-type Count = Omit<SliceMetrics, 'exactRate' | 'coverage'>;
+type Count = Omit<SliceMetrics, 'exactRate' | 'correctionRate' | 'coverage'>;
 
 const empty = (): Count => ({
   expected: 0,
@@ -22,6 +22,7 @@ const empty = (): Count => ({
 const metric = (count: Count): SliceMetrics => ({
   ...count,
   exactRate: count.expected ? count.exact / count.expected : null,
+  correctionRate: count.expected ? count.corrections / count.expected : null,
   coverage: count.expected ? (count.expected - count.missing) / count.expected : null,
 });
 const percentile = (values: number[], p: number) => {
@@ -70,6 +71,8 @@ export function benchmark(
   let unknown = 0;
   let fallbackManual = 0;
   let criticalErrors = 0;
+  let historyMonthsExpected = 0;
+  let historyMonthsDetected = 0;
   const latencies: number[] = [];
 
   for (const document of manifest.documents) {
@@ -87,6 +90,18 @@ export function benchmark(
     addDocument(distributor, document, run.candidates);
     addDocument(format, document, run.candidates);
     addDocument(quality, document, run.candidates);
+    const expectedMonths = new Set(
+      document.labels
+        .filter((label) => label.field === 'history.referenceMonth')
+        .map((label) => label.value),
+    );
+    const predictedMonths = new Set(
+      run.candidates
+        .filter((candidate) => candidate.field === 'history.referenceMonth')
+        .map((candidate) => candidate.value),
+    );
+    historyMonthsExpected += expectedMonths.size;
+    for (const month of expectedMonths) if (predictedMonths.has(month)) historyMonthsDetected += 1;
     byDistributor.set(document.distributor, distributor);
     byFormat.set(document.format, format);
     byQuality.set(document.quality, quality);
@@ -158,7 +173,7 @@ export function benchmark(
     );
   const sufficientSample = [...distributorCounts.values()].every((count) => count >= 20);
   return {
-    schemaVersion: '1',
+    schemaVersion: '2',
     corpusId: manifest.corpusId,
     adapter: runSet.adapter,
     totals: {
@@ -175,6 +190,11 @@ export function benchmark(
       criticalErrors,
       fallbackManualRate: fallbackManual / manifest.documents.length,
       unknownRate: unknown / manifest.documents.length,
+      historyMonthsExpected,
+      historyMonthsDetected,
+      historyMonthCoverage: historyMonthsExpected
+        ? historyMonthsDetected / historyMonthsExpected
+        : null,
     },
     byField: Object.fromEntries([...byField].map(([name, value]) => [name, metric(value)])),
     byDistributor: Object.fromEntries(
