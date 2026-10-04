@@ -69,7 +69,7 @@ export interface ExtractionRun {
 }
 
 export interface AdapterRunSet {
-  schemaVersion: '1';
+  schemaVersion: '2';
   adapter: {
     name: string;
     model: string;
@@ -78,6 +78,7 @@ export interface AdapterRunSet {
     languageMode: string;
     executedAt: string;
   };
+  overheadCost: { amount: string; currency: string };
   runs: ExtractionRun[];
 }
 

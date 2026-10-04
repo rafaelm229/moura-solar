@@ -46,7 +46,7 @@ pnpm --filter @moura-solar/energy-import-poc preflight -- \
 
 O plano registra adapter/modelo/versão/região/idioma, moeda, preço estimado por página, custo fixo, SKU, data da cotação e a revisão de privacidade do fornecedor com região e procedimento de exclusão. O comando não possui integração de rede. Ele lê todos os arquivos, confere hash e tamanho, calcula custo completo e bloqueia amostra repetida, menos de 20 documentos por distribuidora ou estimativa acima do teto. O relatório contém somente contagens, custo e digests do manifesto, política e plano; a saída usa permissão privada e não sobrescreve evidência anterior. Um resultado `BLOCKED` é gravado e encerra com código 2.
 
-Somente após um preflight `READY`, executar o adapter autorizado para produzir o arquivo de runs. O benchmark agregado continua separado:
+Somente após um preflight `READY`, executar o adapter autorizado para produzir o arquivo de runs no schema v2. O executor recusa manifesto, política, plano ou identidade do adapter diferentes dos digests aprovados, valida novamente o preço estimado por página e reserva o custo fixo antes da primeira submissão. O benchmark soma esse custo fixo aos custos retornados por documento. O benchmark agregado continua separado:
 
 ```bash
 mkdir -p poc-data/results
@@ -73,7 +73,7 @@ Após receber as decisões, criar adapters experimentais fora do runtime operaci
 ## Validação desta preparação
 
 - `pnpm check`: formato, lint, tipos, testes e build aprovados nos nove pacotes do monorepo;
-- preflight, benchmark e executor: casos automatizados para gates, custo, unidade incorreta, fallback, resultado desconhecido, corpus não autorizado, amostra insuficiente, repetição do corpus, entrada incompleta, integridade dos bytes, teto preventivo e interrupção após operação ambígua;
+- preflight, benchmark e executor: casos automatizados para gates, custo fixo e por página, vínculo dos digests, unidade incorreta, fallback, resultado desconhecido, corpus não autorizado, amostra insuficiente, repetição do corpus, entrada incompleta, integridade dos bytes, teto preventivo e interrupção após operação ambígua;
 - adapter Azure: transporte exercitado somente com HTTP simulado, incluindo host fixo, corpo `base64Source`, consulta, custo estimado e rejeição de redirecionamento;
 - nenhum documento, credencial, endpoint privado ou resultado de fornecedor foi incluído;
 - nenhuma chamada externa de extração ou cobrança foi realizada.

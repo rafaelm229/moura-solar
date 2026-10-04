@@ -2,11 +2,11 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { describe, it } from 'node:test';
 import type { ExtractionPocAdapter, PollResult } from './adapter.js';
-import { runExperiment } from './runner.js';
+import { preflightExperiment, type PocExecutionPlan } from './preflight.js';
+import { runAuthorizedExperiment } from './runner.js';
 import type { Candidate, CorpusManifest, ExperimentPolicy } from './types.js';
 
-const content = Buffer.from('synthetic energy bill fixture');
-const hash = createHash('sha256').update(content).digest('hex');
+const contents = new Map<string, Uint8Array>();
 const manifest: CorpusManifest = {
   schemaVersion: '1',
   corpusId: 'runner_fixture_001',
@@ -18,24 +18,30 @@ const manifest: CorpusManifest = {
     privacyReviewed: true,
   },
   blindEvaluation: true,
-  documents: [1, 2].map((index) => ({
-    sampleId: `runner_sample_${index}`,
-    distributor: 'DIST_A',
-    format: 'DIGITAL_PDF',
-    quality: 'GOOD',
-    mimeType: 'application/pdf',
-    sha256: hash,
-    pageCount: 1,
-    labels: [
-      {
-        key: 'bill.consumptionKwh',
-        field: 'bill.consumptionKwh',
-        value: '421.50',
-        unit: 'kWh',
-        page: 1,
-      },
-    ],
-  })),
+  documents: Array.from({ length: 20 }, (_, offset) => {
+    const index = offset + 1;
+    const sampleId = `runner_sample_${index}`;
+    const content = Buffer.from(`synthetic energy bill fixture ${index}`);
+    contents.set(sampleId, content);
+    return {
+      sampleId,
+      distributor: 'DIST_A',
+      format: 'DIGITAL_PDF',
+      quality: 'GOOD',
+      mimeType: 'application/pdf',
+      sha256: createHash('sha256').update(content).digest('hex'),
+      pageCount: 1,
+      labels: [
+        {
+          key: 'bill.consumptionKwh',
+          field: 'bill.consumptionKwh',
+          value: '421.50',
+          unit: 'kWh',
+          page: 1,
+        },
+      ],
+    };
+  }),
 };
 const policy: ExperimentPolicy = {
   schemaVersion: '1',
@@ -43,6 +49,34 @@ const policy: ExperimentPolicy = {
   goals: [{ field: 'bill.consumptionKwh', minExactRate: 1, minCoverage: 1 }],
   criticalFields: ['bill.consumptionKwh'],
 };
+const plan: PocExecutionPlan = {
+  schemaVersion: '1',
+  adapter: {
+    name: 'fixture',
+    model: 'fixture-model',
+    version: '1',
+    region: 'local',
+    languageMode: 'pt-BR',
+  },
+  pricing: {
+    currency: 'USD',
+    estimatedPerPage: '0.001',
+    estimatedFixed: '0',
+    sku: 'fixture-sku',
+    quotedAt: '2026-10-04T12:00:00Z',
+  },
+  providerPrivacyReview: {
+    approved: true,
+    reviewedAt: '2026-10-04T12:00:00Z',
+    approvedByRole: 'privacy-reviewer',
+    dataRegion: 'local',
+    deletionProcedure: 'Delete fixture output after the test.',
+  },
+};
+const load = async (document: CorpusManifest['documents'][number]) =>
+  contents.get(document.sampleId)!;
+const preflight = await preflightExperiment(manifest, policy, plan, load);
+const authorization = { plan, preflight };
 const candidate: Candidate = {
   key: 'bill.consumptionKwh',
   field: 'bill.consumptionKwh',
@@ -70,7 +104,7 @@ function adapter(poll: () => PollResult<Candidate[]>): ExtractionPocAdapter<Cand
     estimateUsage(input) {
       return {
         chargedPages: input.pageCount,
-        cost: { amount: '0.10', currency: 'USD' },
+        cost: { amount: '0.001', currency: 'USD' },
       };
     },
     async submit(input, correlationId) {
@@ -103,7 +137,7 @@ describe('PoC experiment runner', () => {
             usage: { chargedPages: 1, cost: { amount: '0.10', currency: 'USD' } },
           };
     });
-    const result = await runExperiment(manifest, policy, subject, async () => content, {
+    const result = await runAuthorizedExperiment(manifest, policy, authorization, subject, load, {
       pollIntervalMs: 10,
       timeoutMs: 100,
       now: () => clock,
@@ -118,25 +152,27 @@ describe('PoC experiment runner', () => {
     assert.equal(subject.submitted.length, 1);
   });
 
-  it('does not submit a document whose estimate would exceed the remaining budget', async () => {
+  it('rejects runtime pricing that differs from the approved execution plan', async () => {
     const subject = adapter(() => ({ state: 'PENDING' }));
     subject.estimateUsage = (input) => ({
       chargedPages: input.pageCount,
       cost: { amount: '0.11', currency: 'USD' },
     });
-    const result = await runExperiment(manifest, policy, subject, async () => content, {
-      pollIntervalMs: 10,
-      timeoutMs: 20,
-    });
-    assert.equal(result.runs[0]?.outcome, 'FALLBACK_MANUAL');
-    assert.equal(result.runs[0]?.errorCode, 'BUDGET_LIMIT_REACHED');
+    await assert.rejects(
+      () =>
+        runAuthorizedExperiment(manifest, policy, authorization, subject, load, {
+          pollIntervalMs: 10,
+          timeoutMs: 20,
+        }),
+      /ADAPTER_ESTIMATE_DIFFERS_FROM_PLAN/,
+    );
     assert.equal(subject.submitted.length, 0);
   });
 
   it('marks a timed-out accepted operation unknown, cancels best effort and halts new submissions', async () => {
     let clock = 0;
     const subject = adapter(() => ({ state: 'PENDING' }));
-    const result = await runExperiment(manifest, policy, subject, async () => content, {
+    const result = await runAuthorizedExperiment(manifest, policy, authorization, subject, load, {
       pollIntervalMs: 10,
       timeoutMs: 20,
       now: () => clock,
@@ -154,9 +190,10 @@ describe('PoC experiment runner', () => {
 
   it('rejects changed bytes before submission', async () => {
     const subject = adapter(() => ({ state: 'PENDING' }));
-    const result = await runExperiment(
+    const result = await runAuthorizedExperiment(
       manifest,
       policy,
+      authorization,
       subject,
       async () => Buffer.from('changed'),
       {
@@ -174,7 +211,7 @@ describe('PoC experiment runner', () => {
     subject.submit = async () => {
       throw new Error('NETWORK_TIMEOUT');
     };
-    const result = await runExperiment(manifest, policy, subject, async () => content, {
+    const result = await runAuthorizedExperiment(manifest, policy, authorization, subject, load, {
       pollIntervalMs: 10,
       timeoutMs: 20,
     });
@@ -182,5 +219,21 @@ describe('PoC experiment runner', () => {
     assert.equal(result.runs[0]?.errorCode, 'NETWORK_TIMEOUT');
     assert.equal(result.runs[1]?.outcome, 'FALLBACK_MANUAL');
     assert.equal(result.runs[1]?.errorCode, 'EXTERNAL_RESULT_UNKNOWN');
+  });
+
+  it('rejects a policy changed after preflight before contacting the adapter', async () => {
+    const subject = adapter(() => ({ state: 'PENDING' }));
+    await assert.rejects(
+      () =>
+        runAuthorizedExperiment(
+          manifest,
+          { ...policy, goals: [{ ...policy.goals[0]!, minCoverage: 0.99 }] },
+          authorization,
+          subject,
+          load,
+        ),
+      /Policy changed after preflight/,
+    );
+    assert.equal(subject.submitted.length, 0);
   });
 });

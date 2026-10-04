@@ -73,6 +73,69 @@ function digest(value: unknown): string {
   return createHash('sha256').update(canonicalJson(value)).digest('hex');
 }
 
+export function assertPreflightReady(
+  manifest: CorpusManifest,
+  policy: ExperimentPolicy,
+  plan: PocExecutionPlan,
+  report: PreflightReport,
+  adapter: PocExecutionPlan['adapter'],
+): void {
+  validateManifestAndPolicy(manifest, policy);
+  validatePlan(plan, policy);
+  invariant(report.decision === 'READY', 'Preflight decision is not READY');
+  invariant(
+    report.gates.every((gate) => gate.passed),
+    'Preflight contains a failed gate',
+  );
+  invariant(report.corpusId === manifest.corpusId, 'Preflight corpus differs from manifest');
+  invariant(report.manifestDigest === digest(manifest), 'Manifest changed after preflight');
+  invariant(report.policyDigest === digest(policy), 'Policy changed after preflight');
+  invariant(report.planDigest === digest(plan), 'Execution plan changed after preflight');
+  const pages = manifest.documents.reduce((total, document) => total + document.pageCount, 0);
+  const estimatedCost =
+    moneyToMicros(plan.pricing.estimatedFixed) +
+    moneyToMicros(plan.pricing.estimatedPerPage) * BigInt(pages);
+  const minimumDistributorCount = Math.min(
+    ...Object.values(
+      manifest.documents.reduce<Record<string, number>>((counts, document) => {
+        counts[document.distributor] = (counts[document.distributor] ?? 0) + 1;
+        return counts;
+      }, {}),
+    ),
+  );
+  invariant(
+    new Set(manifest.documents.map((document) => document.sha256)).size ===
+      manifest.documents.length,
+    'Corpus contains repeated document hashes',
+  );
+  invariant(minimumDistributorCount >= 20, 'Corpus has fewer than 20 documents per distributor');
+  invariant(
+    estimatedCost <= moneyToMicros(policy.approvedBudget.amount),
+    'Execution estimate exceeds approved budget',
+  );
+  invariant(
+    report.totals.documents === manifest.documents.length && report.totals.pages === pages,
+    'Preflight totals differ from manifest',
+  );
+  invariant(
+    report.totals.estimatedCost.amount === microsToMoney(estimatedCost) &&
+      report.totals.estimatedCost.currency === plan.pricing.currency,
+    'Preflight estimate differs from plan',
+  );
+  invariant(
+    report.totals.approvedBudget.amount === policy.approvedBudget.amount &&
+      report.totals.approvedBudget.currency === policy.approvedBudget.currency,
+    'Preflight budget differs from policy',
+  );
+  for (const key of ['name', 'model', 'version', 'region', 'languageMode'] as const) {
+    invariant(
+      report.adapter[key] === plan.adapter[key],
+      `Preflight adapter ${key} differs from plan`,
+    );
+    invariant(adapter[key] === plan.adapter[key], `Runtime adapter ${key} differs from plan`);
+  }
+}
+
 function increment(target: Record<string, number>, key: string): void {
   target[key] = (target[key] ?? 0) + 1;
 }

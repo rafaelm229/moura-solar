@@ -2,7 +2,8 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { dirname, extname, resolve } from 'node:path';
 import type { ExtractionPocAdapter, PollResult, ProviderUsage } from './adapter.js';
-import { moneyToMicros } from './money.js';
+import { microsToMoney, moneyToMicros } from './money.js';
+import { assertPreflightReady, type PocExecutionPlan, type PreflightReport } from './preflight.js';
 import type {
   AdapterRunSet,
   CorpusDocument,
@@ -19,6 +20,11 @@ export interface ExperimentRunnerOptions {
   timeoutMs?: number;
   now?: () => number;
   sleep?: (milliseconds: number) => Promise<void>;
+}
+
+export interface AuthorizedExperiment {
+  plan: PocExecutionPlan;
+  preflight: PreflightReport;
 }
 
 const zeroUsage = (currency: string): ProviderUsage => ({
@@ -49,12 +55,13 @@ function runResult(
   };
 }
 
-export async function runExperiment<TRaw>(
+async function executeExperiment<TRaw>(
   manifest: CorpusManifest,
   policy: ExperimentPolicy,
   adapter: ExtractionPocAdapter<TRaw>,
   loadDocument: DocumentLoader,
-  options: ExperimentRunnerOptions = {},
+  options: ExperimentRunnerOptions,
+  overhead: bigint,
 ): Promise<AdapterRunSet> {
   validateManifestAndPolicy(manifest, policy);
   const pollIntervalMs = options.pollIntervalMs ?? 1_000;
@@ -66,7 +73,7 @@ export async function runExperiment<TRaw>(
     options.sleep ??
     ((milliseconds) => new Promise<void>((done) => setTimeout(done, milliseconds)));
   const budget = moneyToMicros(policy.approvedBudget.amount);
-  let spent = 0n;
+  let spent = overhead;
   let halted = false;
   const runs: ExtractionRun[] = [];
 
@@ -205,10 +212,48 @@ export async function runExperiment<TRaw>(
     }
   }
   return {
-    schemaVersion: '1',
+    schemaVersion: '2',
     adapter: { ...adapter.identity, executedAt: new Date(now()).toISOString() },
+    overheadCost: {
+      amount: microsToMoney(overhead),
+      currency: policy.approvedBudget.currency,
+    },
     runs,
   };
+}
+
+export async function runAuthorizedExperiment<TRaw>(
+  manifest: CorpusManifest,
+  policy: ExperimentPolicy,
+  authorization: AuthorizedExperiment,
+  adapter: ExtractionPocAdapter<TRaw>,
+  loadDocument: DocumentLoader,
+  options: ExperimentRunnerOptions = {},
+): Promise<AdapterRunSet> {
+  assertPreflightReady(
+    manifest,
+    policy,
+    authorization.plan,
+    authorization.preflight,
+    adapter.identity,
+  );
+  const perPage = moneyToMicros(authorization.plan.pricing.estimatedPerPage);
+  for (const document of manifest.documents) {
+    const estimate = adapter.estimateUsage({ pageCount: document.pageCount });
+    if (
+      estimate.cost.currency !== authorization.plan.pricing.currency ||
+      moneyToMicros(estimate.cost.amount) !== perPage * BigInt(document.pageCount)
+    )
+      throw new Error('ADAPTER_ESTIMATE_DIFFERS_FROM_PLAN');
+  }
+  return executeExperiment(
+    manifest,
+    policy,
+    adapter,
+    loadDocument,
+    options,
+    moneyToMicros(authorization.plan.pricing.estimatedFixed),
+  );
 }
 
 export function createLocalDocumentLoader(root: string): DocumentLoader {

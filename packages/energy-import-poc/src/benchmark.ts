@@ -63,7 +63,7 @@ export function benchmark(
   const byDistributor = new Map<string, Count>();
   const byFormat = new Map<string, Count>();
   const byQuality = new Map<string, Count>();
-  let totalCost = 0n;
+  let totalCost = moneyToMicros(runSet.overheadCost.amount);
   let chargedPages = 0;
   let succeeded = 0;
   let failed = 0;

@@ -45,7 +45,7 @@ const manifest: CorpusManifest = {
 
 const runSet = (mutate?: (set: AdapterRunSet) => void): AdapterRunSet => {
   const set: AdapterRunSet = {
-    schemaVersion: '1',
+    schemaVersion: '2',
     adapter: {
       name: 'fixture',
       model: 'normalized-fixture',
@@ -54,6 +54,7 @@ const runSet = (mutate?: (set: AdapterRunSet) => void): AdapterRunSet => {
       languageMode: 'pt-BR',
       executedAt: '2026-10-04T12:00:00Z',
     },
+    overheadCost: { amount: '0.100000', currency: 'USD' },
     runs: manifest.documents.map((item) => ({
       sampleId: item.sampleId,
       outcome: 'SUCCEEDED',
@@ -81,8 +82,8 @@ describe('energy import PoC benchmark', () => {
   it('reports reproducible metrics and recommends continuation only when all declared gates pass', () => {
     const report = benchmark(manifest, runSet(), policy);
     assert.equal(report.totals.documents, 40);
-    assert.equal(report.totals.cost.amount, '0.400000');
-    assert.equal(report.totals.costPerSucceededDocument, '0.010000');
+    assert.equal(report.totals.cost.amount, '0.500000');
+    assert.equal(report.totals.costPerSucceededDocument, '0.012500');
     assert.equal(report.totals.latencyP95Ms, 100);
     assert.equal(report.totals.criticalErrors, 0);
     assert.equal(report.totals.unknown, 0);

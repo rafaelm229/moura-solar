@@ -21,7 +21,7 @@ export function validateInputs(
   policy: ExperimentPolicy,
 ): void {
   validateManifestAndPolicy(manifest, policy);
-  invariant(runSet.schemaVersion === '1', 'Unsupported adapter result schemaVersion');
+  invariant(runSet.schemaVersion === '2', 'Unsupported adapter result schemaVersion');
   invariant(runSet.adapter.name.length > 0, 'Adapter name is required');
   invariant(runSet.adapter.model.length > 0, 'Adapter model is required');
   invariant(runSet.adapter.version.length > 0, 'Adapter version is required');
@@ -29,6 +29,11 @@ export function validateInputs(
   invariant(
     !Number.isNaN(Date.parse(runSet.adapter.executedAt)),
     'Adapter execution date is invalid',
+  );
+  invariant(decimal.test(runSet.overheadCost.amount), 'Invalid adapter overhead cost');
+  invariant(
+    runSet.overheadCost.currency === policy.approvedBudget.currency,
+    'Adapter overhead currency differs from approved budget',
   );
 
   const sampleIds = new Set(manifest.documents.map((document) => document.sampleId));
