@@ -1,7 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api, result, allows } from '../identity/client';
+import { api, result, allows, ApiFailure } from '../identity/client';
 import { Feedback } from '../identity/feedback';
 import type { Schemas } from '@moura-solar/api-client';
 
@@ -26,6 +26,7 @@ export function EnergyReadings({
   readonly = false,
 }: EnergyReadingsProps) {
   const queryClient = useQueryClient();
+  const commandKeys = useRef(new Map<string, string>());
   const [activeUnitId, setActiveUnitId] = useState<string | undefined>(utilityUnitId ?? undefined);
 
   // New utility unit form
@@ -79,40 +80,42 @@ export function EnergyReadings({
   // Create and link utility unit
   const createUnitMutation = useMutation({
     mutationFn: async () => {
-      const newUnit = await result(
-        api.POST('/api/v1/customers/{customerId}/utility-units', {
-          params: { path: { customerId } },
-          body: {
-            distributorName: distributor,
-            externalCode: unitCode || undefined,
-            consumerClass: tariffGroup === 'B1' ? 'RESIDENTIAL' : 'COMMERCIAL',
-            tariffMode: 'CONVENTIONAL',
-            connectionType,
-            voltage,
-          },
+      const body = {
+        expectedVersion: opportunityVersion,
+        distributorName: distributor,
+        externalCode: unitCode || undefined,
+        consumerClass: tariffGroup === 'B1' ? 'RESIDENTIAL' : 'COMMERCIAL',
+        tariffMode: 'CONVENTIONAL',
+        connectionType,
+        voltage,
+      };
+      const fingerprint = JSON.stringify({ opportunityId, body });
+      let key = commandKeys.current.get(fingerprint);
+      if (!key) {
+        key = crypto.randomUUID();
+        commandKeys.current.set(fingerprint, key);
+      }
+      return result(
+        api.POST('/api/v1/opportunities/{opportunityId}/utility-unit', {
+          params: { path: { opportunityId }, header: { 'idempotency-key': key } },
+          body,
         }),
       );
-
-      // Link to opportunity
-      await result(
-        api.PATCH('/api/v1/opportunities/{opportunityId}', {
-          params: { path: { opportunityId } },
-          body: {
-            expectedVersion: opportunityVersion,
-            utilityUnitId: newUnit.id,
-          },
-        }),
-      );
-
-      return newUnit;
     },
     onSuccess: (newUnit) => {
+      commandKeys.current.clear();
       queryClient.invalidateQueries({ queryKey: ['customer-utility-units', customerId] });
       queryClient.invalidateQueries({ queryKey: ['opportunity', opportunityId] });
       queryClient.invalidateQueries({ queryKey: ['opportunities'] });
       setActiveUnitId(newUnit.id);
       setShowNewUnitForm(false);
       onUtilityUnitLinked?.(newUnit.id);
+    },
+    onError: (error) => {
+      if (error instanceof ApiFailure && error.status === 409) {
+        void queryClient.invalidateQueries({ queryKey: ['opportunity', opportunityId] });
+        void queryClient.invalidateQueries({ queryKey: ['opportunities'] });
+      }
     },
   });
 

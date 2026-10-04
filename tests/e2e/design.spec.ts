@@ -5,6 +5,7 @@ const password = 'E2e-test-password-2026';
 for (const [width, height] of [
   [360, 800],
   [768, 1024],
+  [1024, 900],
   [1440, 900],
 ]) {
   test(`engineer/seller journey for sizing, consumption history, and margin governance at ${width}px`, async ({

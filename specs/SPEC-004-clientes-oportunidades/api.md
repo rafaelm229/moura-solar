@@ -68,7 +68,15 @@ POST /opportunities/:opportunityId/start-survey
 POST /opportunities/:opportunityId/lose
 POST /opportunities/:opportunityId/reopen
 POST /opportunities/:opportunityId/archive
+POST /opportunities/:opportunityId/utility-unit
 ```
+
+`POST /opportunities/:opportunityId/utility-unit` cria uma UC para o cliente da
+oportunidade e a vincula na mesma transação. Envia `expectedVersion` e
+`Idempotency-Key`; a API exige `consumer_units:manage` e
+`opportunities:update` no contexto da oportunidade. Conflito de versão ou
+qualquer falha reverte a criação da UC. Repetir a mesma chave e payload retorna
+o resultado original; reutilizar a chave com payload diferente retorna 409.
 
 Não existirá `PATCH { state: ... }` para movimentar a esteira.
 
@@ -168,6 +176,7 @@ customers:override_duplicate
 utility_units:read
 utility_units:create
 utility_units:update
+consumer_units:manage
 opportunities:read
 opportunities:create
 opportunities:update

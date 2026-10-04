@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { IdentityStore } from '../identity/identity.store';
+import { canAccess } from '../identity/identity.policy';
 import { fail } from '../identity/security';
 import type { ContextDto } from '../identity/identity.dto';
 import type {
   AddAddressDto,
   AddContactDto,
   CompleteActivityDto,
+  CreateAndLinkUtilityUnitDto,
   CreateActivityDto,
   CreateCustomerDto,
   CreateOpportunityDto,
@@ -33,6 +35,91 @@ function normalizeEmail(value?: string | null): string {
 @Injectable()
 export class CommercialService {
   constructor(private readonly store: IdentityStore) {}
+
+  private async createUtilityUnitInTransaction(
+    tx: Prisma.TransactionClient,
+    actor: ContextDto,
+    customerId: string,
+    dto: CreateUtilityUnitDto,
+    traceId: string,
+  ) {
+    const customer = await tx.customer.findFirst({
+      where: { id: customerId, organizationId: actor.organizationId },
+    });
+    if (!customer) fail('CUSTOMER_NOT_FOUND', 'Cliente não encontrado.', 404);
+
+    if (dto.addressId) {
+      const address = await tx.address.findFirst({ where: { id: dto.addressId, customerId } });
+      if (!address) fail('ADDRESS_NOT_FOUND', 'Endereço não encontrado para este cliente.', 404);
+    }
+
+    const extCode = dto.externalCode?.trim();
+    if (extCode) {
+      const existing = await tx.utilityUnit.findFirst({
+        where: {
+          organizationId: actor.organizationId,
+          distributorName: dto.distributorName.trim(),
+          externalCode: extCode,
+          status: 'ACTIVE',
+        },
+      });
+      if (existing) {
+        fail(
+          'UTILITY_UNIT_ALREADY_EXISTS',
+          `Unidade consumidora com código ${extCode} já cadastrada para esta concessionária.`,
+          409,
+        );
+      }
+    }
+
+    const unit = await tx.utilityUnit.create({
+      data: {
+        organizationId: actor.organizationId,
+        customerId,
+        addressId: dto.addressId || null,
+        distributorName: dto.distributorName.trim(),
+        externalCode: extCode || null,
+        consumerClass: dto.consumerClass || 'RESIDENTIAL',
+        tariffMode: dto.tariffMode || 'CONVENTIONAL',
+        connectionType: dto.connectionType || 'BIPHASIC',
+        voltage: dto.voltage || '220V',
+        status: 'ACTIVE',
+        version: 1,
+      },
+    });
+
+    await this.store.audit(tx, 'commercial.utility_unit_created', actor, unit.id, traceId);
+    return unit;
+  }
+
+  private async assertCanCreateAndLinkUtilityUnit(
+    tx: Prisma.TransactionClient,
+    actor: ContextDto,
+    opportunity: { id: string; organizationId: string; ownerUserId: string },
+  ) {
+    const owner = await tx.membership.findFirst({
+      where: {
+        organizationId: actor.organizationId,
+        userId: opportunity.ownerUserId,
+        status: 'active',
+      },
+      select: { id: true, teams: { select: { teamId: true } } },
+    });
+    const resource = {
+      organizationId: opportunity.organizationId,
+      ownerId: owner?.id,
+      teamIds: owner?.teams.map(({ teamId }) => teamId),
+    };
+    for (const permission of ['consumer_units:manage', 'opportunities:update']) {
+      if (!canAccess(actor, permission, resource)) {
+        fail(
+          'ACCESS_DENIED',
+          'Você não tem permissão neste contexto para criar e vincular a UC.',
+          403,
+        );
+      }
+    }
+  }
 
   // ---------------------------------------------------------------------------
   // DUPLICATE DETECTION
@@ -515,57 +602,87 @@ export class CommercialService {
     dto: CreateUtilityUnitDto,
     traceId: string,
   ) {
-    const extCode = dto.externalCode?.trim();
-    return this.store.transaction(async (tx) => {
-      const customer = await tx.customer.findFirst({
-        where: { id: customerId, organizationId: actor.organizationId },
+    return this.store.transaction((tx) =>
+      this.createUtilityUnitInTransaction(tx, actor, customerId, dto, traceId),
+    );
+  }
+
+  async createAndLinkUtilityUnit(
+    actor: ContextDto,
+    opportunityId: string,
+    dto: CreateAndLinkUtilityUnitDto,
+    idempotencyKey: string,
+    traceId: string,
+  ) {
+    const checkContext = async (tx: Prisma.TransactionClient) => {
+      const opportunity = await tx.opportunity.findFirst({
+        where: { id: opportunityId, organizationId: actor.organizationId },
       });
-      if (!customer) fail('CUSTOMER_NOT_FOUND', 'Cliente não encontrado.', 404);
+      if (!opportunity) fail('OPPORTUNITY_NOT_FOUND', 'Oportunidade não encontrada.', 404);
+      await this.assertCanCreateAndLinkUtilityUnit(tx, actor, opportunity);
+      return opportunity;
+    };
 
-      if (dto.addressId) {
-        const address = await tx.address.findFirst({
-          where: { id: dto.addressId, customerId },
+    await this.store.transaction(checkContext);
+    return this.store.command(
+      actor,
+      idempotencyKey,
+      { opportunityId, ...dto },
+      'consumer_units:manage',
+      async (tx) => {
+        const opportunity = await tx.opportunity.findFirst({
+          where: { id: opportunityId, organizationId: actor.organizationId },
         });
-        if (!address) fail('ADDRESS_NOT_FOUND', 'Endereço não encontrado para este cliente.', 404);
-      }
-
-      if (extCode) {
-        const existing = await tx.utilityUnit.findFirst({
-          where: {
-            organizationId: actor.organizationId,
-            distributorName: dto.distributorName.trim(),
-            externalCode: extCode,
-            status: 'ACTIVE',
-          },
-        });
-        if (existing) {
-          fail(
-            'UTILITY_UNIT_ALREADY_EXISTS',
-            `Unidade consumidora com código ${extCode} já cadastrada para esta concessionária.`,
-            409,
-          );
+        if (!opportunity) fail('OPPORTUNITY_NOT_FOUND', 'Oportunidade não encontrada.', 404);
+        await this.assertCanCreateAndLinkUtilityUnit(tx, actor, opportunity);
+        if (opportunity.version !== dto.expectedVersion) {
+          fail('CONCURRENT_MODIFICATION', 'A oportunidade foi alterada por outro usuário.', 409);
         }
-      }
 
-      const unit = await tx.utilityUnit.create({
-        data: {
-          organizationId: actor.organizationId,
-          customerId,
-          addressId: dto.addressId || null,
-          distributorName: dto.distributorName.trim(),
-          externalCode: extCode || null,
-          consumerClass: dto.consumerClass || 'RESIDENTIAL',
-          tariffMode: dto.tariffMode || 'CONVENTIONAL',
-          connectionType: dto.connectionType || 'BIPHASIC',
-          voltage: dto.voltage || '220V',
-          status: 'ACTIVE',
-          version: 1,
-        },
-      });
+        const unit = await this.createUtilityUnitInTransaction(
+          tx,
+          actor,
+          opportunity.customerId,
+          dto,
+          traceId,
+        );
+        const updated = await tx.opportunity.updateMany({
+          where: {
+            id: opportunity.id,
+            organizationId: actor.organizationId,
+            version: dto.expectedVersion,
+          },
+          data: { utilityUnitId: unit.id, version: { increment: 1 } },
+        });
+        if (!updated.count) {
+          fail('CONCURRENT_MODIFICATION', 'A oportunidade foi alterada por outro usuário.', 409);
+        }
 
-      await this.store.audit(tx, 'commercial.utility_unit_created', actor, unit.id, traceId);
-      return unit;
-    });
+        await this.store.audit(
+          tx,
+          'commercial.opportunity_updated',
+          actor,
+          opportunity.id,
+          traceId,
+        );
+        return {
+          id: unit.id,
+          organizationId: unit.organizationId,
+          customerId: unit.customerId,
+          distributorName: unit.distributorName,
+          externalCode: unit.externalCode,
+          consumerClass: unit.consumerClass,
+          tariffMode: unit.tariffMode,
+          connectionType: unit.connectionType,
+          voltage: unit.voltage,
+          addressId: unit.addressId,
+          version: unit.version,
+          createdAt: unit.createdAt.toISOString(),
+          updatedAt: unit.updatedAt.toISOString(),
+        };
+      },
+      false,
+    );
   }
 
   async updateUtilityUnit(

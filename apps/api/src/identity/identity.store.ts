@@ -55,13 +55,14 @@ export class IdentityStore {
     input: unknown,
     permission: string,
     work: (tx: Tx) => Promise<T>,
+    organization = true,
   ): Promise<T> {
     if (!/^[a-zA-Z0-9_-]{16,100}$/.test(key))
       fail('IDEMPOTENCY_REQUIRED', 'Informe uma chave de idempotência válida.');
     const fingerprint = hash(JSON.stringify(input));
     const commandKey = `${actor.id}:${key}`;
     return this.transaction(async (tx) => {
-      await this.authorize(tx, actor, permission);
+      await this.authorize(tx, actor, permission, organization);
       const prior = await tx.identityCommand.findUnique({ where: { key: commandKey } });
       if (prior) {
         if (prior.fingerprint !== fingerprint)
@@ -75,7 +76,7 @@ export class IdentityStore {
       return result;
     });
   }
-  async authorize(tx: Tx, actor: ContextDto, permission: string) {
+  async authorize(tx: Tx, actor: ContextDto, permission: string, organization = true) {
     const session = await tx.session.findFirst({
       where: {
         id: actor.sessionId,
@@ -85,7 +86,11 @@ export class IdentityStore {
           id: actor.id,
           status: 'active',
           organizationId: actor.organizationId,
-          role: { grants: { some: { permission, scope: 'organization' } } },
+          role: {
+            grants: {
+              some: { permission, ...(organization ? { scope: 'organization' } : {}) },
+            },
+          },
         },
       },
     });
