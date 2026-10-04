@@ -548,7 +548,7 @@ export class ContractService {
             },
           });
 
-          // Initialize ProjectGate for Contract (Pending Gate C)
+          // Initialize the contract ProjectGate in its pending state.
           await tx.projectGate.create({
             data: {
               organizationId,
@@ -1147,7 +1147,7 @@ export class ContractService {
           customerId: contract.opportunity.customer.id,
           type: 'TASK',
           subject: `Conferência de Assinatura: ${contract.code}`,
-          description: `Novo arquivo assinado "${safeFileName}" anexado. Realizar conferência das partes, páginas completas, correspondência da versão e legibilidade antes de liberar o Gate C.`,
+          description: `Novo arquivo assinado "${safeFileName}" anexado. Realizar conferência das partes, páginas completas, correspondência da versão e legibilidade antes de liberar o gate contratual.`,
           assigneeUserId: userId,
           dueAt: new Date(Date.now() + 24 * 3600000),
           status: 'OPEN',
@@ -1231,7 +1231,7 @@ export class ContractService {
           data: { state: 'ACTIVE' },
         });
 
-        // 3. Satisfy Gate C (CONTRACT)
+        // 3. Satisfy the contract gate (CONTRACT)
         const gate = await tx.projectGate.findFirst({
           where: {
             opportunityId: contract.opportunityId,
@@ -1264,7 +1264,7 @@ export class ContractService {
           });
         }
 
-        // 4. Advance Opportunity to VENDIDO (Closed/Won, Gate C)
+        // 4. Advance Opportunity to VENDIDO after contract verification.
         const opp = contract.opportunity;
         if (opp.state !== 'VENDIDO') {
           await tx.opportunity.update({
@@ -1282,7 +1282,7 @@ export class ContractService {
               toState: 'VENDIDO',
               command: 'CONCLUIR_CONTRATO_GATE_C',
               actorId: userId,
-              justification: `Contrato assinado ${contract.code} conferido e verificado. Gate C superado com sucesso.`,
+              justification: `Contrato assinado ${contract.code} conferido e verificado. Gate contratual superado com sucesso.`,
             },
           });
         }
@@ -1295,7 +1295,7 @@ export class ContractService {
             customerId: opp.customer.id,
             type: 'TASK',
             subject: `Engenharia & Executivo: Oportunidade ${opp.code}`,
-            description: `Contrato assinado e verificado (Gate C). Iniciar elaboração do projeto executivo de engenharia e solicitação de acesso junto à concessionária.`,
+            description: `Contrato assinado e verificado. Gate contratual superado. Iniciar elaboração do projeto executivo de engenharia e solicitação de acesso junto à concessionária.`,
             assigneeUserId: userId,
             dueAt: new Date(reviewedAt.getTime() + 3 * 86400000),
             status: 'OPEN',

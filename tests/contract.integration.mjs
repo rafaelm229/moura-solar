@@ -247,7 +247,7 @@ test('1. Geração de minuta contratual a partir de proposta aceita (SPEC-007 It
   assert.ok(docxDoc.fileSize > 40000, 'Arquivo DOCX deve ter tamanho condizente');
   assert.ok(pdfDoc.fileSize > 5000, 'Arquivo PDF deve ter tamanho condizente');
 
-  // Verify initial project gate (CONTRACT / Gate C) created as PENDING
+  // Verify initial project gate (CONTRACT) is created as PENDING
   const contractGate = res.body.projectGates.find((g) => g.gateType === 'CONTRACT');
   assert.ok(contractGate);
   assert.equal(contractGate.status, 'PENDING');
@@ -308,9 +308,13 @@ test('5. Upload de via assinada sem ativação prematura (SPEC-007 Item 4 e 9)',
   assert.equal(uploadRes.status, 201);
   assert.equal(uploadRes.body.contract.state, 'SIGNED_UPLOADED');
 
-  // Verify that Gate C has NOT been satisfied yet (SPEC-007 Item 4 & 9)
+  // Verify the contract gate has NOT been satisfied yet (SPEC-007 Item 4 & 9)
   const oppCheck = await admin.call(`opportunities/${testOpportunityId}`);
-  assert.notEqual(oppCheck.body.state, 'VENDIDO', 'Upload não deve liberar Gate C prematuramente');
+  assert.notEqual(
+    oppCheck.body.state,
+    'VENDIDO',
+    'Upload não deve liberar o gate contratual prematuramente',
+  );
 });
 
 test('6. Conferência com rejeição formal (SPEC-007 Item 10)', async () => {
@@ -335,7 +339,7 @@ test('6. Conferência com rejeição formal (SPEC-007 Item 10)', async () => {
   assert.equal(rejectRes.body.review.decision, 'REJECTED');
 });
 
-test('7. Conferência com aprovação integral e liberação do Gate C (SPEC-007 Item 11)', async () => {
+test('7. Conferência integral e liberação do gate contratual (SPEC-007 Item 11)', async () => {
   const listRes = await admin.call(`opportunities/${testOpportunityId}/contracts`);
   const contractId = listRes.body[0].id;
 
@@ -360,7 +364,7 @@ test('7. Conferência com aprovação integral e liberação do Gate C (SPEC-007
   assert.equal(verifyRes.status, 200);
   assert.equal(verifyRes.body.contract.state, 'ACTIVE');
 
-  // Verify Opportunity transitioned to VENDIDO (Gate C superado!)
+  // Verify Opportunity transitioned to VENDIDO after contract verification.
   const oppRes = await admin.call(`opportunities/${testOpportunityId}`);
   assert.equal(oppRes.status, 200);
   assert.equal(oppRes.body.state, 'VENDIDO');

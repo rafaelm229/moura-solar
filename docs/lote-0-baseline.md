@@ -21,6 +21,20 @@ criação e atualização rejeitadas, vínculos válidos e persistência do vín
 aceito. Usa PostgreSQL local na porta 5433 e schema aleatório `test_comm_*`,
 removido ao final do teste.
 
+## Incremento A15 — identificar pelo código real o gate contratual
+
+A tela M5 chamava o `ProjectGate` de tipo `CONTRACT` de “Gate C”. Na proposta
+de jornada da SPEC-001, Gate C significa proposta pronta para envio; o tipo
+persistido `CONTRACT` representa a conferência e verificação do contrato da
+SPEC-007. A UI e as mensagens de auditoria agora dizem “gate contratual” e
+“gate contratual pendente/superado”, sem alterar tipo, estado ou transição do
+domínio.
+
+A numeração final e a correspondência entre gates comerciais e operacionais
+continuam propostas para validação humana; este incremento não escolhe uma
+sequência normativa. A regressão E2E do contrato verifica os rótulos antes e
+depois da conferência em todos os viewports existentes.
+
 ## Incremento A09 — criar e vincular a UC em uma operação
 
 O formulário de consumo fazia POST para criar a UC e depois PATCH para associá-la
@@ -49,6 +63,6 @@ e conserva os dados digitados para uma nova tentativa explícita.
 - `PATH="$PWD/.bin:$PATH" pnpm check`: formato, lint, tipos, testes e builds
   aprovados; API 1.208 testes, web 5 e PoC 24.
 
-Este registro cobre as reproduções A09/A10. A baseline completa ainda deve
-avaliar A08 e A15. A persistência insegura identificada em A11 foi tratada no
+Este registro cobre as reproduções A09/A10/A15. A baseline completa ainda deve
+avaliar A08. A persistência insegura identificada em A11 foi tratada no
 incremento do lote 4, registrado em `docs/lote-4-revisao-e-validacao.md`.

@@ -4,7 +4,7 @@ import {
   type ContractTemplateData,
 } from '../src/contract/contract-generator.service';
 
-describe('SPEC-007 Contracts, Document Engine, Lifecycle & Gate C Governance', () => {
+describe('SPEC-007 Contracts, Document Engine, Lifecycle & Contract Gate Governance', () => {
   const generator = new ContractGeneratorService();
 
   const mockContractData: ContractTemplateData = {
