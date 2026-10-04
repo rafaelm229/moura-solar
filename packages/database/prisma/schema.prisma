@@ -2028,12 +2028,14 @@ model DossierDocument {
   title          String
   status         String                        @default("ACTIVE") // ACTIVE, ARCHIVED
   purpose        String?
+  metadataVersion Int                          @default(1) @map("metadata_version")
+  archiveReason  String?                       @map("archive_reason")
   createdBy      String                        @map("created_by")
   createdAt      DateTime                      @default(now()) @map("created_at")
   updatedAt      DateTime                      @updatedAt @map("updated_at")
 
   organization        Organization              @relation(fields: [organizationId], references: [id])
-  customer            Customer                  @relation(fields: [customerId], references: [id])
+  customer            Customer                  @relation(fields: [customerId], references: [id], onDelete: Restrict)
   versions            DossierDocumentVersion[]
   utilityUnitLinks    DocumentUtilityUnitLink[]
   opportunityLinks    DocumentOpportunityLink[]
@@ -2061,7 +2063,7 @@ model DossierDocumentVersion {
   authorId         String          @map("author_id")
   createdAt        DateTime        @default(now()) @map("created_at")
 
-  document         DossierDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  document         DossierDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
   storedObject     StoredObject?   @relation(fields: [storedObjectId], references: [id])
 
   @@unique([documentId, versionNumber])
@@ -2078,6 +2080,7 @@ model StoredObject {
   sha256         String
   byteSize       Int                      @map("byte_size")
   verified       Boolean                  @default(false)
+  scannerVersion String?                  @map("scanner_version")
   scanResult     String?                  @map("scan_result") // CLEAN, SUSPICIOUS, UNCHECKED
   createdAt      DateTime                 @default(now()) @map("created_at")
 
@@ -2100,7 +2103,7 @@ model CustomerRepresentative {
   updatedAt      DateTime                     @updatedAt @map("updated_at")
 
   organization   Organization                 @relation(fields: [organizationId], references: [id])
-  customer       Customer                     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customer       Customer                     @relation(fields: [customerId], references: [id], onDelete: Restrict)
   documentLinks  DocumentRepresentativeLink[]
 
   @@index([organizationId, customerId])
@@ -2112,8 +2115,8 @@ model DocumentRepresentativeLink {
   documentId       String                 @map("document_id") @db.Uuid
   representativeId String                 @map("representative_id") @db.Uuid
 
-  document         DossierDocument        @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  representative   CustomerRepresentative @relation(fields: [representativeId], references: [id], onDelete: Cascade)
+  document         DossierDocument        @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  representative   CustomerRepresentative @relation(fields: [representativeId], references: [id], onDelete: Restrict)
 
   @@unique([documentId, representativeId])
   @@map("document_representative_links")
@@ -2124,8 +2127,8 @@ model DocumentUtilityUnitLink {
   documentId    String          @map("document_id") @db.Uuid
   utilityUnitId String          @map("utility_unit_id") @db.Uuid
 
-  document      DossierDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  utilityUnit   UtilityUnit     @relation(fields: [utilityUnitId], references: [id], onDelete: Cascade)
+  document      DossierDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  utilityUnit   UtilityUnit     @relation(fields: [utilityUnitId], references: [id], onDelete: Restrict)
 
   @@unique([documentId, utilityUnitId])
   @@map("document_utility_unit_links")
@@ -2136,8 +2139,8 @@ model DocumentOpportunityLink {
   documentId    String          @map("document_id") @db.Uuid
   opportunityId String          @map("opportunity_id") @db.Uuid
 
-  document      DossierDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  opportunity   Opportunity     @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  document      DossierDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  opportunity   Opportunity     @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
 
   @@unique([documentId, opportunityId])
   @@map("document_opportunity_links")
@@ -2148,8 +2151,8 @@ model DocumentProjectLink {
   documentId String             @map("document_id") @db.Uuid
   projectId  String             @map("project_id") @db.Uuid
 
-  document   DossierDocument    @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  project    OperationalProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  document   DossierDocument    @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  project    OperationalProject @relation(fields: [projectId], references: [id], onDelete: Restrict)
 
   @@unique([documentId, projectId])
   @@map("document_project_links")
@@ -2161,8 +2164,8 @@ model DocumentWorkOrderLink {
   workOrderId String          @map("work_order_id") @db.Uuid
   phase       String?
 
-  document    DossierDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  workOrder   WorkOrder       @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  document    DossierDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  workOrder   WorkOrder       @relation(fields: [workOrderId], references: [id], onDelete: Restrict)
 
   @@unique([documentId, workOrderId])
   @@map("document_work_order_links")
@@ -2173,8 +2176,8 @@ model DocumentContractLink {
   documentId String          @map("document_id") @db.Uuid
   contractId String          @map("contract_id") @db.Uuid
 
-  document   DossierDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  contract   Contract        @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  document   DossierDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  contract   Contract        @relation(fields: [contractId], references: [id], onDelete: Restrict)
 
   @@unique([documentId, contractId])
   @@map("document_contract_links")
@@ -2202,3 +2205,14 @@ model DocumentAccessEvent {
 
 
 
+
+model DossierCommand {
+  key            String   @id
+  organizationId String   @map("organization_id") @db.Uuid
+  actorId        String   @map("actor_id") @db.Uuid
+  fingerprint    String
+  result         Json
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("dossier_commands")
+}

@@ -1,16 +1,20 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
+import {
+  customerScope,
+  documentScope,
+  organizationGrant,
+  photoCategories,
+  sensitiveCategories,
+} from './dossier-policy';
+import { fail } from '../identity/security';
 import { StorageService } from '../proposal/storage.service';
 import {
   type Actor,
-  CreateDocumentUploadDto,
-  CompleteUploadDto,
-  CustomerRepresentativeDto,
   DossierDocumentViewDto,
+  DossierHistoryViewDto,
+  DossierUploadContextDto,
+  DOSSIER_CATEGORIES,
   RepresentativeViewDto,
 } from './dossier.dto';
 
@@ -34,8 +38,17 @@ export class DossierService {
       to?: string;
     },
   ): Promise<DossierDocumentViewDto[]> {
+    for (const id of [filters?.utilityUnitId, filters?.opportunityId, filters?.projectId]) {
+      if (id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))
+        fail('INVALID_FILTER', 'Identificador de filtro inválido.');
+    }
+    for (const date of [filters?.from, filters?.to])
+      if (date && !Number.isFinite(Date.parse(date)))
+        fail('INVALID_FILTER', 'Data de filtro inválida.');
+    if (filters?.from && filters?.to && new Date(filters.from) > new Date(filters.to))
+      fail('INVALID_FILTER', 'Data inicial deve preceder a final.');
     const customer = await this.prisma.customer.findFirst({
-      where: { id: customerId, organizationId: actor.organizationId },
+      where: { id: customerId, AND: [customerScope(actor, 'documents:read')] },
     });
     if (!customer) {
       throw new NotFoundException('Cliente não encontrado na organização.');
@@ -44,6 +57,7 @@ export class DossierService {
     // 1. Fetch Dossier documents
     const dossierDocs = await this.prisma.dossierDocument.findMany({
       where: {
+        AND: [documentScope(actor, 'documents:read')],
         organizationId: actor.organizationId,
         customerId,
         ...(filters?.category ? { category: filters.category } : {}),
@@ -54,9 +68,7 @@ export class DossierService {
         ...(filters?.opportunityId
           ? { opportunityLinks: { some: { opportunityId: filters.opportunityId } } }
           : {}),
-        ...(filters?.projectId
-          ? { projectLinks: { some: { projectId: filters.projectId } } }
-          : {}),
+        ...(filters?.projectId ? { projectLinks: { some: { projectId: filters.projectId } } } : {}),
         ...(filters?.from || filters?.to
           ? {
               createdAt: {
@@ -83,6 +95,11 @@ export class DossierService {
     const items: DossierDocumentViewDto[] = dossierDocs.map((doc) => {
       const current = doc.versions[0];
       return {
+        metadataVersion: doc.metadataVersion,
+        contentUrl:
+          current?.persistenceState === 'READY'
+            ? `/api/v1/documents/${doc.id}/versions/${current.id}/content`
+            : undefined,
         id: doc.id,
         origin: 'DOSSIER',
         category: doc.category,
@@ -116,9 +133,18 @@ export class DossierService {
     });
 
     // 2. Consolidate with Proposal Documents (DOC-03)
-    if (!filters?.category || filters.category === 'COMMERCIAL_PROPOSAL') {
+    if (
+      organizationGrant(actor, 'proposals:read') &&
+      (!filters?.category || filters.category === 'COMMERCIAL_PROPOSAL')
+    ) {
       const opps = await this.prisma.opportunity.findMany({
-        where: { customerId, organizationId: actor.organizationId },
+        where: {
+          customerId,
+          organizationId: actor.organizationId,
+          ...(filters?.opportunityId ? { id: filters.opportunityId } : {}),
+          ...(filters?.utilityUnitId ? { utilityUnitId: filters.utilityUnitId } : {}),
+          ...(filters?.projectId ? { operationalProject: { id: filters.projectId } } : {}),
+        },
         select: { id: true },
       });
       const oppIds = opps.map((o) => o.id);
@@ -142,6 +168,10 @@ export class DossierService {
 
         for (const pDoc of proposalDocs) {
           items.push({
+            metadataVersion: 1,
+            contentUrl: organizationGrant(actor, 'proposals:download')
+              ? `/api/v1/dossier/proposal-documents/${pDoc.id}/content`
+              : undefined,
             id: pDoc.id,
             origin: 'PROPOSAL_DOCUMENT',
             category: 'COMMERCIAL_PROPOSAL',
@@ -153,13 +183,13 @@ export class DossierService {
             createdBy: 'Sistema Moura Solar',
             currentVersion: {
               id: pDoc.id,
-              versionNumber: 1,
+              versionNumber: pDoc.proposalVersion.versionNumber,
               originalName: pDoc.fileName,
               fileSize: pDoc.fileSize,
               declaredMime: pDoc.mimeType,
               verifiedMime: pDoc.mimeType,
               sha256: pDoc.contentHash,
-              persistenceState: pDoc.generationStatus === 'SUCCESS' ? 'READY' : 'PENDING_UPLOAD',
+              persistenceState: pDoc.generationStatus === 'READY' ? 'READY' : 'PENDING_UPLOAD',
               createdAt: pDoc.generatedAt.toISOString(),
             },
             links: {
@@ -175,7 +205,10 @@ export class DossierService {
     }
 
     // 3. Consolidate with Contract Documents (DOC-03)
-    if (!filters?.category || filters.category === 'CONTRACT_ANNEX') {
+    if (
+      organizationGrant(actor, 'contracts:read') &&
+      (!filters?.category || filters.category === 'CONTRACT_ANNEX')
+    ) {
       const contractDocs = await this.prisma.contractDocument.findMany({
         where: {
           organizationId: actor.organizationId,
@@ -183,6 +216,10 @@ export class DossierService {
             contract: {
               opportunity: {
                 customerId,
+                organizationId: actor.organizationId,
+                ...(filters?.opportunityId ? { id: filters.opportunityId } : {}),
+                ...(filters?.utilityUnitId ? { utilityUnitId: filters.utilityUnitId } : {}),
+                ...(filters?.projectId ? { operationalProject: { id: filters.projectId } } : {}),
               },
             },
           },
@@ -199,6 +236,10 @@ export class DossierService {
 
       for (const cDoc of contractDocs) {
         items.push({
+          metadataVersion: 1,
+          contentUrl: organizationGrant(actor, 'contracts:download')
+            ? `/api/v1/dossier/contract-documents/${cDoc.id}/content`
+            : undefined,
           id: cDoc.id,
           origin: 'CONTRACT_DOCUMENT',
           category: 'CONTRACT_ANNEX',
@@ -216,7 +257,7 @@ export class DossierService {
             declaredMime: cDoc.mimeType,
             verifiedMime: cDoc.mimeType,
             sha256: cDoc.contentHash,
-            persistenceState: cDoc.generationStatus === 'SUCCESS' ? 'READY' : 'PENDING_UPLOAD',
+            persistenceState: cDoc.generationStatus === 'READY' ? 'READY' : 'PENDING_UPLOAD',
             createdAt: cDoc.generatedAt.toISOString(),
           },
           links: {
@@ -231,365 +272,14 @@ export class DossierService {
     }
 
     // Sort consolidated items by creation date
-    return items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }
-
-  async createUpload(
-    actor: Actor,
-    customerId: string,
-    dto: CreateDocumentUploadDto,
-  ): Promise<DossierDocumentViewDto> {
-    const customer = await this.prisma.customer.findFirst({
-      where: { id: customerId, organizationId: actor.organizationId },
-    });
-    if (!customer) {
-      throw new NotFoundException('Cliente não encontrado na organização.');
-    }
-
-    if (dto.utilityUnitId) {
-      const uc = await this.prisma.utilityUnit.findFirst({
-        where: {
-          id: dto.utilityUnitId,
-          customerId,
-          organizationId: actor.organizationId,
-        },
-      });
-      if (!uc) {
-        throw new BadRequestException('Unidade Consumidora não pertence a este cliente.');
-      }
-    }
-
-    if (dto.opportunityId) {
-      const opp = await this.prisma.opportunity.findFirst({
-        where: {
-          id: dto.opportunityId,
-          customerId,
-          organizationId: actor.organizationId,
-        },
-      });
-      if (!opp) {
-        throw new BadRequestException('Oportunidade não pertence a este cliente.');
-      }
-    }
-
-    if (dto.projectId) {
-      const project = await this.prisma.operationalProject.findFirst({
-        where: {
-          id: dto.projectId,
-          organizationId: actor.organizationId,
-          opportunity: { customerId },
-        },
-      });
-      if (!project) {
-        throw new BadRequestException('Projeto não pertence a este cliente.');
-      }
-    }
-
-    if (dto.representativeId) {
-      const rep = await this.prisma.customerRepresentative.findFirst({
-        where: {
-          id: dto.representativeId,
-          customerId,
-          organizationId: actor.organizationId,
-        },
-      });
-      if (!rep) {
-        throw new BadRequestException('Representante não pertence a este cliente.');
-      }
-    }
-
-    const sanitizedName = this.storage.sanitizeFileName(dto.fileName);
-
-    // Direct base64 upload flow
-    if (dto.fileBase64) {
-      const buffer = Buffer.from(dto.fileBase64, 'base64');
-      if (buffer.length === 0) {
-        throw new BadRequestException('Arquivo enviado está vazio.');
-      }
-
-      if (buffer.length > 20 * 1024 * 1024) {
-        throw new BadRequestException('Arquivo excede o limite máximo de 20 MiB.');
-      }
-
-      const isValidMagic = this.storage.validateMagicBytes(buffer, dto.declaredMime);
-      if (!isValidMagic) {
-        throw new BadRequestException(
-          'Conteúdo do arquivo não corresponde ao formato declarado (magic bytes inválidos).',
-        );
-      }
-
-      const sha256 = this.storage.computeHash(buffer);
-      const bucket = 'moura-solar-dossier';
-      const key = `customers/${customerId}/${Date.now()}_${sanitizedName}`;
-
-      const uploadRes = await this.storage.upload(bucket, key, buffer, dto.declaredMime);
-
-      return this.prisma.$transaction(async (tx) => {
-        const storedObject = await tx.storedObject.create({
-          data: {
-            organizationId: actor.organizationId,
-            backend: uploadRes.backend,
-            bucket: uploadRes.bucket,
-            key: uploadRes.key,
-            sha256,
-            byteSize: uploadRes.byteSize,
-            verified: true,
-            scanResult: 'CLEAN',
-          },
-        });
-
-        const doc = await tx.dossierDocument.create({
-          data: {
-            organizationId: actor.organizationId,
-            customerId,
-            category: dto.category,
-            title: dto.title,
-            status: 'ACTIVE',
-            purpose: dto.purpose,
-            createdBy: actor.userId,
-            versions: {
-              create: {
-                versionNumber: 1,
-                originalName: dto.fileName,
-                fileSize: uploadRes.byteSize,
-                declaredMime: dto.declaredMime,
-                verifiedMime: dto.declaredMime,
-                sha256,
-                persistenceState: 'READY',
-                storedObjectId: storedObject.id,
-                authorId: actor.userId,
-              },
-            },
-          },
-          include: {
-            versions: true,
-          },
-        });
-
-        if (dto.utilityUnitId) {
-          await tx.documentUtilityUnitLink.create({
-            data: { documentId: doc.id, utilityUnitId: dto.utilityUnitId },
-          });
-        }
-        if (dto.opportunityId) {
-          await tx.documentOpportunityLink.create({
-            data: { documentId: doc.id, opportunityId: dto.opportunityId },
-          });
-        }
-        if (dto.projectId) {
-          await tx.documentProjectLink.create({
-            data: { documentId: doc.id, projectId: dto.projectId },
-          });
-        }
-        if (dto.representativeId) {
-          await tx.documentRepresentativeLink.create({
-            data: { documentId: doc.id, representativeId: dto.representativeId },
-          });
-        }
-        if (dto.contractId) {
-          await tx.documentContractLink.create({
-            data: { documentId: doc.id, contractId: dto.contractId },
-          });
-        }
-        if (dto.workOrderId) {
-          await tx.documentWorkOrderLink.create({
-            data: {
-              documentId: doc.id,
-              workOrderId: dto.workOrderId,
-              phase: dto.phase,
-            },
-          });
-        }
-
-        const v = doc.versions[0];
-        if (!v) {
-          throw new Error('Falha ao inicializar versão do documento.');
-        }
-
-        return {
-          id: doc.id,
-          origin: 'DOSSIER',
-          category: doc.category,
-          title: doc.title,
-          status: doc.status,
-          purpose: doc.purpose,
-          createdAt: doc.createdAt.toISOString(),
-          updatedAt: doc.updatedAt.toISOString(),
-          createdBy: doc.createdBy,
-          currentVersion: {
-            id: v.id,
-            versionNumber: v.versionNumber,
-            originalName: v.originalName,
-            fileSize: v.fileSize,
-            declaredMime: v.declaredMime,
-            verifiedMime: v.verifiedMime,
-            sha256: v.sha256,
-            persistenceState: v.persistenceState,
-            createdAt: v.createdAt.toISOString(),
-          },
-          links: {
-            utilityUnitIds: dto.utilityUnitId ? [dto.utilityUnitId] : [],
-            opportunityIds: dto.opportunityId ? [dto.opportunityId] : [],
-            projectIds: dto.projectId ? [dto.projectId] : [],
-            representativeIds: dto.representativeId ? [dto.representativeId] : [],
-            contractIds: dto.contractId ? [dto.contractId] : [],
-          },
-        };
-      });
-    }
-
-    // Staging intention flow
-    return this.prisma.$transaction(async (tx) => {
-      const doc = await tx.dossierDocument.create({
-        data: {
-          organizationId: actor.organizationId,
-          customerId,
-          category: dto.category,
-          title: dto.title,
-          status: 'ACTIVE',
-          purpose: dto.purpose,
-          createdBy: actor.userId,
-          versions: {
-            create: {
-              versionNumber: 1,
-              originalName: dto.fileName,
-              fileSize: dto.fileSize,
-              declaredMime: dto.declaredMime,
-              sha256: dto.sha256 || 'pending',
-              persistenceState: 'PENDING_UPLOAD',
-              authorId: actor.userId,
-            },
-          },
-        },
-        include: { versions: true },
-      });
-
-      if (dto.utilityUnitId) {
-        await tx.documentUtilityUnitLink.create({
-          data: { documentId: doc.id, utilityUnitId: dto.utilityUnitId },
-        });
-      }
-      if (dto.opportunityId) {
-        await tx.documentOpportunityLink.create({
-          data: { documentId: doc.id, opportunityId: dto.opportunityId },
-        });
-      }
-      if (dto.projectId) {
-        await tx.documentProjectLink.create({
-          data: { documentId: doc.id, projectId: dto.projectId },
-        });
-      }
-
-      const v = doc.versions[0];
-      if (!v) {
-        throw new Error('Falha ao inicializar versão do documento.');
-      }
-
-      return {
-        id: doc.id,
-        origin: 'DOSSIER',
-        category: doc.category,
-        title: doc.title,
-        status: doc.status,
-        purpose: doc.purpose,
-        createdAt: doc.createdAt.toISOString(),
-        updatedAt: doc.updatedAt.toISOString(),
-        createdBy: doc.createdBy,
-        currentVersion: {
-          id: v.id,
-          versionNumber: v.versionNumber,
-          originalName: v.originalName,
-          fileSize: v.fileSize,
-          declaredMime: v.declaredMime,
-          verifiedMime: null,
-          sha256: v.sha256,
-          persistenceState: v.persistenceState,
-          createdAt: v.createdAt.toISOString(),
-        },
-        links: {
-          utilityUnitIds: dto.utilityUnitId ? [dto.utilityUnitId] : [],
-          opportunityIds: dto.opportunityId ? [dto.opportunityId] : [],
-          projectIds: dto.projectId ? [dto.projectId] : [],
-          representativeIds: [],
-          contractIds: [],
-        },
-      };
-    });
-  }
-
-  async completeUpload(
-    actor: Actor,
-    versionId: string,
-    dto: CompleteUploadDto,
-  ): Promise<DossierDocumentViewDto> {
-    const version = await this.prisma.dossierDocumentVersion.findFirst({
-      where: {
-        id: versionId,
-        document: { organizationId: actor.organizationId },
-      },
-      include: {
-        document: {
-          include: {
-            utilityUnitLinks: true,
-            opportunityLinks: true,
-            projectLinks: true,
-            representativeLinks: true,
-            contractLinks: true,
-          },
-        },
-      },
-    });
-
-    if (!version) {
-      throw new NotFoundException('Versão de documento não encontrada.');
-    }
-
-    if (version.persistenceState === 'READY') {
-      return this.formatDocView(version.document, version);
-    }
-
-    if (!dto.fileBase64) {
-      throw new BadRequestException('Conteúdo do arquivo não fornecido para conclusão.');
-    }
-
-    const buffer = Buffer.from(dto.fileBase64, 'base64');
-    if (!this.storage.validateMagicBytes(buffer, version.declaredMime)) {
-      throw new BadRequestException('Conteúdo do arquivo inválido para o MIME declarado.');
-    }
-
-    const sha256 = this.storage.computeHash(buffer);
-    const bucket = 'moura-solar-dossier';
-    const key = `customers/${version.document.customerId}/${version.documentId}/v${version.versionNumber}_${this.storage.sanitizeFileName(version.originalName)}`;
-
-    const uploadRes = await this.storage.upload(bucket, key, buffer, version.declaredMime);
-
-    return this.prisma.$transaction(async (tx) => {
-      const stored = await tx.storedObject.create({
-        data: {
-          organizationId: actor.organizationId,
-          backend: uploadRes.backend,
-          bucket: uploadRes.bucket,
-          key: uploadRes.key,
-          sha256,
-          byteSize: uploadRes.byteSize,
-          verified: true,
-          scanResult: 'CLEAN',
-        },
-      });
-
-      const updated = await tx.dossierDocumentVersion.update({
-        where: { id: version.id },
-        data: {
-          persistenceState: 'READY',
-          sha256,
-          fileSize: uploadRes.byteSize,
-          verifiedMime: version.declaredMime,
-          storedObjectId: stored.id,
-        },
-      });
-
-      return this.formatDocView(version.document, updated);
-    });
+    return items
+      .filter(
+        (item) =>
+          (!filters?.status || item.status === filters.status) &&
+          (!filters?.from || new Date(item.createdAt) >= new Date(filters.from)) &&
+          (!filters?.to || new Date(item.createdAt) <= new Date(filters.to)),
+      )
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
   async downloadDocumentVersion(
@@ -597,152 +287,246 @@ export class DossierService {
     documentId: string,
     versionId: string,
     purpose: 'VIEW' | 'DOWNLOAD',
-    ipAddress?: string,
-    userAgent?: string,
-  ): Promise<{ buffer: Buffer; fileName: string; mimeType: string; sha256: string }> {
+  ) {
     const doc = await this.prisma.dossierDocument.findFirst({
-      where: { id: documentId, organizationId: actor.organizationId },
+      where: { id: documentId, AND: [documentScope(actor, 'documents:read')] },
     });
     if (!doc) {
-      throw new NotFoundException('Documento não encontrado.');
+      await this.prisma.documentAccessEvent.create({
+        data: {
+          organizationId: actor.organizationId,
+          actorId: actor.userId,
+          targetType: 'DOSSIER',
+          targetId: documentId,
+          versionId,
+          purpose,
+          outcome: 'DENIED',
+        },
+      });
+      fail('DOCUMENT_NOT_FOUND', 'Documento não encontrado no seu contexto.', 404);
     }
-
     const version = await this.prisma.dossierDocumentVersion.findFirst({
       where: { id: versionId, documentId },
       include: { storedObject: true },
     });
+    if (
+      !version?.storedObject ||
+      version.persistenceState !== 'READY' ||
+      !version.storedObject.verified ||
+      version.storedObject.scanResult !== 'CLEAN'
+    )
+      fail(
+        'DOCUMENT_NOT_READY',
+        'Documento ainda não está disponível. Verifique a pendência de validação.',
+        409,
+      );
+    return this.readAudited(
+      actor,
+      'DOSSIER',
+      documentId,
+      versionId,
+      purpose,
+      version.storedObject.bucket,
+      version.storedObject.key,
+      version.sha256,
+      version.fileSize,
+      version.originalName,
+      version.verifiedMime ?? version.declaredMime,
+      version.storedObject.backend,
+    );
+  }
 
-    if (!version || !version.storedObject) {
-      throw new NotFoundException('Versão de documento ou arquivo físico não localizado.');
+  async downloadOrigin(
+    actor: Actor,
+    origin: 'PROPOSAL' | 'CONTRACT',
+    id: string,
+    purpose: 'VIEW' | 'DOWNLOAD',
+  ) {
+    const permission = origin === 'PROPOSAL' ? 'proposals:download' : 'contracts:download';
+    if (!organizationGrant(actor, permission)) {
+      await this.prisma.documentAccessEvent.create({
+        data: {
+          organizationId: actor.organizationId,
+          actorId: actor.userId,
+          targetType: origin,
+          targetId: id,
+          versionId: id,
+          purpose,
+          outcome: 'DENIED',
+        },
+      });
+      fail('ACCESS_DENIED', 'Você não tem permissão para baixar este documento.', 403);
     }
+    const doc =
+      origin === 'PROPOSAL'
+        ? await this.prisma.proposalDocument.findFirst({
+            where: { id, organizationId: actor.organizationId },
+          })
+        : await this.prisma.contractDocument.findFirst({
+            where: { id, organizationId: actor.organizationId },
+          });
+    if (!doc || doc.generationStatus !== 'READY')
+      fail('DOCUMENT_NOT_FOUND', 'Documento não encontrado.', 404);
+    return this.readAudited(
+      actor,
+      origin,
+      id,
+      id,
+      purpose,
+      doc.s3Bucket,
+      doc.s3Key,
+      doc.contentHash,
+      doc.fileSize,
+      doc.fileName,
+      doc.mimeType,
+    );
+  }
 
-    if (version.persistenceState !== 'READY') {
-      throw new BadRequestException('Documento ainda não está pronto para download.');
-    }
-
-    // Record audit access event
-    await this.prisma.documentAccessEvent.create({
+  private async readAudited(
+    actor: Actor,
+    targetType: string,
+    targetId: string,
+    versionId: string,
+    purpose: 'VIEW' | 'DOWNLOAD',
+    bucket: string,
+    key: string,
+    sha256: string,
+    fileSize: number,
+    fileName: string,
+    mimeType: string,
+    backend?: string,
+  ) {
+    const event = await this.prisma.documentAccessEvent.create({
       data: {
         organizationId: actor.organizationId,
         actorId: actor.userId,
-        targetType: 'DOSSIER',
-        targetId: documentId,
+        targetType,
+        targetId,
         versionId,
         purpose,
-        outcome: 'SUCCESS',
-        ipAddress,
-        userAgent,
+        outcome: 'ATTEMPT',
       },
     });
+    try {
+      const buffer = await this.storage.download(bucket, key, backend);
+      if (buffer.length !== fileSize || this.storage.computeHash(buffer) !== sha256)
+        fail(
+          'DOCUMENT_INTEGRITY_FAILED',
+          'Integridade do arquivo inválida. Solicite reconciliação.',
+          503,
+        );
+      await this.prisma.documentAccessEvent.update({
+        where: { id: event.id },
+        data: { outcome: 'SUCCESS' },
+      });
+      return { buffer, fileName, mimeType, sha256 };
+    } catch (error) {
+      await this.prisma.documentAccessEvent.update({
+        where: { id: event.id },
+        data: { outcome: 'ERROR' },
+      });
+      if (targetType === 'DOSSIER')
+        await this.prisma.dossierDocumentVersion.updateMany({
+          where: { id: versionId, persistenceState: 'READY' },
+          data: { persistenceState: 'MISSING' },
+        });
+      throw error;
+    }
+  }
 
-    const buffer = await this.storage.download(
-      version.storedObject.bucket,
-      version.storedObject.key,
-    );
-
+  async uploadContext(actor: Actor, customerId: string): Promise<DossierUploadContextDto> {
+    documentScope(actor, 'documents:upload');
+    if (
+      !(await this.prisma.customer.findFirst({
+        where: { id: customerId, AND: [customerScope(actor, 'documents:upload')] },
+      }))
+    )
+      fail('CUSTOMER_NOT_FOUND', 'Cliente não encontrado no seu contexto.', 404);
+    const organizational = organizationGrant(actor, 'documents:upload');
+    const own = actor.grants.some((g) => g.permission === 'documents:upload' && g.scope === 'own');
+    const requiresWorkOrder = !organizational && !own;
+    const workOrders = requiresWorkOrder
+      ? await this.prisma.workOrder.findMany({
+          where: {
+            organizationId: actor.organizationId,
+            project: { opportunity: { customerId, organizationId: actor.organizationId } },
+            OR: [{ assignedLeaderId: actor.userId }, { assignedTeamId: { in: actor.teamIds } }],
+          },
+          select: { id: true, title: true },
+        })
+      : [];
+    const opportunities =
+      !organizational && own
+        ? await this.prisma.opportunity.findMany({
+            where: { organizationId: actor.organizationId, customerId, ownerUserId: actor.userId },
+            select: { id: true, title: true },
+          })
+        : [];
     return {
-      buffer,
-      fileName: version.originalName,
-      mimeType: version.verifiedMime || version.declaredMime,
-      sha256: version.sha256,
+      categories: requiresWorkOrder
+        ? photoCategories
+        : DOSSIER_CATEGORIES.filter(
+            (category) =>
+              organizationGrant(actor, 'documents:identity_read') ||
+              !sensitiveCategories.includes(category),
+          ),
+      requiresWorkOrder,
+      requiresOpportunity: !organizational && own,
+      workOrders,
+      opportunities,
     };
   }
 
-  async archiveDocument(actor: Actor, documentId: string, _reason?: string): Promise<void> {
+  async history(actor: Actor, documentId: string): Promise<DossierHistoryViewDto> {
     const doc = await this.prisma.dossierDocument.findFirst({
-      where: { id: documentId, organizationId: actor.organizationId },
+      where: { id: documentId, AND: [documentScope(actor, 'documents:read')] },
+      include: { versions: { orderBy: { versionNumber: 'desc' } } },
     });
-    if (!doc) {
-      throw new NotFoundException('Documento não encontrado.');
-    }
-
-    await this.prisma.dossierDocument.update({
-      where: { id: documentId },
-      data: { status: 'ARCHIVED' },
+    if (!doc) fail('DOCUMENT_NOT_FOUND', 'Documento não encontrado.', 404);
+    const events = await this.prisma.auditEvent.findMany({
+      where: {
+        organizationId: actor.organizationId,
+        entityId: documentId,
+        action: { startsWith: 'document.' },
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { action: true, actorId: true, createdAt: true },
     });
+    return {
+      metadataVersion: doc.metadataVersion,
+      archiveReason: doc.archiveReason,
+      versions: doc.versions.map((v) => ({
+        id: v.id,
+        versionNumber: v.versionNumber,
+        originalName: v.originalName,
+        fileSize: v.fileSize,
+        declaredMime: v.declaredMime,
+        verifiedMime: v.verifiedMime,
+        sha256: v.sha256,
+        persistenceState: v.persistenceState,
+        createdAt: v.createdAt.toISOString(),
+      })),
+      events: events.map((event) => ({ ...event, createdAt: event.createdAt.toISOString() })),
+    };
   }
 
   async listRepresentatives(actor: Actor, customerId: string): Promise<RepresentativeViewDto[]> {
+    if (!organizationGrant(actor, 'documents:identity_read'))
+      fail('ACCESS_DENIED', 'Você não tem permissão para dados de representantes.', 403);
+    const customer = await this.prisma.customer.findFirst({
+      where: { id: customerId, organizationId: actor.organizationId },
+    });
+    if (!customer) fail('CUSTOMER_NOT_FOUND', 'Cliente não encontrado.', 404);
     const reps = await this.prisma.customerRepresentative.findMany({
       where: { customerId, organizationId: actor.organizationId },
       orderBy: { createdAt: 'desc' },
     });
-
-    return reps.map((r) => ({
-      id: r.id,
-      customerId: r.customerId,
-      name: r.name,
-      documentNumber: r.documentNumber,
-      role: r.role,
-      createdAt: r.createdAt.toISOString(),
-      updatedAt: r.updatedAt.toISOString(),
+    return reps.map((rep) => ({
+      ...rep,
+      createdAt: rep.createdAt.toISOString(),
+      updatedAt: rep.updatedAt.toISOString(),
     }));
   }
 
-  async createRepresentative(
-    actor: Actor,
-    customerId: string,
-    dto: CustomerRepresentativeDto,
-  ): Promise<RepresentativeViewDto> {
-    const customer = await this.prisma.customer.findFirst({
-      where: { id: customerId, organizationId: actor.organizationId },
-    });
-    if (!customer) {
-      throw new NotFoundException('Cliente não encontrado.');
-    }
-
-    const rep = await this.prisma.customerRepresentative.create({
-      data: {
-        organizationId: actor.organizationId,
-        customerId,
-        name: dto.name,
-        documentNumber: dto.documentNumber,
-        role: dto.role,
-      },
-    });
-
-    return {
-      id: rep.id,
-      customerId: rep.customerId,
-      name: rep.name,
-      documentNumber: rep.documentNumber,
-      role: rep.role,
-      createdAt: rep.createdAt.toISOString(),
-      updatedAt: rep.updatedAt.toISOString(),
-    };
-  }
-
-  private formatDocView(doc: any, v: any): DossierDocumentViewDto {
-    return {
-      id: doc.id,
-      origin: 'DOSSIER',
-      category: doc.category,
-      title: doc.title,
-      status: doc.status,
-      purpose: doc.purpose,
-      createdAt: doc.createdAt.toISOString(),
-      updatedAt: doc.updatedAt.toISOString(),
-      createdBy: doc.createdBy,
-      currentVersion: v
-        ? {
-            id: v.id,
-            versionNumber: v.versionNumber,
-            originalName: v.originalName,
-            fileSize: v.fileSize,
-            declaredMime: v.declaredMime,
-            verifiedMime: v.verifiedMime,
-            sha256: v.sha256,
-            persistenceState: v.persistenceState,
-            createdAt: v.createdAt.toISOString(),
-          }
-        : null,
-      links: {
-        utilityUnitIds: doc.utilityUnitLinks?.map((l: any) => l.utilityUnitId) || [],
-        opportunityIds: doc.opportunityLinks?.map((l: any) => l.opportunityId) || [],
-        projectIds: doc.projectLinks?.map((l: any) => l.projectId) || [],
-        representativeIds: doc.representativeLinks?.map((l: any) => l.representativeId) || [],
-        contractIds: doc.contractLinks?.map((l: any) => l.contractId) || [],
-      },
-    };
-  }
+  // Mutations live in DossierUploadsService; this service projects and reads documents.
 }

@@ -71,3 +71,24 @@ describe('SPEC-013 Storage Engine & Magic Bytes Validation (Lote 4)', () => {
     expect(hash1).toBe(hash2);
   });
 });
+
+describe('New uploads fail closed', () => {
+  it('rejects an unknown MIME instead of accepting arbitrary active content', () => {
+    const storage = new StorageService({ get: () => undefined } as any);
+    expect(
+      storage.validateMagicBytes(Buffer.from('<svg onload="alert(1)">'), 'image/svg+xml'),
+    ).toBe(false);
+  });
+
+  it('does not persist new files to local disk when storage is not configured', async () => {
+    const storage = new StorageService({ get: () => undefined } as any);
+    await expect(storage.upload('bucket', 'key', Buffer.from('%PDF-test'))).rejects.toThrow(
+      'Armazenamento',
+    );
+  });
+
+  it('does not switch backend when reading a recorded S3 object', async () => {
+    const storage = new StorageService({ get: () => undefined } as any);
+    await expect(storage.download('bucket', 'key', 'S3')).rejects.toThrow('backend registrado');
+  });
+});

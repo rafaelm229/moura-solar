@@ -73,7 +73,7 @@ for (const [width, height] of [
     ).toBeVisible();
 
     // 5. Navigate to Consumo & Vistoria sub-tab
-    await page.getByRole('button', { name: '⚡ Consumo & Vistoria' }).click();
+    await page.getByRole('button', { name: 'Consumo & Vistoria' }).click();
 
     // Create and link utility unit
     await page.getByRole('button', { name: '+ Cadastrar Nova Unidade Consumidora' }).click();
@@ -90,7 +90,7 @@ for (const [width, height] of [
     await expect(page.getByText('Vistoria Concluída')).toBeVisible();
 
     // 6. Navigate to Dimensionamento & Custos sub-tab
-    await page.getByRole('button', { name: '☀️ Dimensionamento & Custos' }).click();
+    await page.getByRole('button', { name: 'Dimensionamento & Custos' }).click();
 
     // Calculate suggestion and create design
     await page.getByRole('button', { name: 'Calcular Sugestão de Dimensionamento' }).click();
@@ -117,7 +117,7 @@ for (const [width, height] of [
     await expect(page.getByText('v1 (APPROVED)').first()).toBeVisible();
 
     // 7. Navigate to Propostas Comerciais sub-tab
-    await page.getByRole('button', { name: '📄 Propostas Comerciais' }).click();
+    await page.getByRole('button', { name: 'Propostas Comerciais' }).click();
 
     // Verify empty state is visible
     await expect(page.getByText('Nenhuma proposta emitida')).toBeVisible();
@@ -156,7 +156,7 @@ for (const [width, height] of [
 
     // Verify PDF document info and download button
     await expect(page.getByText(/proposta-PROP-\d+-v1\.pdf/).first()).toBeVisible();
-    await expect(page.getByRole('button', { name: '📥 Baixar PDF' }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Baixar PDF' }).first()).toBeVisible();
 
     // 8. Gate B: Record Delivery (WhatsApp)
     await page
@@ -201,7 +201,7 @@ for (const [width, height] of [
     // Verify version marked ACCEPTED, proposal marked CONTRATADA
     await expect(page.getByText('ACCEPTED').first()).toBeVisible();
     await expect(page.getByText('CONTRATADA (ACEITE FORMAL)')).toBeVisible();
-    await expect(page.getByText('✅ Proposta Comercial Aceita Formalmente')).toBeVisible();
+    await expect(page.getByText('Proposta Comercial Aceita Formalmente')).toBeVisible();
     await expect(page.getByText('Dr. Marcos Antunes (Diretor Executivo)')).toBeVisible();
 
     // Verify Opportunity State is now CONTRATACAO

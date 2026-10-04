@@ -91,7 +91,6 @@ export interface ClausesSnapshot {
 const formatBRL = (val: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
-
 export interface ContractVersionView {
   id: string;
   versionNumber: number;
@@ -585,7 +584,8 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 <span
                   style={{ color: '#ca8a04', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                 >
-                  <Icon name="schedule" size={18} /> Gate C Pendente — Aguardando Assinatura e Conferência Formal
+                  <Icon name="schedule" size={18} /> Gate C Pendente — Aguardando Assinatura e
+                  Conferência Formal
                 </span>
               )}
             </div>
@@ -754,7 +754,8 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                       gap: '0.4rem',
                     }}
                   >
-                    <Icon name="credit_card" size={16} /> Ajustar Parcelas & Forma de Pagamento (Anexo III)
+                    <Icon name="credit_card" size={16} /> Ajustar Parcelas & Forma de Pagamento
+                    (Anexo III)
                   </button>
                 )}
 
@@ -854,7 +855,15 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
               >
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      fontSize: '0.875rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                    }}
+                  >
                     <Icon name="description" size={16} /> Minuta Editável (DOCX)
                   </div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
@@ -887,7 +896,15 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
               >
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      fontSize: '0.875rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                    }}
+                  >
                     <Icon name="description" size={16} /> Contrato Formal (PDF)
                   </div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
@@ -921,7 +938,16 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                   style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                 >
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#16a34a', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <div
+                      style={{
+                        fontWeight: 600,
+                        fontSize: '0.875rem',
+                        color: '#16a34a',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                      }}
+                    >
                       <Icon name="verified" size={16} /> Via Assinada Anexada
                     </div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
@@ -1092,7 +1118,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 const isCurrent = contract.state === 'READY';
                 const hasMilestones = Boolean(
                   activeVersion?.commercialSnapshot?.milestones &&
-                    activeVersion.commercialSnapshot.milestones.length > 0,
+                  activeVersion.commercialSnapshot.milestones.length > 0,
                 );
                 return (
                   <div
@@ -1264,11 +1290,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                                 : '#f1f5f9',
                           }}
                         >
-                          {hasUploaded
-                            ? '✓ Anexado'
-                            : isCurrent
-                              ? 'Ação Pendente'
-                              : 'Aguardando'}
+                          {hasUploaded ? '✓ Anexado' : isCurrent ? 'Ação Pendente' : 'Aguardando'}
                         </span>
                       </div>
                       <p style={{ margin: 0, fontSize: '0.8125rem', color: '#475569' }}>
@@ -1608,7 +1630,8 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                         width: 'fit-content',
                       }}
                     >
-                      <Icon name="edit" size={16} /> Ajustar Parcelas e Forma de Pagamento (Anexo III)
+                      <Icon name="edit" size={16} /> Ajustar Parcelas e Forma de Pagamento (Anexo
+                      III)
                     </button>
                   )}
                 </div>
@@ -1948,7 +1971,16 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                     gap: '0.5rem',
                   }}
                 >
-                  <div style={{ fontWeight: 700, fontSize: '0.9375rem', color: '#087443', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <div
+                    style={{
+                      fontWeight: 700,
+                      fontSize: '0.9375rem',
+                      color: '#087443',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                    }}
+                  >
                     <Icon name="payments" size={18} /> Anexo III — Condições de Pagamento & Parcelas
                   </div>
                   <div style={{ fontSize: '0.8125rem', color: '#475569' }}>

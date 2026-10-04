@@ -54,6 +54,7 @@ export const permissionCatalog = [
   'designs:read',
   'designs:review',
   'designs:update',
+  'documents:identity_read',
   'documents:read',
   'documents:upload',
   'engineering:approve',
@@ -162,6 +163,7 @@ export const permissionCatalog = [
 ] as const;
 export const initialRoles: Record<string, { permission: string; scope: string }[]> = {
   Administrador: [
+    { permission: 'documents:identity_read', scope: 'organization' },
     {
       permission: 'activities:manage',
       scope: 'organization',

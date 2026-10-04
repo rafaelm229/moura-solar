@@ -813,7 +813,9 @@ export function Proposals({
                         }}
                       >
                         <div>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <span
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                          >
                             <Icon name="description" size={16} /> {doc.fileName}
                           </span>{' '}
                           <span className="device">
@@ -853,7 +855,8 @@ export function Proposals({
                         }}
                       >
                         <strong style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                          <Icon name="check_circle" size={18} /> Proposta Comercial Aceita Formalmente
+                          <Icon name="check_circle" size={18} /> Proposta Comercial Aceita
+                          Formalmente
                         </strong>
                         <div>
                           Aceito por <strong>{acceptance.acceptedByName}</strong> em{' '}
@@ -1075,7 +1078,8 @@ export function Proposals({
                                 gap: '0.4rem',
                               }}
                             >
-                              <Icon name="schedule" size={16} /> Registrar Aceite Formal (Aguardando Envio)
+                              <Icon name="schedule" size={16} /> Registrar Aceite Formal (Aguardando
+                              Envio)
                             </button>
                           ))}
 

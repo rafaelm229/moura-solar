@@ -5907,6 +5907,39 @@
         "tags": ["dossier"]
       }
     },
+    "/api/v1/customers/{customerId}/document-context": {
+      "get": {
+        "operationId": "DossierController_uploadContext",
+        "parameters": [
+          {
+            "name": "customerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DossierUploadContextDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["dossier"]
+      }
+    },
     "/api/v1/opportunities/{opportunityId}/documents": {
       "get": {
         "operationId": "DossierController_listOpportunityDocuments",
@@ -5971,6 +6004,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
@@ -6012,6 +6053,14 @@
             "name": "versionId",
             "required": true,
             "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
             "schema": {
               "type": "string"
             }
@@ -6103,6 +6152,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
@@ -6175,6 +6232,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
@@ -6205,6 +6270,243 @@
           }
         ],
         "summary": "Cadastrar representante legal ou técnico do cliente",
+        "tags": ["dossier"]
+      }
+    },
+    "/api/v1/documents/{documentId}/versions": {
+      "post": {
+        "operationId": "DossierController_replace",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDocumentVersionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DossierDocumentViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["dossier"]
+      }
+    },
+    "/api/v1/documents/{documentId}/history": {
+      "get": {
+        "operationId": "DossierController_history",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DossierHistoryViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["dossier"]
+      }
+    },
+    "/api/v1/document-uploads/{versionId}/cancel": {
+      "post": {
+        "operationId": "DossierController_cancel",
+        "parameters": [
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["dossier"]
+      }
+    },
+    "/api/v1/document-uploads/{versionId}/reconcile": {
+      "post": {
+        "operationId": "DossierController_reconcile",
+        "parameters": [
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DossierDocumentViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["dossier"]
+      }
+    },
+    "/api/v1/dossier/proposal-documents/{documentId}/content": {
+      "get": {
+        "operationId": "DossierController_proposalContent",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "purpose",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["dossier"]
+      }
+    },
+    "/api/v1/dossier/contract-documents/{documentId}/content": {
+      "get": {
+        "operationId": "DossierController_contractContent",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "purpose",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
         "tags": ["dossier"]
       }
     }
@@ -10337,7 +10639,8 @@
             "type": "string"
           },
           "verifiedMime": {
-            "type": "object"
+            "type": "string",
+            "nullable": true
           },
           "sha256": {
             "type": "string"
@@ -10405,6 +10708,12 @@
       "DossierDocumentViewDto": {
         "type": "object",
         "properties": {
+          "metadataVersion": {
+            "type": "number"
+          },
+          "contentUrl": {
+            "type": "string"
+          },
           "id": {
             "type": "string"
           },
@@ -10422,7 +10731,8 @@
             "type": "string"
           },
           "purpose": {
-            "type": "object"
+            "type": "string",
+            "nullable": true
           },
           "createdAt": {
             "type": "string"
@@ -10441,6 +10751,7 @@
           }
         },
         "required": [
+          "metadataVersion",
           "id",
           "origin",
           "category",
@@ -10450,6 +10761,54 @@
           "updatedAt",
           "createdBy",
           "links"
+        ]
+      },
+      "DocumentContextOptionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "title"]
+      },
+      "DossierUploadContextDto": {
+        "type": "object",
+        "properties": {
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "requiresWorkOrder": {
+            "type": "boolean"
+          },
+          "requiresOpportunity": {
+            "type": "boolean"
+          },
+          "workOrders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentContextOptionDto"
+            }
+          },
+          "opportunities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentContextOptionDto"
+            }
+          }
+        },
+        "required": [
+          "categories",
+          "requiresWorkOrder",
+          "requiresOpportunity",
+          "workOrders",
+          "opportunities"
         ]
       },
       "CreateDocumentUploadDto": {
@@ -10489,13 +10848,7 @@
           "declaredMime": {
             "type": "string",
             "description": "MIME type declarado pelo cliente",
-            "enum": [
-              "application/pdf",
-              "image/jpeg",
-              "image/png",
-              "image/webp",
-              "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            ],
+            "enum": ["application/pdf", "image/jpeg", "image/png"],
             "example": "application/pdf"
           },
           "fileSize": {
@@ -10562,11 +10915,15 @@
       "ArchiveDocumentDto": {
         "type": "object",
         "properties": {
+          "expectedVersion": {
+            "type": "number"
+          },
           "reason": {
             "type": "string",
             "description": "Motivo do arquivamento do documento"
           }
-        }
+        },
+        "required": ["expectedVersion"]
       },
       "RepresentativeViewDto": {
         "type": "object",
@@ -10581,7 +10938,8 @@
             "type": "string"
           },
           "documentNumber": {
-            "type": "object"
+            "type": "string",
+            "nullable": true
           },
           "role": {
             "type": "string"
@@ -10621,6 +10979,138 @@
           }
         },
         "required": ["name", "role"]
+      },
+      "CreateDocumentVersionDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Título identificador do documento no dossiê",
+            "example": "Conta Cemig - Jan/2026"
+          },
+          "category": {
+            "type": "string",
+            "description": "Categoria documental no dossiê",
+            "enum": [
+              "IDENTITY",
+              "CORPORATE",
+              "REPRESENTATION",
+              "UTILITY_BILL",
+              "UC_DOCUMENT",
+              "COMMERCIAL_PROPOSAL",
+              "CONTRACT_ANNEX",
+              "PHOTO_BEFORE",
+              "PHOTO_DURING",
+              "PHOTO_AFTER",
+              "ART",
+              "HOMOLOGATION",
+              "DELIVERY_REPORT",
+              "OTHER"
+            ],
+            "example": "UTILITY_BILL"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "Nome original do arquivo enviado",
+            "example": "conta-cemig-jan2026.pdf"
+          },
+          "declaredMime": {
+            "type": "string",
+            "description": "MIME type declarado pelo cliente",
+            "enum": ["application/pdf", "image/jpeg", "image/png"],
+            "example": "application/pdf"
+          },
+          "fileSize": {
+            "type": "number",
+            "description": "Tamanho do arquivo em bytes (máximo 20 MiB)",
+            "example": 1048576
+          },
+          "sha256": {
+            "type": "string",
+            "description": "Hash SHA-256 do arquivo se já computado"
+          },
+          "purpose": {
+            "type": "string",
+            "description": "Finalidade específica do documento"
+          },
+          "fileBase64": {
+            "type": "string",
+            "description": "Conteúdo em base64 (para upload direto via API)"
+          },
+          "utilityUnitId": {
+            "type": "string",
+            "description": "ID da Unidade Consumidora vinculada"
+          },
+          "opportunityId": {
+            "type": "string",
+            "description": "ID da Oportunidade vinculada"
+          },
+          "projectId": {
+            "type": "string",
+            "description": "ID do Projeto Operacional vinculado"
+          },
+          "representativeId": {
+            "type": "string",
+            "description": "ID do Representante vinculado"
+          },
+          "contractId": {
+            "type": "string",
+            "description": "ID do Contrato vinculado"
+          },
+          "workOrderId": {
+            "type": "string",
+            "description": "ID da Ordem de Serviço vinculada"
+          },
+          "phase": {
+            "type": "string",
+            "description": "Fase da foto de execução (BEFORE, DURING, AFTER)"
+          },
+          "expectedVersion": {
+            "type": "number"
+          }
+        },
+        "required": ["title", "category", "fileName", "declaredMime", "fileSize", "expectedVersion"]
+      },
+      "DossierHistoryEventDto": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "actorId": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": ["action", "createdAt"]
+      },
+      "DossierHistoryViewDto": {
+        "type": "object",
+        "properties": {
+          "metadataVersion": {
+            "type": "number"
+          },
+          "archiveReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DossierVersionViewDto"
+            }
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DossierHistoryEventDto"
+            }
+          }
+        },
+        "required": ["metadataVersion", "versions", "events"]
       }
     }
   }

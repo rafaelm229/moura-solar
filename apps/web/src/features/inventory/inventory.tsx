@@ -898,7 +898,11 @@ export function InventoryManagement() {
                             <Icon
                               name="warning"
                               size={14}
-                              style={{ display: 'inline', verticalAlign: 'middle', marginLeft: '0.25rem' }}
+                              style={{
+                                display: 'inline',
+                                verticalAlign: 'middle',
+                                marginLeft: '0.25rem',
+                              }}
                             />
                           )}
                         </td>
@@ -1477,12 +1481,18 @@ export function InventoryManagement() {
                       <td style={{ padding: '0.75rem' }}>{s.catalogItem?.manufacturer || '-'}</td>
                       <td style={{ padding: '0.75rem' }}>
                         {s.location ? (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                            <Icon name="inventory_2" size={14} /> <strong>{s.location.code}</strong> - {s.location.name}
+                          <span
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                          >
+                            <Icon name="inventory_2" size={14} /> <strong>{s.location.code}</strong>{' '}
+                            - {s.location.name}
                           </span>
                         ) : s.opportunity ? (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                            <Icon name="bolt" size={14} /> <strong>{s.opportunity.code}</strong> - {s.opportunity.title}
+                          <span
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                          >
+                            <Icon name="bolt" size={14} /> <strong>{s.opportunity.code}</strong> -{' '}
+                            {s.opportunity.title}
                           </span>
                         ) : (
                           '-'

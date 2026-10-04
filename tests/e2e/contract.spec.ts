@@ -85,7 +85,7 @@ for (const [width, height] of [
     ).toBeVisible();
 
     // 5. Navigate to Consumo & Vistoria sub-tab
-    await page.getByRole('button', { name: '⚡ Consumo & Vistoria' }).click();
+    await page.getByRole('button', { name: 'Consumo & Vistoria' }).click();
 
     // Create and link utility unit
     await page.getByRole('button', { name: '+ Cadastrar Nova Unidade Consumidora' }).click();
@@ -102,7 +102,7 @@ for (const [width, height] of [
     await expect(page.getByText('Vistoria Concluída')).toBeVisible();
 
     // 6. Navigate to Dimensionamento & Custos sub-tab
-    await page.getByRole('button', { name: '☀️ Dimensionamento & Custos' }).click();
+    await page.getByRole('button', { name: 'Dimensionamento & Custos' }).click();
 
     await page.getByRole('button', { name: 'Calcular Sugestão de Dimensionamento' }).click();
     await expect(page.getByText('SUGESTÃO TÉCNICA AUTOMATIZADA')).toBeVisible();
@@ -127,7 +127,7 @@ for (const [width, height] of [
     await expect(page.getByText('v1 (APPROVED)').first()).toBeVisible();
 
     // 7. Navigate to Propostas Comerciais sub-tab
-    await page.getByRole('button', { name: '📄 Propostas Comerciais' }).click();
+    await page.getByRole('button', { name: 'Propostas Comerciais' }).click();
     await expect(page.getByText('Nenhuma proposta emitida')).toBeVisible();
 
     await page
@@ -162,8 +162,8 @@ for (const [width, height] of [
     await expect(page.getByText('CONTRATADA (ACEITE FORMAL)')).toBeVisible();
     await expect(page.getByText('CONTRATACAO').first()).toBeVisible();
 
-    // 8. Navigate to M5: 📝 Contratos & Documentos sub-tab
-    await page.getByRole('button', { name: '📝 Contratos & Documentos' }).click();
+    // 8. Navigate to M5: Contratos & Documentos sub-tab
+    await page.getByRole('button', { name: 'Contratos & Documentos' }).click();
 
     // Verify Gate C status shows PENDING
     await expect(page.getByText(/Gate C Pendente/)).toBeVisible();
@@ -199,13 +199,16 @@ for (const [width, height] of [
     await expect(page.getByRole('heading', { name: 'Registrar Envio do Contrato' })).toBeVisible();
 
     await page.getByLabel('Destinatário').fill(`(81) 97777-${width.toString().padStart(4, '0')}`);
-    await page.getByRole('button', { name: 'Registrar Envio', exact: true }).click();
+    await page
+      .locator('form')
+      .getByRole('button', { name: 'Registrar Envio', exact: true })
+      .click();
 
     // Verify status updated to SENT
     await expect(page.getByText('Enviado ao Cliente')).toBeVisible();
 
     // 11. Upload Signed Contract
-    await page.getByRole('button', { name: '📥 Anexar Via Assinada' }).click();
+    await page.getByRole('button', { name: 'Anexar Via Assinada' }).click();
     await expect(
       page.getByRole('heading', { name: 'Anexar Via Assinada pelo Cliente' }),
     ).toBeVisible();
@@ -223,7 +226,7 @@ for (const [width, height] of [
     ).not.toBeVisible();
 
     // 12. Formal Conference Checklist (Gate C)
-    await page.getByRole('button', { name: '🔍 Conferência de Assinatura' }).click();
+    await page.getByRole('button', { name: 'Conferência de Assinatura (Gate C)' }).click();
     await expect(
       page.getByRole('heading', { name: 'Conferência Formal de Assinatura (Gate C)' }),
     ).toBeVisible();

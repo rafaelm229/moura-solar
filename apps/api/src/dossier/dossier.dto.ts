@@ -11,12 +11,10 @@ import {
   MaxLength,
   Min,
   MinLength,
+  Matches,
 } from 'class-validator';
 
-export type Actor = {
-  userId: string;
-  organizationId: string;
-};
+export type Actor = import('../identity/identity.dto').ContextDto;
 
 export const DOSSIER_CATEGORIES = [
   'IDENTITY',
@@ -37,16 +35,13 @@ export const DOSSIER_CATEGORIES = [
 
 export type DossierCategory = (typeof DOSSIER_CATEGORIES)[number];
 
-export const ALLOWED_MIME_TYPES = [
-  'application/pdf',
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-] as const;
+export const ALLOWED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png'] as const;
 
 export class CreateDocumentUploadDto {
-  @ApiProperty({ description: 'Título identificador do documento no dossiê', example: 'Conta Cemig - Jan/2026' })
+  @ApiProperty({
+    description: 'Título identificador do documento no dossiê',
+    example: 'Conta Cemig - Jan/2026',
+  })
   @IsString()
   @IsNotEmpty()
   @MinLength(3)
@@ -62,7 +57,10 @@ export class CreateDocumentUploadDto {
   @IsIn(DOSSIER_CATEGORIES)
   category!: DossierCategory;
 
-  @ApiProperty({ description: 'Nome original do arquivo enviado', example: 'conta-cemig-jan2026.pdf' })
+  @ApiProperty({
+    description: 'Nome original do arquivo enviado',
+    example: 'conta-cemig-jan2026.pdf',
+  })
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)
@@ -87,6 +85,7 @@ export class CreateDocumentUploadDto {
   @ApiPropertyOptional({ description: 'Hash SHA-256 do arquivo se já computado' })
   @IsOptional()
   @IsString()
+  @Matches(/^[a-f0-9]{64}$/)
   sha256?: string;
 
   @ApiPropertyOptional({ description: 'Finalidade específica do documento' })
@@ -141,6 +140,7 @@ export class CompleteUploadDto {
   @ApiPropertyOptional({ description: 'Versão esperada para verificação concorrente' })
   @IsOptional()
   @IsInt()
+  @Min(1)
   expectedVersion?: number;
 
   @ApiPropertyOptional({ description: 'Conteúdo em base64 se enviado na conclusão' })
@@ -150,7 +150,10 @@ export class CompleteUploadDto {
 }
 
 export class CustomerRepresentativeDto {
-  @ApiProperty({ description: 'Nome do representante legal/técnico', example: 'Carlos Alberto Silva' })
+  @ApiProperty({
+    description: 'Nome do representante legal/técnico',
+    example: 'Carlos Alberto Silva',
+  })
   @IsString()
   @IsNotEmpty()
   @MinLength(3)
@@ -165,7 +168,13 @@ export class CustomerRepresentativeDto {
 
   @ApiProperty({
     description: 'Papel do representante',
-    enum: ['LEGAL_REPRESENTATIVE', 'ATTORNEY', 'TECHNICAL_RESPONSIBLE', 'FINANCIAL_CONTACT', 'OTHER'],
+    enum: [
+      'LEGAL_REPRESENTATIVE',
+      'ATTORNEY',
+      'TECHNICAL_RESPONSIBLE',
+      'FINANCIAL_CONTACT',
+      'OTHER',
+    ],
     example: 'LEGAL_REPRESENTATIVE',
   })
   @IsString()
@@ -183,7 +192,7 @@ export class RepresentativeViewDto {
   @ApiProperty()
   name!: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: String, nullable: true })
   documentNumber?: string | null;
 
   @ApiProperty()
@@ -212,7 +221,7 @@ export class DossierVersionViewDto {
   @ApiProperty()
   declaredMime!: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: String, nullable: true })
   verifiedMime?: string | null;
 
   @ApiProperty()
@@ -244,6 +253,11 @@ export class DossierDocumentLinksDto {
 
 export class DossierDocumentViewDto {
   @ApiProperty()
+  metadataVersion!: number;
+
+  @ApiPropertyOptional()
+  contentUrl?: string;
+  @ApiProperty()
   id!: string;
 
   @ApiProperty({ enum: ['DOSSIER', 'PROPOSAL_DOCUMENT', 'CONTRACT_DOCUMENT'] })
@@ -258,7 +272,7 @@ export class DossierDocumentViewDto {
   @ApiProperty()
   status!: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: String, nullable: true })
   purpose?: string | null;
 
   @ApiProperty()
@@ -278,9 +292,44 @@ export class DossierDocumentViewDto {
 }
 
 export class ArchiveDocumentDto {
+  @ApiProperty()
+  @IsInt()
+  @Min(1)
+  expectedVersion!: number;
   @ApiPropertyOptional({ description: 'Motivo do arquivamento do documento' })
   @IsOptional()
   @IsString()
   @MaxLength(255)
   reason?: string;
+}
+
+export class CreateDocumentVersionDto extends CreateDocumentUploadDto {
+  @ApiProperty()
+  @IsInt()
+  @Min(1)
+  expectedVersion!: number;
+}
+
+export class DossierHistoryEventDto {
+  @ApiProperty() action!: string;
+  @ApiPropertyOptional({ type: String, nullable: true }) actorId?: string | null;
+  @ApiProperty() createdAt!: string;
+}
+export class DossierHistoryViewDto {
+  @ApiProperty() metadataVersion!: number;
+  @ApiPropertyOptional({ type: String, nullable: true }) archiveReason?: string | null;
+  @ApiProperty({ type: [DossierVersionViewDto] }) versions!: DossierVersionViewDto[];
+  @ApiProperty({ type: [DossierHistoryEventDto] }) events!: DossierHistoryEventDto[];
+}
+
+export class DocumentContextOptionDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() title!: string;
+}
+export class DossierUploadContextDto {
+  @ApiProperty({ type: [String] }) categories!: string[];
+  @ApiProperty() requiresWorkOrder!: boolean;
+  @ApiProperty() requiresOpportunity!: boolean;
+  @ApiProperty({ type: [DocumentContextOptionDto] }) workOrders!: DocumentContextOptionDto[];
+  @ApiProperty({ type: [DocumentContextOptionDto] }) opportunities!: DocumentContextOptionDto[];
 }

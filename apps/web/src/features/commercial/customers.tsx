@@ -374,12 +374,20 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
 
       {selectedCustomer && (
         <section className="panel" aria-label="Detalhe do cliente">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '0.5rem',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
             <div>
               <h3>{selectedCustomer.legalName}</h3>
               {selectedCustomer.tradeName && <p>{selectedCustomer.tradeName}</p>}
             </div>
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <div style={{ display: 'flex', flexShrink: 0, gap: '0.5rem', alignItems: 'center' }}>
               <span
                 className={`badge ${selectedCustomer.status === 'ACTIVE' ? 'badge-ativo' : 'badge-cancelado'}`}
               >
@@ -488,7 +496,13 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
             </div>
             <Feedback error={archiveMutation.error || restoreMutation.error} />
 
-            <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--color-border-subtle, #e0e0e0)', paddingTop: '1.5rem' }}>
+            <div
+              style={{
+                marginTop: '1.5rem',
+                borderTop: '1px solid var(--color-border-subtle, #e0e0e0)',
+                paddingTop: '1.5rem',
+              }}
+            >
               <CustomerDossier customerId={selectedCustomer.id} />
             </div>
           </div>
@@ -496,7 +510,7 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
       )}
 
       {/* Responsive Presentation: Table on Desktop, Cards on Mobile */}
-      <div className="desktop-view" style={{ display: 'contents' }}>
+      <div className="desktop-only">
         <div className="table-wrapper">
           <table className="data-table">
             <thead>
@@ -552,6 +566,29 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
             </tbody>
           </table>
         </div>
+      </div>
+      <div className="customer-mobile-list">
+        {customersQuery.isPending && <p role="status">Carregando clientes…</p>}
+        {!customersQuery.isPending && items.length === 0 && <p>Nenhum cliente encontrado.</p>}
+        {items.map((customer) => (
+          <article className="card" key={customer.id}>
+            <strong>{customer.legalName}</strong>
+            {customer.tradeName && <p>{customer.tradeName}</p>}
+            <p>
+              {customer.kind === 'PERSON' ? 'Pessoa física' : 'Pessoa jurídica'} ·{' '}
+              {customer.status === 'ACTIVE' ? 'Ativo' : 'Arquivado'}
+            </p>
+            <p>Documento: {customer.taxId || 'Não informado'}</p>
+            <button
+              onClick={() => {
+                setSelectedCustomer(customer);
+                onSelectCustomer?.(customer);
+              }}
+            >
+              Ver detalhes
+            </button>
+          </article>
+        ))}
       </div>
     </div>
   );

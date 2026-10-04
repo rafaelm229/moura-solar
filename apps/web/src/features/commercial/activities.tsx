@@ -334,7 +334,10 @@ export function Activities() {
               marginBottom: '1rem',
             }}
           >
-            <h3 id="create-activity-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <h3
+              id="create-activity-title"
+              style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+            >
               <Icon name="add" size={20} /> Agendar Nova Atividade
             </h3>
             <button
@@ -459,7 +462,11 @@ export function Activities() {
               >
                 Cancelar
               </button>
-              <button type="submit" className="btn btn--primary" disabled={createMutation.isPending}>
+              <button
+                type="submit"
+                className="btn btn--primary"
+                disabled={createMutation.isPending}
+              >
                 {createMutation.isPending ? 'Salvando…' : 'Agendar Atividade'}
               </button>
             </div>
@@ -888,143 +895,145 @@ export function Activities() {
             </div>
             <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: '0.875rem' }}>
               Atividade: <strong>{selectedActivity.subject}</strong>
-          </p>
+            </p>
 
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              completeMutation.mutate();
-            }}
-          >
-            <label>
-              Código do Resultado *
-              <select
-                value={completeResultCode}
-                onChange={(e) => setCompleteResultCode(e.target.value)}
-              >
-                {RESULT_CODE_PRESETS.map((p) => (
-                  <option key={p.code} value={p.code}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            {completeResultCode === 'OUTRO' && (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                completeMutation.mutate();
+              }}
+            >
               <label>
-                Especifique o Resultado *
-                <input
-                  type="text"
-                  required
-                  value={completeCustomResult}
-                  onChange={(e) => setCompleteCustomResult(e.target.value)}
-                  placeholder="ex: Contato adiado para próxima semana"
+                Código do Resultado *
+                <select
+                  value={completeResultCode}
+                  onChange={(e) => setCompleteResultCode(e.target.value)}
+                >
+                  {RESULT_CODE_PRESETS.map((p) => (
+                    <option key={p.code} value={p.code}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {completeResultCode === 'OUTRO' && (
+                <label>
+                  Especifique o Resultado *
+                  <input
+                    type="text"
+                    required
+                    value={completeCustomResult}
+                    onChange={(e) => setCompleteCustomResult(e.target.value)}
+                    placeholder="ex: Contato adiado para próxima semana"
+                  />
+                </label>
+              )}
+
+              <label>
+                Anotações / Resumo da Conversa
+                <textarea
+                  rows={3}
+                  value={completeNotes}
+                  onChange={(e) => setCompleteNotes(e.target.value)}
+                  placeholder="Detalhes relevantes acordados com o cliente"
                 />
               </label>
-            )}
 
-            <label>
-              Anotações / Resumo da Conversa
-              <textarea
-                rows={3}
-                value={completeNotes}
-                onChange={(e) => setCompleteNotes(e.target.value)}
-                placeholder="Detalhes relevantes acordados com o cliente"
-              />
-            </label>
-
-            <fieldset
-              style={{
-                marginTop: '1rem',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-sm)',
-                padding: '1rem',
-              }}
-            >
-              <legend>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
-                  <input
-                    type="checkbox"
-                    checked={hasFollowUp}
-                    onChange={(e) => setHasFollowUp(e.target.checked)}
-                    style={{ width: 'auto' }}
-                  />
-                  <strong>Agendar próxima atividade de acompanhamento</strong>
-                </label>
-              </legend>
-
-              {hasFollowUp && (
-                <div className="form-grid" style={{ marginTop: '0.75rem' }}>
-                  <label>
-                    Tipo
-                    <select
-                      value={followUpType}
-                      onChange={(e) =>
-                        setFollowUpType(
-                          e.target.value as
-                            'CALL' | 'MESSAGE' | 'MEETING' | 'VISIT' | 'EMAIL' | 'TASK',
-                        )
-                      }
-                    >
-                      <option value="CALL">Ligação</option>
-                      <option value="MESSAGE">WhatsApp / Mensagem</option>
-                      <option value="MEETING">Reunião</option>
-                      <option value="VISIT">Visita Técnica</option>
-                      <option value="TASK">Tarefa Interna</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    Data e Hora
-                    <input
-                      type="datetime-local"
-                      required={hasFollowUp}
-                      value={followUpDueAt}
-                      onChange={(e) => setFollowUpDueAt(e.target.value)}
-                    />
-                  </label>
-
-                  <label style={{ gridColumn: '1 / -1' }}>
-                    Assunto do Acompanhamento *
-                    <input
-                      type="text"
-                      required={hasFollowUp}
-                      placeholder="ex: Enviar proposta comercial personalizada"
-                      value={followUpSubject}
-                      onChange={(e) => setFollowUpSubject(e.target.value)}
-                    />
-                  </label>
-                </div>
-              )}
-            </fieldset>
-
-            <div
-              style={{
-                display: 'flex',
-                gap: '1rem',
-                justifyContent: 'flex-end',
-                marginTop: '1.5rem',
-              }}
-            >
-              <button
-                type="button"
-                className="btn btn--secondary"
-                onClick={() => {
-                  setIsCompleting(false);
-                  setSelectedActivity(null);
+              <fieldset
+                style={{
+                  marginTop: '1rem',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '1rem',
                 }}
               >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={completeMutation.isPending}
-                className="btn btn--primary"
+                <legend>
+                  <label
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={hasFollowUp}
+                      onChange={(e) => setHasFollowUp(e.target.checked)}
+                      style={{ width: 'auto' }}
+                    />
+                    <strong>Agendar próxima atividade de acompanhamento</strong>
+                  </label>
+                </legend>
+
+                {hasFollowUp && (
+                  <div className="form-grid" style={{ marginTop: '0.75rem' }}>
+                    <label>
+                      Tipo
+                      <select
+                        value={followUpType}
+                        onChange={(e) =>
+                          setFollowUpType(
+                            e.target.value as
+                              'CALL' | 'MESSAGE' | 'MEETING' | 'VISIT' | 'EMAIL' | 'TASK',
+                          )
+                        }
+                      >
+                        <option value="CALL">Ligação</option>
+                        <option value="MESSAGE">WhatsApp / Mensagem</option>
+                        <option value="MEETING">Reunião</option>
+                        <option value="VISIT">Visita Técnica</option>
+                        <option value="TASK">Tarefa Interna</option>
+                      </select>
+                    </label>
+
+                    <label>
+                      Data e Hora
+                      <input
+                        type="datetime-local"
+                        required={hasFollowUp}
+                        value={followUpDueAt}
+                        onChange={(e) => setFollowUpDueAt(e.target.value)}
+                      />
+                    </label>
+
+                    <label style={{ gridColumn: '1 / -1' }}>
+                      Assunto do Acompanhamento *
+                      <input
+                        type="text"
+                        required={hasFollowUp}
+                        placeholder="ex: Enviar proposta comercial personalizada"
+                        value={followUpSubject}
+                        onChange={(e) => setFollowUpSubject(e.target.value)}
+                      />
+                    </label>
+                  </div>
+                )}
+              </fieldset>
+
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '1rem',
+                  justifyContent: 'flex-end',
+                  marginTop: '1.5rem',
+                }}
               >
-                {completeMutation.isPending ? 'Concluindo…' : 'Confirmar Conclusão'}
-              </button>
-            </div>
-          </form>
+                <button
+                  type="button"
+                  className="btn btn--secondary"
+                  onClick={() => {
+                    setIsCompleting(false);
+                    setSelectedActivity(null);
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={completeMutation.isPending}
+                  className="btn btn--primary"
+                >
+                  {completeMutation.isPending ? 'Concluindo…' : 'Confirmar Conclusão'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -1117,7 +1126,14 @@ export function Activities() {
               }}
               style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
             >
-              <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.85rem' }}>
+              <label
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.25rem',
+                  fontSize: '0.85rem',
+                }}
+              >
                 Nova Data e Hora *
                 <input
                   type="datetime-local"
@@ -1128,7 +1144,14 @@ export function Activities() {
                 />
               </label>
 
-              <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.85rem' }}>
+              <label
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.25rem',
+                  fontSize: '0.85rem',
+                }}
+              >
                 Motivo do Reagendamento
                 <textarea
                   rows={3}

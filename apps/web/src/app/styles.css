@@ -810,3 +810,19 @@ button:disabled {
   }
 }
 
+.customer-mobile-list {
+  display: none;
+}
+@media (max-width: 767px) {
+  .customer-mobile-list {
+    display: grid;
+    gap: 1rem;
+  }
+}
+
+@media (pointer: coarse), (max-width: 767px) {
+  .dossier-container .btn {
+    min-height: var(--touch-target) !important;
+    min-width: var(--touch-target);
+  }
+}
