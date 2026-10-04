@@ -12,3 +12,5 @@ test-results/
 .bin/
 .storage/
 scratch/
+# Contas e resultados reais da PoC nunca entram no repositório.
+poc-data/
