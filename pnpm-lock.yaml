@@ -198,6 +198,18 @@ importers:
 
   packages/design-tokens: {}
 
+  packages/energy-import-poc:
+    devDependencies:
+      '@moura-solar/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      '@types/node':
+        specifier: ^24.5.2
+        version: 24.19.0
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+
   packages/typescript-config: {}
 
 packages:

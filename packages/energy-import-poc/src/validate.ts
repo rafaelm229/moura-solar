@@ -1,0 +1,107 @@
+import {
+  fieldNames,
+  type AdapterRunSet,
+  type CorpusManifest,
+  type ExperimentPolicy,
+} from './types.js';
+
+const fields = new Set<string>(fieldNames);
+const id = /^[a-z0-9][a-z0-9_-]{2,79}$/;
+const month = /^\d{4}-(0[1-9]|1[0-2])$/;
+const decimal = /^(0|[1-9]\d*)(\.\d+)?$/;
+
+function invariant(condition: unknown, message: string): asserts condition {
+  if (!condition) throw new Error(message);
+}
+
+export function validateInputs(
+  manifest: CorpusManifest,
+  runSet: AdapterRunSet,
+  policy: ExperimentPolicy,
+): void {
+  invariant(manifest.schemaVersion === '1', 'Unsupported corpus schemaVersion');
+  invariant(manifest.purpose === 'ENERGY_BILL_EXTRACTION_POC', 'Corpus purpose is invalid');
+  invariant(manifest.authorization.approved, 'Corpus authorization is not approved');
+  invariant(manifest.authorization.privacyReviewed, 'Corpus privacy review is missing');
+  invariant(manifest.blindEvaluation, 'Evaluation corpus must be blind');
+  invariant(manifest.documents.length > 0, 'Corpus is empty');
+  invariant(runSet.schemaVersion === '1', 'Unsupported adapter result schemaVersion');
+  invariant(policy.schemaVersion === '1', 'Unsupported policy schemaVersion');
+  invariant(decimal.test(policy.approvedBudget.amount), 'Approved budget must be a decimal string');
+  invariant(
+    policy.approvedBudget.currency.length === 3,
+    'Approved budget currency must be ISO-like',
+  );
+  invariant(policy.goals.length > 0, 'At least one quality goal is required');
+  invariant(policy.criticalFields.length > 0, 'At least one critical field is required');
+
+  const sampleIds = new Set<string>();
+  const runIds = new Set<string>();
+  for (const document of manifest.documents) {
+    invariant(id.test(document.sampleId), `Invalid anonymous sampleId: ${document.sampleId}`);
+    invariant(!sampleIds.has(document.sampleId), `Duplicate sampleId: ${document.sampleId}`);
+    invariant(
+      document.pageCount > 0 && document.pageCount <= 20,
+      `Invalid pages: ${document.sampleId}`,
+    );
+    sampleIds.add(document.sampleId);
+    const keys = new Set<string>();
+    for (const label of document.labels) {
+      invariant(fields.has(label.field), `Unknown label field: ${label.field}`);
+      invariant(label.key.length > 0 && !keys.has(label.key), `Duplicate label key: ${label.key}`);
+      invariant(
+        label.page > 0 && label.page <= document.pageCount,
+        `Invalid label page: ${label.key}`,
+      );
+      if (label.field.endsWith('referenceMonth'))
+        invariant(month.test(label.value), `Invalid reference month: ${label.key}`);
+      keys.add(label.key);
+    }
+  }
+  for (const run of runSet.runs) {
+    const document = manifest.documents.find((entry) => entry.sampleId === run.sampleId);
+    invariant(document, `Run references unknown sample: ${run.sampleId}`);
+    invariant(!runIds.has(run.sampleId), `Duplicate run: ${run.sampleId}`);
+    invariant(run.latencyMs >= 0, `Negative latency: ${run.sampleId}`);
+    invariant(run.chargedPages >= 0, `Negative charged pages: ${run.sampleId}`);
+    invariant(decimal.test(run.cost.amount), `Invalid cost: ${run.sampleId}`);
+    invariant(
+      run.cost.currency === policy.approvedBudget.currency,
+      `Mixed currency: ${run.sampleId}`,
+    );
+    const keys = new Set<string>();
+    for (const candidate of run.candidates) {
+      invariant(fields.has(candidate.field), `Unknown candidate field: ${candidate.field}`);
+      invariant(
+        candidate.key.length > 0 && !keys.has(candidate.key),
+        `Duplicate candidate key: ${candidate.key}`,
+      );
+      invariant(
+        candidate.page > 0 && candidate.page <= document.pageCount,
+        `Invalid candidate page: ${candidate.key}`,
+      );
+      if (candidate.field.endsWith('referenceMonth'))
+        invariant(month.test(candidate.value), `Invalid candidate month: ${candidate.key}`);
+      if (candidate.providerConfidence)
+        invariant(
+          candidate.providerConfidence.scale.length > 0 &&
+            Number.isFinite(candidate.providerConfidence.value),
+          `Invalid provider confidence: ${candidate.key}`,
+        );
+      keys.add(candidate.key);
+    }
+    runIds.add(run.sampleId);
+  }
+  invariant(runIds.size === sampleIds.size, 'Every corpus document must have exactly one run');
+  for (const goal of policy.goals) {
+    invariant(fields.has(goal.field), `Unknown goal field: ${goal.field}`);
+    invariant(
+      goal.minCoverage >= 0 && goal.minCoverage <= 1,
+      `Invalid coverage goal: ${goal.field}`,
+    );
+    invariant(
+      goal.minExactRate >= 0 && goal.minExactRate <= 1,
+      `Invalid exact goal: ${goal.field}`,
+    );
+  }
+}
