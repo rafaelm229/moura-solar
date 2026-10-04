@@ -28,7 +28,7 @@ O executor confere o SHA-256 e o limite de 20 MiB antes de transmitir cada docum
 
 O relatório calcula cobertura, acerto exato, correções, ausências e candidatos inesperados por campo, distribuidora, formato e qualidade; p50/p95; páginas, custo total e custo por sucesso; taxa de fallback manual e erros críticos. Qualquer distribuidora com menos de 20 documentos resulta em `INCONCLUSIVE`. Metas não atingidas, erro crítico ou custo acima do teto resulta em `STOP` quando a amostra mínima foi atendida.
 
-Valores são comparados após a normalização do adapter. O benchmark não adivinha zeros, unidade, mês, classe ou titular e não descarta conta ilegível/falha. Confiança do fornecedor é opcional e preserva a escala original; não é convertida em porcentagem universal.
+Valores são comparados após a normalização do adapter. Uma fronteira de runtime aceita somente campos do schema, limita quantidade/tamanho, valida página, mês, chave única e rejeita propriedades adicionais. Texto extraído permanece texto opaco mesmo quando contém instruções ou comandos. O benchmark não adivinha zeros, unidade, mês, classe ou titular e não descarta conta ilegível/falha. Confiança do fornecedor é opcional e preserva valor e escala originais; quando ausente, continua ausente e não é convertida em porcentagem universal.
 
 ## Execução autorizada
 
@@ -73,7 +73,7 @@ Após receber as decisões, criar adapters experimentais fora do runtime operaci
 ## Validação desta preparação
 
 - `pnpm check`: formato, lint, tipos, testes e build aprovados nos nove pacotes do monorepo;
-- preflight, benchmark e executor: casos automatizados para gates, custo fixo e por página, vínculo dos digests, unidade incorreta, fallback, resultado desconhecido, corpus não autorizado, amostra insuficiente, repetição do corpus, entrada incompleta, integridade dos bytes, teto preventivo e interrupção após operação ambígua;
+- preflight, normalização, benchmark e executor: casos automatizados para gates, custo fixo e por página, vínculo dos digests, schema permitido, instrução maliciosa como texto, confidence ausente, unidade incorreta, fallback, resultado desconhecido, corpus não autorizado, amostra insuficiente, repetição do corpus, entrada incompleta, integridade dos bytes, teto preventivo e interrupção após operação ambígua;
 - adapter Azure: transporte exercitado somente com HTTP simulado, incluindo host fixo, corpo `base64Source`, consulta, custo estimado e rejeição de redirecionamento;
 - nenhum documento, credencial, endpoint privado ou resultado de fornecedor foi incluído;
 - nenhuma chamada externa de extração ou cobrança foi realizada.

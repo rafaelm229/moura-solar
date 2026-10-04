@@ -1,5 +1,6 @@
 export { benchmark } from './benchmark.js';
 export { AzureDocumentIntelligenceAdapter } from './azure-adapter.js';
+export { validateNormalizedCandidates } from './normalize.js';
 export { assertPreflightReady, preflightExperiment } from './preflight.js';
 export { createLocalDocumentLoader, runAuthorizedExperiment } from './runner.js';
 export { validateInputs, validateManifestAndPolicy } from './validate.js';

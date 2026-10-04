@@ -4,6 +4,7 @@ import {
   type CorpusManifest,
   type ExperimentPolicy,
 } from './types.js';
+import { validateNormalizedCandidates } from './normalize.js';
 
 const fields = new Set<string>(fieldNames);
 const id = /^[a-z0-9][a-z0-9_-]{2,79}$/;
@@ -57,27 +58,7 @@ export function validateInputs(
       run.outcome === 'SUCCEEDED' || Boolean(run.errorCode),
       `Non-successful run requires an error code: ${run.sampleId}`,
     );
-    const keys = new Set<string>();
-    for (const candidate of run.candidates) {
-      invariant(fields.has(candidate.field), `Unknown candidate field: ${candidate.field}`);
-      invariant(
-        candidate.key.length > 0 && !keys.has(candidate.key),
-        `Duplicate candidate key: ${candidate.key}`,
-      );
-      invariant(
-        candidate.page > 0 && candidate.page <= document.pageCount,
-        `Invalid candidate page: ${candidate.key}`,
-      );
-      if (candidate.field.endsWith('referenceMonth'))
-        invariant(month.test(candidate.value), `Invalid candidate month: ${candidate.key}`);
-      if (candidate.providerConfidence)
-        invariant(
-          candidate.providerConfidence.scale.length > 0 &&
-            Number.isFinite(candidate.providerConfidence.value),
-          `Invalid provider confidence: ${candidate.key}`,
-        );
-      keys.add(candidate.key);
-    }
+    validateNormalizedCandidates(document, run.candidates);
     runIds.add(run.sampleId);
   }
   invariant(runIds.size === sampleIds.size, 'Every corpus document must have exactly one run');

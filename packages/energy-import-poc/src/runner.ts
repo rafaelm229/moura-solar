@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { dirname, extname, resolve } from 'node:path';
 import type { ExtractionPocAdapter, PollResult, ProviderUsage } from './adapter.js';
 import { microsToMoney, moneyToMicros } from './money.js';
+import { validateNormalizedCandidates } from './normalize.js';
 import { assertPreflightReady, type PocExecutionPlan, type PreflightReport } from './preflight.js';
 import type {
   AdapterRunSet,
@@ -161,7 +162,7 @@ async function executeExperiment<TRaw>(
             'SUCCEEDED',
             now() - startedAt,
             poll.usage,
-            adapter.normalize(poll.raw),
+            validateNormalizedCandidates(document, adapter.normalize(poll.raw)),
           ),
         );
       } catch {
