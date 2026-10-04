@@ -515,31 +515,38 @@ export class CommercialService {
     dto: CreateUtilityUnitDto,
     traceId: string,
   ) {
-    const customer = await this.store.db.customer.findFirst({
-      where: { id: customerId, organizationId: actor.organizationId },
-    });
-    if (!customer) fail('CUSTOMER_NOT_FOUND', 'Cliente não encontrado.', 404);
-
     const extCode = dto.externalCode?.trim();
-    if (extCode) {
-      const existing = await this.store.db.utilityUnit.findFirst({
-        where: {
-          organizationId: actor.organizationId,
-          distributorName: dto.distributorName.trim(),
-          externalCode: extCode,
-          status: 'ACTIVE',
-        },
-      });
-      if (existing) {
-        fail(
-          'UTILITY_UNIT_ALREADY_EXISTS',
-          `Unidade consumidora com código ${extCode} já cadastrada para esta concessionária.`,
-          409,
-        );
-      }
-    }
-
     return this.store.transaction(async (tx) => {
+      const customer = await tx.customer.findFirst({
+        where: { id: customerId, organizationId: actor.organizationId },
+      });
+      if (!customer) fail('CUSTOMER_NOT_FOUND', 'Cliente não encontrado.', 404);
+
+      if (dto.addressId) {
+        const address = await tx.address.findFirst({
+          where: { id: dto.addressId, customerId },
+        });
+        if (!address) fail('ADDRESS_NOT_FOUND', 'Endereço não encontrado para este cliente.', 404);
+      }
+
+      if (extCode) {
+        const existing = await tx.utilityUnit.findFirst({
+          where: {
+            organizationId: actor.organizationId,
+            distributorName: dto.distributorName.trim(),
+            externalCode: extCode,
+            status: 'ACTIVE',
+          },
+        });
+        if (existing) {
+          fail(
+            'UTILITY_UNIT_ALREADY_EXISTS',
+            `Unidade consumidora com código ${extCode} já cadastrada para esta concessionária.`,
+            409,
+          );
+        }
+      }
+
       const unit = await tx.utilityUnit.create({
         data: {
           organizationId: actor.organizationId,
@@ -675,21 +682,23 @@ export class CommercialService {
   }
 
   async createOpportunity(actor: ContextDto, dto: CreateOpportunityDto, traceId: string) {
-    // Validate customer belongs to organization
-    const customer = await this.store.db.customer.findFirst({
-      where: { id: dto.customerId, organizationId: actor.organizationId },
-    });
-    if (!customer) fail('CUSTOMER_NOT_FOUND', 'Cliente não encontrado.', 404);
-
-    // Validate utility unit if provided
-    if (dto.utilityUnitId) {
-      const unit = await this.store.db.utilityUnit.findFirst({
-        where: { id: dto.utilityUnitId, organizationId: actor.organizationId },
-      });
-      if (!unit) fail('UTILITY_UNIT_NOT_FOUND', 'Unidade consumidora não encontrada.', 404);
-    }
-
     return this.store.transaction(async (tx) => {
+      const customer = await tx.customer.findFirst({
+        where: { id: dto.customerId, organizationId: actor.organizationId },
+      });
+      if (!customer) fail('CUSTOMER_NOT_FOUND', 'Cliente não encontrado.', 404);
+
+      if (dto.utilityUnitId) {
+        const unit = await tx.utilityUnit.findFirst({
+          where: {
+            id: dto.utilityUnitId,
+            organizationId: actor.organizationId,
+            customerId: dto.customerId,
+          },
+        });
+        if (!unit) fail('UTILITY_UNIT_NOT_FOUND', 'Unidade consumidora não encontrada.', 404);
+      }
+
       // Generate human-readable sequential code: OPT-0001, OPT-0002...
       const count = await tx.opportunity.count({
         where: { organizationId: actor.organizationId },
@@ -765,6 +774,17 @@ export class CommercialService {
       if (!opp) fail('OPPORTUNITY_NOT_FOUND', 'Oportunidade não encontrada.', 404);
       if (opp.version !== dto.expectedVersion) {
         fail('CONCURRENT_MODIFICATION', 'A oportunidade foi alterada por outro usuário.', 409);
+      }
+
+      if (dto.utilityUnitId) {
+        const unit = await tx.utilityUnit.findFirst({
+          where: {
+            id: dto.utilityUnitId,
+            organizationId: actor.organizationId,
+            customerId: opp.customerId,
+          },
+        });
+        if (!unit) fail('UTILITY_UNIT_NOT_FOUND', 'Unidade consumidora não encontrada.', 404);
       }
 
       const updated = await tx.opportunity.update({
