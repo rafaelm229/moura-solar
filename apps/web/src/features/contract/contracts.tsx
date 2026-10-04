@@ -508,7 +508,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
         };
       case 'ACTIVE':
       case 'SIGNED_VERIFIED':
-        return { label: 'Ativo & Verificado (Gate C)', color: '#15803d', bg: '#dcfce7' };
+        return { label: 'Ativo & Verificado (Gate contratual)', color: '#15803d', bg: '#dcfce7' };
       case 'AMENDED':
         return { label: 'Com Aditivo', color: '#0369a1', bg: '#e0f2fe' };
       case 'CANCELED':
@@ -534,7 +534,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-      {/* Top Banner: Gate C status */}
+      {/* Top Banner: Contract gate status */}
       <div
         className="card"
         style={{
@@ -564,7 +564,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 fontWeight: 600,
               }}
             >
-              Milestone M5 — Gate C: Governança Contratual & Assinatura
+              Milestone M5 — Gate contratual: Governança Contratual & Assinatura
             </div>
             <div
               style={{
@@ -578,14 +578,15 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 <span
                   style={{ color: '#16a34a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                 >
-                  <Icon name="verified" size={18} /> Gate C Superado — Contrato Ativo e Verificado
+                  <Icon name="verified" size={18} /> Gate contratual superado — Contrato Ativo e
+                  Verificado
                 </span>
               ) : (
                 <span
                   style={{ color: '#ca8a04', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                 >
-                  <Icon name="schedule" size={18} /> Gate C Pendente — Aguardando Assinatura e
-                  Conferência Formal
+                  <Icon name="schedule" size={18} /> Gate contratual pendente — Aguardando
+                  Assinatura e Conferência Formal
                 </span>
               )}
             </div>
@@ -660,7 +661,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
           >
             Assim que a proposta comercial for aceita formalmente pelo cliente, gere o contrato
             padrão Moura Solar com minutas em DOCX e PDF para coleta de assinaturas e liberação do
-            Gate C.
+            gate contratual.
           </p>
           {!readonly && canCreate && (
             <button
@@ -833,7 +834,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                       gap: '0.4rem',
                     }}
                   >
-                    <Icon name="search" size={16} /> Conferência de Assinatura (Gate C)
+                    <Icon name="search" size={16} /> Conferência de Assinatura (gate contratual)
                   </button>
                 )}
               </div>
@@ -976,7 +977,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
             </div>
           </div>
 
-          {/* Contract Stage Pipeline & Action Hub (Gate C) */}
+          {/* Contract Stage Pipeline & Action Hub */}
           <div
             className="card"
             style={{
@@ -999,7 +1000,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                   gap: '0.5rem',
                 }}
               >
-                <Icon name="checklist" size={20} /> Etapas e Ações do Contrato (Gate C)
+                <Icon name="checklist" size={20} /> Etapas e Ações do Contrato
               </h3>
               <p
                 style={{
@@ -1328,7 +1329,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                 );
               })()}
 
-              {/* Step 4: Conferência Gate C */}
+              {/* Step 4: Conferência do gate contratual */}
               {(() => {
                 const isSatisfied = gate?.status === 'SATISFIED';
                 const isReadyForReview = contract.state === 'SIGNED_UPLOADED';
@@ -1364,7 +1365,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                         }}
                       >
                         <span style={{ fontWeight: 700, fontSize: '0.875rem' }}>
-                          4. Conferência Gate C
+                          4. Conferência do gate contratual
                         </span>
                         <span
                           style={{
@@ -1385,7 +1386,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                           }}
                         >
                           {isSatisfied
-                            ? '✓ Gate C Liberado'
+                            ? '✓ Gate contratual liberado'
                             : isReadyForReview
                               ? 'Pronto p/ Conferência'
                               : 'Bloqueado'}
@@ -1395,7 +1396,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                         {isSatisfied
                           ? 'Contrato conferido e homologado. As 4 regras de governança foram atendidas.'
                           : isReadyForReview
-                            ? 'Valide partes, páginas, versão e assinaturas para ativar o contrato e liberar o Gate C.'
+                            ? 'Valide partes, páginas, versão e assinaturas para ativar o contrato e liberar o gate contratual.'
                             : 'Disponível após o anexo da via assinada pelo cliente.'}
                       </p>
                     </div>
@@ -1425,7 +1426,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                           gap: '0.4rem',
                         }}
                       >
-                        <Icon name="search" size={16} /> Realizar Conferência Gate C
+                        <Icon name="search" size={16} /> Realizar Conferência do gate contratual
                       </button>
                     )}
 
@@ -2828,7 +2829,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
             </div>
             <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '0 0 1rem 0' }}>
               O envio da via assinada moverá o contrato para <strong>SIGNED_UPLOADED</strong>. O
-              Gate C será liberado apenas após a conferência formal.
+              gate contratual será liberado apenas após a conferência formal.
             </p>
 
             <form
@@ -2916,7 +2917,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
         </div>
       )}
 
-      {/* MODAL 5: Formal Conference Checklist (Gate C) */}
+      {/* MODAL 5: Formal Conference Checklist (contract gate) */}
       {isReviewing && (
         <div
           className="modal-backdrop"
@@ -2943,7 +2944,8 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                   gap: '0.5rem',
                 }}
               >
-                <Icon name="checklist" size={20} /> Conferência Formal de Assinatura (Gate C)
+                <Icon name="checklist" size={20} /> Conferência Formal de Assinatura (gate
+                contratual)
               </h3>
               <button
                 type="button"
@@ -3111,7 +3113,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                         gap: '0.35rem',
                       }}
                     >
-                      <Icon name="check_circle" size={16} /> Aprovar e Liberar Gate C
+                      <Icon name="check_circle" size={16} /> Aprovar e Liberar gate contratual
                     </span>
                   </label>
 
@@ -3233,7 +3235,7 @@ export function ContractsView({ opportunityId, onRefresh, readonly = false }: Co
                   {reviewMutation.isPending
                     ? 'Homologando...'
                     : reviewDecision === 'VERIFIED'
-                      ? 'Aprovar e Liberar Gate C'
+                      ? 'Aprovar e Liberar gate contratual'
                       : 'Confirmar Rejeição'}
                 </button>
               </div>

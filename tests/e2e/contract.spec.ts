@@ -18,9 +18,10 @@ try {
 for (const [width, height] of [
   [360, 800],
   [768, 1024],
+  [1024, 900],
   [1440, 900],
 ]) {
-  test(`full contract lifecycle (DOCX/PDF engine, delivery, signed upload, conference checklist, Gate C to VENDIDO) at ${width}px`, async ({
+  test(`full contract lifecycle (DOCX/PDF engine, delivery, signed upload, conference checklist, contract gate to VENDIDO) at ${width}px`, async ({
     page,
     request,
   }, testInfo) => {
@@ -165,8 +166,8 @@ for (const [width, height] of [
     // 8. Navigate to M5: Contratos & Documentos sub-tab
     await page.getByRole('button', { name: 'Contratos & Documentos' }).click();
 
-    // Verify Gate C status shows PENDING
-    await expect(page.getByText(/Gate C Pendente/)).toBeVisible();
+    // Verify the contract gate shows PENDING
+    await expect(page.getByText(/Gate contratual pendente/)).toBeVisible();
     await expect(page.getByText('Nenhum contrato formal gerado ainda')).toBeVisible();
 
     // 9. Generate Contract (DOCX & PDF)
@@ -219,16 +220,16 @@ for (const [width, height] of [
     // Verify status updated to SIGNED_UPLOADED
     await expect(page.getByText('Assinado Anexado (Aguardando Conferência)')).toBeVisible();
 
-    // Verify Gate C is still PENDING (SPEC-007 Item 4 & 9: Upload does not activate prematurely)
-    await expect(page.getByText(/Gate C Pendente/)).toBeVisible();
+    // Verify contract gate is still PENDING (SPEC-007: upload does not activate prematurely)
+    await expect(page.getByText(/Gate contratual pendente/)).toBeVisible();
     await expect(
       page.locator('section[aria-label="Detalhes da oportunidade"] .badge-vendido'),
     ).not.toBeVisible();
 
-    // 12. Formal Conference Checklist (Gate C)
-    await page.getByRole('button', { name: 'Conferência de Assinatura (Gate C)' }).click();
+    // 12. Formal Conference Checklist (contract gate)
+    await page.getByRole('button', { name: 'Conferência de Assinatura (gate contratual)' }).click();
     await expect(
-      page.getByRole('heading', { name: 'Conferência Formal de Assinatura (Gate C)' }),
+      page.getByRole('heading', { name: 'Conferência Formal de Assinatura (gate contratual)' }),
     ).toBeVisible();
 
     // Check all 4 items
@@ -239,11 +240,13 @@ for (const [width, height] of [
     await checkboxes.nth(3).check();
 
     // Submit Approval
-    await page.getByRole('button', { name: 'Aprovar e Liberar Gate C' }).click();
+    await page.getByRole('button', { name: 'Aprovar e Liberar gate contratual' }).click();
 
-    // 13. Verify Gate C Satisfied & Opportunity state advances to VENDIDO!
-    await expect(page.getByText(/Gate C Superado — Contrato Ativo e Verificado/)).toBeVisible();
-    await expect(page.getByText('Ativo & Verificado (Gate C)')).toBeVisible();
+    // 13. Verify contract gate satisfaction & Opportunity transition to VENDIDO.
+    await expect(
+      page.getByText(/Gate contratual superado — Contrato Ativo e Verificado/),
+    ).toBeVisible();
+    await expect(page.getByText('Ativo & Verificado (Gate contratual)')).toBeVisible();
     await expect(
       page.locator('section[aria-label="Detalhes da oportunidade"] .badge-vendido'),
     ).toBeVisible();
