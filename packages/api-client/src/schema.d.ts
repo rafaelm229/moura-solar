@@ -3204,6 +3204,8 @@ export interface components {
       specificYield: number;
       /** @default 630 */
       preferredModulePowerWp: number;
+      /** Format: uuid */
+      preferredModuleCatalogItemId?: string;
     };
     DesignSuggestionViewDto: {
       targetMonthlyGenerationKwh: number;

@@ -8745,6 +8745,10 @@
           "preferredModulePowerWp": {
             "type": "number",
             "default": 630
+          },
+          "preferredModuleCatalogItemId": {
+            "type": "string",
+            "format": "uuid"
           }
         },
         "required": ["targetMonthlyGenerationKwh"]

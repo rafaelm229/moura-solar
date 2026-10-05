@@ -133,9 +133,34 @@ for (const [width, height] of [
     // Assistant pre-fills target kWh
     await expect(page.getByLabel('Geração Mensal Alvo (kWh/mês) *')).toHaveValue('600');
 
+    const modulePicker = page.getByRole('combobox', {
+      name: 'Selecionar módulo preferencial do catálogo',
+    });
+    const moduleSearch = page.getByRole('searchbox', {
+      name: 'Buscar módulo por nome, fabricante, modelo ou SKU',
+    });
+    await expect(modulePicker.locator('option').nth(1)).toBeAttached();
+    await expect(modulePicker.locator('option').nth(1)).toContainText(/un\. disponíveis/);
+    const selectedModuleLabel = (await modulePicker.locator('option').nth(1).textContent()) ?? '';
+    const selectedModulePower = selectedModuleLabel.match(/(\d+(?:[.,]\d+)?) Wp/)?.[1];
+    expect(selectedModulePower).toBeTruthy();
+    await moduleSearch.fill('nao-encontrar-este-modulo');
+    await expect(modulePicker).toContainText('Nenhum módulo encontrado no catálogo ativo');
+    await expect(
+      page.getByRole('button', { name: 'Calcular Sugestão de Dimensionamento' }),
+    ).toBeDisabled();
+    await moduleSearch.clear();
+    await expect(
+      page.getByRole('button', { name: 'Calcular Sugestão de Dimensionamento' }),
+    ).toBeEnabled();
+    await modulePicker.selectOption({ index: 1 });
+
     // Calculate suggestion
     await page.getByRole('button', { name: 'Calcular Sugestão de Dimensionamento' }).click();
     await expect(page.getByText('SUGESTÃO TÉCNICA AUTOMATIZADA')).toBeVisible();
+    await expect(page.getByTestId('suggested-module-summary')).toContainText(
+      `${selectedModulePower} Wp`,
+    );
 
     // Create Design from suggestion
     await page

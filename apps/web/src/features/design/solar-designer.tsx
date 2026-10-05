@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, result, allows } from '../identity/client';
 import { Feedback } from '../identity/feedback';
@@ -8,6 +8,11 @@ import type { Schemas } from '@moura-solar/api-client';
 type Design = Schemas['DesignViewDto'];
 type DesignVersion = Schemas['DesignVersionViewDto'];
 type DesignSuggestion = Schemas['DesignSuggestionViewDto'];
+type ModuleStockBalance = {
+  catalogItemId: string;
+  available: number | string;
+  location?: { type: string } | null;
+};
 
 interface SolarDesignerProps {
   opportunityId: string;
@@ -29,7 +34,8 @@ export function SolarDesigner({
     suggestedMonthlyKwh ? Math.round(suggestedMonthlyKwh).toString() : '600',
   );
   const [specificYield, setSpecificYield] = useState('135');
-  const [preferredModuleWp, setPreferredModuleWp] = useState('630');
+  const [preferredModuleCatalogItemId, setPreferredModuleCatalogItemId] = useState('');
+  const [moduleSearch, setModuleSearch] = useState('');
   const [suggestion, setSuggestion] = useState<DesignSuggestion | null>(null);
 
   // Active version selector
@@ -77,6 +83,7 @@ export function SolarDesigner({
   const canCreateDesign = me.data ? allows(me.data, 'designs:create', false) : false;
   const canUpdateDesign = me.data ? allows(me.data, 'designs:update', false) : false;
   const canApproveDesign = me.data ? allows(me.data, 'designs:approve', false) : false;
+  const canReadStock = me.data ? allows(me.data, 'inventory:read', true) : false;
 
   // Query designs for this opportunity
   const designsQuery = useQuery({
@@ -89,6 +96,8 @@ export function SolarDesigner({
       ),
     enabled: !!opportunityId,
   });
+  const designs: Design[] = designsQuery.data ?? [];
+  const currentDesign = designs[0] as Design | undefined;
 
   // Query catalog
   const catalogQuery = useQuery({
@@ -101,8 +110,70 @@ export function SolarDesigner({
       ),
   });
 
-  const designs: Design[] = designsQuery.data ?? [];
-  const currentDesign = designs[0] as Design | undefined;
+  const stockBalancesQuery = useQuery({
+    queryKey: ['stock-balances', 'design-module-picker'],
+    queryFn: async () =>
+      (await result(api.GET('/api/v1/inventory/balances'))) as unknown as ModuleStockBalance[],
+    enabled: canReadStock && !currentDesign,
+  });
+
+  const moduleCatalogItems = useMemo(
+    () =>
+      (catalogQuery.data ?? []).filter(
+        (item) =>
+          item.status === 'ACTIVE' && item.category === 'MODULE' && Number(item.powerRatingWp) > 0,
+      ),
+    [catalogQuery.data],
+  );
+  const normalizedModuleSearch = moduleSearch.trim().toLocaleLowerCase('pt-BR');
+  const visibleModuleItems = moduleCatalogItems.filter((item) =>
+    [item.sku, item.name, item.manufacturer, item.model, String(item.powerRatingWp)]
+      .filter(Boolean)
+      .join(' ')
+      .toLocaleLowerCase('pt-BR')
+      .includes(normalizedModuleSearch),
+  );
+  const moduleStockByCatalogId = useMemo(() => {
+    const stock = new Map<string, number>();
+    for (const balance of stockBalancesQuery.data ?? []) {
+      if (balance.location?.type === 'QUARANTINE' || balance.location?.type === 'TRANSIT') continue;
+      stock.set(
+        balance.catalogItemId,
+        (stock.get(balance.catalogItemId) ?? 0) + Number(balance.available),
+      );
+    }
+    return stock;
+  }, [stockBalancesQuery.data]);
+
+  useEffect(() => {
+    if (
+      preferredModuleCatalogItemId &&
+      !moduleCatalogItems.some((item) => item.id === preferredModuleCatalogItemId)
+    ) {
+      setPreferredModuleCatalogItemId('');
+      return;
+    }
+    if (
+      !preferredModuleCatalogItemId &&
+      !moduleSearch.trim() &&
+      !catalogQuery.isLoading &&
+      (!canReadStock || !stockBalancesQuery.isLoading) &&
+      moduleCatalogItems.length > 0
+    ) {
+      const firstAvailableModule = moduleCatalogItems.find(
+        (item) => (moduleStockByCatalogId.get(item.id) ?? 0) > 0,
+      );
+      setPreferredModuleCatalogItemId((firstAvailableModule ?? moduleCatalogItems[0]).id);
+    }
+  }, [
+    canReadStock,
+    catalogQuery.isLoading,
+    moduleCatalogItems,
+    moduleSearch,
+    moduleStockByCatalogId,
+    preferredModuleCatalogItemId,
+    stockBalancesQuery.isLoading,
+  ]);
 
   // Selected or latest version
   const currentVersion: DesignVersion | undefined =
@@ -164,7 +235,11 @@ export function SolarDesigner({
           body: {
             targetMonthlyGenerationKwh: parseFloat(targetKwh),
             specificYield: parseFloat(specificYield),
-            preferredModulePowerWp: preferredModuleWp ? parseInt(preferredModuleWp, 10) : 630,
+            preferredModuleCatalogItemId: preferredModuleCatalogItemId || undefined,
+            preferredModulePowerWp: Number(
+              moduleCatalogItems.find((item) => item.id === preferredModuleCatalogItemId)
+                ?.powerRatingWp ?? 630,
+            ),
           },
         }),
       );
@@ -361,6 +436,8 @@ export function SolarDesigner({
         </div>
 
         <Feedback error={designsQuery.error} />
+        <Feedback error={catalogQuery.error} />
+        {canReadStock && <Feedback error={stockBalancesQuery.error} />}
         <Feedback error={suggestMutation.error} />
         <Feedback error={createDesignMutation.error} />
 
@@ -390,15 +467,70 @@ export function SolarDesigner({
               />
             </label>
             <label>
-              Potência Preferencial do Módulo (Wp)
+              Módulo Preferencial
+              <input
+                type="search"
+                aria-label="Buscar módulo por nome, fabricante, modelo ou SKU"
+                placeholder="Buscar por nome, marca, modelo ou SKU"
+                value={moduleSearch}
+                onChange={(event) => {
+                  const nextSearch = event.target.value;
+                  setModuleSearch(nextSearch);
+                  const normalizedSearch = nextSearch.trim().toLocaleLowerCase('pt-BR');
+                  const selectedModule = moduleCatalogItems.find(
+                    (item) => item.id === preferredModuleCatalogItemId,
+                  );
+                  const selectedModuleText = selectedModule
+                    ? [
+                        selectedModule.sku,
+                        selectedModule.name,
+                        selectedModule.manufacturer,
+                        selectedModule.model,
+                        String(selectedModule.powerRatingWp),
+                      ]
+                        .filter(Boolean)
+                        .join(' ')
+                        .toLocaleLowerCase('pt-BR')
+                    : '';
+                  if (selectedModule && !selectedModuleText.includes(normalizedSearch)) {
+                    setPreferredModuleCatalogItemId('');
+                  }
+                }}
+              />
               <select
-                value={preferredModuleWp}
-                onChange={(e) => setPreferredModuleWp(e.target.value)}
+                aria-label="Selecionar módulo preferencial do catálogo"
+                value={preferredModuleCatalogItemId}
+                onChange={(event) => setPreferredModuleCatalogItemId(event.target.value)}
+                disabled={catalogQuery.isLoading || visibleModuleItems.length === 0}
               >
-                <option value="630">630 Wp — N-Type Bifacial (Moura Solar)</option>
-                <option value="585">585 Wp — TopCon Mono (Moura Solar)</option>
-                <option value="550">550 Wp — Standard Mono</option>
+                {catalogQuery.isLoading && <option value="">Carregando módulos…</option>}
+                {!catalogQuery.isLoading && visibleModuleItems.length === 0 && (
+                  <option value="">Nenhum módulo encontrado no catálogo ativo</option>
+                )}
+                {visibleModuleItems.map((item) => {
+                  const available = moduleStockByCatalogId.get(item.id) ?? 0;
+                  const productName = [item.manufacturer, item.model || item.name]
+                    .filter(Boolean)
+                    .join(' ');
+                  const stockLabel = canReadStock
+                    ? stockBalancesQuery.isLoading
+                      ? ' • consultando estoque…'
+                      : stockBalancesQuery.isError
+                        ? ' • saldo indisponível'
+                        : ` • ${available.toLocaleString('pt-BR')} un. disponíveis`
+                    : '';
+                  return (
+                    <option key={item.id} value={item.id}>
+                      {item.powerRatingWp} Wp — {productName} ({item.sku}){stockLabel}
+                    </option>
+                  );
+                })}
               </select>
+              {canReadStock && !stockBalancesQuery.isLoading && (
+                <span className="device" style={{ fontSize: '0.75rem' }}>
+                  Saldo disponível somado entre depósitos e veículos; não reserva equipamentos.
+                </span>
+              )}
             </label>
           </div>
 
@@ -406,7 +538,11 @@ export function SolarDesigner({
             <button
               type="button"
               onClick={() => suggestMutation.mutate()}
-              disabled={suggestMutation.isPending}
+              disabled={
+                suggestMutation.isPending ||
+                !preferredModuleCatalogItemId ||
+                moduleCatalogItems.length === 0
+              }
             >
               Calcular Sugestão de Dimensionamento
             </button>
@@ -452,7 +588,11 @@ export function SolarDesigner({
                 </span>
               </div>
 
-              <div className="panel" style={{ margin: 0, padding: '0.75rem' }}>
+              <div
+                className="panel"
+                data-testid="suggested-module-summary"
+                style={{ margin: 0, padding: '0.75rem' }}
+              >
                 <span className="device" style={{ fontSize: '0.75rem' }}>
                   MÓDULOS FOTOVOLTAICOS
                 </span>
@@ -462,6 +602,11 @@ export function SolarDesigner({
                 <span className="device" style={{ fontSize: '0.75rem' }}>
                   Potência DC: {suggestion.suggestedDcPowerKwp} kWp
                 </span>
+                {suggestion.suggestedModuleSku && (
+                  <span className="device" style={{ display: 'block', fontSize: '0.75rem' }}>
+                    SKU: {suggestion.suggestedModuleSku}
+                  </span>
+                )}
               </div>
 
               <div className="panel" style={{ margin: 0, padding: '0.75rem' }}>
