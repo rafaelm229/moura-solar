@@ -197,3 +197,16 @@ URL com os campos da nova UC e meses preenchidos.
 Validação: build da API aprovado; integração do importador 7/7, incluindo
 persistência nula antes da confirmação e criação/vínculo/leitura após confirmação.
 O OCR permanece desligado e nenhuma decisão de fornecedor ou custo foi tomada.
+
+## Incremento 6A-7 — deduplicação por hash do original
+
+O intake procura o SHA-256 entre importações do mesmo cliente e organização,
+depois de validar acesso ao documento READY. Repetir bytes com outra versão
+documental retorna `DUPLICATE_DOCUMENT` com ID/status apenas da importação já
+autorizada, sem inserir novo job. A web oferece abrir esse resultado existente;
+o acesso é novamente validado pelo GET contextual. Outros clientes não são
+consultados nem afetados.
+
+Validação: integração cobre replay idempotente e colisão do mesmo SHA com chave
+nova; E2E percorre a oferta de abrir a importação existente após a confirmação.
+O código de cliente e o acesso retornado permanecem limitados pelo escopo da API.

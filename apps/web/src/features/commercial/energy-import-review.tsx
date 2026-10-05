@@ -330,6 +330,12 @@ export function EnergyImportReview({
       void queryClient.invalidateQueries({ queryKey: ['energy-import', created.id] });
     },
   });
+  const duplicateImportId =
+    createMutation.error instanceof ApiFailure &&
+    createMutation.error.code === 'DUPLICATE_DOCUMENT' &&
+    typeof createMutation.error.details?.existingImportId === 'string'
+      ? createMutation.error.details.existingImportId
+      : null;
 
   const reviewMutation = useMutation({
     mutationFn: async () => {
@@ -534,6 +540,21 @@ export function EnergyImportReview({
                 <NewUtilityUnitFields value={newUtilityUnit} onChange={setNewUtilityUnit} />
               )}
               <Feedback error={createMutation.error} />
+              {duplicateImportId && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setImportId(duplicateImportId);
+                    setInitialImportId(duplicateImportId);
+                    updateUrl(duplicateImportId);
+                    void queryClient.invalidateQueries({
+                      queryKey: ['energy-import', duplicateImportId],
+                    });
+                  }}
+                >
+                  Abrir importação existente
+                </Button>
+              )}
               <Button
                 variant="primary"
                 icon="bolt"
