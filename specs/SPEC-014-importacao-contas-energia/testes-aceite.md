@@ -36,6 +36,7 @@ PoC deve reportar taxa de correção por campo, cobertura de meses, erro crític
 
 Complementos verificáveis:
 
+- T-IMP-04: mesmo SHA-256 no mesmo cliente não cria outra importação; conflito identifica apenas resultado visível à pessoa autorizada e a web permite abri-lo. Mesmo hash em outro cliente não revela nem bloqueia o registro.
 - T-IMP-01: antes de original READY não existe importação enfileirada; erro de criação após upload permite retomar sem reenviar bytes. Confirmar “Criar UC” deve vincular original por DocumentUtilityUnitLink e fazê-lo aparecer ao filtrar a UC; falha desse vínculo reverte toda aplicação.
 - T-IMP-05: confirm repetido com mesma revisão/digest e chave diferente retorna 200/mesmo recibo; revisão diferente após APPLIED retorna 409. GET após timeout recupera recibo sem nova aplicação.
 - T-IMP-07: queda após submissão sem operationId gera resultado desconhecido; consultar correlação ou exigir decisão antes de repetir possível custo.

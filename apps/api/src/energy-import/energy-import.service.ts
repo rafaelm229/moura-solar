@@ -113,6 +113,7 @@ export class EnergyImportService {
           },
           select: {
             id: true,
+            sha256: true,
             persistenceState: true,
             storedObject: { select: { verified: true, scanResult: true } },
           },
@@ -176,6 +177,23 @@ export class EnergyImportService {
               409,
             );
         }
+
+        const duplicate = await tx.energyBillImport.findFirst({
+          where: {
+            organizationId: actor.organizationId,
+            customerId,
+            documentVersion: { sha256: documentVersion.sha256 },
+          },
+          orderBy: { createdAt: 'asc' },
+          select: { id: true, status: true },
+        });
+        if (duplicate)
+          fail(
+            'DUPLICATE_DOCUMENT',
+            'Esta conta já foi importada. Abra a importação existente para continuar.',
+            409,
+            { existingImportId: duplicate.id, status: duplicate.status },
+          );
 
         const record = await tx.energyBillImport.create({
           data: {

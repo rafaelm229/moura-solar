@@ -277,5 +277,25 @@ for (const [width, height] of [
     );
     await resumedNewUnitDialog.getByRole('button', { name: 'Fechar', exact: true }).last().click();
     await expect(page.getByText(`UC-NOVA-${width}`)).toBeVisible();
+
+    await page.getByRole('button', { name: 'Importar conta de energia' }).click();
+    const duplicateDialog = page.getByRole('dialog', { name: 'Importação assistida de conta' });
+    await duplicateDialog
+      .getByLabel('Conta de energia READY')
+      .selectOption({ label: `Nova conta ${width} — nova-conta-${width}.pdf` });
+    await duplicateDialog
+      .getByLabel('Unidade consumidora da conta')
+      .selectOption({ label: `Distribuidora nova — UC-NOVA-${width}` });
+    await duplicateDialog.getByRole('button', { name: 'Criar importação' }).click();
+    await expect(
+      duplicateDialog.getByText(
+        'Esta conta já foi importada. Abra a importação existente para continuar.',
+      ),
+    ).toBeVisible();
+    await duplicateDialog.getByRole('button', { name: 'Abrir importação existente' }).click();
+    await expect(duplicateDialog.getByText('Estado: Aplicada')).toBeVisible();
+    await expect(
+      duplicateDialog.getByRole('heading', { name: 'Dados sugeridos pela extração' }),
+    ).toBeVisible();
   });
 }

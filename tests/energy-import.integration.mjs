@@ -205,6 +205,27 @@ test('READY intake writes one queued import and a minimal outbox event atomicall
   assert.equal(replay.status, 201);
   assert.equal(replay.body.id, created.body.id);
 
+  const duplicateVersionId = await createReadyDocument(customerId, 'READY', true, 'a');
+  const duplicate = await admin.call(
+    `customers/${customerId}/energy-imports`,
+    'POST',
+    { documentVersionId: duplicateVersionId },
+    { 'idempotency-key': 'energy-import-duplicate-hash-key' },
+  );
+  assert.equal(duplicate.status, 409);
+  assert.equal(duplicate.body.code, 'DUPLICATE_DOCUMENT');
+  assert.equal(duplicate.body.details.existingImportId, created.body.id);
+  assert.equal(duplicate.body.details.status, 'QUEUED');
+  assert.equal(await db.energyBillImport.count({ where: { customerId } }), 1);
+  const sameHashOtherCustomer = await createReadyDocument(otherCustomerId, 'READY', true, 'a');
+  const otherCustomerImport = await admin.call(
+    `customers/${otherCustomerId}/energy-imports`,
+    'POST',
+    { documentVersionId: sameHashOtherCustomer },
+    { 'idempotency-key': 'energy-import-same-hash-other-customer-key' },
+  );
+  assert.equal(otherCustomerImport.status, 201, JSON.stringify(otherCustomerImport.body));
+
   const [record, outbox] = await Promise.all([
     db.energyBillImport.findUnique({ where: { id: created.body.id } }),
     db.importOutbox.findMany({ where: { importId: created.body.id } }),
@@ -271,7 +292,7 @@ test('intake validates that selected utility units and opportunities belong to t
     { 'idempotency-key': 'energy-import-cross-unit-key' },
   );
   assert.equal(crossCustomerUnit.status, 404);
-  assert.equal(await db.energyBillImport.count(), 1);
+  assert.equal(await db.energyBillImport.count({ where: { customerId } }), 1);
 
   const secondUnit = await admin.call(`customers/${customerId}/utility-units`, 'POST', {
     distributorName: 'Outra distribuidora de teste',
@@ -302,7 +323,7 @@ test('intake validates that selected utility units and opportunities belong to t
   );
   assert.equal(mismatch.status, 409);
   assert.equal(mismatch.body.code, 'OPPORTUNITY_UTILITY_UNIT_MISMATCH');
-  assert.equal(await db.energyBillImport.count(), 1);
+  assert.equal(await db.energyBillImport.count({ where: { customerId } }), 1);
 });
 
 test('create and status endpoints require their distinct effective grants', async () => {
