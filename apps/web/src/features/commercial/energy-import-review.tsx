@@ -414,7 +414,12 @@ export function EnergyImportReview({
         }),
       );
     },
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['energy-import', importId] }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['energy-import', importId] }),
+        queryClient.invalidateQueries({ queryKey: ['customer', customer.id] }),
+      ]);
+    },
   });
 
   const cancelMutation = useMutation({
