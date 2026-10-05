@@ -33,6 +33,8 @@ let actorId;
 let readyVersionId;
 let pendingVersionId;
 let deniedVersionId;
+let applicationVersionId;
+let utilityUnitId;
 
 class Client {
   cookies = new Map();
@@ -159,9 +161,21 @@ before(async () => {
     else otherCustomerId = response.body.id;
   }
 
+  const unit = await admin.call(`customers/${customerId}/utility-units`, 'POST', {
+    distributorName: 'Distribuidora de teste',
+    externalCode: 'IMPORT-OWN-CUSTOMER',
+    consumerClass: 'RESIDENTIAL',
+    tariffMode: 'CONVENTIONAL',
+    connectionType: 'BIPHASIC',
+    voltage: '220V',
+  });
+  assert.equal(unit.status, 201, JSON.stringify(unit.body));
+  utilityUnitId = unit.body.id;
+
   readyVersionId = await createReadyDocument(customerId, 'READY', true, 'a');
   pendingVersionId = await createReadyDocument(customerId, 'QUARANTINED', false, 'b');
   deniedVersionId = await createReadyDocument(otherCustomerId, 'READY', true, 'c');
+  applicationVersionId = await createReadyDocument(customerId, 'READY', true, 'd');
 });
 
 after(async () => {
@@ -257,6 +271,37 @@ test('intake validates that selected utility units and opportunities belong to t
   );
   assert.equal(crossCustomerUnit.status, 404);
   assert.equal(await db.energyBillImport.count(), 1);
+
+  const secondUnit = await admin.call(`customers/${customerId}/utility-units`, 'POST', {
+    distributorName: 'Outra distribuidora de teste',
+    externalCode: 'IMPORT-SECOND-UNIT',
+  });
+  assert.equal(secondUnit.status, 201, JSON.stringify(secondUnit.body));
+  const opportunity = await admin.call('opportunities', 'POST', {
+    customerId,
+    utilityUnitId: secondUnit.body.id,
+    title: 'Oportunidade vinculada a outra UC',
+    needSummary: 'Verificar consistência entre importação e oportunidade',
+    firstActivity: {
+      type: 'CALL',
+      subject: 'Revisar conta de energia',
+      dueAt: new Date(Date.now() + 86400000).toISOString(),
+    },
+  });
+  assert.equal(opportunity.status, 201, JSON.stringify(opportunity.body));
+  const mismatch = await admin.call(
+    `customers/${customerId}/energy-imports`,
+    'POST',
+    {
+      documentVersionId: readyVersionId,
+      utilityUnitId,
+      opportunityId: opportunity.body.id,
+    },
+    { 'idempotency-key': 'energy-import-opportunity-unit-mismatch-key' },
+  );
+  assert.equal(mismatch.status, 409);
+  assert.equal(mismatch.body.code, 'OPPORTUNITY_UTILITY_UNIT_MISMATCH');
+  assert.equal(await db.energyBillImport.count(), 1);
 });
 
 test('create and status endpoints require their distinct effective grants', async () => {
@@ -264,19 +309,17 @@ test('create and status endpoints require their distinct effective grants', asyn
     where: { userId: actorId, organizationId },
     select: { roleId: true },
   });
-  const createGrant = await db.roleGrant.findUnique({
-    where: {
-      roleId_permission: { roleId: membership.roleId, permission: 'energy_imports:create' },
-    },
-  });
-  const readGrant = await db.roleGrant.findUnique({
-    where: { roleId_permission: { roleId: membership.roleId, permission: 'energy_imports:read' } },
+  const permissions = [
+    'energy_imports:create',
+    'energy_imports:read',
+    'energy_imports:review',
+    'energy_imports:confirm',
+  ];
+  const grants = await db.roleGrant.findMany({
+    where: { roleId: membership.roleId, permission: { in: permissions } },
   });
   await db.roleGrant.deleteMany({
-    where: {
-      roleId: membership.roleId,
-      permission: { in: ['energy_imports:create', 'energy_imports:read'] },
-    },
+    where: { roleId: membership.roleId, permission: { in: permissions } },
   });
   try {
     const deniedCreate = await admin.call(
@@ -288,10 +331,216 @@ test('create and status endpoints require their distinct effective grants', asyn
     assert.equal(deniedCreate.status, 403);
     const deniedRead = await admin.call('energy-imports/00000000-0000-4000-8000-000000000000');
     assert.equal(deniedRead.status, 403);
+    const deniedReview = await admin.call(
+      'energy-imports/00000000-0000-4000-8000-000000000000/review',
+      'PUT',
+      {
+        expectedVersion: 1,
+        months: [{ referenceMonth: '2026-08', decision: 'INSERT', consumptionKwh: '100' }],
+      },
+      { 'idempotency-key': 'energy-import-denied-review-key' },
+    );
+    assert.equal(deniedReview.status, 403);
+    const deniedConfirm = await admin.call(
+      'energy-imports/00000000-0000-4000-8000-000000000000/confirm',
+      'POST',
+      {
+        expectedVersion: 1,
+        reviewId: '00000000-0000-4000-8000-000000000000',
+        reviewDigest: 'a'.repeat(64),
+      },
+      { 'idempotency-key': 'energy-import-denied-confirm-key' },
+    );
+    assert.equal(deniedConfirm.status, 403);
   } finally {
     await db.roleGrant.createMany({
-      data: [createGrant, readGrant].filter(Boolean),
+      data: grants,
       skipDuplicates: true,
     });
   }
+});
+
+test('manual review is immutable and confirmation atomically applies versions with a replayable receipt', async () => {
+  const manualReading = await admin.call(
+    `utility-units/${utilityUnitId}/readings`,
+    'POST',
+    { referenceMonth: '2026-05', consumptionKwh: 400.5 },
+    { 'idempotency-key': 'energy-import-seed-reading-key' },
+  );
+  assert.equal(manualReading.status, 200, JSON.stringify(manualReading.body));
+
+  const created = await admin.call(
+    `customers/${customerId}/energy-imports`,
+    'POST',
+    { documentVersionId: applicationVersionId, utilityUnitId },
+    { 'idempotency-key': 'energy-import-review-intake-key' },
+  );
+  assert.equal(created.status, 201, JSON.stringify(created.body));
+
+  const initialReview = {
+    expectedVersion: 1,
+    months: [
+      {
+        referenceMonth: '2026-05',
+        decision: 'REPLACE',
+        expectedReadingVersion: 1,
+        consumptionKwh: '410.25',
+        injectedKwh: '5.00',
+        billedAmount: '123.45',
+        reason: 'Conferida na fatura original.',
+      },
+      {
+        referenceMonth: '2026-08',
+        decision: 'INSERT',
+        consumptionKwh: '500.00',
+        injectedKwh: '10.00',
+        billedAmount: '450.00',
+      },
+    ],
+  };
+  const reviewHeaders = { 'idempotency-key': 'energy-import-review-first-key' };
+  const reviewed = await admin.call(
+    `energy-imports/${created.body.id}/review`,
+    'PUT',
+    initialReview,
+    reviewHeaders,
+  );
+  assert.equal(reviewed.status, 200, JSON.stringify(reviewed.body));
+  assert.equal(reviewed.body.status, 'REVIEW_REQUIRED');
+  assert.equal(reviewed.body.version, 2);
+  assert.equal(reviewed.body.latestReview.revision, 1);
+  assert.equal(typeof reviewed.body.latestReview.digest, 'string');
+
+  const replayReview = await admin.call(
+    `energy-imports/${created.body.id}/review`,
+    'PUT',
+    initialReview,
+    reviewHeaders,
+  );
+  assert.equal(replayReview.body.latestReview.id, reviewed.body.latestReview.id);
+  assert.equal(await db.extractionCandidate.count({ where: { importId: created.body.id } }), 6);
+
+  const mayReading = await db.energyReading.findFirst({
+    where: { utilityUnitId, referenceMonth: '2026-05', status: 'ACTIVE' },
+  });
+  const interveningCorrection = await admin.call(
+    `utility-units/${utilityUnitId}/readings/${mayReading.id}/corrections`,
+    'POST',
+    {
+      referenceMonth: '2026-05',
+      expectedVersion: 1,
+      consumptionKwh: 402.5,
+      correctionReason: 'Ajuste manual concorrente para testar CAS.',
+    },
+    { 'idempotency-key': 'energy-import-intervening-correction-key' },
+  );
+  assert.equal(interveningCorrection.status, 200, JSON.stringify(interveningCorrection.body));
+
+  const staleConfirm = await admin.call(
+    `energy-imports/${created.body.id}/confirm`,
+    'POST',
+    {
+      expectedVersion: reviewed.body.version,
+      reviewId: reviewed.body.latestReview.id,
+      reviewDigest: reviewed.body.latestReview.digest,
+    },
+    { 'idempotency-key': 'energy-import-stale-confirm-key' },
+  );
+  assert.equal(staleConfirm.status, 409);
+  assert.equal(staleConfirm.body.code, 'CONCURRENT_MODIFICATION');
+  assert.equal(
+    await db.energyReading.count({ where: { utilityUnitId, referenceMonth: '2026-08' } }),
+    0,
+  );
+
+  const revisedInput = {
+    ...initialReview,
+    expectedVersion: reviewed.body.version,
+    months: initialReview.months.map((month) =>
+      month.referenceMonth === '2026-05'
+        ? { ...month, expectedReadingVersion: 2, consumptionKwh: '415.25' }
+        : month,
+    ),
+  };
+  const revised = await admin.call(
+    `energy-imports/${created.body.id}/review`,
+    'PUT',
+    revisedInput,
+    { 'idempotency-key': 'energy-import-review-second-key' },
+  );
+  assert.equal(revised.status, 200, JSON.stringify(revised.body));
+  assert.equal(revised.body.latestReview.revision, 2);
+  assert.equal(revised.body.version, 3);
+
+  const confirmInput = {
+    expectedVersion: revised.body.version,
+    reviewId: revised.body.latestReview.id,
+    reviewDigest: revised.body.latestReview.digest,
+  };
+  const confirmHeaders = { 'idempotency-key': 'energy-import-final-confirm-key' };
+  const receipt = await admin.call(
+    `energy-imports/${created.body.id}/confirm`,
+    'POST',
+    confirmInput,
+    confirmHeaders,
+  );
+  assert.equal(receipt.status, 200, JSON.stringify(receipt.body));
+  assert.equal(receipt.body.status, 'APPLIED');
+  assert.equal(receipt.body.readingChanges.length, 2);
+
+  const replay = await admin.call(
+    `energy-imports/${created.body.id}/confirm`,
+    'POST',
+    confirmInput,
+    confirmHeaders,
+  );
+  const replayWithNewKey = await admin.call(
+    `energy-imports/${created.body.id}/confirm`,
+    'POST',
+    confirmInput,
+    { 'idempotency-key': 'energy-import-second-confirm-key' },
+  );
+  assert.deepEqual(replay.body, receipt.body);
+  assert.deepEqual(replayWithNewKey.body, receipt.body);
+
+  const incompatible = await admin.call(
+    `energy-imports/${created.body.id}/confirm`,
+    'POST',
+    { ...confirmInput, reviewDigest: 'f'.repeat(64) },
+    { 'idempotency-key': 'energy-import-incompatible-confirm-key' },
+  );
+  assert.equal(incompatible.status, 409);
+  assert.equal(incompatible.body.code, 'IMPORT_ALREADY_APPLIED');
+
+  const activeReadings = await db.energyReading.findMany({
+    where: { utilityUnitId, referenceMonth: { in: ['2026-05', '2026-08'] }, status: 'ACTIVE' },
+    orderBy: { referenceMonth: 'asc' },
+  });
+  assert.deepEqual(
+    activeReadings.map((reading) => [reading.referenceMonth, reading.version, reading.source]),
+    [
+      ['2026-05', 3, 'IMPORT'],
+      ['2026-08', 1, 'IMPORT'],
+    ],
+  );
+  assert.ok(activeReadings.every((reading) => reading.sourceImportId === created.body.id));
+  assert.equal(
+    await db.energyReadingRevision.count({ where: { sourceImportId: created.body.id } }),
+    2,
+  );
+  assert.equal(
+    await db.importOutbox.count({ where: { importId: created.body.id, status: 'PENDING' } }),
+    2,
+  );
+  assert.equal(
+    await db.documentUtilityUnitLink.count({
+      where: { utilityUnitId, document: { versions: { some: { id: applicationVersionId } } } },
+    }),
+    1,
+  );
+
+  const status = await admin.call(`energy-imports/${created.body.id}`);
+  assert.equal(status.body.status, 'APPLIED');
+  assert.equal(status.body.latestReview.revision, 2);
+  assert.deepEqual(status.body.applicationReceipt, receipt.body);
 });

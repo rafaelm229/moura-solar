@@ -234,6 +234,11 @@ test('leitura mensal não sobrescreve e replay da chave de criação é idempote
   const stored = await db.energyReading.findUnique({ where: { id: firstReadingId } });
   assert.equal(Number(stored.consumptionKwh), 500.0);
   assert.equal(stored.version, 1);
+  const initialRevision = await db.energyReadingRevision.findFirst({
+    where: { readingId: firstReadingId },
+  });
+  assert.equal(initialRevision.source, 'MANUAL');
+  assert.equal(initialRevision.currentValues.consumptionKwh, '500');
 });
 
 test('correção cria versão auditável e rejeita replay alterado ou versão desatualizada', async () => {
@@ -302,6 +307,14 @@ test('correção cria versão auditável e rejeita replay alterado ou versão de
   assert.equal(may.history[0].id, firstReadingId);
   assert.equal(may.history[0].status, 'SUPERSEDED');
   assert.equal(may.history[0].consumptionKwh, 500.0);
+
+  const correctionRevision = await db.energyReadingRevision.findFirst({
+    where: { readingId: corrected.body.id },
+  });
+  assert.equal(correctionRevision.version, 2);
+  assert.equal(correctionRevision.previousValues.consumptionKwh, '500');
+  assert.equal(correctionRevision.currentValues.consumptionKwh, '575');
+  assert.equal(correctionRevision.reason, body.correctionReason);
 
   const versions = await db.energyReading.findMany({
     where: { utilityUnitId: testUtilityUnitId, referenceMonth: '2026-05' },

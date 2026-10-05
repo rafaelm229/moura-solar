@@ -6719,6 +6719,108 @@
         ],
         "tags": ["energy-imports"]
       }
+    },
+    "/api/v1/energy-imports/{id}/review": {
+      "put": {
+        "operationId": "EnergyImportController_review",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewEnergyBillImportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnergyBillImportViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["energy-imports"]
+      }
+    },
+    "/api/v1/energy-imports/{id}/confirm": {
+      "post": {
+        "operationId": "EnergyImportController_confirm",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmEnergyBillImportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnergyBillImportReceiptDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["energy-imports"]
+      }
     }
   },
   "info": {
@@ -11524,6 +11626,12 @@
           "appliedAt": {
             "type": "string",
             "nullable": true
+          },
+          "latestReview": {
+            "type": "object"
+          },
+          "applicationReceipt": {
+            "type": "object"
           }
         },
         "required": [
@@ -11537,6 +11645,138 @@
           "version",
           "createdAt",
           "appliedAt"
+        ]
+      },
+      "ImportMonthDecisionDto": {
+        "type": "object",
+        "properties": {
+          "referenceMonth": {
+            "type": "string",
+            "example": "2026-08"
+          },
+          "decision": {
+            "type": "string",
+            "enum": ["KEEP", "INSERT", "REPLACE"]
+          },
+          "expectedReadingVersion": {
+            "type": "object",
+            "nullable": true,
+            "minimum": 1
+          },
+          "consumptionKwh": {
+            "type": "string",
+            "example": "421.50"
+          },
+          "injectedKwh": {
+            "type": "object",
+            "example": "16.25",
+            "nullable": true
+          },
+          "billedAmount": {
+            "type": "object",
+            "example": "384.92",
+            "nullable": true
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": ["referenceMonth", "decision"]
+      },
+      "ReviewEnergyBillImportDto": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "number",
+            "minimum": 1
+          },
+          "months": {
+            "minItems": 1,
+            "maxItems": 36,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportMonthDecisionDto"
+            }
+          }
+        },
+        "required": ["expectedVersion", "months"]
+      },
+      "ConfirmEnergyBillImportDto": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "number",
+            "minimum": 1
+          },
+          "reviewId": {
+            "type": "string"
+          },
+          "reviewDigest": {
+            "type": "string"
+          }
+        },
+        "required": ["expectedVersion", "reviewId", "reviewDigest"]
+      },
+      "AppliedEnergyReadingDto": {
+        "type": "object",
+        "properties": {
+          "referenceMonth": {
+            "type": "string"
+          },
+          "readingId": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          }
+        },
+        "required": ["referenceMonth", "readingId", "version"]
+      },
+      "EnergyBillImportReceiptDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["APPLIED"]
+          },
+          "importId": {
+            "type": "string"
+          },
+          "reviewId": {
+            "type": "string"
+          },
+          "reviewDigest": {
+            "type": "string"
+          },
+          "appliedAt": {
+            "type": "string"
+          },
+          "utilityUnitId": {
+            "type": "string"
+          },
+          "readingChanges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AppliedEnergyReadingDto"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "status",
+          "importId",
+          "reviewId",
+          "reviewDigest",
+          "appliedAt",
+          "utilityUnitId",
+          "readingChanges",
+          "warnings"
         ]
       }
     }
