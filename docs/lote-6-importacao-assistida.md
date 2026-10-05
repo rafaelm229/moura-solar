@@ -48,7 +48,8 @@ Data: 05/10/2026. Implementado em `feat/lote-6-attempt-lifecycle`.
 
 O cancelamento aceita `QUEUED`, `REVIEW_REQUIRED` ou `FAILED`, valida a versão
 esperada, marca a importação como terminal `CANCELED`, encerra eventos ainda
-pendentes na outbox e registra ator, motivo e transição em uma tabela imutável.
+pendentes e revoga leases ativas da outbox; registra ator, motivo e transição em
+uma tabela imutável.
 Estados em processamento, confirmação ou aplicação não são cancelados por este
 comando.
 
@@ -59,21 +60,33 @@ Não há política de retry automático nem chamada a fornecedor; tentativas,
 leases, orçamento e cancelamento de operação externa permanecem na próxima
 fatia do worker, com parâmetros operacionais ainda pendentes.
 
+## Incremento 6A-4 — base durável de tentativas e leases
+
+Data: 05/10/2026. Implementado em `feat/lote-6-durable-attempts`.
+
+A migration adiciona `ExtractionAttempt` para correlação, identidade opcional de
+adapter/modelo, operação externa, lease, heartbeat, páginas, custo e erro seguro.
+A outbox passa a registrar proprietário e heartbeat da lease, conclusão e
+código seguro de falha.
+
+O pacote worker fornece operações PostgreSQL atômicas para claim com
+`FOR UPDATE SKIP LOCKED`, renovação de lease, conclusão e devolução agendada de
+eventos. Testes cobrem concorrência, recuperação após lease expirada, rejeição
+de ack obsoleto e adiamento. O entrypoint continua sem consumidores ativos e
+nenhuma chamada externa é feita nesta fatia.
+
 ### Validação
 
-- `pnpm api:generate`: OpenAPI e cliente TypeScript atualizados.
 - `pnpm test:migrations`: migration aplicada em banco vazio e upgrade preservando
-  leitura e dossiê preexistentes; reaplicação segura.
-- `node --test tests/energy-import.integration.mjs`: valida intake, revisão,
-  conflito sem aplicação parcial, replay, recibo e grants positivos/negativos.
-- `node --test tests/design.integration.mjs`: valida proveniência das leituras
-  manuais e correções existentes.
-- `pnpm api:generate`: OpenAPI e cliente TypeScript atualizados.
-- `pnpm test:migrations`: migration aditiva aprovada em banco vazio e upgrade.
-- `pnpm test:integration`: 101/101.
+  dados existentes; reaplicação segura.
+- `pnpm test:integration`: 103/103, incluindo exclusividade, heartbeat,
+  recuperação de lease expirada, rejeição de ack obsoleto e adiamento.
 - `pnpm test:e2e`: 31/31 jornadas responsivas existentes.
 - `pnpm check`: formato, lint, tipos, 1.250 testes unitários e build aprovados.
 - `git diff --check`: aprovado.
+
+OpenAPI permaneceu coerente e foi regenerado no incremento 6A-3; 6A-4 não altera
+contratos HTTP.
 
 As decisões operacionais de mapeamento de classe tarifária, fornecedor/região
 OCR e limites de custo/quota continuam pendentes e não são inferidas nesta fatia.

@@ -153,6 +153,10 @@ importers:
         version: 3.2.7(@types/node@24.19.0)(jiti@2.7.0)(jsdom@27.4.0(@noble/hashes@1.8.0)(supports-color@10.2.2))(supports-color@10.2.2)(terser@5.51.2)(tsx@4.23.15)
 
   apps/worker:
+    dependencies:
+      '@prisma/client':
+        specifier: ^6.16.2
+        version: 6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
     devDependencies:
       '@moura-solar/typescript-config':
         specifier: workspace:*

@@ -603,6 +603,37 @@ test('cancel and explicit retry are versioned, audited, scoped, and idempotent',
   assert.equal(cancelTransition.action, 'CANCEL');
   assert.equal(cancelTransition.reason, cancelInput.reason);
 
+  const activeLeaseVersionId = await createReadyDocument(customerId, 'READY', true, 'g');
+  const activeLeaseImport = await admin.call(
+    `customers/${customerId}/energy-imports`,
+    'POST',
+    { documentVersionId: activeLeaseVersionId },
+    { 'idempotency-key': 'energy-import-active-lease-create-key' },
+  );
+  assert.equal(activeLeaseImport.status, 201, JSON.stringify(activeLeaseImport.body));
+  await db.importOutbox.updateMany({
+    where: { importId: activeLeaseImport.body.id },
+    data: {
+      status: 'PROCESSING',
+      attempts: 1,
+      leaseOwner: 'worker-active-test',
+      leaseUntil: new Date(Date.now() + 60000),
+    },
+  });
+  const canceledLease = await admin.call(
+    `energy-imports/${activeLeaseImport.body.id}/cancel`,
+    'POST',
+    { expectedVersion: 1, reason: 'Interromper evento ainda sem envio externo' },
+    { 'idempotency-key': 'energy-import-cancel-active-lease-key' },
+  );
+  assert.equal(canceledLease.status, 200, JSON.stringify(canceledLease.body));
+  const revokedLease = await db.importOutbox.findFirst({
+    where: { importId: activeLeaseImport.body.id },
+  });
+  assert.equal(revokedLease.status, 'CANCELED');
+  assert.equal(revokedLease.leaseOwner, null);
+  assert.equal(revokedLease.leaseUntil, null);
+
   const retryVersionId = await createReadyDocument(customerId, 'READY', true, 'f');
   const retryImport = await admin.call(
     `customers/${customerId}/energy-imports`,
