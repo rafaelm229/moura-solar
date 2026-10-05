@@ -148,11 +148,16 @@ before(async () => {
   // Add 12 readings
   for (let m = 1; m <= 12; m++) {
     const month = m.toString().padStart(2, '0');
-    await admin.call(`utility-units/${testUtilityUnitId}/readings`, 'POST', {
-      referenceMonth: `2025-${month}`,
-      consumptionKwh: 500 + m * 10,
-      billedAmount: 480 + m * 9,
-    });
+    await admin.call(
+      `utility-units/${testUtilityUnitId}/readings`,
+      'POST',
+      {
+        referenceMonth: `2025-${month}`,
+        consumptionKwh: 500 + m * 10,
+        billedAmount: 480 + m * 9,
+      },
+      { 'idempotency-key': `proposal-reading-create-2025-${month}` },
+    );
   }
 
   // Setup Opportunity

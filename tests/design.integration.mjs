@@ -65,6 +65,7 @@ let admin = new Client();
 let testCustomerId;
 let testUtilityUnitId;
 let testOpportunityId;
+let firstReadingId;
 
 before(async () => {
   await db.$executeRawUnsafe(`CREATE SCHEMA "${schema}"`);
@@ -156,28 +157,49 @@ after(async () => {
 
 test('histórico de consumo: calcula média para n meses e sinaliza histórico incompleto quando n < 12', async () => {
   // Cadastra 4 competências de consumo
-  const r1 = await admin.call(`utility-units/${testUtilityUnitId}/readings`, 'POST', {
-    referenceMonth: '2026-05',
-    consumptionKwh: 500.0,
-  });
+  const r1 = await admin.call(
+    `utility-units/${testUtilityUnitId}/readings`,
+    'POST',
+    {
+      referenceMonth: '2026-05',
+      consumptionKwh: 500.0,
+    },
+    { 'idempotency-key': 'design-reading-create-2026-05' },
+  );
   assert.equal(r1.status, 200);
+  firstReadingId = r1.body.id;
 
-  const r2 = await admin.call(`utility-units/${testUtilityUnitId}/readings`, 'POST', {
-    referenceMonth: '2026-06',
-    consumptionKwh: 600.0,
-  });
+  const r2 = await admin.call(
+    `utility-units/${testUtilityUnitId}/readings`,
+    'POST',
+    {
+      referenceMonth: '2026-06',
+      consumptionKwh: 600.0,
+    },
+    { 'idempotency-key': 'design-reading-create-2026-06' },
+  );
   assert.equal(r2.status, 200);
 
-  const r3 = await admin.call(`utility-units/${testUtilityUnitId}/readings`, 'POST', {
-    referenceMonth: '2026-07',
-    consumptionKwh: 550.0,
-  });
+  const r3 = await admin.call(
+    `utility-units/${testUtilityUnitId}/readings`,
+    'POST',
+    {
+      referenceMonth: '2026-07',
+      consumptionKwh: 550.0,
+    },
+    { 'idempotency-key': 'design-reading-create-2026-07' },
+  );
   assert.equal(r3.status, 200);
 
-  const r4 = await admin.call(`utility-units/${testUtilityUnitId}/readings`, 'POST', {
-    referenceMonth: '2026-08',
-    consumptionKwh: 750.0,
-  });
+  const r4 = await admin.call(
+    `utility-units/${testUtilityUnitId}/readings`,
+    'POST',
+    {
+      referenceMonth: '2026-08',
+      consumptionKwh: 750.0,
+    },
+    { 'idempotency-key': 'design-reading-create-2026-08' },
+  );
   assert.equal(r4.status, 200);
 
   // Consulta resumo de consumo da UC
@@ -188,6 +210,173 @@ test('histórico de consumo: calcula média para n meses e sinaliza histórico i
   // Média: (500 + 600 + 550 + 750) / 4 = 2400 / 4 = 600.0
   assert.equal(summary.body.averageMonthlyConsumptionKwh, 600.0);
   assert.equal(summary.body.annualizedConsumptionKwh, 7200.0);
+});
+
+test('leitura mensal não sobrescreve e replay da chave de criação é idempotente', async () => {
+  const replay = await admin.call(
+    `utility-units/${testUtilityUnitId}/readings`,
+    'POST',
+    { referenceMonth: '2026-05', consumptionKwh: 500.0 },
+    { 'idempotency-key': 'design-reading-create-2026-05' },
+  );
+  assert.equal(replay.status, 200);
+  assert.equal(replay.body.id, firstReadingId);
+
+  const duplicate = await admin.call(
+    `utility-units/${testUtilityUnitId}/readings`,
+    'POST',
+    { referenceMonth: '2026-05', consumptionKwh: 999.0 },
+    { 'idempotency-key': 'design-reading-duplicate-2026-05' },
+  );
+  assert.equal(duplicate.status, 409);
+  assert.equal(duplicate.body.code, 'READING_ALREADY_EXISTS');
+
+  const stored = await db.energyReading.findUnique({ where: { id: firstReadingId } });
+  assert.equal(Number(stored.consumptionKwh), 500.0);
+  assert.equal(stored.version, 1);
+});
+
+test('correção cria versão auditável e rejeita replay alterado ou versão desatualizada', async () => {
+  const body = {
+    referenceMonth: '2026-05',
+    consumptionKwh: 575.0,
+    billedAmount: 550.3,
+    source: 'MANUAL',
+    notes: 'Conferida com a fatura enviada.',
+    expectedVersion: 1,
+    correctionReason: 'Valor transcrito incorretamente da fatura.',
+  };
+  const headers = { 'idempotency-key': 'design-reading-correct-2026-05' };
+  const anonymous = new Client();
+  const denied = await anonymous.call(
+    `utility-units/${testUtilityUnitId}/readings/${firstReadingId}/corrections`,
+    'POST',
+    body,
+    { 'idempotency-key': 'design-reading-anonymous-key' },
+  );
+  assert.equal(denied.status, 401);
+
+  const corrected = await admin.call(
+    `utility-units/${testUtilityUnitId}/readings/${firstReadingId}/corrections`,
+    'POST',
+    body,
+    headers,
+  );
+  assert.equal(corrected.status, 200);
+  assert.notEqual(corrected.body.id, firstReadingId);
+  assert.equal(corrected.body.version, 2);
+  assert.equal(corrected.body.status, 'ACTIVE');
+  assert.equal(corrected.body.correctionReason, body.correctionReason);
+
+  const replay = await admin.call(
+    `utility-units/${testUtilityUnitId}/readings/${firstReadingId}/corrections`,
+    'POST',
+    body,
+    headers,
+  );
+  assert.equal(replay.status, 200);
+  assert.equal(replay.body.id, corrected.body.id);
+
+  const keyConflict = await admin.call(
+    `utility-units/${testUtilityUnitId}/readings/${firstReadingId}/corrections`,
+    'POST',
+    { ...body, consumptionKwh: 590.0 },
+    headers,
+  );
+  assert.equal(keyConflict.status, 409);
+  assert.equal(keyConflict.body.code, 'IDEMPOTENCY_CONFLICT');
+
+  const stale = await admin.call(
+    `utility-units/${testUtilityUnitId}/readings/${corrected.body.id}/corrections`,
+    'POST',
+    { ...body, expectedVersion: 1 },
+    { 'idempotency-key': 'design-reading-stale-correction-key' },
+  );
+  assert.equal(stale.status, 409);
+
+  const summary = await admin.call(`utility-units/${testUtilityUnitId}/readings`, 'GET');
+  const may = summary.body.readings.find((reading) => reading.referenceMonth === '2026-05');
+  assert.equal(may.version, 2);
+  assert.equal(may.consumptionKwh, 575.0);
+  assert.equal(may.history.length, 1);
+  assert.equal(may.history[0].id, firstReadingId);
+  assert.equal(may.history[0].status, 'SUPERSEDED');
+  assert.equal(may.history[0].consumptionKwh, 500.0);
+
+  const versions = await db.energyReading.findMany({
+    where: { utilityUnitId: testUtilityUnitId, referenceMonth: '2026-05' },
+    orderBy: { version: 'asc' },
+  });
+  assert.deepEqual(
+    versions.map((reading) => [reading.version, reading.status]),
+    [
+      [1, 'SUPERSEDED'],
+      [2, 'ACTIVE'],
+    ],
+  );
+});
+
+test('correções concorrentes preservam uma única versão ativa', async () => {
+  const active = await db.energyReading.findFirst({
+    where: { utilityUnitId: testUtilityUnitId, referenceMonth: '2026-05', status: 'ACTIVE' },
+  });
+  const correction = {
+    referenceMonth: '2026-05',
+    consumptionKwh: 580.0,
+    expectedVersion: active.version,
+    correctionReason: 'Conferência concorrente da fatura.',
+  };
+  const requests = await Promise.all([
+    admin.call(
+      `utility-units/${testUtilityUnitId}/readings/${active.id}/corrections`,
+      'POST',
+      correction,
+      { 'idempotency-key': 'design-reading-race-correction-a' },
+    ),
+    admin.call(
+      `utility-units/${testUtilityUnitId}/readings/${active.id}/corrections`,
+      'POST',
+      correction,
+      { 'idempotency-key': 'design-reading-race-correction-b' },
+    ),
+  ]);
+  assert.deepEqual(requests.map((response) => response.status).sort(), [200, 409]);
+
+  const activeVersions = await db.energyReading.findMany({
+    where: { utilityUnitId: testUtilityUnitId, referenceMonth: '2026-05', status: 'ACTIVE' },
+  });
+  assert.equal(activeVersions.length, 1);
+  assert.equal(activeVersions[0].version, active.version + 1);
+});
+
+test('exclusão lógica é idempotente e uma nova leitura preserva toda a cadeia de versões', async () => {
+  const active = await db.energyReading.findFirst({
+    where: { utilityUnitId: testUtilityUnitId, referenceMonth: '2026-05', status: 'ACTIVE' },
+  });
+  const headers = { 'idempotency-key': 'design-reading-delete-version-key' };
+  const path = `utility-units/${testUtilityUnitId}/readings/${active.id}`;
+  const deleted = await admin.call(path, 'DELETE', undefined, headers);
+  assert.equal(deleted.status, 200);
+  const replay = await admin.call(path, 'DELETE', undefined, headers);
+  assert.equal(replay.status, 200);
+
+  const preserved = await db.energyReading.findUnique({ where: { id: active.id } });
+  assert.equal(preserved.status, 'DELETED');
+
+  const recreated = await admin.call(
+    `utility-units/${testUtilityUnitId}/readings`,
+    'POST',
+    { referenceMonth: '2026-05', consumptionKwh: 585.0 },
+    { 'idempotency-key': 'design-reading-recreate-month-key' },
+  );
+  assert.equal(recreated.status, 200);
+  assert.equal(recreated.body.version, active.version + 1);
+
+  const summary = await admin.call(`utility-units/${testUtilityUnitId}/readings`, 'GET');
+  const may = summary.body.readings.find((reading) => reading.referenceMonth === '2026-05');
+  assert.equal(may.history.length, active.version);
+  assert.equal(may.history[0].version, active.version);
+  assert.equal(may.history[0].status, 'DELETED');
 });
 
 test('sugestão de dimensionamento: calcula kWp, módulos e inversores compatíveis', async () => {

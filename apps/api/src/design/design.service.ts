@@ -9,6 +9,7 @@ import type {
   CatalogItemViewDto,
   ConsumptionSummaryViewDto,
   CreateCatalogItemDto,
+  CorrectEnergyReadingDto,
   CreateDesignDto,
   CreateEnergyReadingDto,
   CreateSurveyDto,
@@ -31,6 +32,32 @@ function round2(value: number): number {
 
 function round3(value: number): number {
   return Math.round(value * 1000) / 1000;
+}
+
+type EnergyReadingRecord = Prisma.EnergyReadingGetPayload<object>;
+
+function toEnergyReadingVersionView(reading: EnergyReadingRecord) {
+  return {
+    id: reading.id,
+    referenceMonth: reading.referenceMonth,
+    version: reading.version,
+    consumptionKwh: Number(reading.consumptionKwh),
+    injectedKwh: reading.injectedKwh === null ? null : Number(reading.injectedKwh),
+    billedAmount: reading.billedAmount === null ? null : Number(reading.billedAmount),
+    source: reading.source,
+    status: reading.status,
+    correctionReason: reading.correctionReason,
+    notes: reading.notes,
+    createdAt: reading.createdAt.toISOString(),
+  };
+}
+
+function toEnergyReadingView(reading: EnergyReadingRecord) {
+  return {
+    ...toEnergyReadingVersionView(reading),
+    utilityUnitId: reading.utilityUnitId,
+    history: [],
+  };
 }
 
 @Injectable()
@@ -58,17 +85,22 @@ export class DesignService {
       take: 12,
     });
 
-    const readingViews: EnergyReadingViewDto[] = readings.map((r) => ({
-      id: r.id,
-      utilityUnitId: r.utilityUnitId,
-      referenceMonth: r.referenceMonth,
-      consumptionKwh: Number(r.consumptionKwh),
-      injectedKwh: r.injectedKwh ? Number(r.injectedKwh) : null,
-      billedAmount: r.billedAmount ? Number(r.billedAmount) : null,
-      source: r.source,
-      status: r.status,
-      notes: r.notes,
-      createdAt: r.createdAt.toISOString(),
+    const priorVersions = readings.length
+      ? await this.store.db.energyReading.findMany({
+          where: {
+            utilityUnitId,
+            organizationId: context.organizationId,
+            referenceMonth: { in: readings.map((reading) => reading.referenceMonth) },
+            status: { not: 'ACTIVE' },
+          },
+          orderBy: [{ referenceMonth: 'desc' }, { version: 'desc' }],
+        })
+      : [];
+    const readingViews: EnergyReadingViewDto[] = readings.map((reading) => ({
+      ...toEnergyReadingView(reading),
+      history: priorVersions
+        .filter((version) => version.referenceMonth === reading.referenceMonth)
+        .map(toEnergyReadingVersionView),
     }));
 
     const validMonthsCount = readingViews.length;
@@ -88,96 +120,205 @@ export class DesignService {
     };
   }
 
-  async createOrUpdateReading(
+  async createReading(
     context: ContextDto,
     utilityUnitId: string,
     dto: CreateEnergyReadingDto,
+    idempotencyKey: string,
     traceId = 'system',
   ): Promise<EnergyReadingViewDto> {
-    const uc = await this.store.db.utilityUnit.findFirst({
-      where: { id: utilityUnitId, organizationId: context.organizationId },
-    });
-    if (!uc) {
-      fail('UTILITY_UNIT_NOT_FOUND', 'Unidade consumidora não encontrada.', 404);
-    }
+    return this.store.command(
+      context,
+      idempotencyKey,
+      { utilityUnitId, ...dto },
+      'consumer_units:manage',
+      async (tx) => {
+        const uc = await tx.utilityUnit.findFirst({
+          where: { id: utilityUnitId, organizationId: context.organizationId },
+        });
+        if (!uc) fail('UTILITY_UNIT_NOT_FOUND', 'Unidade consumidora não encontrada.', 404);
 
-    return this.store.transaction(async (tx) => {
-      const reading = await tx.energyReading.upsert({
-        where: {
-          utilityUnitId_referenceMonth: {
+        const active = await tx.energyReading.findFirst({
+          where: {
             utilityUnitId,
+            organizationId: context.organizationId,
+            referenceMonth: dto.referenceMonth,
+            status: 'ACTIVE',
+          },
+        });
+        if (active) {
+          fail(
+            'READING_ALREADY_EXISTS',
+            'Este mês já possui uma leitura. Use a ação de correção para criar uma nova versão.',
+            409,
+          );
+        }
+
+        const lastVersion = await tx.energyReading.findFirst({
+          where: {
+            utilityUnitId,
+            organizationId: context.organizationId,
             referenceMonth: dto.referenceMonth,
           },
-        },
-        create: {
-          organizationId: context.organizationId,
-          utilityUnitId,
-          referenceMonth: dto.referenceMonth,
-          consumptionKwh: dto.consumptionKwh,
-          injectedKwh: dto.injectedKwh ?? null,
-          billedAmount: dto.billedAmount ?? null,
-          source: dto.source ?? 'MANUAL',
-          status: 'ACTIVE',
-          notes: dto.notes ?? null,
-        },
-        update: {
-          consumptionKwh: dto.consumptionKwh,
-          injectedKwh: dto.injectedKwh ?? null,
-          billedAmount: dto.billedAmount ?? null,
-          source: dto.source ?? 'MANUAL',
-          status: 'ACTIVE',
-          notes: dto.notes ?? null,
-        },
-      });
+          orderBy: { version: 'desc' },
+        });
+        const reading = await tx.energyReading.create({
+          data: {
+            organizationId: context.organizationId,
+            utilityUnitId,
+            referenceMonth: dto.referenceMonth,
+            consumptionKwh: dto.consumptionKwh,
+            injectedKwh: dto.injectedKwh ?? null,
+            billedAmount: dto.billedAmount ?? null,
+            source: dto.source ?? 'MANUAL',
+            status: 'ACTIVE',
+            version: (lastVersion?.version ?? 0) + 1,
+            correctionReason: null,
+            notes: dto.notes ?? null,
+          },
+        });
 
-      await this.store.audit(
-        tx,
-        'COMMERCIAL_ENERGY_READING_RECORDED',
-        { organizationId: context.organizationId, id: context.id },
-        reading.id,
-        traceId,
-      );
+        await this.store.audit(
+          tx,
+          'COMMERCIAL_ENERGY_READING_RECORDED',
+          context,
+          reading.id,
+          traceId,
+        );
+        return toEnergyReadingView(reading);
+      },
+    );
+  }
 
-      return {
-        id: reading.id,
-        utilityUnitId: reading.utilityUnitId,
-        referenceMonth: reading.referenceMonth,
-        consumptionKwh: Number(reading.consumptionKwh),
-        injectedKwh: reading.injectedKwh ? Number(reading.injectedKwh) : null,
-        billedAmount: reading.billedAmount ? Number(reading.billedAmount) : null,
-        source: reading.source,
-        status: reading.status,
-        notes: reading.notes,
-        createdAt: reading.createdAt.toISOString(),
-      };
-    });
+  async correctReading(
+    context: ContextDto,
+    utilityUnitId: string,
+    readingId: string,
+    dto: CorrectEnergyReadingDto,
+    idempotencyKey: string,
+    traceId = 'system',
+  ): Promise<EnergyReadingViewDto> {
+    return this.store.command(
+      context,
+      idempotencyKey,
+      { utilityUnitId, readingId, ...dto },
+      'consumer_units:manage',
+      async (tx) => {
+        const current = await tx.energyReading.findFirst({
+          where: {
+            id: readingId,
+            utilityUnitId,
+            organizationId: context.organizationId,
+          },
+        });
+        if (!current) fail('READING_NOT_FOUND', 'Leitura de consumo não encontrada.', 404);
+        if (current.status !== 'ACTIVE' || current.version !== dto.expectedVersion) {
+          fail(
+            'CONCURRENT_MODIFICATION',
+            'A leitura foi alterada por outro usuário. Atualize o histórico e tente novamente.',
+            409,
+          );
+        }
+
+        const superseded = await tx.energyReading.updateMany({
+          where: {
+            id: readingId,
+            utilityUnitId,
+            organizationId: context.organizationId,
+            status: 'ACTIVE',
+            version: dto.expectedVersion,
+          },
+          data: { status: 'SUPERSEDED' },
+        });
+        if (!superseded.count) {
+          fail(
+            'CONCURRENT_MODIFICATION',
+            'A leitura foi alterada por outro usuário. Atualize o histórico e tente novamente.',
+            409,
+          );
+        }
+
+        const corrected = await tx.energyReading.create({
+          data: {
+            organizationId: context.organizationId,
+            utilityUnitId,
+            referenceMonth: current.referenceMonth,
+            consumptionKwh: dto.consumptionKwh,
+            injectedKwh: dto.injectedKwh ?? null,
+            billedAmount: dto.billedAmount ?? null,
+            source: dto.source ?? 'MANUAL',
+            status: 'ACTIVE',
+            version: current.version + 1,
+            correctionReason: dto.correctionReason,
+            notes: dto.notes ?? null,
+          },
+        });
+
+        await this.store.audit(
+          tx,
+          'COMMERCIAL_ENERGY_READING_CORRECTED',
+          context,
+          corrected.id,
+          traceId,
+        );
+        return {
+          ...toEnergyReadingView(corrected),
+          history: [toEnergyReadingVersionView(current)],
+        };
+      },
+    );
   }
 
   async deleteReading(
     context: ContextDto,
     utilityUnitId: string,
     readingId: string,
+    idempotencyKey: string,
     traceId = 'system',
   ): Promise<{ success: boolean }> {
-    const reading = await this.store.db.energyReading.findFirst({
-      where: { id: readingId, utilityUnitId, organizationId: context.organizationId },
-    });
-    if (!reading) {
-      fail('READING_NOT_FOUND', 'Leitura de consumo não encontrada.', 404);
-    }
+    return this.store.command(
+      context,
+      idempotencyKey,
+      { utilityUnitId, readingId },
+      'consumer_units:manage',
+      async (tx) => {
+        const reading = await tx.energyReading.findFirst({
+          where: {
+            id: readingId,
+            utilityUnitId,
+            organizationId: context.organizationId,
+            status: 'ACTIVE',
+          },
+        });
+        if (!reading) fail('READING_NOT_FOUND', 'Leitura de consumo não encontrada.', 404);
 
-    await this.store.transaction(async (tx) => {
-      await tx.energyReading.delete({ where: { id: readingId } });
-      await this.store.audit(
-        tx,
-        'COMMERCIAL_ENERGY_READING_DELETED',
-        { organizationId: context.organizationId, id: context.id },
-        readingId,
-        traceId,
-      );
-    });
-
-    return { success: true };
+        const removed = await tx.energyReading.updateMany({
+          where: {
+            id: readingId,
+            utilityUnitId,
+            organizationId: context.organizationId,
+            status: 'ACTIVE',
+            version: reading.version,
+          },
+          data: { status: 'DELETED' },
+        });
+        if (!removed.count) {
+          fail(
+            'CONCURRENT_MODIFICATION',
+            'A leitura foi alterada por outro usuário. Atualize o histórico e tente novamente.',
+            409,
+          );
+        }
+        await this.store.audit(
+          tx,
+          'COMMERCIAL_ENERGY_READING_DELETED',
+          context,
+          readingId,
+          traceId,
+        );
+        return { success: true };
+      },
+    );
   }
 
   // ---------------------------------------------------------------------------
