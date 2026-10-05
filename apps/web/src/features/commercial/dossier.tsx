@@ -7,12 +7,14 @@ import { Icon } from '../../components/icons/material-symbol';
 import { Modal } from '../../components/ui/modal';
 import { Button } from '../../components/ui/button';
 import type { Schemas } from '@moura-solar/api-client';
+import { EnergyImportReview } from './energy-import-review';
 
 export type DossierDocument = Schemas['DossierDocumentViewDto'];
 export type Representative = Schemas['RepresentativeViewDto'];
 type DossierCategoryType = Schemas['CreateDocumentUploadDto']['category'];
 type DeclaredMimeType = Schemas['CreateDocumentUploadDto']['declaredMime'];
 type RepresentativeRoleType = Schemas['CustomerRepresentativeDto']['role'];
+type UtilityUnit = Schemas['UtilityUnitViewDto'];
 
 interface CustomerDossierProps {
   customerId: string;
@@ -20,6 +22,7 @@ interface CustomerDossierProps {
   utilityUnitId?: string;
   projectId?: string;
   title?: string;
+  utilityUnits?: UtilityUnit[];
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -87,6 +90,7 @@ export function CustomerDossier({
   utilityUnitId,
   projectId,
   title = 'Dossiê Documental Permanente',
+  utilityUnits = [],
 }: CustomerDossierProps) {
   const formId = useId();
   const queryClient = useQueryClient();
@@ -163,6 +167,17 @@ export function CustomerDossier({
         }),
       );
     },
+    enabled: !!customerId && canRead,
+  });
+
+  const energyBillsQuery = useQuery({
+    queryKey: ['dossier-energy-bills', customerId],
+    queryFn: () =>
+      result(
+        api.GET('/api/v1/customers/{customerId}/documents', {
+          params: { path: { customerId }, query: { category: 'UTILITY_BILL' } },
+        }),
+      ),
     enabled: !!customerId && canRead,
   });
 
@@ -284,9 +299,13 @@ export function CustomerDossier({
         }),
       );
     },
-    onError: () => queryClient.invalidateQueries({ queryKey: ['dossier-documents', customerId] }),
+    onError: () => {
+      queryClient.invalidateQueries({ queryKey: ['dossier-documents', customerId] });
+      queryClient.invalidateQueries({ queryKey: ['dossier-energy-bills', customerId] });
+    },
     onSuccess: (doc) => {
       queryClient.invalidateQueries({ queryKey: ['dossier-documents', customerId] });
+      queryClient.invalidateQueries({ queryKey: ['dossier-energy-bills', customerId] });
       setUploadNotice(
         doc.currentVersion?.persistenceState === 'READY'
           ? 'Documento verificado e disponível.'
@@ -346,6 +365,7 @@ export function CustomerDossier({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dossier-documents', customerId] });
+      queryClient.invalidateQueries({ queryKey: ['dossier-energy-bills', customerId] });
       setDocumentToArchive(null);
       setArchiveReason('');
     },
@@ -358,7 +378,10 @@ export function CustomerDossier({
           params: { path: { versionId }, header: idempotency('reconcile', versionId) },
         }),
       ),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['dossier-documents', customerId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dossier-documents', customerId] });
+      queryClient.invalidateQueries({ queryKey: ['dossier-energy-bills', customerId] });
+    },
   });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -667,7 +690,21 @@ export function CustomerDossier({
 
       {contextQuery.isError && <Feedback error={contextQuery.error} />}
       {reconcileMutation.isError && <Feedback error={reconcileMutation.error} />}
+      {energyBillsQuery.isError && <Feedback error={energyBillsQuery.error} />}
       {uploadNotice && <p role="status">{uploadNotice}</p>}
+      {me.data && (
+        <EnergyImportReview
+          customer={{ id: customerId }}
+          utilityUnits={utilityUnits}
+          readyDocuments={(energyBillsQuery.data ?? []).filter(
+            (item) =>
+              item.origin === 'DOSSIER' &&
+              item.status === 'ACTIVE' &&
+              item.currentVersion?.persistenceState === 'READY',
+          )}
+          context={me.data}
+        />
+      )}
       {!documentsQuery.isPending && documents.length > 0 && (
         <div
           style={{

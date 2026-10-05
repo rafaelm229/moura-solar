@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, result, allows } from '../identity/client';
 import { Feedback } from '../identity/feedback';
@@ -17,7 +17,14 @@ interface CustomersProps {
 export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersProps) {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('ACTIVE');
+  const [status, setStatus] = useState(() => {
+    if (
+      typeof window !== 'undefined' &&
+      new URLSearchParams(window.location.search).has('customerId')
+    )
+      return 'ALL';
+    return 'ACTIVE';
+  });
   const [isCreating, setIsCreating] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
@@ -154,7 +161,15 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
     setDuplicatesWarning([]);
   }
 
-  const items = customersQuery.data?.items ?? [];
+  const fetchedItems = customersQuery.data?.items;
+  const items = useMemo(() => fetchedItems ?? [], [fetchedItems]);
+
+  useEffect(() => {
+    const customerId = new URLSearchParams(window.location.search).get('customerId');
+    if (!customerId || selectedCustomer?.id === customerId) return;
+    const match = items.find((item) => item.id === customerId);
+    if (match) setSelectedCustomer(match);
+  }, [items, selectedCustomer?.id]);
 
   return (
     <div className="commercial-customers">
@@ -503,7 +518,10 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
                 paddingTop: '1.5rem',
               }}
             >
-              <CustomerDossier customerId={selectedCustomer.id} />
+              <CustomerDossier
+                customerId={selectedCustomer.id}
+                utilityUnits={customerDetailQuery.data?.utilityUnits ?? []}
+              />
             </div>
           </div>
         </section>

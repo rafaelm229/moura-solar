@@ -127,3 +127,25 @@ misturados nessa coleção.
 Validação: `pnpm test:integration` 104/104; suíte isolada do worker 3/3;
 `pnpm check` aprovado; OpenAPI e cliente TypeScript regenerados; `git diff --check`
 aprovado. Nenhuma migration foi necessária nesta fatia.
+
+## Incremento 6B-1 — revisão manual pela web
+
+Implementado em `feat/lote-6-review-ui`.
+
+No dossiê do cliente, pessoas com permissão podem iniciar uma importação a partir
+de uma conta READY e associá-la a uma UC existente. A tela mostra estado e
+candidatos OCR quando disponíveis, mantém confiança/qualidade/validação em sinais
+separados e permite revisar meses manualmente com `KEEP`, `INSERT` ou `REPLACE`,
+incluindo versão e justificativa necessárias. Salvar revisão não altera leituras;
+a confirmação chama o comando transacional existente e exibe o recibo. A URL
+mantém cliente/importação para retomar em outra sessão ou dispositivo, sem estado
+de negócio no armazenamento local.
+
+Limites mantidos: o OCR continua desligado; não há criação de UC na revisão web;
+os valores mensais ainda são digitados manualmente e os candidatos são mostrados
+como evidência, sem seleção automática para a revisão. O documento original abre
+em nova aba para comparação.
+
+Validação: `pnpm check` aprovado; `pnpm test:e2e` 39/39, incluindo o fluxo
+completo em 320, 360, 390, 768, 1024, 1366, 1440 e 1920 px. O contrato OpenAPI e
+cliente foram regenerados para tipar corretamente os opcionais da revisão.
