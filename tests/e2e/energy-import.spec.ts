@@ -92,6 +92,49 @@ for (const [width, height] of [
     await expect(upload).not.toBeVisible();
     await expect(page.getByText('Documento verificado e disponível.')).toBeVisible();
 
+    await page.route('**/api/v1/energy-imports/*', async (route) => {
+      if (route.request().method() !== 'GET') {
+        await route.continue();
+        return;
+      }
+      const response = await route.fetch();
+      const payload = await response.json();
+      await route.fulfill({
+        response,
+        json: {
+          ...payload,
+          candidates: [
+            {
+              id: `00000000-0000-4000-8000-${String(width).padStart(12, '0')}`,
+              attemptId: '00000000-0000-4000-8000-000000000001',
+              field: 'bill.referenceMonth',
+              rawValue: '08/2026',
+              normalizedValue: '2026-08',
+              unit: null,
+              page: 1,
+              region: null,
+              providerConfidence: null,
+              qualitySignals: { readable: true },
+              systemValidation: { valid: true },
+            },
+            {
+              id: `00000000-0000-4000-8000-${String(width + 100).padStart(12, '0')}`,
+              attemptId: '00000000-0000-4000-8000-000000000001',
+              field: 'bill.consumptionKwh',
+              rawValue: '410',
+              normalizedValue: '410.00',
+              unit: 'kWh',
+              page: 1,
+              region: null,
+              providerConfidence: { value: 0.91, scale: '0-1' },
+              qualitySignals: { readable: true },
+              systemValidation: { valid: true },
+            },
+          ],
+        },
+      });
+    });
+
     await page.getByRole('button', { name: 'Importar conta de energia' }).click();
     const dialog = page.getByRole('dialog', { name: 'Importação assistida de conta' });
     await dialog
@@ -102,8 +145,15 @@ for (const [width, height] of [
       .selectOption({ label: `Distribuidora de Teste — UC-${width}-00123` });
     await dialog.getByRole('button', { name: 'Criar importação' }).click();
     await expect(dialog.getByText('Estado: Aguardando revisão')).toBeVisible();
-    await dialog.getByLabel('Mês de referência').fill('2026-08');
+    await expect(
+      dialog.getByRole('heading', { name: 'Dados sugeridos pela extração' }),
+    ).toBeVisible();
+    await dialog.getByRole('table').getByRole('button', { name: 'Adicionar mês' }).click();
+    await dialog.getByLabel('Mês para bill.consumptionKwh página 1').selectOption('2026-08');
+    await dialog.getByRole('button', { name: 'Usar valor' }).click();
+    await expect(dialog.getByLabel('Mês de referência')).toHaveValue('2026-08');
     await dialog.getByLabel('Decisão').selectOption('INSERT');
+    await expect(dialog.getByLabel('Consumo (kWh)')).toHaveValue('410.00');
     await dialog.getByLabel('Consumo (kWh)').fill('421.50');
     await dialog.getByLabel('Energia injetada (kWh)').fill('15.20');
     await dialog.getByLabel('Total faturado (R$)').fill('385.40');

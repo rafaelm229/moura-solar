@@ -1,12 +1,12 @@
 # API proposta — SPEC-014
 
-**Status:** Proposta para revisão
+**Status:** Aprovada para implementação em 05/10/2026
 
 **Versão:** 0.1.0
 
 **Data:** 02/10/2026
 
-Escopo aprovado; contratos detalhados e aparência final sujeitos à revisão humana.
+Escopo e contratos funcionais aprovados em 05/10/2026. Decisões operacionais listadas no plano continuam bloqueios das liberações correspondentes.
 
 Prefixo `/api/v1`. Autenticação M1; permissões propostas `energy_imports:create/read/review/confirm/cancel/retry`, combinadas com `consumer_units:manage`, leitura do cliente e permissão documental por contexto. Atualizar/vincular oportunidade exige também `opportunities:update`. A revisão não concede poder de confirmação. Tudo novo nesta tabela.
 

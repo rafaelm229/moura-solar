@@ -18,6 +18,17 @@ type ReviewMonth = {
   reason: string;
 };
 
+const candidateReviewFields: Record<
+  string,
+  keyof Pick<ReviewMonth, 'consumptionKwh' | 'injectedKwh' | 'billedAmount'>
+> = {
+  'bill.consumptionKwh': 'consumptionKwh',
+  'history.consumptionKwh': 'consumptionKwh',
+  'bill.injectedKwh': 'injectedKwh',
+  'history.injectedKwh': 'injectedKwh',
+  'bill.billedAmount': 'billedAmount',
+};
+
 const newMonth = (): ReviewMonth => ({
   referenceMonth: '',
   decision: '',
@@ -58,6 +69,7 @@ export function EnergyImportReview({
   const [selectedDocumentId, setSelectedDocumentId] = useState('');
   const [selectedUnitId, setSelectedUnitId] = useState('');
   const [months, setMonths] = useState<ReviewMonth[]>([newMonth()]);
+  const [candidateMonthTargets, setCandidateMonthTargets] = useState<Record<string, string>>({});
   const [reviewSaved, setReviewSaved] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const commandKeys = useRef(new Map<string, string>());
@@ -101,6 +113,38 @@ export function EnergyImportReview({
 
   const updateMonth = (index: number, patch: Partial<ReviewMonth>) => {
     setMonths((rows) => rows.map((row, i) => (i === index ? { ...row, ...patch } : row)));
+    setReviewSaved(false);
+  };
+
+  const applyCandidateToReview = (
+    candidate: NonNullable<Schemas['EnergyBillImportViewDto']['candidates']>[number],
+  ) => {
+    if (candidate.field === 'bill.referenceMonth' || candidate.field === 'history.referenceMonth') {
+      const referenceMonth = candidate.normalizedValue;
+      if (!referenceMonth || !/^\d{4}-(0[1-9]|1[0-2])$/.test(referenceMonth)) return;
+      setMonths((rows) => {
+        if (rows.some((row) => row.referenceMonth === referenceMonth)) return rows;
+        const emptyIndex = rows.findIndex((row) => !row.referenceMonth);
+        if (emptyIndex >= 0)
+          return rows.map((row, index) =>
+            index === emptyIndex ? { ...row, referenceMonth } : row,
+          );
+        return [...rows, { ...newMonth(), referenceMonth }];
+      });
+      setReviewSaved(false);
+      return;
+    }
+
+    const field = candidateReviewFields[candidate.field];
+    const referenceMonth = candidateMonthTargets[candidate.id];
+    if (!field || !referenceMonth || !candidate.normalizedValue) return;
+    setMonths((rows) =>
+      rows.map((row) =>
+        row.referenceMonth === referenceMonth
+          ? { ...row, [field]: candidate.normalizedValue }
+          : row,
+      ),
+    );
     setReviewSaved(false);
   };
 
@@ -374,6 +418,7 @@ export function EnergyImportReview({
                           <th>Unidade</th>
                           <th>Página</th>
                           <th>Confiança informada</th>
+                          <th>Usar na revisão</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -392,6 +437,69 @@ export function EnergyImportReview({
                                 {confidence
                                   ? `${confidence.value} (${confidence.scale})`
                                   : 'Não informada'}
+                              </td>
+                              <td>
+                                {candidate.field === 'bill.referenceMonth' ||
+                                candidate.field === 'history.referenceMonth' ? (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    disabled={
+                                      !candidate.normalizedValue ||
+                                      !/^\d{4}-(0[1-9]|1[0-2])$/.test(candidate.normalizedValue) ||
+                                      months.some(
+                                        (month) =>
+                                          month.referenceMonth === candidate.normalizedValue,
+                                      )
+                                    }
+                                    onClick={() => applyCandidateToReview(candidate)}
+                                  >
+                                    Adicionar mês
+                                  </Button>
+                                ) : candidateReviewFields[candidate.field] ? (
+                                  <div
+                                    style={{ display: 'grid', gap: '0.35rem', minWidth: '10rem' }}
+                                  >
+                                    <label>
+                                      Mês da revisão
+                                      <select
+                                        aria-label={`Mês para ${candidate.field} página ${candidate.page ?? 'sem página'}`}
+                                        value={candidateMonthTargets[candidate.id] ?? ''}
+                                        onChange={(event) =>
+                                          setCandidateMonthTargets((targets) => ({
+                                            ...targets,
+                                            [candidate.id]: event.target.value,
+                                          }))
+                                        }
+                                      >
+                                        <option value="">Selecione o mês</option>
+                                        {months
+                                          .filter((month) => month.referenceMonth)
+                                          .map((month) => (
+                                            <option
+                                              value={month.referenceMonth}
+                                              key={month.referenceMonth}
+                                            >
+                                              {month.referenceMonth}
+                                            </option>
+                                          ))}
+                                      </select>
+                                    </label>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      disabled={
+                                        !candidateMonthTargets[candidate.id] ||
+                                        !candidate.normalizedValue
+                                      }
+                                      onClick={() => applyCandidateToReview(candidate)}
+                                    >
+                                      Usar valor
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  'Conferir no documento'
+                                )}
                               </td>
                             </tr>
                           );
