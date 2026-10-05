@@ -109,6 +109,28 @@ export class ProviderConfidenceViewDto {
   @ApiProperty() scale!: string;
 }
 
+export class ImportMonthEvidenceDto {
+  @ApiPropertyOptional({ description: 'Candidato de referência usado para identificar o mês.' })
+  @IsOptional()
+  @IsUUID()
+  referenceMonthCandidateId?: string;
+
+  @ApiPropertyOptional({ description: 'Candidato de consumo usado nesta decisão.' })
+  @IsOptional()
+  @IsUUID()
+  consumptionKwhCandidateId?: string;
+
+  @ApiPropertyOptional({ description: 'Candidato de energia injetada usado nesta decisão.' })
+  @IsOptional()
+  @IsUUID()
+  injectedKwhCandidateId?: string;
+
+  @ApiPropertyOptional({ description: 'Candidato de total faturado usado nesta decisão.' })
+  @IsOptional()
+  @IsUUID()
+  billedAmountCandidateId?: string;
+}
+
 export class ImportMonthDecisionDto {
   @ApiProperty({ example: '2026-08' })
   @IsString()
@@ -148,6 +170,12 @@ export class ImportMonthDecisionDto {
   @IsString()
   @MaxLength(500)
   reason?: string;
+
+  @ApiPropertyOptional({ type: () => ImportMonthEvidenceDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ImportMonthEvidenceDto)
+  evidence?: ImportMonthEvidenceDto;
 }
 
 export class ReviewEnergyBillImportDto {

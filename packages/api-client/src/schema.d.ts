@@ -4790,6 +4790,16 @@ export interface components {
       attempts?: components['schemas']['ExtractionAttemptViewDto'][];
       candidates?: components['schemas']['ExtractionCandidateViewDto'][];
     };
+    ImportMonthEvidenceDto: {
+      /** @description Candidato de referência usado para identificar o mês. */
+      referenceMonthCandidateId?: string;
+      /** @description Candidato de consumo usado nesta decisão. */
+      consumptionKwhCandidateId?: string;
+      /** @description Candidato de energia injetada usado nesta decisão. */
+      injectedKwhCandidateId?: string;
+      /** @description Candidato de total faturado usado nesta decisão. */
+      billedAmountCandidateId?: string;
+    };
     ImportMonthDecisionDto: {
       /** @example 2026-08 */
       referenceMonth: string;
@@ -4803,6 +4813,7 @@ export interface components {
       /** @example 384.92 */
       billedAmount?: string | null;
       reason?: string;
+      evidence?: components['schemas']['ImportMonthEvidenceDto'];
     };
     ReviewEnergyBillImportDto: {
       expectedVersion: number;

@@ -12,15 +12,15 @@ Escopo e contratos funcionais aprovados em 05/10/2026. Decisões operacionais li
 
 EnergyReading já tem organizationId, utilityUnitId, referenceMonth, consumptionKwh, injectedKwh, billedAmount, source e unicidade `(utilityUnitId, referenceMonth)`. Não tem versão explícita; o serviço atual faz upsert. Isso não garante revisão concorrente. Evolução proposta adiciona version e proveniência, mantendo a mesma fonte operacional e endpoint de consulta.
 
-| Entidade proposta     | Conteúdo                                                                                                                                                                                  |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| EnergyBillImport      | organização, customerId FK, utilityUnitId FK opcional, opportunityId FK opcional, documentVersionId FK, estado, version, actor, createdAt, cancellationRequestedAt, appliedAt             |
-| ExtractionAttempt     | importId FK, attemptNumber único, adapter/model/version, operationId externo, lease/heartbeat, início/fim, páginas, latência, custo estimado/real e moeda, erro seguro, próxima tentativa |
-| ExtractionCandidate   | attemptId FK, campo, valor bruto/normalizado, unidade, página/região, providerConfidence opcional e escala original, qualitySignals e systemValidation separados                          |
-| ImportReview          | importId FK, revisão imutável, autor/data, decisões por campo/mês, valor anterior, valor confirmado, justificativa, versões de base e digest                                              |
-| EnergyReadingRevision | readingId FK, version, valores anteriores/novos, revisão/import/documentVersion FKs opcionais, autor/origem; append-only, também para mudanças manuais futuras                            |
-| ImportApplication     | importId único, revisão FK, payloadHash, recibo, IDs/versões aplicados, idempotencyKey, committedAt                                                                                       |
-| ImportOutbox          | evento e chave únicos, payload mínimo, estado/lease/tentativas; gravado junto à mudança que publica                                                                                       |
+| Entidade proposta     | Conteúdo                                                                                                                                                                                       |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| EnergyBillImport      | organização, customerId FK, utilityUnitId FK opcional, opportunityId FK opcional, documentVersionId FK, estado, version, actor, createdAt, cancellationRequestedAt, appliedAt                  |
+| ExtractionAttempt     | importId FK, attemptNumber único, adapter/model/version, operationId externo, lease/heartbeat, início/fim, páginas, latência, custo estimado/real e moeda, erro seguro, próxima tentativa      |
+| ExtractionCandidate   | attemptId FK, campo, valor bruto/normalizado, unidade, página/região, providerConfidence opcional e escala original, qualitySignals e systemValidation separados                               |
+| ImportReview          | importId FK, revisão imutável, autor/data, decisões por campo/mês, IDs de ExtractionCandidate usados como evidência, valor anterior, valor confirmado, justificativa, versões de base e digest |
+| EnergyReadingRevision | readingId FK, version, valores anteriores/novos, revisão/import/documentVersion FKs opcionais, autor/origem; append-only, também para mudanças manuais futuras                                 |
+| ImportApplication     | importId único, revisão FK, payloadHash, recibo, IDs/versões aplicados, idempotencyKey, committedAt                                                                                            |
+| ImportOutbox          | evento e chave únicos, payload mínimo, estado/lease/tentativas; gravado junto à mudança que publica                                                                                            |
 
 Candidatos e revisão são evidência, não uma série de consumo paralela usada em cálculo. Endpoints manuais e importador devem usar o mesmo caso de uso transacional de leituras com versão. Não encadear N chamadas HTTP de upsert. EnergyReading conserva unicidade; valor faturado e injetado nulos não são zero.
 

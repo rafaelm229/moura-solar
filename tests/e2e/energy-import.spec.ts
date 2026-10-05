@@ -92,6 +92,13 @@ for (const [width, height] of [
     await expect(upload).not.toBeVisible();
     await expect(page.getByText('Documento verificado e disponível.')).toBeVisible();
 
+    let candidateEvidenceSubmitted = false;
+    await page.route('**/api/v1/energy-imports/*/review', async (route) => {
+      const body = route.request().postDataJSON();
+      candidateEvidenceSubmitted = Boolean(body.months?.[0]?.evidence?.consumptionKwhCandidateId);
+      body.months.forEach((month: { evidence?: unknown }) => delete month.evidence);
+      await route.continue({ postData: JSON.stringify(body) });
+    });
     await page.route('**/api/v1/energy-imports/*', async (route) => {
       if (route.request().method() !== 'GET') {
         await route.continue();
@@ -161,9 +168,16 @@ for (const [width, height] of [
     await expect(
       dialog.getByText('Revisão salva. A leitura ainda não foi alterada.'),
     ).toBeVisible();
-    await dialog.getByRole('button', { name: 'Confirmar importação' }).click();
-    await expect(dialog.getByText('Importação confirmada')).toBeVisible();
-    await expect(dialog.getByText('Estado: Aplicada')).toBeVisible();
+    expect(candidateEvidenceSubmitted).toBe(true);
+    await page.reload();
+    const resumedDialog = page.getByRole('dialog', { name: 'Importação assistida de conta' });
+    await expect(resumedDialog).toBeVisible();
+    await expect(resumedDialog.getByLabel('Mês de referência')).toHaveValue('2026-08');
+    await expect(resumedDialog.getByLabel('Decisão')).toHaveValue('INSERT');
+    await expect(resumedDialog.getByLabel('Consumo (kWh)')).toHaveValue('421.50');
+    await resumedDialog.getByRole('button', { name: 'Confirmar importação' }).click();
+    await expect(resumedDialog.getByText('Importação confirmada')).toBeVisible();
+    await expect(resumedDialog.getByText('Estado: Aplicada')).toBeVisible();
     await expect
       .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
       .toBe(true);

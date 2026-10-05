@@ -35,6 +35,13 @@ const normalizeMonths = (months: ImportMonthDecisionDto[]) =>
       injectedKwh: month.injectedKwh ?? null,
       billedAmount: month.billedAmount ?? null,
       reason: month.reason?.trim() || null,
+      ...(month.evidence && Object.values(month.evidence).some(Boolean)
+        ? {
+            evidence: Object.fromEntries(
+              Object.entries(month.evidence).filter(([, candidateId]) => !!candidateId),
+            ),
+          }
+        : {}),
     }))
     .sort((left, right) => left.referenceMonth.localeCompare(right.referenceMonth));
 
@@ -306,6 +313,53 @@ export class EnergyImportService {
         const months = normalizeMonths(dto.months);
         if (new Set(months.map((month) => month.referenceMonth)).size !== months.length)
           fail('INVALID_REVIEW', 'Cada mês pode aparecer uma única vez na revisão.', 422);
+        const evidenceMappings = {
+          referenceMonthCandidateId: ['bill.referenceMonth', 'history.referenceMonth'],
+          consumptionKwhCandidateId: ['bill.consumptionKwh', 'history.consumptionKwh'],
+          injectedKwhCandidateId: ['bill.injectedKwh', 'history.injectedKwh'],
+          billedAmountCandidateId: ['bill.billedAmount'],
+        } as const;
+        const evidenceReferences = months.flatMap((month) =>
+          Object.entries(evidenceMappings).flatMap(([key]) => {
+            const candidateId = (month.evidence as Record<string, string> | undefined)?.[key];
+            return candidateId ? [{ month, key, candidateId }] : [];
+          }),
+        );
+        const evidenceIds = evidenceReferences.map((item) => item.candidateId);
+        if (new Set(evidenceIds).size !== evidenceIds.length)
+          fail(
+            'INVALID_REVIEW_EVIDENCE',
+            'Cada candidato pode ser usado uma vez por revisão.',
+            422,
+          );
+        if (evidenceIds.length) {
+          const candidates = await tx.extractionCandidate.findMany({
+            where: {
+              importId,
+              id: { in: evidenceIds },
+              attemptId: { not: null },
+              attempt: { is: { importId } },
+            },
+            select: { id: true, field: true, normalizedValue: true },
+          });
+          const candidateById = new Map(candidates.map((candidate) => [candidate.id, candidate]));
+          for (const evidence of evidenceReferences) {
+            const candidate = candidateById.get(evidence.candidateId);
+            const expectedFields = evidenceMappings[evidence.key as keyof typeof evidenceMappings];
+            if (
+              !candidate ||
+              !(expectedFields as readonly string[]).includes(candidate.field) ||
+              !candidate.normalizedValue ||
+              (evidence.key === 'referenceMonthCandidateId' &&
+                candidate.normalizedValue !== evidence.month.referenceMonth)
+            )
+              fail(
+                'INVALID_REVIEW_EVIDENCE',
+                'O candidato selecionado não pertence à importação ou ao campo revisado.',
+                422,
+              );
+          }
+        }
         const currentReadings = await tx.energyReading.findMany({
           where: {
             utilityUnitId: utilityUnit.id,
