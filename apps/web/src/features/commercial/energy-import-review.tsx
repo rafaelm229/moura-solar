@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Schemas } from '@moura-solar/api-client';
 import { Button } from '../../components/ui/button';
@@ -16,6 +16,24 @@ type ReviewMonth = {
   injectedKwh: string;
   billedAmount: string;
   reason: string;
+  evidence: Partial<
+    Record<
+      | 'referenceMonthCandidateId'
+      | 'consumptionKwhCandidateId'
+      | 'injectedKwhCandidateId'
+      | 'billedAmountCandidateId',
+      string
+    >
+  >;
+};
+type SavedReviewMonth = {
+  referenceMonth: string;
+  decision: 'KEEP' | 'INSERT' | 'REPLACE';
+  consumptionKwh?: string | null;
+  injectedKwh?: string | null;
+  billedAmount?: string | null;
+  reason?: string | null;
+  evidence?: ReviewMonth['evidence'];
 };
 
 const candidateReviewFields: Record<
@@ -29,6 +47,14 @@ const candidateReviewFields: Record<
   'bill.billedAmount': 'billedAmount',
 };
 
+const candidateEvidenceFields: Record<string, keyof ReviewMonth['evidence']> = {
+  'bill.consumptionKwh': 'consumptionKwhCandidateId',
+  'history.consumptionKwh': 'consumptionKwhCandidateId',
+  'bill.injectedKwh': 'injectedKwhCandidateId',
+  'history.injectedKwh': 'injectedKwhCandidateId',
+  'bill.billedAmount': 'billedAmountCandidateId',
+};
+
 const newMonth = (): ReviewMonth => ({
   referenceMonth: '',
   decision: '',
@@ -36,6 +62,7 @@ const newMonth = (): ReviewMonth => ({
   injectedKwh: '',
   billedAmount: '',
   reason: '',
+  evidence: {},
 });
 
 const labels: Record<string, string> = {
@@ -107,6 +134,7 @@ export function EnergyImportReview({
     setSelectedDocumentId('');
     setSelectedUnitId('');
     setMonths([newMonth()]);
+    setCandidateMonthTargets({});
     setReviewSaved(false);
     setIsOpen(true);
   };
@@ -123,25 +151,58 @@ export function EnergyImportReview({
       const referenceMonth = candidate.normalizedValue;
       if (!referenceMonth || !/^\d{4}-(0[1-9]|1[0-2])$/.test(referenceMonth)) return;
       setMonths((rows) => {
-        if (rows.some((row) => row.referenceMonth === referenceMonth)) return rows;
+        const matchingIndex = rows.findIndex((row) => row.referenceMonth === referenceMonth);
+        if (matchingIndex >= 0)
+          return rows.map((row, index) =>
+            index === matchingIndex
+              ? {
+                  ...row,
+                  evidence: {
+                    ...row.evidence,
+                    referenceMonthCandidateId: candidate.id,
+                  },
+                }
+              : row,
+          );
         const emptyIndex = rows.findIndex((row) => !row.referenceMonth);
         if (emptyIndex >= 0)
           return rows.map((row, index) =>
-            index === emptyIndex ? { ...row, referenceMonth } : row,
+            index === emptyIndex
+              ? {
+                  ...row,
+                  referenceMonth,
+                  evidence: {
+                    ...row.evidence,
+                    referenceMonthCandidateId: candidate.id,
+                  },
+                }
+              : row,
           );
-        return [...rows, { ...newMonth(), referenceMonth }];
+        return [
+          ...rows,
+          {
+            ...newMonth(),
+            referenceMonth,
+            evidence: { referenceMonthCandidateId: candidate.id },
+          },
+        ];
       });
       setReviewSaved(false);
       return;
     }
 
     const field = candidateReviewFields[candidate.field];
+    const evidenceField = candidateEvidenceFields[candidate.field];
     const referenceMonth = candidateMonthTargets[candidate.id];
-    if (!field || !referenceMonth || !candidate.normalizedValue) return;
+    if (!field || !evidenceField || !referenceMonth || !candidate.normalizedValue) return;
     setMonths((rows) =>
       rows.map((row) =>
         row.referenceMonth === referenceMonth
-          ? { ...row, [field]: candidate.normalizedValue }
+          ? {
+              ...row,
+              [field]: candidate.normalizedValue,
+              evidence: { ...row.evidence, [evidenceField]: candidate.id },
+            }
           : row,
       ),
     );
@@ -174,6 +235,33 @@ export function EnergyImportReview({
       ),
     enabled: !!importQuery.data?.utilityUnitId && canReadUnits,
   });
+
+  const savedReview = importQuery.data?.latestReview as
+    { id?: string; months?: { months?: SavedReviewMonth[] } } | undefined;
+
+  useEffect(() => {
+    const savedMonths = savedReview?.months?.months;
+    if (!importId || !savedReview?.id || !savedMonths?.length) return;
+    setMonths(
+      savedMonths.map((month) => ({
+        referenceMonth: month.referenceMonth,
+        decision: month.decision,
+        consumptionKwh: month.consumptionKwh ?? '',
+        injectedKwh: month.injectedKwh ?? '',
+        billedAmount: month.billedAmount ?? '',
+        reason: month.reason ?? '',
+        evidence: month.evidence ?? {},
+      })),
+    );
+    const targets: Record<string, string> = {};
+    for (const month of savedMonths) {
+      for (const candidateId of Object.values(month.evidence ?? {})) {
+        if (candidateId) targets[candidateId] = month.referenceMonth;
+      }
+    }
+    setCandidateMonthTargets(targets);
+    setReviewSaved(true);
+  }, [importId, savedReview?.id, savedReview?.months?.months]);
 
   const createMutation = useMutation({
     mutationFn: () => {
@@ -231,6 +319,7 @@ export function EnergyImportReview({
             ...(month.decision === 'REPLACE' && month.reason.trim()
               ? { reason: month.reason.trim() }
               : {}),
+            ...(Object.keys(month.evidence).length ? { evidence: month.evidence } : {}),
           };
         }),
       };
@@ -557,6 +646,12 @@ export function EnergyImportReview({
                                 updateMonth(index, {
                                   referenceMonth: event.target.value,
                                   decision: '',
+                                  evidence: {
+                                    ...month.evidence,
+                                    ...(event.target.value === month.referenceMonth
+                                      ? {}
+                                      : { referenceMonthCandidateId: undefined }),
+                                  },
                                 })
                               }
                             />
@@ -635,6 +730,12 @@ export function EnergyImportReview({
                         {existing && (
                           <p>
                             Leitura atual: {existing.consumptionKwh} kWh · versão {existing.version}
+                          </p>
+                        )}
+                        {Object.values(month.evidence).some(Boolean) && (
+                          <p>
+                            Candidatos vinculados como evidência; confira os valores antes de
+                            salvar.
                           </p>
                         )}
                         {months.length > 1 && (

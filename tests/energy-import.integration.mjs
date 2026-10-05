@@ -394,6 +394,58 @@ test('manual review is immutable and confirmation atomically applies versions wi
   );
   assert.equal(created.status, 201, JSON.stringify(created.body));
 
+  const extractionAttempt = await db.extractionAttempt.create({
+    data: {
+      organizationId,
+      importId: created.body.id,
+      attemptNumber: 1,
+      correlationId: randomUUID(),
+      status: 'SUCCEEDED',
+    },
+  });
+  const extractionCandidate = await db.extractionCandidate.create({
+    data: {
+      importId: created.body.id,
+      attemptId: extractionAttempt.id,
+      source: 'OCR',
+      field: 'bill.consumptionKwh',
+      rawValue: '500',
+      normalizedValue: '500.00',
+      unit: 'kWh',
+      page: 1,
+      qualitySignals: { readable: true },
+      systemValidation: { valid: true },
+    },
+  });
+  const foreignVersionId = await createReadyDocument(customerId, 'READY', true, 'foreign');
+  const foreignImport = await admin.call(
+    `customers/${customerId}/energy-imports`,
+    'POST',
+    { documentVersionId: foreignVersionId, utilityUnitId },
+    { 'idempotency-key': 'energy-import-foreign-evidence-intake-key' },
+  );
+  const foreignAttempt = await db.extractionAttempt.create({
+    data: {
+      organizationId,
+      importId: foreignImport.body.id,
+      attemptNumber: 1,
+      correlationId: randomUUID(),
+      status: 'SUCCEEDED',
+    },
+  });
+  const foreignCandidate = await db.extractionCandidate.create({
+    data: {
+      importId: foreignImport.body.id,
+      attemptId: foreignAttempt.id,
+      source: 'OCR',
+      field: 'bill.consumptionKwh',
+      normalizedValue: '500.00',
+      unit: 'kWh',
+      qualitySignals: { readable: true },
+      systemValidation: { valid: true },
+    },
+  });
+
   const initialReview = {
     expectedVersion: 1,
     months: [
@@ -409,12 +461,36 @@ test('manual review is immutable and confirmation atomically applies versions wi
       {
         referenceMonth: '2026-08',
         decision: 'INSERT',
-        consumptionKwh: '500.00',
+        consumptionKwh: '510.00',
         injectedKwh: '10.00',
         billedAmount: '450.00',
+        evidence: { consumptionKwhCandidateId: extractionCandidate.id },
       },
     ],
   };
+  const wrongFieldReview = structuredClone(initialReview);
+  wrongFieldReview.months[1].evidence = { billedAmountCandidateId: extractionCandidate.id };
+  const wrongFieldResult = await admin.call(
+    `energy-imports/${created.body.id}/review`,
+    'PUT',
+    wrongFieldReview,
+    { 'idempotency-key': 'energy-import-review-wrong-candidate-field-key' },
+  );
+  assert.equal(wrongFieldResult.status, 422);
+  assert.equal(wrongFieldResult.body.code, 'INVALID_REVIEW_EVIDENCE');
+  const foreignEvidenceReview = structuredClone(initialReview);
+  foreignEvidenceReview.months[1].evidence = {
+    consumptionKwhCandidateId: foreignCandidate.id,
+  };
+  const foreignEvidenceResult = await admin.call(
+    `energy-imports/${created.body.id}/review`,
+    'PUT',
+    foreignEvidenceReview,
+    { 'idempotency-key': 'energy-import-review-foreign-evidence-key' },
+  );
+  assert.equal(foreignEvidenceResult.status, 422);
+  assert.equal(foreignEvidenceResult.body.code, 'INVALID_REVIEW_EVIDENCE');
+
   const reviewHeaders = { 'idempotency-key': 'energy-import-review-first-key' };
   const reviewed = await admin.call(
     `energy-imports/${created.body.id}/review`,
@@ -427,6 +503,9 @@ test('manual review is immutable and confirmation atomically applies versions wi
   assert.equal(reviewed.body.version, 2);
   assert.equal(reviewed.body.latestReview.revision, 1);
   assert.equal(typeof reviewed.body.latestReview.digest, 'string');
+  assert.deepEqual(reviewed.body.latestReview.months.months[1].evidence, {
+    consumptionKwhCandidateId: extractionCandidate.id,
+  });
 
   const replayReview = await admin.call(
     `energy-imports/${created.body.id}/review`,
@@ -435,7 +514,7 @@ test('manual review is immutable and confirmation atomically applies versions wi
     reviewHeaders,
   );
   assert.equal(replayReview.body.latestReview.id, reviewed.body.latestReview.id);
-  assert.equal(await db.extractionCandidate.count({ where: { importId: created.body.id } }), 6);
+  assert.equal(await db.extractionCandidate.count({ where: { importId: created.body.id } }), 7);
 
   const mayReading = await db.energyReading.findFirst({
     where: { utilityUnitId, referenceMonth: '2026-05', status: 'ACTIVE' },
@@ -540,6 +619,7 @@ test('manual review is immutable and confirmation atomically applies versions wi
       ['2026-08', 1, 'IMPORT'],
     ],
   );
+  assert.equal(activeReadings[1].consumptionKwh.toString(), '510');
   assert.ok(activeReadings.every((reading) => reading.sourceImportId === created.body.id));
   assert.equal(
     await db.energyReadingRevision.count({ where: { sourceImportId: created.body.id } }),

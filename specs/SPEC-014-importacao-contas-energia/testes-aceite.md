@@ -22,7 +22,7 @@ Testes futuros. Reaproveitar tests/design.integration.mjs e tests/e2e/design.spe
 | T-IMP-08 | IMP-01, IMP-10 | Documento ilegível, fornecedor fora, timeout e limite de orçamento; erro acionável, original disponível e entrada manual operante                               |
 | T-IMP-09 | IMP-10         | Cancelar durante OCR/confirmar; resultado atrasado ignorado; apenas transição vencedora produz efeito                                                           |
 | T-IMP-10 | IMP-11, IMP-12 | Trocar adapter mantendo fixture normalizada; documento com instruções maliciosas não executa comandos; ausência de confidence não gera percentual               |
-| T-IMP-11 | IMP-01, IMP-12 | Teclado, sete viewports, câmera, zoom e erro de revisão; documento/campo comparáveis, foco preservado e alterações protegidas                                   |
+| T-IMP-11 | IMP-01, IMP-12 | Teclado, sete viewports, câmera, zoom e erro de revisão; documento/campo comparáveis, seleção de candidato vinculada ao mês/campo e alterações protegidas       |
 | T-IMP-12 | IMP-06, IMP-07 | Revogar grant entre upload/revisão/confirm; API nega sem expor candidato ou mutar consumo; replay revalida autorização                                          |
 
 PoC deve reportar taxa de correção por campo, cobertura de meses, erro crítico de UC/mês/unidade, latência, custo por conta e taxa de fallback manual por distribuidora/formato. Não declarar precisão da produção por amostra pequena.

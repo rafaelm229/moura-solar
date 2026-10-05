@@ -159,6 +159,25 @@ decisão `KEEP`/`INSERT`/`REPLACE`, não salva nem confirma. Campos sem mapeamen
 mensal permanecem evidência para conferência no documento.
 
 Validação E2E cobre seleção e edição posterior do valor antes da confirmação em
-320, 360, 390, 768, 1024, 1366, 1440 e 1920 px. A API guarda os candidatos e os
-valores revisados; ainda não registra uma relação explícita por campo entre o
-candidato selecionado e o valor final da revisão.
+320, 360, 390, 768, 1024, 1366, 1440 e 1920 px. A API guarda os candidatos e
+persiste na revisão os IDs selecionados por mês e campo. Valida vínculo com a
+importação, compatibilidade do campo e mês, e rejeita reuso do mesmo candidato.
+A proveniência continua recuperável pela leitura e sua revisão imutável, sem
+copiar conteúdo bruto para a leitura operacional.
+
+## Incremento 6B-3 — proveniência da revisão e retomada
+
+A revisão da API aceita referências opcionais aos candidatos de referência,
+consumo, injeção e total faturado. O servidor confere que cada candidato e sua
+tentativa pertencem à mesma importação, que o campo é compatível e que o mês
+normalizado corresponde. Os IDs ficam no JSON imutável da revisão, acessível
+pela leitura criada e seu `sourceReviewId`, mesmo se a pessoa corrigir o valor
+sugerido; o consumo operacional não recebe texto bruto OCR.
+
+Ao reabrir uma revisão `REVIEW_REQUIRED` pela URL, a web restaura mês, decisão,
+valores, justificativa e vínculos de candidatos do rascunho persistido. A pessoa
+pode continuar editando e precisa salvar novamente antes de confirmar.
+
+Validação: integração do importador 6/6, incluindo campo incompatível, candidato
+de outra importação e leitura final corrigida em relação ao candidato; E2E 8/8
+com retomada do rascunho e confirmação nos oito viewports.

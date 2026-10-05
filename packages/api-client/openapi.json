@@ -11924,6 +11924,27 @@
           "appliedAt"
         ]
       },
+      "ImportMonthEvidenceDto": {
+        "type": "object",
+        "properties": {
+          "referenceMonthCandidateId": {
+            "type": "string",
+            "description": "Candidato de referência usado para identificar o mês."
+          },
+          "consumptionKwhCandidateId": {
+            "type": "string",
+            "description": "Candidato de consumo usado nesta decisão."
+          },
+          "injectedKwhCandidateId": {
+            "type": "string",
+            "description": "Candidato de energia injetada usado nesta decisão."
+          },
+          "billedAmountCandidateId": {
+            "type": "string",
+            "description": "Candidato de total faturado usado nesta decisão."
+          }
+        }
+      },
       "ImportMonthDecisionDto": {
         "type": "object",
         "properties": {
@@ -11957,6 +11978,9 @@
           "reason": {
             "type": "string",
             "maxLength": 500
+          },
+          "evidence": {
+            "$ref": "#/components/schemas/ImportMonthEvidenceDto"
           }
         },
         "required": ["referenceMonth", "decision"]
