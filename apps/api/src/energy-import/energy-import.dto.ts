@@ -59,6 +59,29 @@ export class EnergyBillImportViewDto {
   @ApiProperty({ type: String, nullable: true }) appliedAt!: string | null;
   @ApiPropertyOptional({ type: Object }) latestReview?: Record<string, unknown>;
   @ApiPropertyOptional({ type: Object }) applicationReceipt?: Record<string, unknown>;
+  @ApiPropertyOptional({ type: () => [ExtractionAttemptViewDto] })
+  attempts?: ExtractionAttemptViewDto[];
+}
+
+export class ExtractionAttemptViewDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() attemptNumber!: number;
+  @ApiProperty({
+    enum: ['CLAIMED', 'SUBMITTING', 'SUBMITTED', 'UNKNOWN', 'FAILED', 'SUCCEEDED', 'CANCELED'],
+  })
+  status!: string;
+  @ApiProperty({ type: String, nullable: true }) adapterName!: string | null;
+  @ApiProperty({ type: String, nullable: true }) modelName!: string | null;
+  @ApiProperty({ type: String, nullable: true }) modelVersion!: string | null;
+  @ApiProperty({ type: String, nullable: true }) externalOperationId!: string | null;
+  @ApiProperty({ type: String, nullable: true }) errorCode!: string | null;
+  @ApiProperty({ type: Boolean, nullable: true }) retryable!: boolean | null;
+  @ApiProperty() startedAt!: string;
+  @ApiProperty({ type: String, nullable: true }) finishedAt!: string | null;
+  @ApiProperty({ type: Number, nullable: true }) chargedPages!: number | null;
+  @ApiProperty({ type: String, nullable: true }) estimatedCost!: string | null;
+  @ApiProperty({ type: String, nullable: true }) actualCost!: string | null;
+  @ApiProperty({ type: String, nullable: true }) currency!: string | null;
 }
 
 export class ImportMonthDecisionDto {
