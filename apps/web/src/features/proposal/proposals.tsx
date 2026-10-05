@@ -38,6 +38,9 @@ export interface ProposalVersionView {
   versionNumber: number;
   status:
     | 'DRAFT'
+    | 'PENDING_APPROVAL'
+    | 'APPROVED'
+    | 'GENERATING'
     | 'READY'
     | 'SENT'
     | 'VIEWED'
@@ -45,7 +48,8 @@ export interface ProposalVersionView {
     | 'REJECTED'
     | 'EXPIRED'
     | 'SUPERSEDED'
-    | 'CANCELED';
+    | 'CANCELED'
+    | 'GENERATION_FAILED';
   systemPowerKwp?: number | string;
   estimatedMonthlyGenerationKwh?: number | string;
   totalInvestmentAmount?: number | string;
@@ -80,21 +84,50 @@ export interface ProposalView {
 
 const proposalStatusLabels: Record<ProposalVersionView['status'], string> = {
   DRAFT: 'Rascunho',
+  PENDING_APPROVAL: 'Aguardando aprovação',
+  APPROVED: 'Aprovada para geração',
+  GENERATING: 'Gerando documento',
   READY: 'Pronta para envio',
   SENT: 'Enviada ao cliente',
   VIEWED: 'Visualizada pelo cliente',
   ACCEPTED: 'Aceita',
   REJECTED: 'Recusada',
   EXPIRED: 'Vencida',
-  SUPERSEDED: 'Substituída por outra versão',
+  SUPERSEDED: 'Substituída',
   CANCELED: 'Cancelada',
+  GENERATION_FAILED: 'Falha ao gerar documento',
 };
 
 const acceptanceMethodLabels: Record<string, string> = {
-  SIGNED_DOCUMENT: 'documento assinado',
-  MESSAGE: 'mensagem',
-  IN_PERSON: 'presencialmente',
+  SIGNED_DOCUMENT: 'documento assinado em papel',
+  MESSAGE: 'confirmação por mensagem',
+  IN_PERSON: 'aceite presencial',
   E_SIGNATURE: 'assinatura eletrônica',
+};
+
+const deliveryChannelLabels: Record<string, string> = {
+  WHATSAPP: 'WhatsApp',
+  EMAIL: 'e-mail',
+  IN_PERSON: 'presencial',
+  MANUAL: 'outro canal',
+};
+
+export const opportunityStateLabels: Record<string, string> = {
+  NOVO: 'Novo',
+  NOVA: 'Nova',
+  CONTATO_INICIAL: 'Contato inicial',
+  QUALIFICACAO: 'Qualificação',
+  QUALIFICADO: 'Qualificado',
+  VISITA_TECNICA: 'Visita técnica',
+  LEVANTAMENTO: 'Levantamento',
+  DIMENSIONAMENTO: 'Dimensionamento',
+  PROPOSTA: 'Proposta',
+  PROPOSTA_APRESENTADA: 'Proposta apresentada',
+  NEGOCIACAO: 'Em negociação',
+  CONTRATACAO: 'Em contratação',
+  VENDIDO: 'Vendido',
+  PERDIDO: 'Perdido',
+  CANCELADO: 'Cancelado',
 };
 
 function formatCurrency(value: number | string | undefined) {
@@ -129,7 +162,7 @@ export function Proposals({
   const [selectedDesignVersionId, setSelectedDesignVersionId] = useState('');
   const [validityDays, setValidityDays] = useState(10);
   const [paymentConditionsText, setPaymentConditionsText] = useState(
-    'À vista com 5% de desconto especial ou Financiamento Bancário Solar em até 84 parcelas.',
+    'À vista, com desconto especial de 5%, ou financiamento bancário para energia solar em até 84 parcelas.',
   );
   const [observations, setObservations] = useState('');
 
@@ -368,7 +401,7 @@ export function Proposals({
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error(err);
-      alert('Não foi possível fazer download do PDF. Tente novamente.');
+      alert('Não foi possível baixar o arquivo da proposta. Tente novamente.');
     } finally {
       setDownloadingVersionId(null);
     }
@@ -402,11 +435,12 @@ export function Proposals({
             }}
           >
             <span className="device">
-              Geração de PDFs padronizados, controle de versões, registro de envios e aceite formal.
+              Gere a proposta, acompanhe suas versões e registre o envio e a resposta do cliente.
             </span>
             {opportunityState && (
               <span className={`badge badge-${opportunityState.toLowerCase()}`}>
-                {opportunityState}
+                {opportunityStateLabels[opportunityState] ??
+                  opportunityState.replaceAll('_', ' ').toLocaleLowerCase('pt-BR')}
               </span>
             )}
           </div>
@@ -446,7 +480,7 @@ export function Proposals({
             }}
           >
             <h4 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <Icon name="description" size={20} /> Emitir Nova Proposta Comercial (PDF)
+              <Icon name="description" size={20} /> Emitir nova proposta comercial (arquivo PDF)
             </h4>
             <button
               type="button"
@@ -529,7 +563,7 @@ export function Proposals({
                     value={validityDays}
                     onChange={(e) => setValidityDays(parseInt(e.target.value, 10) || 10)}
                   />
-                  <small className="device">Padrão SPEC-006: 10 dias corridos</small>
+                  <small className="device">Prazo padrão: 10 dias corridos</small>
                 </label>
 
                 <label style={{ gridColumn: '1 / -1' }}>
@@ -582,8 +616,8 @@ export function Proposals({
                   disabled={createProposalMutation.isPending || !selectedDesignVersionId}
                 >
                   {createProposalMutation.isPending
-                    ? 'Gerando PDF…'
-                    : 'Gerar Proposta e PDF Oficial'}
+                    ? 'Gerando arquivo PDF…'
+                    : 'Gerar proposta e arquivo PDF'}
                 </button>
               </div>
             </form>
@@ -613,8 +647,8 @@ export function Proposals({
           </div>
           <h4 style={{ margin: '0.5rem 0' }}>Nenhuma proposta emitida</h4>
           <p className="device" style={{ maxWidth: '28rem', margin: '0 auto 1.5rem auto' }}>
-            Converta dimensionamentos aprovados em propostas comerciais formais completas com PDF
-            para envio ao cliente via WhatsApp ou E-mail.
+            Crie uma proposta a partir de um dimensionamento aprovado. Depois, gere o arquivo PDF e
+            registre como ele foi entregue ao cliente.
           </p>
           {!readonly && canCreate && (
             <button
@@ -888,7 +922,7 @@ export function Proposals({
                           </div>
                           <details style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                             <summary style={{ cursor: 'pointer' }}>Integridade do arquivo</summary>
-                            <span>Hash SHA: {doc.contentHash}</span>
+                            <span>Código de integridade SHA: {doc.contentHash}</span>
                           </details>
                           <button
                             type="button"
@@ -922,8 +956,7 @@ export function Proposals({
                           }}
                         >
                           <strong style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                            <Icon name="check_circle" size={18} /> Proposta Comercial Aceita
-                            Formalmente
+                            <Icon name="check_circle" size={18} /> Aceite formal registrado
                           </strong>
                           <div>
                             Aceito por <strong>{acceptance.acceptedByName}</strong> em{' '}
@@ -980,7 +1013,7 @@ export function Proposals({
                               marginBottom: '0.25rem',
                             }}
                           >
-                            Histórico de Envios:
+                            Histórico de envios:
                           </strong>
                           <div style={{ display: 'grid', gap: '0.35rem', fontSize: '0.8125rem' }}>
                             {deliveries.map((del) => (
@@ -995,12 +1028,8 @@ export function Proposals({
                               >
                                 <span>
                                   <Icon name="send" size={14} style={{ marginRight: '0.35rem' }} />
-                                  {del.channel === 'WHATSAPP'
-                                    ? 'WhatsApp'
-                                    : del.channel === 'EMAIL'
-                                      ? 'E-mail'
-                                      : 'Presencial'}
-                                  : <strong>{del.recipient}</strong> (
+                                  {deliveryChannelLabels[del.channel] ?? 'outro canal'}:{' '}
+                                  <strong>{del.recipient}</strong> (
                                   {new Date(del.sentAt).toLocaleString('pt-BR')})
                                 </span>
                                 {del.notes && <span className="device">— {del.notes}</span>}
@@ -1171,13 +1200,11 @@ export function Proposals({
                             borderRadius: 'var(--radius-sm)',
                           }}
                         >
-                          <h4 style={{ margin: '0 0 0.5rem 0' }}>
-                            Registrar Envio da Proposta (Gate B)
-                          </h4>
+                          <h4 style={{ margin: '0 0 0.5rem 0' }}>Registrar envio da proposta</h4>
                           <p className="device" style={{ margin: '0 0 0.75rem 0' }}>
-                            O envio formal atualiza a oportunidade para
-                            &quot;PROPOSTA_APRESENTADA&quot; e agenda atividade automática de
-                            follow-up em 48h.
+                            Ao registrar o envio, a oportunidade avança para a etapa “Proposta
+                            apresentada” e um lembrete de acompanhamento é criado para daqui a 48
+                            horas.
                           </p>
                           <Feedback error={deliverMutation.error} />
                           <form
@@ -1201,8 +1228,8 @@ export function Proposals({
                                 >
                                   <option value="WHATSAPP">WhatsApp</option>
                                   <option value="EMAIL">E-mail</option>
-                                  <option value="IN_PERSON">Presencial / Reunião</option>
-                                  <option value="MANUAL">Outro Canal</option>
+                                  <option value="IN_PERSON">Presencial ou reunião</option>
+                                  <option value="MANUAL">Outro canal</option>
                                 </select>
                               </label>
 
@@ -1211,7 +1238,7 @@ export function Proposals({
                                 <input
                                   type="text"
                                   required
-                                  placeholder="ex: (31) 98765-4321 ou cliente@email.com"
+                                  placeholder="ex: (31) 98765-4321 ou cliente@exemplo.com"
                                   value={deliveryRecipient}
                                   onChange={(e) => setDeliveryRecipient(e.target.value)}
                                 />
@@ -1221,7 +1248,7 @@ export function Proposals({
                                 Notas do Envio
                                 <input
                                   type="text"
-                                  placeholder="ex: Enviado em PDF pelo WhatsApp corporativo ao diretor financeiro."
+                                  placeholder="ex.: Arquivo PDF enviado pelo WhatsApp corporativo ao responsável financeiro."
                                   value={deliveryNotes}
                                   onChange={(e) => setDeliveryNotes(e.target.value)}
                                 />
@@ -1271,12 +1298,11 @@ export function Proposals({
                           }}
                         >
                           <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--status-success)' }}>
-                            Registrar Aceite Formal do Cliente
+                            Registrar aceite do cliente
                           </h4>
                           <p className="device" style={{ margin: '0 0 0.75rem 0' }}>
-                            O aceite formal marca a proposta como vencedora, transita a oportunidade
-                            para &quot;CONTRATACAO&quot; e cria a tarefa de formalização do
-                            contrato.
+                            O registro do aceite avança a oportunidade para a etapa de contratação e
+                            cria uma tarefa para formalizar o contrato.
                           </p>
                           <Feedback error={acceptMutation.error} />
                           <form
@@ -1288,7 +1314,7 @@ export function Proposals({
                           >
                             <div className="form-grid">
                               <label>
-                                Forma de Aceite *
+                                Forma de aceite *
                                 <select
                                   value={acceptMethod}
                                   onChange={(e) =>
@@ -1298,12 +1324,12 @@ export function Proposals({
                                     )
                                   }
                                 >
-                                  <option value="MESSAGE">Mensagem Escrita / WhatsApp</option>
-                                  <option value="SIGNED_DOCUMENT">Documento Assinado Físico</option>
-                                  <option value="E_SIGNATURE">
-                                    Assinatura Eletrônica (DocuSign/Gov.br)
+                                  <option value="MESSAGE">Confirmação por mensagem</option>
+                                  <option value="SIGNED_DOCUMENT">
+                                    Documento assinado em papel
                                   </option>
-                                  <option value="IN_PERSON">Acordo Presencial</option>
+                                  <option value="E_SIGNATURE">Assinatura eletrônica</option>
+                                  <option value="IN_PERSON">Aceite presencial</option>
                                 </select>
                               </label>
 
@@ -1350,9 +1376,7 @@ export function Proposals({
                                 }}
                                 disabled={acceptMutation.isPending || !acceptedByName}
                               >
-                                {acceptMutation.isPending
-                                  ? 'Confirmando…'
-                                  : 'Confirmar Aceite Formal'}
+                                {acceptMutation.isPending ? 'Confirmando…' : 'Confirmar aceite'}
                               </button>
                             </div>
                           </form>
@@ -1372,7 +1396,7 @@ export function Proposals({
                           }}
                         >
                           <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--status-danger)' }}>
-                            Registrar Rejeição da Versão
+                            Registrar recusa da proposta
                           </h4>
                           <Feedback error={rejectMutation.error} />
                           <form
@@ -1400,7 +1424,7 @@ export function Proposals({
                               </label>
 
                               <label style={{ gridColumn: '1 / -1' }}>
-                                Detalhes da Rejeição
+                                Detalhes da recusa
                                 <input
                                   type="text"
                                   placeholder="ex: Solicitou refazer dimensionamento com módulos de maior potência."
@@ -1431,7 +1455,7 @@ export function Proposals({
                                 }}
                                 disabled={rejectMutation.isPending}
                               >
-                                {rejectMutation.isPending ? 'Registrando…' : 'Confirmar Rejeição'}
+                                {rejectMutation.isPending ? 'Registrando…' : 'Confirmar recusa'}
                               </button>
                             </div>
                           </form>

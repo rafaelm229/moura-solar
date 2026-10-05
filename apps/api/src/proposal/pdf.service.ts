@@ -7,6 +7,12 @@ import { join } from 'node:path';
 const _PDFDocument = require('pdfkit');
 const PDFDocument: any = _PDFDocument.default ?? _PDFDocument;
 
+const connectionTypeLabels: Record<string, string> = {
+  MONOPHASIC: 'monofásica',
+  BIPHASIC: 'bifásica',
+  TRIPHASIC: 'trifásica',
+};
+
 function resolveAssetPath(subpath: string): string {
   const candidates = [
     join(process.cwd(), subpath),
@@ -94,7 +100,7 @@ export class PdfService {
           size: 'A4',
           margins: { top: 40, bottom: 40, left: 45, right: 45 },
           info: {
-            Title: `Proposta Comercial Moura Solar - ${data.proposalCode} v${data.versionNumber}`,
+            Title: `Proposta Comercial Moura Solar - ${data.proposalCode} - Versão ${data.versionNumber}`,
             Author: 'Moura Solar Engenharia Fotovoltaica',
             Subject: 'Proposta Comercial de Sistema de Geração de Energia Solar Fotovoltaica',
             Keywords: 'solar, energia solar, proposta, sustentabilidade',
@@ -161,7 +167,7 @@ export class PdfService {
           .fontSize(8)
           .font('Helvetica-Bold')
           .fillColor(textDark)
-          .text(`PROPOSTA: ${data.proposalCode} (Rev. ${data.versionNumber})`, 330, metaY, {
+          .text(`PROPOSTA: ${data.proposalCode} (Versão ${data.versionNumber})`, 330, metaY, {
             align: 'right',
             width: 220,
           });
@@ -214,7 +220,7 @@ export class PdfService {
           .fillColor(textMuted)
           .text(`Concessionária: ${data.utilityUnit.distributor}`, 320, clientBoxY + 14);
         doc.text(
-          `Ligação: ${data.utilityUnit.connectionType} (${data.utilityUnit.voltage})`,
+          `Ligação: ${connectionTypeLabels[data.utilityUnit.connectionType] ?? data.utilityUnit.connectionType} (${data.utilityUnit.voltage})`,
           320,
           clientBoxY + 28,
         );
@@ -305,9 +311,9 @@ export class PdfService {
           techY,
           boxWidth,
           50,
-          'POTÊNCIA DC',
+          'POTÊNCIA DOS MÓDULOS',
           `${data.technicalSolution.dcPowerKwp.toFixed(2)} kWp`,
-          'Gerador fotovoltaico',
+          'Energia em corrente contínua',
           primaryColor,
         );
         this.renderMetricCard(
@@ -316,9 +322,9 @@ export class PdfService {
           techY,
           boxWidth,
           50,
-          'POTÊNCIA AC',
+          'POTÊNCIA DOS INVERSORES',
           `${data.technicalSolution.acPowerKw.toFixed(2)} kW`,
-          'Inversores solares',
+          'Energia em corrente alternada',
           textDark,
         );
         this.renderMetricCard(
@@ -470,7 +476,7 @@ export class PdfService {
             .font('Helvetica')
             .fillColor(textMuted)
             .text(
-              'Opções disponíveis: À vista com desconto especial, ou Financiamento Solar Bancário em até 84x com carência.',
+              'Opções: pagamento à vista com desconto especial ou financiamento bancário para energia solar em até 84 parcelas, com carência.',
               55,
               investY + 44,
             );
@@ -495,7 +501,7 @@ export class PdfService {
             { align: 'center', width: 505 },
           );
         doc.text(
-          `Documento gerado em conformidade com SPEC-006 • Hash de integridade: ${data.proposalCode}-v${data.versionNumber}-${data.validUntil}`,
+          `Documento gerado eletronicamente • Código de integridade: ${data.proposalCode}-v${data.versionNumber}-${data.validUntil}`,
           45,
           footerY + 10,
           { align: 'center', width: 505 },
