@@ -1,4 +1,4 @@
-import type { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma, type PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 
 export type ImportOutboxClaim = {
@@ -31,6 +31,84 @@ export type PreparedExtractionAttempt = {
     byteSize: number;
   };
 };
+
+export type NormalizedExtractionCandidate = {
+  key: string;
+  field: string;
+  value: string;
+  unit?: string;
+  page: number;
+  providerConfidence?: { value: number; scale: string };
+};
+
+const candidateFields = new Set([
+  'utilityUnit.externalCode',
+  'utilityUnit.distributorName',
+  'utilityUnit.holderName',
+  'utilityUnit.holderDocument',
+  'utilityUnit.address',
+  'utilityUnit.consumerClass',
+  'utilityUnit.consumerSubclass',
+  'utilityUnit.supplyType',
+  'utilityUnit.voltage',
+  'bill.referenceMonth',
+  'bill.consumptionKwh',
+  'bill.injectedKwh',
+  'bill.billedEnergyKwh',
+  'bill.billedAmount',
+  'bill.tariffComponents',
+  'history.referenceMonth',
+  'history.consumptionKwh',
+  'history.injectedKwh',
+]);
+
+function validateCandidates(candidates: NormalizedExtractionCandidate[]): void {
+  if (!Array.isArray(candidates) || candidates.length > 500)
+    throw new Error('Invalid extraction candidate collection');
+  const keys = new Set<string>();
+  for (const candidate of candidates) {
+    if (
+      !candidate ||
+      Object.keys(candidate).some(
+        (key) => !['key', 'field', 'value', 'unit', 'page', 'providerConfidence'].includes(key),
+      ) ||
+      !/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,159}$/.test(candidate.key) ||
+      keys.has(candidate.key) ||
+      !candidateFields.has(candidate.field) ||
+      typeof candidate.value !== 'string' ||
+      candidate.value.length < 1 ||
+      candidate.value.length > 4096 ||
+      !Number.isInteger(candidate.page) ||
+      candidate.page < 1 ||
+      (candidate.unit !== undefined &&
+        (typeof candidate.unit !== 'string' ||
+          candidate.unit.length < 1 ||
+          candidate.unit.length > 32))
+    ) {
+      throw new Error('Invalid normalized extraction candidate');
+    }
+    if (
+      candidate.field.endsWith('referenceMonth') &&
+      !/^\d{4}-(0[1-9]|1[0-2])$/.test(candidate.value)
+    ) {
+      throw new Error('Invalid normalized reference month');
+    }
+    if (candidate.providerConfidence !== undefined) {
+      const confidence = candidate.providerConfidence;
+      if (
+        !confidence ||
+        Object.keys(confidence).some((key) => key !== 'value' && key !== 'scale') ||
+        !Number.isFinite(confidence.value) ||
+        typeof confidence.scale !== 'string' ||
+        confidence.scale.length < 1 ||
+        confidence.scale.length > 64
+      ) {
+        throw new Error('Invalid provider confidence metadata');
+      }
+    }
+    keys.add(candidate.key);
+  }
+}
 
 function validateLease(workerId: string, now: Date, leaseUntil: Date): void {
   if (!/^[a-zA-Z0-9._:-]{1,120}$/.test(workerId)) throw new Error('Invalid worker identity');
@@ -309,6 +387,127 @@ export async function recordImportOperationId(
       },
     });
     return result.count === 1;
+  });
+}
+
+/**
+ * Persist normalized candidates only while the attempt still owns a live lease
+ * and the import remains QUEUED. Cancellation and completion serialize on the
+ * import row, so a late provider response cannot move a canceled import forward.
+ */
+export async function completeImportExtraction(
+  prisma: PrismaClient,
+  claim: ImportOutboxClaim,
+  attemptId: string,
+  candidates: NormalizedExtractionCandidate[],
+  now: Date,
+): Promise<boolean> {
+  if (!Number.isFinite(now.getTime())) throw new Error('Invalid current time');
+  validateCandidates(candidates);
+
+  return prisma.$transaction(async (tx) => {
+    const billImport = await tx.$queryRaw<Array<{ id: string; status: string; version: number }>>`
+      SELECT id, status, version FROM energy_bill_imports
+      WHERE id = ${claim.importId}::uuid
+        AND organization_id = ${claim.organizationId}::uuid
+      FOR UPDATE
+    `;
+    const event = await tx.$queryRaw<Array<{ id: string }>>`
+      SELECT id FROM import_outbox
+      WHERE id = ${claim.id}::uuid
+        AND import_id = ${claim.importId}::uuid
+        AND organization_id = ${claim.organizationId}::uuid
+        AND status = 'PROCESSING'
+        AND lease_owner = ${claim.leaseOwner}
+        AND lease_until > ${now}
+      FOR UPDATE
+    `;
+    const attempt = await tx.extractionAttempt.findFirst({
+      where: { id: attemptId, importId: claim.importId, outboxId: claim.id },
+    });
+    const active =
+      billImport[0]?.status === 'QUEUED' &&
+      event.length === 1 &&
+      attempt?.status === 'SUBMITTED' &&
+      attempt.externalOperationId !== null &&
+      attempt.leaseOwner === claim.leaseOwner;
+
+    if (!active || !billImport[0] || !attempt) {
+      if (attempt) {
+        await tx.auditEvent.create({
+          data: {
+            organizationId: claim.organizationId,
+            action: 'ENERGY_BILL_IMPORT_RESULT_IGNORED',
+            entityId: claim.importId,
+            traceId: attempt.correlationId,
+          },
+        });
+      }
+      return false;
+    }
+
+    await tx.extractionCandidate.createMany({
+      data: candidates.map((candidate) => ({
+        importId: claim.importId,
+        attemptId,
+        source: 'OCR',
+        field: candidate.field,
+        rawValue: null,
+        normalizedValue: candidate.value,
+        unit: candidate.unit ?? null,
+        page: candidate.page,
+        providerConfidence: candidate.providerConfidence ?? Prisma.JsonNull,
+        qualitySignals: { stage: 'NORMALIZED' },
+        systemValidation: { evaluated: false },
+      })),
+    });
+
+    const attemptUpdated = await tx.extractionAttempt.updateMany({
+      where: {
+        id: attemptId,
+        outboxId: claim.id,
+        status: 'SUBMITTED',
+        leaseOwner: claim.leaseOwner,
+        externalOperationId: { not: null },
+      },
+      data: { status: 'SUCCEEDED', finishedAt: now, heartbeatAt: now },
+    });
+    const importUpdated = await tx.energyBillImport.updateMany({
+      where: {
+        id: claim.importId,
+        organizationId: claim.organizationId,
+        status: 'QUEUED',
+        version: billImport[0].version,
+      },
+      data: { status: 'REVIEW_REQUIRED', version: { increment: 1 } },
+    });
+    const eventUpdated = await tx.importOutbox.updateMany({
+      where: {
+        id: claim.id,
+        status: 'PROCESSING',
+        leaseOwner: claim.leaseOwner,
+        leaseUntil: { gt: now },
+      },
+      data: {
+        status: 'DONE',
+        completedAt: now,
+        leaseOwner: null,
+        leaseUntil: null,
+        updatedAt: now,
+      },
+    });
+    if (attemptUpdated.count !== 1 || importUpdated.count !== 1 || eventUpdated.count !== 1)
+      throw new Error('Import extraction result lost its active lease');
+
+    await tx.auditEvent.create({
+      data: {
+        organizationId: claim.organizationId,
+        action: 'ENERGY_BILL_IMPORT_EXTRACTION_COMPLETED',
+        entityId: claim.importId,
+        traceId: attempt.correlationId,
+      },
+    });
+    return true;
   });
 }
 

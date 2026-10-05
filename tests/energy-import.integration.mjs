@@ -221,6 +221,7 @@ test('READY intake writes one queued import and a minimal outbox event atomicall
   assert.equal(status.status, 200);
   assert.equal(status.body.id, created.body.id);
   assert.equal(status.body.status, 'QUEUED');
+  assert.deepEqual(status.body.candidates, []);
 
   const changedPayload = await admin.call(
     `customers/${customerId}/energy-imports`,

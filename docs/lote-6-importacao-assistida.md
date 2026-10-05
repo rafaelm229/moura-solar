@@ -107,3 +107,23 @@ das tentativas.
 
 As decisões operacionais de mapeamento de classe tarifária, fornecedor/região
 OCR e limites de custo/quota continuam pendentes e não são inferidas nesta fatia.
+
+## Incremento 6A-6 — persistência e bloqueio de resultados tardios
+
+Implementado em `feat/lote-6-result-fencing`.
+
+O resultado normalizado só pode ser persistido quando tentativa `SUBMITTED`, lease
+vigente e importação `QUEUED` ainda correspondem ao mesmo evento. A transação
+grava candidatos como evidência OCR, fecha a tentativa e a outbox e move a
+importação para `REVIEW_REQUIRED`; cancelamento ou resposta atrasada perde a
+condição de gravação e gera auditoria sem guardar os candidatos. Confiança do
+fornecedor, qualidade e validação local permanecem campos distintos; este
+incremento não inventa regras de validação nem ativa adapters.
+
+`GET /energy-imports/:id` também inclui os candidatos OCR associados às tentativas,
+com origem/página e sinais separados; candidatos manuais existentes não são
+misturados nessa coleção.
+
+Validação: `pnpm test:integration` 104/104; suíte isolada do worker 3/3;
+`pnpm check` aprovado; OpenAPI e cliente TypeScript regenerados; `git diff --check`
+aprovado. Nenhuma migration foi necessária nesta fatia.
