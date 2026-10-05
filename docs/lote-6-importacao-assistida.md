@@ -149,3 +149,16 @@ em nova aba para comparação.
 Validação: `pnpm check` aprovado; `pnpm test:e2e` 39/39, incluindo o fluxo
 completo em 320, 360, 390, 768, 1024, 1366, 1440 e 1920 px. O contrato OpenAPI e
 cliente foram regenerados para tipar corretamente os opcionais da revisão.
+
+## Incremento 6B-2 — seleção assistida de candidatos mensais
+
+A tela permite adicionar um mês por um candidato de referência e escolher
+explicitamente o mês de destino para candidatos de consumo, injeção e total
+faturado. O clique apenas preenche os campos editáveis da revisão; não define a
+decisão `KEEP`/`INSERT`/`REPLACE`, não salva nem confirma. Campos sem mapeamento
+mensal permanecem evidência para conferência no documento.
+
+Validação E2E cobre seleção e edição posterior do valor antes da confirmação em
+320, 360, 390, 768, 1024, 1366, 1440 e 1920 px. A API guarda os candidatos e os
+valores revisados; ainda não registra uma relação explícita por campo entre o
+candidato selecionado e o valor final da revisão.

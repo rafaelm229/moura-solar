@@ -1,12 +1,12 @@
 # Testes de aceite — SPEC-014
 
-**Status:** Proposta para revisão
+**Status:** Aprovada para implementação em 05/10/2026
 
 **Versão:** 0.1.0
 
 **Data:** 02/10/2026
 
-Escopo aprovado; contratos detalhados e aparência final sujeitos à revisão humana.
+Escopo e contratos funcionais aprovados em 05/10/2026. Decisões operacionais listadas no plano continuam bloqueios das liberações correspondentes.
 
 Testes futuros. Reaproveitar tests/design.integration.mjs e tests/e2e/design.spec.ts como regressão de consumo/dimensionamento; não representam cobertura de OCR/importação hoje.
 
