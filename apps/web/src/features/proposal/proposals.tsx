@@ -36,7 +36,16 @@ export interface ProposalVersionView {
   id: string;
   proposalId: string;
   versionNumber: number;
-  status: 'DRAFT' | 'READY' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
+  status:
+    | 'DRAFT'
+    | 'READY'
+    | 'SENT'
+    | 'VIEWED'
+    | 'ACCEPTED'
+    | 'REJECTED'
+    | 'EXPIRED'
+    | 'SUPERSEDED'
+    | 'CANCELED';
   systemPowerKwp?: number | string;
   estimatedMonthlyGenerationKwh?: number | string;
   totalInvestmentAmount?: number | string;
@@ -67,6 +76,33 @@ export interface ProposalView {
   versions?: ProposalVersionView[];
   createdAt: string;
   updatedAt: string;
+}
+
+const proposalStatusLabels: Record<ProposalVersionView['status'], string> = {
+  DRAFT: 'Rascunho',
+  READY: 'Pronta para envio',
+  SENT: 'Enviada ao cliente',
+  VIEWED: 'Visualizada pelo cliente',
+  ACCEPTED: 'Aceita',
+  REJECTED: 'Recusada',
+  EXPIRED: 'Vencida',
+  SUPERSEDED: 'Substituída por outra versão',
+  CANCELED: 'Cancelada',
+};
+
+const acceptanceMethodLabels: Record<string, string> = {
+  SIGNED_DOCUMENT: 'documento assinado',
+  MESSAGE: 'mensagem',
+  IN_PERSON: 'presencialmente',
+  E_SIGNATURE: 'assinatura eletrônica',
+};
+
+function formatCurrency(value: number | string | undefined) {
+  return Number(value ?? 0).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+  });
 }
 
 type Design = Schemas['DesignViewDto'];
@@ -635,7 +671,7 @@ export function Proposals({
                 </span>
                 {hasAcceptedVersion && (
                   <span className="badge badge-ativo" style={{ fontSize: '0.75rem' }}>
-                    CONTRATADA (ACEITE FORMAL)
+                    VERSÃO ACEITA
                   </span>
                 )}
                 <span className="device">
@@ -660,32 +696,36 @@ export function Proposals({
                 const doc = version.documents?.[0];
                 const deliveries = version.deliveries ?? [];
                 const acceptance = version.acceptance;
+                const paymentSummary =
+                  typeof version.paymentConditions?.summary === 'string'
+                    ? version.paymentConditions.summary
+                    : null;
 
                 return (
                   <div
                     key={version.id}
                     style={{
-                      border: isAccepted
-                        ? '1px solid var(--status-success)'
-                        : '1px solid var(--color-border)',
-                      borderRadius: 'var(--radius-sm)',
-                      padding: '1rem',
-                      background: isAccepted ? 'rgba(34, 197, 94, 0.03)' : 'var(--color-surface)',
+                      border: `1px solid ${isAccepted ? 'var(--status-success)' : 'var(--color-border)'}`,
+                      borderRadius: 'var(--radius-md)',
+                      padding: 'clamp(1rem, 2.5vw, 1.5rem)',
+                      background: 'var(--color-surface)',
                     }}
                   >
-                    {/* Version Top Bar */}
+                    {/* Version and current status */}
                     <div
                       style={{
                         display: 'flex',
                         justifyContent: 'space-between',
-                        alignItems: 'center',
+                        alignItems: 'flex-start',
                         flexWrap: 'wrap',
-                        gap: '0.5rem',
-                        marginBottom: '0.75rem',
+                        gap: '0.75rem',
+                        marginBottom: '1.25rem',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <strong style={{ fontSize: '1rem' }}>Versão {version.versionNumber}</strong>
+                      <div style={{ display: 'grid', gap: '0.4rem' }}>
+                        <strong style={{ fontSize: '1.125rem' }}>
+                          Proposta {proposal.code} · versão {version.versionNumber}
+                        </strong>
                         <span
                           className={`badge ${
                             isAccepted
@@ -696,23 +736,73 @@ export function Proposals({
                                   ? 'badge-qualificado'
                                   : 'badge-novo'
                           }`}
+                          style={{ width: 'fit-content' }}
                         >
-                          {version.status}
+                          {proposalStatusLabels[version.status]}
                         </span>
                       </div>
 
-                      <div className="device" style={{ fontSize: '0.8125rem' }}>
-                        {version.validUntil
-                          ? `Válida até ${new Date(version.validUntil).toLocaleDateString('pt-BR')}`
-                          : `Validade: ${version.validityDays} dias`}
+                      <div
+                        style={{
+                          display: 'grid',
+                          gap: '0.2rem',
+                          textAlign: 'right',
+                          fontSize: '0.875rem',
+                        }}
+                      >
+                        <span className="device">Validade da proposta</span>
+                        <strong>
+                          {version.validUntil
+                            ? new Date(version.validUntil).toLocaleDateString('pt-BR')
+                            : `${version.validityDays} dias`}
+                        </strong>
                       </div>
                     </div>
 
-                    {/* Technical & Commercial Summary Cards */}
+                    {/* Commercial offer: price and payment terms */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: '1rem',
+                        padding: '1rem 1.25rem',
+                        marginBottom: '1rem',
+                        borderRadius: 'var(--radius-md)',
+                        border: '1px solid #b7ddc7',
+                        background: '#f1faf4',
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'grid',
+                          gap: '0.2rem',
+                        }}
+                      >
+                        <span className="device" style={{ fontSize: '0.875rem' }}>
+                          Investimento total
+                        </span>
+                        <strong
+                          style={{
+                            fontSize: 'clamp(1.5rem, 3vw, 2rem)',
+                            lineHeight: 1.2,
+                            color: 'var(--brand-primary)',
+                            fontVariantNumeric: 'tabular-nums',
+                          }}
+                        >
+                          {formatCurrency(version.finalAmount ?? version.finalPrice)}
+                        </strong>
+                      </div>
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.9375rem' }}>
+                        Valor da versão apresentada ao cliente
+                      </span>
+                    </div>
+
                     <div
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))',
                         gap: '0.75rem',
                         marginBottom: '1rem',
                       }}
@@ -720,32 +810,37 @@ export function Proposals({
                       <div
                         style={{
                           background: 'var(--color-canvas)',
-                          padding: '0.5rem 0.75rem',
+                          padding: '0.75rem 1rem',
                           borderRadius: 'var(--radius-sm)',
                         }}
                       >
-                        <span className="device" style={{ fontSize: '0.75rem', display: 'block' }}>
-                          Potência Pico
+                        <span
+                          className="device"
+                          style={{ fontSize: '0.8125rem', display: 'block' }}
+                        >
+                          Potência do sistema
                         </span>
-                        <strong style={{ fontSize: '1.1rem' }}>
+                        <strong style={{ fontSize: '1.125rem' }}>
                           {Number(
                             version.systemPowerKwp ?? version.technicalSnapshot?.dcPowerKwp ?? 0,
                           ).toFixed(2)}{' '}
                           kWp
                         </strong>
                       </div>
-
                       <div
                         style={{
                           background: 'var(--color-canvas)',
-                          padding: '0.5rem 0.75rem',
+                          padding: '0.75rem 1rem',
                           borderRadius: 'var(--radius-sm)',
                         }}
                       >
-                        <span className="device" style={{ fontSize: '0.75rem', display: 'block' }}>
-                          Geração Estimada
+                        <span
+                          className="device"
+                          style={{ fontSize: '0.8125rem', display: 'block' }}
+                        >
+                          Geração estimada por mês
                         </span>
-                        <strong style={{ fontSize: '1.1rem' }}>
+                        <strong style={{ fontSize: '1.125rem' }}>
                           {Number(
                             version.estimatedMonthlyGenerationKwh ??
                               version.technicalSnapshot?.estimatedMonthlyGenerationKwh ??
@@ -754,34 +849,25 @@ export function Proposals({
                           kWh/mês
                         </strong>
                       </div>
+                    </div>
 
+                    {paymentSummary && (
                       <div
                         style={{
+                          display: 'grid',
+                          gap: '0.25rem',
+                          padding: '0.75rem 1rem',
+                          marginBottom: '0.75rem',
+                          borderLeft: '3px solid var(--brand-primary)',
                           background: 'var(--color-canvas)',
-                          padding: '0.5rem 0.75rem',
-                          borderRadius: 'var(--radius-sm)',
-                          gridColumn: 'span 2',
                         }}
                       >
-                        <span className="device" style={{ fontSize: '0.75rem', display: 'block' }}>
-                          Valor do Investimento (Preço Final)
+                        <strong style={{ fontSize: '0.875rem' }}>Condição de pagamento</strong>
+                        <span style={{ color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                          {paymentSummary}
                         </span>
-                        <strong
-                          style={{
-                            fontSize: '1.25rem',
-                            color: 'var(--brand-primary)',
-                          }}
-                        >
-                          R${' '}
-                          {Number(version.finalAmount ?? version.finalPrice ?? 0).toLocaleString(
-                            'pt-BR',
-                            {
-                              minimumFractionDigits: 2,
-                            },
-                          )}
-                        </strong>
                       </div>
-                    </div>
+                    )}
 
                     {/* Observations */}
                     {version.observations && (
@@ -819,10 +905,13 @@ export function Proposals({
                             <Icon name="description" size={16} /> {doc.fileName}
                           </span>{' '}
                           <span className="device">
-                            ({Math.round(doc.fileSize / 1024)} KB | Hash:{' '}
-                            {doc.contentHash.slice(0, 10)}…)
+                            ({Math.round(doc.fileSize / 1024)} KB · PDF pronto)
                           </span>
                         </div>
+                        <details style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                          <summary style={{ cursor: 'pointer' }}>Integridade do arquivo</summary>
+                          <span>Hash SHA: {doc.contentHash}</span>
+                        </details>
                         <button
                           type="button"
                           style={{
@@ -861,7 +950,10 @@ export function Proposals({
                         <div>
                           Aceito por <strong>{acceptance.acceptedByName}</strong> em{' '}
                           {new Date(acceptance.acceptedAt).toLocaleString('pt-BR')} via{' '}
-                          <strong>{acceptance.method}</strong>.
+                          <strong>
+                            {acceptanceMethodLabels[acceptance.method] ?? acceptance.method}
+                          </strong>
+                          .
                         </div>
                         {acceptance.notes && (
                           <div style={{ marginTop: '0.25rem' }} className="device">
@@ -887,7 +979,16 @@ export function Proposals({
                         <strong style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                           <Icon name="close" size={18} /> Proposta Rejeitada
                         </strong>
-                        <div>Motivo: {version.rejectionReason}</div>
+                        <div>
+                          Motivo:{' '}
+                          {{
+                            PRECO_ALTO: 'preço acima da expectativa',
+                            CONCORRENTE: 'cliente fechou com concorrente',
+                            FINANCIAMENTO_NEGADO: 'crédito ou financiamento negado',
+                            DESISTENCIA: 'cliente desistiu do projeto',
+                            OUTRO: 'outro motivo',
+                          }[version.rejectionReason] ?? version.rejectionReason}
+                        </div>
                       </div>
                     )}
 
@@ -931,53 +1032,33 @@ export function Proposals({
                       </div>
                     )}
 
-                    {/* Next Step Guidance Banner */}
+                    {/* Clear next action, based on the API status */}
                     {!readonly && !hasAcceptedVersion && !isRejected && !isExpired && (
                       <>
-                        {isReady && (
+                        {(isReady || isSent) && (
                           <div
                             style={{
                               display: 'flex',
                               alignItems: 'center',
-                              gap: '0.75rem',
-                              backgroundColor: 'rgba(8, 116, 67, 0.08)',
-                              border: '1px solid var(--brand-primary, #087443)',
-                              borderRadius: 'var(--radius-sm, 6px)',
+                              gap: '0.625rem',
+                              backgroundColor: 'var(--color-canvas)',
+                              borderLeft: `3px solid ${isReady ? 'var(--brand-primary)' : 'var(--status-info)'}`,
                               padding: '0.75rem 1rem',
-                              marginTop: '0.75rem',
+                              marginTop: '1rem',
                               fontSize: '0.875rem',
-                              color: 'var(--brand-primary-strong, #045c34)',
+                              color: 'var(--text-primary)',
                             }}
                           >
-                            <Icon name="arrow_forward" size={20} />
+                            <Icon name={isReady ? 'send' : 'schedule'} size={20} />
                             <div>
-                              <strong>Próximo Passo Comercial:</strong> Envie a proposta ao cliente
-                              e registre o canal de entrega abaixo para liberar o{' '}
-                              <strong>Aceite Formal</strong> e a etapa de contratação.
-                            </div>
-                          </div>
-                        )}
-
-                        {isSent && (
-                          <div
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '0.75rem',
-                              backgroundColor: 'rgba(21, 128, 61, 0.1)',
-                              border: '1px solid #16a34a',
-                              borderRadius: 'var(--radius-sm, 6px)',
-                              padding: '0.75rem 1rem',
-                              marginTop: '0.75rem',
-                              fontSize: '0.875rem',
-                              color: '#15803d',
-                            }}
-                          >
-                            <Icon name="verified" size={20} />
-                            <div>
-                              <strong>Proposta Entregue ao Cliente!</strong> Assim que o cliente der
-                              o retorno positivo, registre o <strong>Aceite Formal</strong> no botão
-                              verde destacado abaixo para avançar à etapa de Contratos.
+                              <strong>
+                                {isReady
+                                  ? 'Próxima ação: enviar ao cliente.'
+                                  : 'Aguardando retorno do cliente.'}
+                              </strong>{' '}
+                              {isReady
+                                ? 'Registre o canal e o destinatário para concluir o envio.'
+                                : 'Quando houver uma resposta, registre o aceite ou a recusa.'}
                             </div>
                           </div>
                         )}
@@ -1004,7 +1085,7 @@ export function Proposals({
                             style={{
                               padding: '0.55rem 1.1rem',
                               fontSize: '0.875rem',
-                              minHeight: 'auto',
+                              minHeight: '44px',
                               fontWeight: 600,
                               display: 'inline-flex',
                               alignItems: 'center',
@@ -1025,63 +1106,35 @@ export function Proposals({
                             }}
                           >
                             <Icon name="send" size={16} />
-                            {isReady
-                              ? '1. Registrar Envio ao Cliente (Gate B)'
-                              : 'Registrar Novo Envio'}
+                            {isReady ? 'Registrar envio ao cliente' : 'Registrar novo envio'}
                           </button>
                         )}
 
-                        {canAccept &&
-                          (isSent ? (
-                            <button
-                              type="button"
-                              className="btn btn--success"
-                              style={{
-                                padding: '0.6rem 1.25rem',
-                                fontSize: '0.9375rem',
-                                minHeight: 'auto',
-                                backgroundColor: '#15803d',
-                                color: '#ffffff',
-                                border: '1px solid #166534',
-                                fontWeight: 700,
-                                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.18)',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '0.5rem',
-                              }}
-                              onClick={() => {
-                                setAcceptVersionId(version.id);
-                                setDeliveryVersionId(null);
-                                setRejectVersionId(null);
-                              }}
-                            >
-                              <Icon name="check" size={18} /> Registrar Aceite Formal do Cliente
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              className="btn"
-                              disabled
-                              title="O aceite formal requer o envio prévio da proposta ao cliente (Gate B)."
-                              style={{
-                                padding: '0.55rem 1rem',
-                                fontSize: '0.875rem',
-                                minHeight: 'auto',
-                                backgroundColor: '#f1f5f9',
-                                color: '#64748b',
-                                border: '1px dashed #cbd5e1',
-                                fontWeight: 600,
-                                cursor: 'not-allowed',
-                                opacity: 0.65,
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '0.4rem',
-                              }}
-                            >
-                              <Icon name="schedule" size={16} /> Registrar Aceite Formal (Aguardando
-                              Envio)
-                            </button>
-                          ))}
+                        {canAccept && isSent && (
+                          <button
+                            type="button"
+                            className="btn btn--success"
+                            style={{
+                              padding: '0.6rem 1.25rem',
+                              fontSize: '0.9375rem',
+                              minHeight: '44px',
+                              backgroundColor: '#15803d',
+                              color: '#ffffff',
+                              border: '1px solid #166534',
+                              fontWeight: 700,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.5rem',
+                            }}
+                            onClick={() => {
+                              setAcceptVersionId(version.id);
+                              setDeliveryVersionId(null);
+                              setRejectVersionId(null);
+                            }}
+                          >
+                            <Icon name="check" size={18} /> Registrar aceite do cliente
+                          </button>
+                        )}
 
                         {canReject && isSent && (
                           <button
@@ -1090,7 +1143,7 @@ export function Proposals({
                             style={{
                               padding: '0.55rem 1rem',
                               fontSize: '0.875rem',
-                              minHeight: 'auto',
+                              minHeight: '44px',
                               backgroundColor: '#fee2e2',
                               color: '#b91c1c',
                               border: '1px solid #ef4444',
@@ -1105,7 +1158,7 @@ export function Proposals({
                               setAcceptVersionId(null);
                             }}
                           >
-                            <Icon name="close" size={16} /> Registrar Rejeição
+                            <Icon name="close" size={16} /> Registrar recusa
                           </button>
                         )}
 
