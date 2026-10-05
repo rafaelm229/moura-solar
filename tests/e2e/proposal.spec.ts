@@ -153,7 +153,7 @@ for (const [width, height] of [
     // Verify technical and commercial metrics
     await expect(page.getByText('Potência do sistema').first()).toBeVisible();
     await expect(page.getByText('Geração estimada por mês').first()).toBeVisible();
-    await expect(page.getByText('Investimento total').first()).toBeVisible();
+    await expect(page.getByText('Investimento').first()).toBeVisible();
     await expect(page.getByText(/À vista com 5% de desconto/).first()).toBeVisible();
 
     // Verify PDF document info and download button
