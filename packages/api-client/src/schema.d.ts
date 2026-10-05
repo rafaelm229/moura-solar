@@ -4743,6 +4743,29 @@ export interface components {
       actualCost: string | null;
       currency: string | null;
     };
+    ProviderConfidenceViewDto: {
+      value: number;
+      scale: string;
+    };
+    ExtractionCandidateViewDto: {
+      id: string;
+      attemptId: string;
+      field: string;
+      rawValue: string | null;
+      normalizedValue: string | null;
+      unit: string | null;
+      page: number | null;
+      region: {
+        [key: string]: unknown;
+      } | null;
+      providerConfidence?: components['schemas']['ProviderConfidenceViewDto'] | null;
+      qualitySignals: {
+        [key: string]: unknown;
+      };
+      systemValidation: {
+        [key: string]: unknown;
+      };
+    };
     EnergyBillImportViewDto: {
       id: string;
       organizationId: string;
@@ -4765,6 +4788,7 @@ export interface components {
       latestReview?: Record<string, never>;
       applicationReceipt?: Record<string, never>;
       attempts?: components['schemas']['ExtractionAttemptViewDto'][];
+      candidates?: components['schemas']['ExtractionCandidateViewDto'][];
     };
     ImportMonthDecisionDto: {
       /** @example 2026-08 */

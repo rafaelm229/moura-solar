@@ -11771,6 +11771,82 @@
           "currency"
         ]
       },
+      "ProviderConfidenceViewDto": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number"
+          },
+          "scale": {
+            "type": "string"
+          }
+        },
+        "required": ["value", "scale"]
+      },
+      "ExtractionCandidateViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "attemptId": {
+            "type": "string"
+          },
+          "field": {
+            "type": "string"
+          },
+          "rawValue": {
+            "type": "string",
+            "nullable": true
+          },
+          "normalizedValue": {
+            "type": "string",
+            "nullable": true
+          },
+          "unit": {
+            "type": "string",
+            "nullable": true
+          },
+          "page": {
+            "type": "number",
+            "nullable": true
+          },
+          "region": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true
+          },
+          "providerConfidence": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProviderConfidenceViewDto"
+              }
+            ]
+          },
+          "qualitySignals": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "systemValidation": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "id",
+          "attemptId",
+          "field",
+          "rawValue",
+          "normalizedValue",
+          "unit",
+          "page",
+          "region",
+          "qualitySignals",
+          "systemValidation"
+        ]
+      },
       "EnergyBillImportViewDto": {
         "type": "object",
         "properties": {
@@ -11826,6 +11902,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ExtractionAttemptViewDto"
+            }
+          },
+          "candidates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExtractionCandidateViewDto"
             }
           }
         },

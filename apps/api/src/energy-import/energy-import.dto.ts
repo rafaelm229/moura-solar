@@ -61,6 +61,8 @@ export class EnergyBillImportViewDto {
   @ApiPropertyOptional({ type: Object }) applicationReceipt?: Record<string, unknown>;
   @ApiPropertyOptional({ type: () => [ExtractionAttemptViewDto] })
   attempts?: ExtractionAttemptViewDto[];
+  @ApiPropertyOptional({ type: () => [ExtractionCandidateViewDto] })
+  candidates?: ExtractionCandidateViewDto[];
 }
 
 export class ExtractionAttemptViewDto {
@@ -82,6 +84,29 @@ export class ExtractionAttemptViewDto {
   @ApiProperty({ type: String, nullable: true }) estimatedCost!: string | null;
   @ApiProperty({ type: String, nullable: true }) actualCost!: string | null;
   @ApiProperty({ type: String, nullable: true }) currency!: string | null;
+}
+
+export class ExtractionCandidateViewDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() attemptId!: string;
+  @ApiProperty() field!: string;
+  @ApiProperty({ type: String, nullable: true }) rawValue!: string | null;
+  @ApiProperty({ type: String, nullable: true }) normalizedValue!: string | null;
+  @ApiProperty({ type: String, nullable: true }) unit!: string | null;
+  @ApiProperty({ type: Number, nullable: true }) page!: number | null;
+  @ApiProperty({ type: 'object', additionalProperties: true, nullable: true })
+  region!: Record<string, unknown> | null;
+  @ApiPropertyOptional({ type: () => ProviderConfidenceViewDto, nullable: true })
+  providerConfidence!: ProviderConfidenceViewDto | null;
+  @ApiProperty({ type: 'object', additionalProperties: true })
+  qualitySignals!: Record<string, unknown>;
+  @ApiProperty({ type: 'object', additionalProperties: true })
+  systemValidation!: Record<string, unknown>;
+}
+
+export class ProviderConfidenceViewDto {
+  @ApiProperty() value!: number;
+  @ApiProperty() scale!: string;
 }
 
 export class ImportMonthDecisionDto {

@@ -8,6 +8,8 @@ import type {
   ConfirmEnergyBillImportDto,
   CreateEnergyBillImportDto,
   ExtractionAttemptViewDto,
+  ExtractionCandidateViewDto,
+  ProviderConfidenceViewDto,
   EnergyBillImportLifecycleDto,
   EnergyBillImportReceiptDto,
   EnergyBillImportViewDto,
@@ -214,6 +216,10 @@ export class EnergyImportService {
           reviews: { orderBy: { revision: 'desc' }, take: 1 },
           application: true,
           extractionAttempts: { orderBy: { attemptNumber: 'desc' } },
+          candidates: {
+            where: { attemptId: { not: null } },
+            orderBy: { createdAt: 'asc' },
+          },
         },
       });
       if (!record) fail('ENERGY_IMPORT_NOT_FOUND', 'Importação não encontrada.', 404);
@@ -237,6 +243,19 @@ export class EnergyImportService {
         estimatedCost: attempt.estimatedCost?.toString() ?? null,
         actualCost: attempt.actualCost?.toString() ?? null,
         currency: attempt.currency,
+      }));
+      view.candidates = record.candidates.map((candidate): ExtractionCandidateViewDto => ({
+        id: candidate.id,
+        attemptId: candidate.attemptId!,
+        field: candidate.field,
+        rawValue: candidate.rawValue,
+        normalizedValue: candidate.normalizedValue,
+        unit: candidate.unit,
+        page: candidate.page,
+        region: candidate.region as Record<string, unknown> | null,
+        providerConfidence: candidate.providerConfidence as ProviderConfidenceViewDto | null,
+        qualitySignals: candidate.qualitySignals as Record<string, unknown>,
+        systemValidation: candidate.systemValidation as Record<string, unknown>,
       }));
       return view;
     });
