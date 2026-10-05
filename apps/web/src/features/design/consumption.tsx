@@ -6,6 +6,7 @@ import { Feedback } from '../identity/feedback';
 import type { Schemas } from '@moura-solar/api-client';
 
 type EnergyReading = Schemas['EnergyReadingViewDto'];
+type EnergyReadingVersion = Schemas['EnergyReadingVersionViewDto'];
 type UtilityUnit = Schemas['UtilityUnitViewDto'];
 
 interface EnergyReadingsProps {
@@ -45,6 +46,8 @@ export function EnergyReadings({
   const [kwh, setKwh] = useState('');
   const [billedAmount, setBilledAmount] = useState('');
   const [readingNotes, setReadingNotes] = useState('');
+  const [correctionTarget, setCorrectionTarget] = useState<EnergyReading | null>(null);
+  const [correctionReason, setCorrectionReason] = useState('');
 
   // Permissions
   const me = useQuery({
@@ -140,43 +143,113 @@ export function EnergyReadings({
     },
   });
 
-  // Add / update reading
+  // Create an immutable monthly reading or an explicit corrected version.
   const addReadingMutation = useMutation({
     mutationFn: async () => {
       if (!activeUnitId) throw new Error('Unidade consumidora não definida');
+      const body = {
+        referenceMonth: refMonth,
+        consumptionKwh: parseFloat(kwh),
+        billedAmount: billedAmount ? parseFloat(billedAmount) : undefined,
+        source: 'MANUAL' as const,
+        notes: readingNotes || undefined,
+      };
+      if (correctionTarget) {
+        const correctionBody = {
+          ...body,
+          expectedVersion: correctionTarget.version,
+          correctionReason,
+        };
+        const fingerprint = JSON.stringify({
+          operation: 'correction',
+          utilityUnitId: activeUnitId,
+          readingId: correctionTarget.id,
+          body: correctionBody,
+        });
+        let key = commandKeys.current.get(fingerprint);
+        if (!key) {
+          key = crypto.randomUUID();
+          commandKeys.current.set(fingerprint, key);
+        }
+        return result(
+          api.POST('/api/v1/utility-units/{id}/readings/{readingId}/corrections', {
+            params: {
+              path: { id: activeUnitId, readingId: correctionTarget.id },
+              header: { 'idempotency-key': key },
+            },
+            body: correctionBody,
+          }),
+        );
+      }
+      const fingerprint = JSON.stringify({
+        operation: 'create',
+        utilityUnitId: activeUnitId,
+        body,
+      });
+      let key = commandKeys.current.get(fingerprint);
+      if (!key) {
+        key = crypto.randomUUID();
+        commandKeys.current.set(fingerprint, key);
+      }
       return result(
         api.POST('/api/v1/utility-units/{id}/readings', {
-          params: { path: { id: activeUnitId } },
-          body: {
-            referenceMonth: refMonth,
-            consumptionKwh: parseFloat(kwh),
-            billedAmount: billedAmount ? parseFloat(billedAmount) : undefined,
-            source: 'MANUAL',
-            notes: readingNotes || undefined,
-          },
+          params: { path: { id: activeUnitId }, header: { 'idempotency-key': key } },
+          body,
         }),
       );
     },
     onSuccess: () => {
+      commandKeys.current.clear();
       queryClient.invalidateQueries({ queryKey: ['energy-readings', activeUnitId] });
       setKwh('');
       setBilledAmount('');
       setReadingNotes('');
+      setCorrectionTarget(null);
+      setCorrectionReason('');
+    },
+    onError: (error) => {
+      if (error instanceof ApiFailure && error.status === 409) {
+        void queryClient.invalidateQueries({ queryKey: ['energy-readings', activeUnitId] });
+      }
     },
   });
+
+  const startCorrection = (reading: EnergyReading) => {
+    setCorrectionTarget(reading);
+    setRefMonth(reading.referenceMonth);
+    setKwh(String(reading.consumptionKwh));
+    setBilledAmount(reading.billedAmount === null ? '' : String(reading.billedAmount));
+    setReadingNotes(reading.notes ?? '');
+    setCorrectionReason('');
+  };
 
   // Delete reading
   const deleteReadingMutation = useMutation({
     mutationFn: async (readingId: string) => {
       if (!activeUnitId) throw new Error('Unidade consumidora não selecionada');
+      const fingerprint = JSON.stringify({ operation: 'delete-reading', activeUnitId, readingId });
+      let key = commandKeys.current.get(fingerprint);
+      if (!key) {
+        key = crypto.randomUUID();
+        commandKeys.current.set(fingerprint, key);
+      }
       return result(
         api.DELETE('/api/v1/utility-units/{id}/readings/{readingId}', {
-          params: { path: { id: activeUnitId, readingId } },
+          params: {
+            path: { id: activeUnitId, readingId },
+            header: { 'idempotency-key': key },
+          },
         }),
       );
     },
     onSuccess: () => {
+      commandKeys.current.clear();
       queryClient.invalidateQueries({ queryKey: ['energy-readings', activeUnitId] });
+    },
+    onError: (error) => {
+      if (error instanceof ApiFailure && error.status === 409) {
+        void queryClient.invalidateQueries({ queryKey: ['energy-readings', activeUnitId] });
+      }
     },
   });
 
@@ -433,7 +506,11 @@ export function EnergyReadings({
             addReadingMutation.mutate();
           }}
         >
-          <h4>Adicionar Leitura Mensal</h4>
+          <h4>
+            {correctionTarget
+              ? `Corrigir leitura de ${correctionTarget.referenceMonth} (versão ${correctionTarget.version})`
+              : 'Adicionar Leitura Mensal'}
+          </h4>
           <Feedback error={addReadingMutation.error} />
           <div className="form-grid">
             <label>
@@ -443,6 +520,7 @@ export function EnergyReadings({
                 required
                 value={refMonth}
                 onChange={(e) => setRefMonth(e.target.value)}
+                disabled={!!correctionTarget}
               />
             </label>
             <label>
@@ -477,11 +555,40 @@ export function EnergyReadings({
                 onChange={(e) => setReadingNotes(e.target.value)}
               />
             </label>
+            {correctionTarget && (
+              <label>
+                Motivo da correção *
+                <input
+                  type="text"
+                  required
+                  minLength={3}
+                  maxLength={500}
+                  value={correctionReason}
+                  onChange={(e) => setCorrectionReason(e.target.value)}
+                  placeholder="Ex.: valor conferido novamente na fatura"
+                />
+              </label>
+            )}
           </div>
           <div className="actions" style={{ marginTop: '0.75rem' }}>
             <button type="submit" disabled={addReadingMutation.isPending}>
-              Salvar Leitura
+              {correctionTarget ? 'Salvar nova versão corrigida' : 'Salvar Leitura'}
             </button>
+            {correctionTarget && (
+              <button
+                type="button"
+                disabled={addReadingMutation.isPending}
+                onClick={() => {
+                  setCorrectionTarget(null);
+                  setCorrectionReason('');
+                  setKwh('');
+                  setBilledAmount('');
+                  setReadingNotes('');
+                }}
+              >
+                Cancelar correção
+              </button>
+            )}
           </div>
         </form>
       )}
@@ -510,6 +617,7 @@ export function EnergyReadings({
               <tr key={r.id}>
                 <td>
                   <strong>{r.referenceMonth}</strong>
+                  <small style={{ display: 'block' }}>versão {r.version}</small>
                 </td>
                 <td>
                   <strong>{r.consumptionKwh.toLocaleString('pt-BR')} kWh</strong>
@@ -519,9 +627,33 @@ export function EnergyReadings({
                     ? `R$ ${r.billedAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                     : '—'}
                 </td>
-                <td className="device">{r.notes ?? '—'}</td>
+                <td className="device">
+                  {r.notes ?? '—'}
+                  {r.correctionReason && (
+                    <small style={{ display: 'block' }}>{r.correctionReason}</small>
+                  )}
+                  {r.history.length > 0 && (
+                    <details style={{ marginTop: '0.35rem' }}>
+                      <summary>Ver {r.history.length} versão(ões) anterior(es)</summary>
+                      {r.history.map((version) => (
+                        <div key={version.id} style={{ marginTop: '0.35rem' }}>
+                          v{version.version} · {version.consumptionKwh.toLocaleString('pt-BR')} kWh
+                          · {version.status}
+                          {version.correctionReason && ` · ${version.correctionReason}`}
+                        </div>
+                      ))}
+                    </details>
+                  )}
+                </td>
                 {!readonly && (
                   <td>
+                    <button
+                      type="button"
+                      style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
+                      onClick={() => startCorrection(r)}
+                    >
+                      Corrigir
+                    </button>
                     <button
                       type="button"
                       style={{
@@ -566,6 +698,7 @@ export function EnergyReadings({
             >
               <div>
                 <strong>{r.referenceMonth}</strong>
+                <small style={{ display: 'block' }}>versão {r.version}</small>
                 <div
                   style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--brand-primary)' }}
                 >
@@ -580,7 +713,40 @@ export function EnergyReadings({
                     })}
                   </div>
                 )}
+                {r.correctionReason && (
+                  <div className="device" style={{ fontSize: '0.8125rem' }}>
+                    Motivo da correção: {r.correctionReason}
+                  </div>
+                )}
+                {r.history.length > 0 && (
+                  <details style={{ marginTop: '0.35rem' }}>
+                    <summary>Ver {r.history.length} versão(ões) anterior(es)</summary>
+                    {r.history.map((version: EnergyReadingVersion) => (
+                      <div key={version.id} className="device" style={{ marginTop: '0.35rem' }}>
+                        v{version.version} · {version.consumptionKwh.toLocaleString('pt-BR')} kWh ·{' '}
+                        {version.status}
+                        {version.correctionReason && ` · ${version.correctionReason}`}
+                      </div>
+                    ))}
+                  </details>
+                )}
               </div>
+              {!readonly && (
+                <button
+                  type="button"
+                  style={{
+                    padding: '0.35rem 0.75rem',
+                    fontSize: '0.8125rem',
+                    background: 'var(--color-surface)',
+                    color: 'var(--status-danger)',
+                    borderColor: 'var(--status-danger)',
+                  }}
+                  onClick={() => startCorrection(r)}
+                  disabled={deleteReadingMutation.isPending}
+                >
+                  Corrigir
+                </button>
+              )}
               {!readonly && (
                 <button
                   type="button"

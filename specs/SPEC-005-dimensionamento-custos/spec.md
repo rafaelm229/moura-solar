@@ -83,6 +83,10 @@ ao lado do campo.
 - Cada leitura possui mês de referência e kWh.
 - Não pode existir mais de uma leitura ativa para a mesma UC e mês, salvo versão
   explicitamente corrigida.
+- Repetir a criação para uma competência já ativa retorna conflito; correção usa
+  comando próprio, motivo obrigatório, versão esperada e chave de idempotência,
+  preservando a versão anterior.
+- Versões anteriores permanecem consultáveis e não entram no cálculo do consumo.
 - Média de 12 meses usa os meses existentes e informa a quantidade considerada.
 - Histórico incompleto exibe aviso; não inventa meses ausentes.
 - Consumo projetado futuro fica separado do consumo histórico.

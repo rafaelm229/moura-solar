@@ -1986,12 +1986,20 @@
         "tags": ["design"]
       },
       "post": {
-        "operationId": "DesignController_createOrUpdateReading",
+        "operationId": "DesignController_createEnergyReading",
         "parameters": [
           {
             "name": "id",
             "required": true,
             "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
             "schema": {
               "type": "string"
             }
@@ -2003,6 +2011,65 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CreateEnergyReadingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnergyReadingViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["design"]
+      }
+    },
+    "/api/v1/utility-units/{id}/readings/{readingId}/corrections": {
+      "post": {
+        "operationId": "DesignController_correctReading",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "readingId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorrectEnergyReadingDto"
               }
             }
           }
@@ -2043,6 +2110,14 @@
             "name": "readingId",
             "required": true,
             "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
             "schema": {
               "type": "string"
             }
@@ -7873,6 +7948,57 @@
         },
         "required": ["expectedVersion", "dueAt"]
       },
+      "EnergyReadingVersionViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "referenceMonth": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          },
+          "consumptionKwh": {
+            "type": "number"
+          },
+          "injectedKwh": {
+            "type": "number",
+            "nullable": true
+          },
+          "billedAmount": {
+            "type": "number",
+            "nullable": true
+          },
+          "source": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "correctionReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "referenceMonth",
+          "version",
+          "consumptionKwh",
+          "source",
+          "status",
+          "createdAt"
+        ]
+      },
       "EnergyReadingViewDto": {
         "type": "object",
         "properties": {
@@ -7902,12 +8028,25 @@
           "status": {
             "type": "string"
           },
+          "version": {
+            "type": "number"
+          },
+          "correctionReason": {
+            "type": "string",
+            "nullable": true
+          },
           "notes": {
             "type": "string",
             "nullable": true
           },
           "createdAt": {
             "type": "string"
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EnergyReadingVersionViewDto"
+            }
           }
         },
         "required": [
@@ -7917,7 +8056,9 @@
           "consumptionKwh",
           "source",
           "status",
-          "createdAt"
+          "version",
+          "createdAt",
+          "history"
         ]
       },
       "ConsumptionSummaryViewDto": {
@@ -7983,6 +8124,45 @@
           }
         },
         "required": ["referenceMonth", "consumptionKwh"]
+      },
+      "CorrectEnergyReadingDto": {
+        "type": "object",
+        "properties": {
+          "referenceMonth": {
+            "type": "string",
+            "example": "2026-08"
+          },
+          "consumptionKwh": {
+            "type": "number",
+            "example": 450.5
+          },
+          "injectedKwh": {
+            "type": "number",
+            "example": 0
+          },
+          "billedAmount": {
+            "type": "number",
+            "example": 425.8
+          },
+          "source": {
+            "type": "string",
+            "default": "MANUAL",
+            "enum": ["MANUAL", "BILL", "IMPORT"]
+          },
+          "notes": {
+            "type": "string"
+          },
+          "expectedVersion": {
+            "type": "number",
+            "example": 1,
+            "minimum": 1
+          },
+          "correctionReason": {
+            "type": "string",
+            "example": "Valor corrigido conforme fatura conferida."
+          }
+        },
+        "required": ["referenceMonth", "consumptionKwh", "expectedVersion", "correctionReason"]
       },
       "SurveyViewDto": {
         "type": "object",

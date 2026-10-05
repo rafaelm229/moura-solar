@@ -1,5 +1,20 @@
 # Lote 0 — Baseline e correções verificadas
 
+## Incremento A08 — corrigir leituras com versão explícita
+
+O endpoint de criação não faz mais `upsert`: novo mês é criado uma vez, e outra
+leitura ativa para o mesmo mês retorna 409 sem alterar o valor persistido. O
+comando `POST /utility-units/:id/readings/:readingId/corrections` cria uma nova
+versão transacional, exige motivo, `expectedVersion`, permissão
+`consumer_units:manage` e `Idempotency-Key`, marca a anterior como `SUPERSEDED`
+e grava auditoria. A resposta de histórico inclui as versões anteriores com
+seu estado e motivo; exclusão lógica marca a versão como `DELETED`.
+
+A classe tarifária continua uma pendência de domínio: a SPEC não define uma
+tabela de conversão entre grupo tarifário (B1/B2/B3/A4) e `consumerClass`.
+Portanto, este incremento não transforma essa suposição da interface em regra
+nem altera o valor que já é enviado por ela.
+
 ## Incremento A10 — propriedade entre cliente, unidade consumidora e oportunidade
 
 **Estado:** corrigido e coberto por integração em 04/10/2026.
@@ -63,6 +78,6 @@ e conserva os dados digitados para uma nova tentativa explícita.
 - `PATH="$PWD/.bin:$PATH" pnpm check`: formato, lint, tipos, testes e builds
   aprovados; API 1.208 testes, web 5 e PoC 24.
 
-Este registro cobre as reproduções A09/A10/A15. A baseline completa ainda deve
-avaliar A08. A persistência insegura identificada em A11 foi tratada no
+Este registro cobre as reproduções A08/A09/A10/A15. A persistência insegura
+identificada em A11 foi tratada no
 incremento do lote 4, registrado em `docs/lote-4-revisao-e-validacao.md`.

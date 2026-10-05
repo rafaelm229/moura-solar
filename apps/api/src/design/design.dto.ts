@@ -2,12 +2,15 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
   IsBoolean,
+  IsInt,
   IsIn,
   IsNumber,
   IsOptional,
   IsString,
   Matches,
+  MaxLength,
   Min,
+  MinLength,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -46,6 +49,33 @@ export class CreateEnergyReadingDto {
   notes?: string;
 }
 
+export class CorrectEnergyReadingDto extends CreateEnergyReadingDto {
+  @ApiProperty({ example: 1, minimum: 1 })
+  @IsInt()
+  @Min(1)
+  expectedVersion!: number;
+
+  @ApiProperty({ example: 'Valor corrigido conforme fatura conferida.' })
+  @IsString()
+  @MinLength(3)
+  @MaxLength(500)
+  correctionReason!: string;
+}
+
+export class EnergyReadingVersionViewDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() referenceMonth!: string;
+  @ApiProperty() version!: number;
+  @ApiProperty() consumptionKwh!: number;
+  @ApiPropertyOptional({ type: Number, nullable: true }) injectedKwh!: number | null;
+  @ApiPropertyOptional({ type: Number, nullable: true }) billedAmount!: number | null;
+  @ApiProperty() source!: string;
+  @ApiProperty() status!: string;
+  @ApiPropertyOptional({ type: String, nullable: true }) correctionReason!: string | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) notes!: string | null;
+  @ApiProperty() createdAt!: string;
+}
+
 export class EnergyReadingViewDto {
   @ApiProperty() id!: string;
   @ApiProperty() utilityUnitId!: string;
@@ -55,8 +85,11 @@ export class EnergyReadingViewDto {
   @ApiPropertyOptional({ type: Number, nullable: true }) billedAmount!: number | null;
   @ApiProperty() source!: string;
   @ApiProperty() status!: string;
+  @ApiProperty() version!: number;
+  @ApiPropertyOptional({ type: String, nullable: true }) correctionReason!: string | null;
   @ApiPropertyOptional({ type: String, nullable: true }) notes!: string | null;
   @ApiProperty() createdAt!: string;
+  @ApiProperty({ type: [EnergyReadingVersionViewDto] }) history!: EnergyReadingVersionViewDto[];
 }
 
 export class ConsumptionSummaryViewDto {

@@ -685,7 +685,23 @@ export interface paths {
     };
     get: operations['DesignController_getReadings'];
     put?: never;
-    post: operations['DesignController_createOrUpdateReading'];
+    post: operations['DesignController_createEnergyReading'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/utility-units/{id}/readings/{readingId}/corrections': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['DesignController_correctReading'];
     delete?: never;
     options?: never;
     head?: never;
@@ -2907,6 +2923,19 @@ export interface components {
       dueAt: string;
       notes?: string;
     };
+    EnergyReadingVersionViewDto: {
+      id: string;
+      referenceMonth: string;
+      version: number;
+      consumptionKwh: number;
+      injectedKwh?: number | null;
+      billedAmount?: number | null;
+      source: string;
+      status: string;
+      correctionReason?: string | null;
+      notes?: string | null;
+      createdAt: string;
+    };
     EnergyReadingViewDto: {
       id: string;
       utilityUnitId: string;
@@ -2916,8 +2945,11 @@ export interface components {
       billedAmount?: number | null;
       source: string;
       status: string;
+      version: number;
+      correctionReason?: string | null;
       notes?: string | null;
       createdAt: string;
+      history: components['schemas']['EnergyReadingVersionViewDto'][];
     };
     ConsumptionSummaryViewDto: {
       readings: components['schemas']['EnergyReadingViewDto'][];
@@ -2942,6 +2974,26 @@ export interface components {
        */
       source: 'MANUAL' | 'BILL' | 'IMPORT';
       notes?: string;
+    };
+    CorrectEnergyReadingDto: {
+      /** @example 2026-08 */
+      referenceMonth: string;
+      /** @example 450.5 */
+      consumptionKwh: number;
+      /** @example 0 */
+      injectedKwh?: number;
+      /** @example 425.8 */
+      billedAmount?: number;
+      /**
+       * @default MANUAL
+       * @enum {string}
+       */
+      source: 'MANUAL' | 'BILL' | 'IMPORT';
+      notes?: string;
+      /** @example 1 */
+      expectedVersion: number;
+      /** @example Valor corrigido conforme fatura conferida. */
+      correctionReason: string;
     };
     SurveyViewDto: {
       id: string;
@@ -5752,10 +5804,12 @@ export interface operations {
       };
     };
   };
-  DesignController_createOrUpdateReading: {
+  DesignController_createEnergyReading: {
     parameters: {
       query?: never;
-      header?: never;
+      header: {
+        'idempotency-key': string;
+      };
       path: {
         id: string;
       };
@@ -5777,10 +5831,40 @@ export interface operations {
       };
     };
   };
+  DesignController_correctReading: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+      };
+      path: {
+        id: string;
+        readingId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CorrectEnergyReadingDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EnergyReadingViewDto'];
+        };
+      };
+    };
+  };
   DesignController_deleteReading: {
     parameters: {
       query?: never;
-      header?: never;
+      header: {
+        'idempotency-key': string;
+      };
       path: {
         id: string;
         readingId: string;

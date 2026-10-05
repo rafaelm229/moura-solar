@@ -485,6 +485,8 @@ model EnergyReading {
   billedAmount   Decimal?     @map("billed_amount") @db.Decimal(12, 2)
   source         String       @default("MANUAL")
   status         String       @default("ACTIVE")
+  version        Int          @default(1)
+  correctionReason String?     @map("correction_reason")
   notes          String?
   createdAt      DateTime     @default(now()) @map("created_at")
   updatedAt      DateTime     @updatedAt @map("updated_at")
@@ -492,8 +494,8 @@ model EnergyReading {
   organization   Organization @relation(fields: [organizationId], references: [id])
   utilityUnit    UtilityUnit  @relation(fields: [utilityUnitId], references: [id], onDelete: Cascade)
 
-  @@unique([utilityUnitId, referenceMonth])
-  @@index([utilityUnitId])
+  @@unique([utilityUnitId, referenceMonth, version])
+  @@index([utilityUnitId, status, referenceMonth])
   @@map("energy_readings")
 }
 

@@ -92,6 +92,21 @@ for (const [width, height] of [
     const readingsContainer = page.locator(width < 768 ? '.mobile-readings-list' : '.desktop-only');
     await expect(readingsContainer.getByText('550 kWh')).toBeVisible();
 
+    // Duplicate creation must report a conflict without changing the saved reading.
+    await page.getByLabel('Consumo Mensal (kWh) *').fill('999');
+    await page.getByRole('button', { name: 'Salvar Leitura' }).click();
+    await expect(page.getByText(/Este mês já possui uma leitura/)).toBeVisible();
+    await expect(readingsContainer.getByText('550 kWh')).toBeVisible();
+
+    // Explicit correction records a new version and keeps the old value inspectable.
+    await readingsContainer.getByRole('button', { name: 'Corrigir' }).first().click();
+    await page.getByLabel('Consumo Mensal (kWh) *').fill('575');
+    await page.getByLabel('Motivo da correção *').fill('Valor conferido novamente na fatura.');
+    await page.getByRole('button', { name: 'Salvar nova versão corrigida' }).click();
+    await expect(readingsContainer.getByText('575 kWh')).toBeVisible();
+    await readingsContainer.getByText(/Ver 1 versão\(ões\) anterior\(es\)/).click();
+    await expect(readingsContainer.getByText(/550 kWh.*SUPERSEDED/s)).toBeVisible();
+
     await page.getByLabel('Mês de Referência (AAAA-MM) *').fill('2026-07');
     await page.getByLabel('Consumo Mensal (kWh) *').fill('650');
     await page.getByLabel('Valor Faturado (R$)').fill('620.00');
@@ -102,7 +117,7 @@ for (const [width, height] of [
     // SPEC-005 item 16 Acceptance Criteria: Incomplete history must be prominently warned
     await expect(page.getByTestId('incomplete-history-notice')).toBeVisible();
     await expect(page.getByText('2 / 12')).toBeVisible();
-    await expect(page.getByText('600 kWh').first()).toBeVisible(); // (550 + 650) / 2 = 600
+    await expect(page.getByText('612,5 kWh').first()).toBeVisible(); // (575 + 650) / 2 = 612.5
 
     // Fill in technical survey
     await page.getByRole('button', { name: '+ Iniciar Levantamento Técnico' }).click();
