@@ -41,6 +41,7 @@ class Client {
         origin: env.WEB_ORIGIN,
         'x-requested-with': 'MouraSolar',
         'content-type': 'application/json',
+        'idempotency-key': randomUUID(),
         cookie: [...this.cookies].map(([k, v]) => `${k}=${v}`).join('; '),
         ...headers,
       },
@@ -64,11 +65,13 @@ class Client {
 }
 
 const admin = new Client();
+const seller = new Client();
 let organizationId;
 let centralLocationId;
 let vehicleLocationId;
 let supplierId;
 let catalogItemId;
+let moduleCatalogItemId;
 let opportunityId;
 let purchaseOrderId;
 
@@ -119,6 +122,38 @@ test('1. Bootstrap and authenticate admin', async () => {
   assert.equal(loginRes.status, 201);
   organizationId = loginRes.body.organizationId;
   assert.ok(organizationId);
+
+  const roles = await admin.call('identity/roles');
+  const sellerRole = roles.body.find((role) => role.name === 'Vendedor');
+  assert.ok(sellerRole.grants.some((grant) => grant.permission === 'inventory:availability:read'));
+  const invitation = await admin.call('identity/invitations', 'POST', {
+    name: 'Vendedor Estoque Teste',
+    email: 'seller.stock@test.moura',
+    roleId: sellerRole.id,
+  });
+  assert.equal(invitation.status, 201);
+  assert.equal(
+    (
+      await seller.call('identity/accept-link', 'POST', {
+        token: invitation.body.token,
+        password,
+      })
+    ).status,
+    201,
+  );
+  assert.equal(
+    (
+      await seller.call('identity/login', 'POST', {
+        email: 'seller.stock@test.moura',
+        password,
+      })
+    ).status,
+    201,
+  );
+  const availability = await seller.call('inventory/module-availability');
+  assert.equal(availability.status, 200);
+  assert.deepEqual(availability.body, []);
+  assert.equal((await seller.call('inventory/balances')).status, 403);
 });
 
 test('2. Create stock locations', async () => {
@@ -177,6 +212,22 @@ test('3. Create supplier and catalog item', async () => {
   });
   catalogItemId = item.id;
   assert.ok(catalogItemId);
+
+  const module = await db.catalogItem.create({
+    data: {
+      organizationId,
+      sku: 'MOD-LONGI-630W',
+      kind: 'MATERIAL',
+      category: 'MODULE',
+      name: 'Módulo Longi N-Type 630 Wp',
+      manufacturer: 'Longi Solar',
+      model: 'Hi-MO X6',
+      unitOfMeasure: 'UN',
+      powerRatingWp: 630,
+      referenceCost: 520,
+    },
+  });
+  moduleCatalogItemId = module.id;
 });
 
 test('4. Issue, approve purchase order and receive goods with seriais', async () => {
@@ -214,6 +265,46 @@ test('4. Issue, approve purchase order and receive goods with seriais', async ()
     ],
   });
   assert.equal(recRes.status, 201);
+
+  const quarantine = await db.stockLocation.create({
+    data: { organizationId, code: 'QUAR-TEST', name: 'Quarentena teste', type: 'QUARANTINE' },
+  });
+  const transit = await db.stockLocation.create({
+    data: { organizationId, code: 'TRANSIT-TEST', name: 'Trânsito teste', type: 'TRANSIT' },
+  });
+  const inactive = await db.stockLocation.create({
+    data: {
+      organizationId,
+      code: 'DEP-INACTIVE',
+      name: 'Depósito inativo teste',
+      type: 'WAREHOUSE',
+      status: 'INACTIVE',
+    },
+  });
+  for (const [locationId, available] of [
+    [centralLocationId, 8],
+    [vehicleLocationId, 2],
+    [quarantine.id, 100],
+    [transit.id, 50],
+    [inactive.id, 25],
+  ]) {
+    await db.stockBalance.create({
+      data: {
+        organizationId,
+        catalogItemId: moduleCatalogItemId,
+        locationId,
+        physicalOnHand: available,
+        available,
+        averageCost: 520,
+      },
+    });
+  }
+  const moduleAvailability = await seller.call('inventory/module-availability');
+  assert.equal(moduleAvailability.status, 200);
+  assert.deepEqual(moduleAvailability.body, [
+    { catalogItemId: moduleCatalogItemId, available: 10 },
+  ]);
+  assert.equal((await seller.call('inventory/movements')).status, 403);
 
   // Verifica saldo atualizado
   const balances = await admin.call(

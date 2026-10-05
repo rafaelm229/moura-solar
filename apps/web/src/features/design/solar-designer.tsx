@@ -8,11 +8,6 @@ import type { Schemas } from '@moura-solar/api-client';
 type Design = Schemas['DesignViewDto'];
 type DesignVersion = Schemas['DesignVersionViewDto'];
 type DesignSuggestion = Schemas['DesignSuggestionViewDto'];
-type ModuleStockBalance = {
-  catalogItemId: string;
-  available: number | string;
-  location?: { type: string } | null;
-};
 
 interface SolarDesignerProps {
   opportunityId: string;
@@ -83,7 +78,10 @@ export function SolarDesigner({
   const canCreateDesign = me.data ? allows(me.data, 'designs:create', false) : false;
   const canUpdateDesign = me.data ? allows(me.data, 'designs:update', false) : false;
   const canApproveDesign = me.data ? allows(me.data, 'designs:approve', false) : false;
-  const canReadStock = me.data ? allows(me.data, 'inventory:read', true) : false;
+  const canReadModuleAvailability = me.data
+    ? allows(me.data, 'inventory:availability:read', true) ||
+      allows(me.data, 'inventory:read', true)
+    : false;
 
   // Query designs for this opportunity
   const designsQuery = useQuery({
@@ -112,9 +110,8 @@ export function SolarDesigner({
 
   const stockBalancesQuery = useQuery({
     queryKey: ['stock-balances', 'design-module-picker'],
-    queryFn: async () =>
-      (await result(api.GET('/api/v1/inventory/balances'))) as unknown as ModuleStockBalance[],
-    enabled: canReadStock && !currentDesign,
+    queryFn: () => result(api.GET('/api/v1/inventory/module-availability')),
+    enabled: canReadModuleAvailability && !currentDesign,
   });
 
   const moduleCatalogItems = useMemo(
@@ -136,7 +133,6 @@ export function SolarDesigner({
   const moduleStockByCatalogId = useMemo(() => {
     const stock = new Map<string, number>();
     for (const balance of stockBalancesQuery.data ?? []) {
-      if (balance.location?.type === 'QUARANTINE' || balance.location?.type === 'TRANSIT') continue;
       stock.set(
         balance.catalogItemId,
         (stock.get(balance.catalogItemId) ?? 0) + Number(balance.available),
@@ -157,7 +153,7 @@ export function SolarDesigner({
       !preferredModuleCatalogItemId &&
       !moduleSearch.trim() &&
       !catalogQuery.isLoading &&
-      (!canReadStock || !stockBalancesQuery.isLoading) &&
+      (!canReadModuleAvailability || !stockBalancesQuery.isLoading) &&
       moduleCatalogItems.length > 0
     ) {
       const firstAvailableModule = moduleCatalogItems.find(
@@ -166,7 +162,7 @@ export function SolarDesigner({
       setPreferredModuleCatalogItemId((firstAvailableModule ?? moduleCatalogItems[0]).id);
     }
   }, [
-    canReadStock,
+    canReadModuleAvailability,
     catalogQuery.isLoading,
     moduleCatalogItems,
     moduleSearch,
@@ -437,7 +433,7 @@ export function SolarDesigner({
 
         <Feedback error={designsQuery.error} />
         <Feedback error={catalogQuery.error} />
-        {canReadStock && <Feedback error={stockBalancesQuery.error} />}
+        {canReadModuleAvailability && <Feedback error={stockBalancesQuery.error} />}
         <Feedback error={suggestMutation.error} />
         <Feedback error={createDesignMutation.error} />
 
@@ -512,7 +508,7 @@ export function SolarDesigner({
                   const productName = [item.manufacturer, item.model || item.name]
                     .filter(Boolean)
                     .join(' ');
-                  const stockLabel = canReadStock
+                  const stockLabel = canReadModuleAvailability
                     ? stockBalancesQuery.isLoading
                       ? ' • consultando estoque…'
                       : stockBalancesQuery.isError
@@ -526,7 +522,7 @@ export function SolarDesigner({
                   );
                 })}
               </select>
-              {canReadStock && !stockBalancesQuery.isLoading && (
+              {canReadModuleAvailability && !stockBalancesQuery.isLoading && (
                 <span className="device" style={{ fontSize: '0.75rem' }}>
                   Saldo disponível somado entre depósitos e veículos; não reserva equipamentos.
                 </span>

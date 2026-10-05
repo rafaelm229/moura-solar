@@ -1412,6 +1412,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/inventory/module-availability': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['InventoryController_listModuleAvailability'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/inventory/locations': {
     parameters: {
       query?: never;
@@ -3733,6 +3749,11 @@ export interface components {
       triggerGate: string;
       /** @description Notas da comissão */
       notes?: string;
+    };
+    ModuleAvailabilityViewDto: {
+      /** Format: uuid */
+      catalogItemId: string;
+      available: number;
     };
     CreateStockLocationDto: {
       /** @example DEP-MATRIZ */
@@ -7236,6 +7257,25 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  InventoryController_listModuleAvailability: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ModuleAvailabilityViewDto'][];
+        };
       };
     };
   };
