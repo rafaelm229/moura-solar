@@ -4724,6 +4724,25 @@ export interface components {
       /** @description Oportunidade vinculada ao mesmo cliente, quando selecionada. */
       opportunityId?: string;
     };
+    ExtractionAttemptViewDto: {
+      id: string;
+      attemptNumber: number;
+      /** @enum {string} */
+      status:
+        'CLAIMED' | 'SUBMITTING' | 'SUBMITTED' | 'UNKNOWN' | 'FAILED' | 'SUCCEEDED' | 'CANCELED';
+      adapterName: string | null;
+      modelName: string | null;
+      modelVersion: string | null;
+      externalOperationId: string | null;
+      errorCode: string | null;
+      retryable: boolean | null;
+      startedAt: string;
+      finishedAt: string | null;
+      chargedPages: number | null;
+      estimatedCost: string | null;
+      actualCost: string | null;
+      currency: string | null;
+    };
     EnergyBillImportViewDto: {
       id: string;
       organizationId: string;
@@ -4745,6 +4764,7 @@ export interface components {
       appliedAt: string | null;
       latestReview?: Record<string, never>;
       applicationReceipt?: Record<string, never>;
+      attempts?: components['schemas']['ExtractionAttemptViewDto'][];
     };
     ImportMonthDecisionDto: {
       /** @example 2026-08 */

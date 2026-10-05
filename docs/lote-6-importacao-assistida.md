@@ -75,18 +75,35 @@ eventos. Testes cobrem concorrência, recuperação após lease expirada, rejei�
 de ack obsoleto e adiamento. O entrypoint continua sem consumidores ativos e
 nenhuma chamada externa é feita nesta fatia.
 
+## Incremento 6A-5 — correlação e recuperação de tentativa
+
+Data: 05/10/2026. Implementado em `feat/lote-6-attempt-recovery`.
+
+Cada tentativa passa a se vincular a um evento de outbox. Antes da submissão,
+o worker prepara a tentativa e persiste a chave de correlação; depois marca
+`SUBMITTING` antes de qualquer chamada externa e registra o `operationId` assim
+que recebido. Na retomada, `CLAIMED` pode continuar com a mesma correlação,
+`SUBMITTED` recupera a operação existente e `SUBMITTING` sem `operationId` vira
+`UNKNOWN`/`FAILED`, sem reenvio automático. `GET /energy-imports/:id` expõe
+metadados seguros da tentativa, sem bytes do documento ou conteúdo bruto.
+
+Estas transições são exercitadas por fixtures locais; o worker de produção
+segue desativado e nenhum adapter é invocado.
+
 ### Validação
 
+- `pnpm api:generate`: contrato e cliente TypeScript atualizados com metadados
+  seguros de tentativas.
 - `pnpm test:migrations`: migration aplicada em banco vazio e upgrade preservando
   dados existentes; reaplicação segura.
-- `pnpm test:integration`: 103/103, incluindo exclusividade, heartbeat,
-  recuperação de lease expirada, rejeição de ack obsoleto e adiamento.
+- `pnpm test:integration`: 104/104, incluindo retomada de `operationId` e
+  submissão ambígua sem repetição.
 - `pnpm test:e2e`: 31/31 jornadas responsivas existentes.
 - `pnpm check`: formato, lint, tipos, 1.250 testes unitários e build aprovados.
 - `git diff --check`: aprovado.
 
-OpenAPI permaneceu coerente e foi regenerado no incremento 6A-3; 6A-4 não altera
-contratos HTTP.
+OpenAPI permaneceu coerente e foi regenerado para expor apenas metadados seguros
+das tentativas.
 
 As decisões operacionais de mapeamento de classe tarifária, fornecedor/região
 OCR e limites de custo/quota continuam pendentes e não são inferidas nesta fatia.

@@ -11684,6 +11684,93 @@
         },
         "required": ["documentVersionId"]
       },
+      "ExtractionAttemptViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "attemptNumber": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "CLAIMED",
+              "SUBMITTING",
+              "SUBMITTED",
+              "UNKNOWN",
+              "FAILED",
+              "SUCCEEDED",
+              "CANCELED"
+            ]
+          },
+          "adapterName": {
+            "type": "string",
+            "nullable": true
+          },
+          "modelName": {
+            "type": "string",
+            "nullable": true
+          },
+          "modelVersion": {
+            "type": "string",
+            "nullable": true
+          },
+          "externalOperationId": {
+            "type": "string",
+            "nullable": true
+          },
+          "errorCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "retryable": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "startedAt": {
+            "type": "string"
+          },
+          "finishedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "chargedPages": {
+            "type": "number",
+            "nullable": true
+          },
+          "estimatedCost": {
+            "type": "string",
+            "nullable": true
+          },
+          "actualCost": {
+            "type": "string",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "attemptNumber",
+          "status",
+          "adapterName",
+          "modelName",
+          "modelVersion",
+          "externalOperationId",
+          "errorCode",
+          "retryable",
+          "startedAt",
+          "finishedAt",
+          "chargedPages",
+          "estimatedCost",
+          "actualCost",
+          "currency"
+        ]
+      },
       "EnergyBillImportViewDto": {
         "type": "object",
         "properties": {
@@ -11734,6 +11821,12 @@
           },
           "applicationReceipt": {
             "type": "object"
+          },
+          "attempts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExtractionAttemptViewDto"
+            }
           }
         },
         "required": [

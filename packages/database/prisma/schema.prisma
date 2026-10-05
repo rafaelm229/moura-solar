@@ -570,6 +570,7 @@ model ImportOutbox {
 
   organization   Organization   @relation(fields: [organizationId], references: [id])
   energyBillImport EnergyBillImport @relation(fields: [importId], references: [id], onDelete: Cascade)
+  extractionAttempt ExtractionAttempt?
 
   @@index([status, availableAt])
   @@index([importId])
@@ -601,6 +602,7 @@ model ExtractionAttempt {
   id                  String          @id @default(uuid()) @db.Uuid
   organizationId      String          @map("organization_id") @db.Uuid
   importId            String          @map("import_id") @db.Uuid
+  outboxId            String?         @unique @map("outbox_id") @db.Uuid
   attemptNumber       Int             @map("attempt_number")
   correlationId       String          @unique @map("correlation_id")
   adapterName         String?         @map("adapter_name")
@@ -626,6 +628,7 @@ model ExtractionAttempt {
 
   organization        Organization    @relation(fields: [organizationId], references: [id])
   energyBillImport    EnergyBillImport @relation(fields: [importId], references: [id], onDelete: Restrict)
+  outbox              ImportOutbox?   @relation(fields: [outboxId], references: [id], onDelete: Restrict)
   candidates          ExtractionCandidate[]
 
   @@unique([importId, attemptNumber])

@@ -7,6 +7,7 @@ import { fail, hash } from '../identity/security';
 import type {
   ConfirmEnergyBillImportDto,
   CreateEnergyBillImportDto,
+  ExtractionAttemptViewDto,
   EnergyBillImportLifecycleDto,
   EnergyBillImportReceiptDto,
   EnergyBillImportViewDto,
@@ -189,7 +190,7 @@ export class EnergyImportService {
           },
         });
         await this.store.audit(tx, 'ENERGY_BILL_IMPORT_QUEUED', actor, record.id, traceId);
-        return { ...toView(record) } as Prisma.InputJsonObject;
+        return { ...toView(record) } as unknown as Prisma.InputJsonObject;
       },
     );
     return result as unknown as EnergyBillImportViewDto;
@@ -212,6 +213,7 @@ export class EnergyImportService {
         include: {
           reviews: { orderBy: { revision: 'desc' }, take: 1 },
           application: true,
+          extractionAttempts: { orderBy: { attemptNumber: 'desc' } },
         },
       });
       if (!record) fail('ENERGY_IMPORT_NOT_FOUND', 'Importação não encontrada.', 404);
@@ -219,6 +221,23 @@ export class EnergyImportService {
       if (record.reviews[0]) view.latestReview = toLatestReview(record.reviews[0]);
       if (record.application)
         view.applicationReceipt = record.application.receipt as Record<string, unknown>;
+      view.attempts = record.extractionAttempts.map((attempt): ExtractionAttemptViewDto => ({
+        id: attempt.id,
+        attemptNumber: attempt.attemptNumber,
+        status: attempt.status,
+        adapterName: attempt.adapterName,
+        modelName: attempt.modelName,
+        modelVersion: attempt.modelVersion,
+        externalOperationId: attempt.externalOperationId,
+        errorCode: attempt.errorCode,
+        retryable: attempt.retryable,
+        startedAt: attempt.startedAt.toISOString(),
+        finishedAt: attempt.finishedAt?.toISOString() ?? null,
+        chargedPages: attempt.chargedPages,
+        estimatedCost: attempt.estimatedCost?.toString() ?? null,
+        actualCost: attempt.actualCost?.toString() ?? null,
+        currency: attempt.currency,
+      }));
       return view;
     });
   }
@@ -435,6 +454,10 @@ export class EnergyImportService {
           where: { importId, status: { in: ['PENDING', 'PROCESSING'] } },
           data: { status: 'CANCELED', leaseOwner: null, leaseUntil: null },
         });
+        await tx.extractionAttempt.updateMany({
+          where: { importId, status: { in: ['CLAIMED', 'SUBMITTING', 'SUBMITTED'] } },
+          data: { status: 'CANCELED', retryable: false, finishedAt: new Date() },
+        });
         await tx.energyImportTransition.create({
           data: {
             organizationId: actor.organizationId,
@@ -450,7 +473,7 @@ export class EnergyImportService {
         await this.store.audit(tx, 'ENERGY_BILL_IMPORT_CANCELED', actor, importId, traceId);
         return {
           ...toView({ ...record, status: 'CANCELED', version: nextVersion }),
-        } as Prisma.InputJsonObject;
+        } as unknown as Prisma.InputJsonObject;
       },
     );
     return result as unknown as EnergyBillImportViewDto;
@@ -531,7 +554,7 @@ export class EnergyImportService {
         await this.store.audit(tx, 'ENERGY_BILL_IMPORT_RETRIED', actor, importId, traceId);
         return {
           ...toView({ ...record, status: 'QUEUED', version: nextVersion }),
-        } as Prisma.InputJsonObject;
+        } as unknown as Prisma.InputJsonObject;
       },
     );
     return result as unknown as EnergyBillImportViewDto;
