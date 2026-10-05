@@ -4795,13 +4795,13 @@ export interface components {
       referenceMonth: string;
       /** @enum {string} */
       decision: 'KEEP' | 'INSERT' | 'REPLACE';
-      expectedReadingVersion?: Record<string, never> | null;
+      expectedReadingVersion?: number | null;
       /** @example 421.50 */
       consumptionKwh?: string;
       /** @example 16.25 */
-      injectedKwh?: Record<string, never> | null;
+      injectedKwh?: string | null;
       /** @example 384.92 */
-      billedAmount?: Record<string, never> | null;
+      billedAmount?: string | null;
       reason?: string;
     };
     ReviewEnergyBillImportDto: {

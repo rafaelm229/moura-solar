@@ -119,7 +119,7 @@ export class ImportMonthDecisionDto {
   @IsIn(['KEEP', 'INSERT', 'REPLACE'])
   decision!: 'KEEP' | 'INSERT' | 'REPLACE';
 
-  @ApiPropertyOptional({ nullable: true, minimum: 1 })
+  @ApiPropertyOptional({ nullable: true, minimum: 1, type: Number })
   @IsOptional()
   @IsInt()
   @Min(1)
@@ -131,13 +131,13 @@ export class ImportMonthDecisionDto {
   @Matches(/^(0|[1-9]\d{0,7})(\.\d{1,2})?$/)
   consumptionKwh?: string;
 
-  @ApiPropertyOptional({ example: '16.25', nullable: true })
+  @ApiPropertyOptional({ example: '16.25', nullable: true, type: String })
   @IsOptional()
   @IsString()
   @Matches(/^(0|[1-9]\d{0,7})(\.\d{1,2})?$/)
   injectedKwh?: string | null;
 
-  @ApiPropertyOptional({ example: '384.92', nullable: true })
+  @ApiPropertyOptional({ example: '384.92', nullable: true, type: String })
   @IsOptional()
   @IsString()
   @Matches(/^(0|[1-9]\d{0,9})(\.\d{1,2})?$/)

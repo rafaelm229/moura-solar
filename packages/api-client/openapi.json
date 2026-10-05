@@ -11936,7 +11936,7 @@
             "enum": ["KEEP", "INSERT", "REPLACE"]
           },
           "expectedReadingVersion": {
-            "type": "object",
+            "type": "number",
             "nullable": true,
             "minimum": 1
           },
@@ -11945,12 +11945,12 @@
             "example": "421.50"
           },
           "injectedKwh": {
-            "type": "object",
+            "type": "string",
             "example": "16.25",
             "nullable": true
           },
           "billedAmount": {
-            "type": "object",
+            "type": "string",
             "example": "384.92",
             "nullable": true
           },
