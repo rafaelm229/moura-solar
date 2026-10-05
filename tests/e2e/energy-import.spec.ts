@@ -275,5 +275,7 @@ for (const [width, height] of [
         }),
       ]),
     );
+    await resumedNewUnitDialog.getByRole('button', { name: 'Fechar', exact: true }).last().click();
+    await expect(page.getByText(`UC-NOVA-${width}`)).toBeVisible();
   });
 }
