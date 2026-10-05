@@ -27,6 +27,7 @@ model Organization {
   importReviews ImportReview[]
   importApplications ImportApplication[]
   energyReadingRevisions EnergyReadingRevision[]
+  energyImportTransitions EnergyImportTransition[]
   surveys     Survey[]
   catalogItems CatalogItem[]
   designs     Design[]
@@ -133,6 +134,7 @@ model User {
   resolvedAttentionItems AttentionItem[] @relation("ResolvedAttentionItems")
   notifications          Notification[]
   notificationPreferences NotificationPreference[]
+  energyImportTransitions EnergyImportTransition[]
 
   @@map("users")
 }
@@ -534,6 +536,7 @@ model EnergyBillImport {
   opportunity         Opportunity?              @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
   documentVersion     DossierDocumentVersion   @relation(fields: [documentVersionId], references: [id], onDelete: Restrict)
   outboxEvents        ImportOutbox[]
+  transitions         EnergyImportTransition[]
   candidates          ExtractionCandidate[]
   reviews             ImportReview[]
   application         ImportApplication?
@@ -565,6 +568,27 @@ model ImportOutbox {
   @@index([status, availableAt])
   @@index([importId])
   @@map("import_outbox")
+}
+
+model EnergyImportTransition {
+  id             String          @id @default(uuid()) @db.Uuid
+  organizationId String          @map("organization_id") @db.Uuid
+  importId       String          @map("import_id") @db.Uuid
+  actorId        String          @map("actor_id") @db.Uuid
+  action         String
+  fromStatus     String          @map("from_status")
+  toStatus       String          @map("to_status")
+  version        Int
+  reason         String
+  createdAt      DateTime        @default(now()) @map("created_at")
+
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  energyBillImport EnergyBillImport @relation(fields: [importId], references: [id], onDelete: Restrict)
+  actor          User            @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@unique([importId, version])
+  @@index([organizationId, createdAt])
+  @@map("energy_import_transitions")
 }
 
 model ExtractionCandidate {

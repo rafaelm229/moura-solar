@@ -314,6 +314,8 @@ test('create and status endpoints require their distinct effective grants', asyn
     'energy_imports:read',
     'energy_imports:review',
     'energy_imports:confirm',
+    'energy_imports:cancel',
+    'energy_imports:retry',
   ];
   const grants = await db.roleGrant.findMany({
     where: { roleId: membership.roleId, permission: { in: permissions } },
@@ -352,6 +354,20 @@ test('create and status endpoints require their distinct effective grants', asyn
       { 'idempotency-key': 'energy-import-denied-confirm-key' },
     );
     assert.equal(deniedConfirm.status, 403);
+    const deniedCancel = await admin.call(
+      'energy-imports/00000000-0000-4000-8000-000000000000/cancel',
+      'POST',
+      { expectedVersion: 1, reason: 'Sem grant de cancelamento' },
+      { 'idempotency-key': 'energy-import-denied-cancel-key' },
+    );
+    assert.equal(deniedCancel.status, 403);
+    const deniedRetry = await admin.call(
+      'energy-imports/00000000-0000-4000-8000-000000000000/retry',
+      'POST',
+      { expectedVersion: 1, reason: 'Sem grant de repetição' },
+      { 'idempotency-key': 'energy-import-denied-retry-key' },
+    );
+    assert.equal(deniedRetry.status, 403);
   } finally {
     await db.roleGrant.createMany({
       data: grants,
@@ -543,4 +559,95 @@ test('manual review is immutable and confirmation atomically applies versions wi
   assert.equal(status.body.status, 'APPLIED');
   assert.equal(status.body.latestReview.revision, 2);
   assert.deepEqual(status.body.applicationReceipt, receipt.body);
+});
+
+test('cancel and explicit retry are versioned, audited, scoped, and idempotent', async () => {
+  const cancelVersionId = await createReadyDocument(customerId, 'READY', true, 'e');
+  const cancelImport = await admin.call(
+    `customers/${customerId}/energy-imports`,
+    'POST',
+    { documentVersionId: cancelVersionId },
+    { 'idempotency-key': 'energy-import-cancel-create-key' },
+  );
+  assert.equal(cancelImport.status, 201, JSON.stringify(cancelImport.body));
+
+  const cancelInput = { expectedVersion: 1, reason: 'Cliente enviou a versão errada' };
+  const cancelHeaders = { 'idempotency-key': 'energy-import-cancel-command-key' };
+  const canceled = await admin.call(
+    `energy-imports/${cancelImport.body.id}/cancel`,
+    'POST',
+    cancelInput,
+    cancelHeaders,
+  );
+  assert.equal(canceled.status, 200, JSON.stringify(canceled.body));
+  assert.equal(canceled.body.status, 'CANCELED');
+  assert.equal(canceled.body.version, 2);
+  assert.deepEqual(
+    (
+      await admin.call(
+        `energy-imports/${cancelImport.body.id}/cancel`,
+        'POST',
+        cancelInput,
+        cancelHeaders,
+      )
+    ).body,
+    canceled.body,
+  );
+  assert.equal(
+    await db.importOutbox.count({ where: { importId: cancelImport.body.id, status: 'CANCELED' } }),
+    1,
+  );
+  const cancelTransition = await db.energyImportTransition.findUnique({
+    where: { importId_version: { importId: cancelImport.body.id, version: 2 } },
+  });
+  assert.equal(cancelTransition.action, 'CANCEL');
+  assert.equal(cancelTransition.reason, cancelInput.reason);
+
+  const retryVersionId = await createReadyDocument(customerId, 'READY', true, 'f');
+  const retryImport = await admin.call(
+    `customers/${customerId}/energy-imports`,
+    'POST',
+    { documentVersionId: retryVersionId },
+    { 'idempotency-key': 'energy-import-retry-create-key' },
+  );
+  assert.equal(retryImport.status, 201, JSON.stringify(retryImport.body));
+  await db.energyBillImport.update({
+    where: { id: retryImport.body.id },
+    data: { status: 'FAILED' },
+  });
+
+  const retryInput = { expectedVersion: 1, reason: 'Falha transitória revisada pelo operador' };
+  const retryHeaders = { 'idempotency-key': 'energy-import-retry-command-key' };
+  const retried = await admin.call(
+    `energy-imports/${retryImport.body.id}/retry`,
+    'POST',
+    retryInput,
+    retryHeaders,
+  );
+  assert.equal(retried.status, 202, JSON.stringify(retried.body));
+  assert.equal(retried.body.status, 'QUEUED');
+  assert.equal(retried.body.version, 2);
+  assert.equal(retried.body.documentVersionId, retryVersionId);
+  assert.deepEqual(
+    (
+      await admin.call(
+        `energy-imports/${retryImport.body.id}/retry`,
+        'POST',
+        retryInput,
+        retryHeaders,
+      )
+    ).body,
+    retried.body,
+  );
+  const retryEvents = await db.importOutbox.findMany({
+    where: { importId: retryImport.body.id },
+    orderBy: { createdAt: 'asc' },
+  });
+  assert.equal(retryEvents.length, 2);
+  assert.ok(retryEvents.every((event) => event.payload.documentVersionId === retryVersionId));
+  const retryTransition = await db.energyImportTransition.findUnique({
+    where: { importId_version: { importId: retryImport.body.id, version: 2 } },
+  });
+  assert.equal(retryTransition.action, 'RETRY');
+  assert.equal(retryTransition.reason, retryInput.reason);
 });

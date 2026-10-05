@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBody,
+  ApiAcceptedResponse,
   ApiCookieAuth,
   ApiCreatedResponse,
   ApiHeader,
@@ -22,6 +23,7 @@ import { RequirePermission, type IdentityRequest } from '../identity/identity.gu
 import {
   ConfirmEnergyBillImportDto,
   CreateEnergyBillImportDto,
+  EnergyBillImportLifecycleDto,
   EnergyBillImportReceiptDto,
   EnergyBillImportViewDto,
   ReviewEnergyBillImportDto,
@@ -93,5 +95,35 @@ export class EnergyImportController {
     @Headers('idempotency-key') idempotencyKey: string,
   ): Promise<EnergyBillImportReceiptDto> {
     return this.service.confirm(req.actor, id, dto, idempotencyKey, req.requestId ?? 'trace');
+  }
+
+  @Post('energy-imports/:id/cancel')
+  @RequirePermission('energy_imports:cancel')
+  @ApiHeader({ name: 'idempotency-key', required: true })
+  @HttpCode(200)
+  @ApiBody({ type: EnergyBillImportLifecycleDto })
+  @ApiOkResponse({ type: EnergyBillImportViewDto })
+  async cancel(
+    @Req() req: IdentityRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: EnergyBillImportLifecycleDto,
+    @Headers('idempotency-key') idempotencyKey: string,
+  ): Promise<EnergyBillImportViewDto> {
+    return this.service.cancel(req.actor, id, dto, idempotencyKey, req.requestId ?? 'trace');
+  }
+
+  @Post('energy-imports/:id/retry')
+  @RequirePermission('energy_imports:retry')
+  @ApiHeader({ name: 'idempotency-key', required: true })
+  @HttpCode(202)
+  @ApiBody({ type: EnergyBillImportLifecycleDto })
+  @ApiAcceptedResponse({ type: EnergyBillImportViewDto })
+  async retry(
+    @Req() req: IdentityRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: EnergyBillImportLifecycleDto,
+    @Headers('idempotency-key') idempotencyKey: string,
+  ): Promise<EnergyBillImportViewDto> {
+    return this.service.retry(req.actor, id, dto, idempotencyKey, req.requestId ?? 'trace');
   }
 }
