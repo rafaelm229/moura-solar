@@ -296,19 +296,53 @@ export class EnergyImportService {
           fail('IMPORT_NOT_REVIEWABLE', 'Esta importação não pode ser revisada neste estado.', 409);
         if (record.version !== dto.expectedVersion)
           fail('CONCURRENT_MODIFICATION', 'A importação mudou. Atualize e revise novamente.', 409);
-        if (!record.utilityUnitId)
-          fail('UTILITY_UNIT_REQUIRED', 'Selecione uma unidade consumidora antes da revisão.', 422);
-
-        const utilityUnit = await tx.utilityUnit.findFirst({
-          where: {
-            id: record.utilityUnitId,
-            organizationId: actor.organizationId,
-            customerId: record.customerId,
-          },
-        });
-        if (!utilityUnit)
-          fail('UTILITY_UNIT_NOT_FOUND', 'Unidade consumidora não encontrada neste cliente.', 404);
-        await tx.$queryRaw`SELECT "id" FROM "utility_units" WHERE "id" = ${utilityUnit.id}::uuid FOR SHARE`;
+        let utilityUnit: Awaited<ReturnType<typeof tx.utilityUnit.findFirst>> = null;
+        if (record.utilityUnitId) {
+          if (dto.newUtilityUnit)
+            fail('INVALID_REVIEW', 'A revisão já está vinculada a uma unidade consumidora.', 422);
+          utilityUnit = await tx.utilityUnit.findFirst({
+            where: {
+              id: record.utilityUnitId,
+              organizationId: actor.organizationId,
+              customerId: record.customerId,
+            },
+          });
+          if (!utilityUnit)
+            fail(
+              'UTILITY_UNIT_NOT_FOUND',
+              'Unidade consumidora não encontrada neste cliente.',
+              404,
+            );
+          await tx.$queryRaw`SELECT "id" FROM "utility_units" WHERE "id" = ${utilityUnit.id}::uuid FOR SHARE`;
+        } else {
+          await this.store.authorize(tx, actor, 'consumer_units:manage', false);
+          if (!dto.newUtilityUnit)
+            fail('UTILITY_UNIT_REQUIRED', 'Informe os dados da nova unidade consumidora.', 422);
+          if (dto.months.some((month) => month.decision !== 'INSERT'))
+            fail(
+              'INVALID_REVIEW',
+              'Uma unidade nova aceita somente meses com decisão de inclusão.',
+              422,
+            );
+          const distributorName = dto.newUtilityUnit.distributorName.trim();
+          const externalCode = dto.newUtilityUnit.externalCode?.trim();
+          if (externalCode) {
+            const duplicate = await tx.utilityUnit.findFirst({
+              where: {
+                organizationId: actor.organizationId,
+                distributorName,
+                externalCode,
+                status: 'ACTIVE',
+              },
+            });
+            if (duplicate)
+              fail(
+                'UTILITY_UNIT_ALREADY_EXISTS',
+                'Já existe uma unidade com esse código para a distribuidora.',
+                409,
+              );
+          }
+        }
 
         const months = normalizeMonths(dto.months);
         if (new Set(months.map((month) => month.referenceMonth)).size !== months.length)
@@ -360,26 +394,30 @@ export class EnergyImportService {
               );
           }
         }
-        const currentReadings = await tx.energyReading.findMany({
-          where: {
-            utilityUnitId: utilityUnit.id,
-            organizationId: actor.organizationId,
-            status: 'ACTIVE',
-            referenceMonth: { in: months.map((month) => month.referenceMonth) },
-          },
-        });
+        const currentReadings = utilityUnit
+          ? await tx.energyReading.findMany({
+              where: {
+                utilityUnitId: utilityUnit.id,
+                organizationId: actor.organizationId,
+                status: 'ACTIVE',
+                referenceMonth: { in: months.map((month) => month.referenceMonth) },
+              },
+            })
+          : [];
         const activeByMonth = new Map(
           currentReadings.map((reading) => [reading.referenceMonth, reading]),
         );
         const readingVersions: Record<string, number | null> = {};
-        const historicalReadings = await tx.energyReading.findMany({
-          where: {
-            utilityUnitId: utilityUnit.id,
-            organizationId: actor.organizationId,
-            referenceMonth: { in: months.map((month) => month.referenceMonth) },
-          },
-          select: { referenceMonth: true, version: true },
-        });
+        const historicalReadings = utilityUnit
+          ? await tx.energyReading.findMany({
+              where: {
+                utilityUnitId: utilityUnit.id,
+                organizationId: actor.organizationId,
+                referenceMonth: { in: months.map((month) => month.referenceMonth) },
+              },
+              select: { referenceMonth: true, version: true },
+            })
+          : [];
         const latestVersions: Record<string, number | null> = {};
         for (const reading of historicalReadings)
           latestVersions[reading.referenceMonth] = Math.max(
@@ -390,6 +428,12 @@ export class EnergyImportService {
         for (const month of months) {
           const active = activeByMonth.get(month.referenceMonth);
           readingVersions[month.referenceMonth] = active?.version ?? null;
+          if (!utilityUnit && (month.expectedReadingVersion != null || !month.consumptionKwh))
+            fail(
+              'UNRESOLVED_CONFLICT',
+              'Uma unidade nova exige consumo informado em cada mês incluído.',
+              422,
+            );
           if (month.decision === 'INSERT') {
             if (active || month.expectedReadingVersion != null || !month.consumptionKwh)
               fail(
@@ -418,14 +462,29 @@ export class EnergyImportService {
           }
         }
 
-        const decisions = { source: 'MANUAL', months } satisfies Prisma.InputJsonObject;
+        const decisions = {
+          source: 'MANUAL',
+          months,
+          ...(dto.newUtilityUnit
+            ? {
+                newUtilityUnit: {
+                  distributorName: dto.newUtilityUnit.distributorName.trim(),
+                  externalCode: dto.newUtilityUnit.externalCode?.trim() || null,
+                  consumerClass: dto.newUtilityUnit.consumerClass.trim(),
+                  tariffMode: dto.newUtilityUnit.tariffMode.trim(),
+                  connectionType: dto.newUtilityUnit.connectionType.trim(),
+                  voltage: dto.newUtilityUnit.voltage.trim(),
+                },
+              }
+            : {}),
+        } satisfies Prisma.InputJsonObject;
         const baseVersions = {
-          utilityUnitVersion: utilityUnit.version,
+          utilityUnitVersion: utilityUnit?.version ?? null,
           readings: readingVersions,
           latestVersions,
         } satisfies Prisma.InputJsonObject;
         const digest = hash(
-          JSON.stringify({ utilityUnitId: utilityUnit.id, decisions, baseVersions }),
+          JSON.stringify({ utilityUnitId: utilityUnit?.id ?? null, decisions, baseVersions }),
         );
         const revision =
           (await tx.importReview.aggregate({ where: { importId }, _max: { revision: true } }))._max
@@ -673,12 +732,6 @@ export class EnergyImportService {
         }
         if (record.status !== 'REVIEW_REQUIRED' || record.version !== dto.expectedVersion)
           fail('CONCURRENT_MODIFICATION', 'A importação mudou. Atualize antes de confirmar.', 409);
-        if (!record.utilityUnitId)
-          fail(
-            'UTILITY_UNIT_REQUIRED',
-            'Selecione uma unidade consumidora antes de confirmar.',
-            422,
-          );
 
         const review = await tx.importReview.findFirst({
           where: {
@@ -717,9 +770,72 @@ export class EnergyImportService {
         )
           fail('DOCUMENT_NOT_READY', 'O documento não está mais disponível para confirmação.', 422);
 
+        const decisions = review.decisions as {
+          source: string;
+          months: ReturnType<typeof normalizeMonths>;
+          newUtilityUnit?: {
+            distributorName: string;
+            externalCode: string | null;
+            consumerClass: string;
+            tariffMode: string;
+            connectionType: string;
+            voltage: string;
+          };
+        };
+        if (decisions.source !== 'MANUAL' || !Array.isArray(decisions.months))
+          fail('INVALID_REVIEW', 'Formato de revisão inválido.', 409);
+        let utilityUnitId = record.utilityUnitId;
+        if (!utilityUnitId) {
+          const details = decisions.newUtilityUnit;
+          if (!details)
+            fail('UTILITY_UNIT_REQUIRED', 'A revisão não contém os dados da nova UC.', 409);
+          await this.store.authorize(tx, actor, 'consumer_units:manage', false);
+          if (decisions.months.some((month) => month.decision !== 'INSERT'))
+            fail('INVALID_REVIEW', 'Uma unidade nova aceita somente meses incluídos.', 409);
+          if (details.externalCode) {
+            const duplicate = await tx.utilityUnit.findFirst({
+              where: {
+                organizationId: actor.organizationId,
+                distributorName: details.distributorName,
+                externalCode: details.externalCode,
+                status: 'ACTIVE',
+              },
+            });
+            if (duplicate)
+              fail(
+                'UTILITY_UNIT_ALREADY_EXISTS',
+                'Já existe uma unidade com esse código para a distribuidora.',
+                409,
+              );
+          }
+          const createdUnit = await tx.utilityUnit.create({
+            data: {
+              organizationId: actor.organizationId,
+              customerId: record.customerId,
+              distributorName: details.distributorName,
+              externalCode: details.externalCode,
+              consumerClass: details.consumerClass,
+              tariffMode: details.tariffMode,
+              connectionType: details.connectionType,
+              voltage: details.voltage,
+              status: 'ACTIVE',
+              version: 1,
+            },
+          });
+          utilityUnitId = createdUnit.id;
+          await this.store.audit(
+            tx,
+            'commercial.utility_unit_created',
+            actor,
+            createdUnit.id,
+            traceId,
+          );
+        } else if (decisions.newUtilityUnit) {
+          fail('INVALID_REVIEW', 'A revisão não pode criar outra unidade consumidora.', 409);
+        }
         const utilityUnit = await tx.utilityUnit.findFirst({
           where: {
-            id: record.utilityUnitId,
+            id: utilityUnitId,
             organizationId: actor.organizationId,
             customerId: record.customerId,
           },
@@ -728,18 +844,15 @@ export class EnergyImportService {
           fail('UTILITY_UNIT_NOT_FOUND', 'Unidade consumidora não encontrada neste cliente.', 404);
         await tx.$queryRaw`SELECT "id" FROM "utility_units" WHERE "id" = ${utilityUnit.id}::uuid FOR UPDATE`;
 
-        const decisions = review.decisions as {
-          source: string;
-          months: ReturnType<typeof normalizeMonths>;
-        };
-        if (decisions.source !== 'MANUAL' || !Array.isArray(decisions.months))
-          fail('INVALID_REVIEW', 'Formato de revisão inválido.', 409);
         const baseVersions = review.baseVersions as {
-          utilityUnitVersion: number;
+          utilityUnitVersion: number | null;
           readings: Record<string, number | null>;
           latestVersions: Record<string, number | null>;
         };
-        if (utilityUnit.version !== baseVersions.utilityUnitVersion)
+        if (
+          baseVersions.utilityUnitVersion != null &&
+          utilityUnit.version !== baseVersions.utilityUnitVersion
+        )
           fail('CONCURRENT_MODIFICATION', 'Os dados da unidade mudaram desde a revisão.', 409);
 
         const monthNames = decisions.months.map((month) => month.referenceMonth);
@@ -911,7 +1024,12 @@ export class EnergyImportService {
             status: 'REVIEW_REQUIRED',
             version: dto.expectedVersion,
           },
-          data: { status: 'APPLIED', version: { increment: 1 }, appliedAt },
+          data: {
+            utilityUnitId: utilityUnit.id,
+            status: 'APPLIED',
+            version: { increment: 1 },
+            appliedAt,
+          },
         });
         if (updated.count !== 1)
           fail('CONCURRENT_MODIFICATION', 'A importação mudou antes de concluir.', 409);

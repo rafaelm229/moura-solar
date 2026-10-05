@@ -377,6 +377,93 @@ test('create and status endpoints require their distinct effective grants', asyn
   }
 });
 
+test('creating a utility unit rechecks consumer unit permission during review and confirmation', async () => {
+  const membership = await db.membership.findFirst({
+    where: { userId: actorId, organizationId },
+    select: { roleId: true },
+  });
+  const manageGrant = await db.roleGrant.findUnique({
+    where: {
+      roleId_permission: { roleId: membership.roleId, permission: 'consumer_units:manage' },
+    },
+  });
+  assert.ok(manageGrant);
+  const documentVersionId = await createReadyDocument(customerId, 'READY', true, 'unit-permission');
+  const created = await admin.call(
+    `customers/${customerId}/energy-imports`,
+    'POST',
+    { documentVersionId },
+    { 'idempotency-key': 'energy-import-unit-permission-intake-key' },
+  );
+  assert.equal(created.status, 201, JSON.stringify(created.body));
+  const newUtilityUnit = {
+    distributorName: 'Distribuidora sujeita a grant',
+    externalCode: 'UNIT-GRANT-001',
+    consumerClass: 'RESIDENTIAL',
+    tariffMode: 'CONVENTIONAL',
+    connectionType: 'BIPHASIC',
+    voltage: '220V',
+  };
+  const reviewBody = {
+    expectedVersion: 1,
+    newUtilityUnit,
+    months: [{ referenceMonth: '2026-10', decision: 'INSERT', consumptionKwh: '100' }],
+  };
+  await db.roleGrant.delete({
+    where: {
+      roleId_permission: { roleId: membership.roleId, permission: 'consumer_units:manage' },
+    },
+  });
+  try {
+    const deniedReview = await admin.call(
+      `energy-imports/${created.body.id}/review`,
+      'PUT',
+      reviewBody,
+      { 'idempotency-key': 'energy-import-unit-permission-denied-review-key' },
+    );
+    assert.equal(deniedReview.status, 403);
+    assert.equal(
+      await db.utilityUnit.count({ where: { externalCode: newUtilityUnit.externalCode } }),
+      0,
+    );
+  } finally {
+    await db.roleGrant.create({ data: manageGrant });
+  }
+
+  const reviewed = await admin.call(`energy-imports/${created.body.id}/review`, 'PUT', reviewBody, {
+    'idempotency-key': 'energy-import-unit-permission-review-key',
+  });
+  assert.equal(reviewed.status, 200, JSON.stringify(reviewed.body));
+  await db.roleGrant.delete({
+    where: {
+      roleId_permission: { roleId: membership.roleId, permission: 'consumer_units:manage' },
+    },
+  });
+  try {
+    const deniedConfirm = await admin.call(
+      `energy-imports/${created.body.id}/confirm`,
+      'POST',
+      {
+        expectedVersion: reviewed.body.version,
+        reviewId: reviewed.body.latestReview.id,
+        reviewDigest: reviewed.body.latestReview.digest,
+      },
+      { 'idempotency-key': 'energy-import-unit-permission-denied-confirm-key' },
+    );
+    assert.equal(deniedConfirm.status, 403);
+    assert.equal(
+      await db.utilityUnit.count({ where: { externalCode: newUtilityUnit.externalCode } }),
+      0,
+    );
+    assert.equal(
+      (await db.energyBillImport.findUnique({ where: { id: created.body.id } })).status,
+      'REVIEW_REQUIRED',
+    );
+  } finally {
+    await db.roleGrant.create({ data: manageGrant });
+  }
+});
+
 test('manual review is immutable and confirmation atomically applies versions with a replayable receipt', async () => {
   const manualReading = await admin.call(
     `utility-units/${utilityUnitId}/readings`,
@@ -640,6 +727,77 @@ test('manual review is immutable and confirmation atomically applies versions wi
   assert.equal(status.body.status, 'APPLIED');
   assert.equal(status.body.latestReview.revision, 2);
   assert.deepEqual(status.body.applicationReceipt, receipt.body);
+});
+
+test('a new utility unit and its first reading are created atomically on import confirmation', async () => {
+  const documentVersionId = await createReadyDocument(customerId, 'READY', true, 'new-unit');
+  const created = await admin.call(
+    `customers/${customerId}/energy-imports`,
+    'POST',
+    { documentVersionId },
+    { 'idempotency-key': 'energy-import-new-unit-intake-key' },
+  );
+  assert.equal(created.status, 201, JSON.stringify(created.body));
+  assert.equal(created.body.utilityUnitId, null);
+
+  const newUtilityUnit = {
+    distributorName: 'Distribuidora nova confirmada',
+    externalCode: 'NEW-UNIT-001',
+    consumerClass: 'RURAL',
+    tariffMode: 'CONVENTIONAL',
+    connectionType: 'MONOPHASIC',
+    voltage: '127V',
+  };
+  const reviewed = await admin.call(
+    `energy-imports/${created.body.id}/review`,
+    'PUT',
+    {
+      expectedVersion: 1,
+      newUtilityUnit,
+      months: [
+        {
+          referenceMonth: '2026-09',
+          decision: 'INSERT',
+          consumptionKwh: '231.50',
+          injectedKwh: '0',
+          billedAmount: '198.20',
+        },
+      ],
+    },
+    { 'idempotency-key': 'energy-import-new-unit-review-key' },
+  );
+  assert.equal(reviewed.status, 200, JSON.stringify(reviewed.body));
+  assert.equal(reviewed.body.utilityUnitId, null);
+  assert.deepEqual(reviewed.body.latestReview.months.newUtilityUnit, newUtilityUnit);
+
+  const review = reviewed.body.latestReview;
+  const confirmed = await admin.call(
+    `energy-imports/${created.body.id}/confirm`,
+    'POST',
+    { expectedVersion: reviewed.body.version, reviewId: review.id, reviewDigest: review.digest },
+    { 'idempotency-key': 'energy-import-new-unit-confirm-key' },
+  );
+  assert.equal(confirmed.status, 200, JSON.stringify(confirmed.body));
+  const unit = await db.utilityUnit.findUnique({ where: { id: confirmed.body.utilityUnitId } });
+  assert.ok(unit);
+  assert.equal(unit.customerId, customerId);
+  assert.equal(unit.consumerClass, 'RURAL');
+  const reading = await db.energyReading.findUnique({
+    where: { id: confirmed.body.readingChanges[0].readingId },
+  });
+  assert.equal(reading.utilityUnitId, unit.id);
+  assert.equal(reading.consumptionKwh.toString(), '231.5');
+  assert.equal(
+    await db.documentUtilityUnitLink.count({
+      where: {
+        utilityUnitId: unit.id,
+        document: { versions: { some: { id: documentVersionId } } },
+      },
+    }),
+    1,
+  );
+  const persisted = await admin.call(`energy-imports/${created.body.id}`);
+  assert.equal(persisted.body.utilityUnitId, unit.id);
 });
 
 test('cancel and explicit retry are versioned, audited, scoped, and idempotent', async () => {
