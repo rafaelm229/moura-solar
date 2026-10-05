@@ -432,8 +432,8 @@ export class EnergyImportService {
         if (updated.count !== 1)
           fail('CONCURRENT_MODIFICATION', 'A importação mudou. Atualize antes de cancelar.', 409);
         await tx.importOutbox.updateMany({
-          where: { importId, status: 'PENDING' },
-          data: { status: 'CANCELED' },
+          where: { importId, status: { in: ['PENDING', 'PROCESSING'] } },
+          data: { status: 'CANCELED', leaseOwner: null, leaseUntil: null },
         });
         await tx.energyImportTransition.create({
           data: {

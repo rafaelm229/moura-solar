@@ -28,6 +28,7 @@ model Organization {
   importApplications ImportApplication[]
   energyReadingRevisions EnergyReadingRevision[]
   energyImportTransitions EnergyImportTransition[]
+  extractionAttempts ExtractionAttempt[]
   surveys     Survey[]
   catalogItems CatalogItem[]
   designs     Design[]
@@ -537,6 +538,7 @@ model EnergyBillImport {
   documentVersion     DossierDocumentVersion   @relation(fields: [documentVersionId], references: [id], onDelete: Restrict)
   outboxEvents        ImportOutbox[]
   transitions         EnergyImportTransition[]
+  extractionAttempts ExtractionAttempt[]
   candidates          ExtractionCandidate[]
   reviews             ImportReview[]
   application         ImportApplication?
@@ -559,6 +561,10 @@ model ImportOutbox {
   attempts       Int             @default(0)
   availableAt    DateTime        @default(now()) @map("available_at")
   leaseUntil     DateTime?       @map("lease_until")
+  leaseOwner     String?         @map("lease_owner")
+  heartbeatAt    DateTime?       @map("heartbeat_at")
+  completedAt    DateTime?       @map("completed_at")
+  lastErrorCode  String?         @map("last_error_code")
   createdAt      DateTime        @default(now()) @map("created_at")
   updatedAt      DateTime        @updatedAt @map("updated_at")
 
@@ -591,9 +597,47 @@ model EnergyImportTransition {
   @@map("energy_import_transitions")
 }
 
+model ExtractionAttempt {
+  id                  String          @id @default(uuid()) @db.Uuid
+  organizationId      String          @map("organization_id") @db.Uuid
+  importId            String          @map("import_id") @db.Uuid
+  attemptNumber       Int             @map("attempt_number")
+  correlationId       String          @unique @map("correlation_id")
+  adapterName         String?         @map("adapter_name")
+  modelName           String?         @map("model_name")
+  modelVersion        String?         @map("model_version")
+  externalOperationId String?         @map("external_operation_id")
+  status              String          @default("CLAIMED")
+  leaseOwner          String?         @map("lease_owner")
+  leaseUntil          DateTime?       @map("lease_until")
+  heartbeatAt         DateTime?       @map("heartbeat_at")
+  startedAt           DateTime        @default(now()) @map("started_at")
+  finishedAt          DateTime?       @map("finished_at")
+  pageCount           Int?            @map("page_count")
+  chargedPages        Int?            @map("charged_pages")
+  estimatedCost       Decimal?        @map("estimated_cost") @db.Decimal(12, 6)
+  actualCost          Decimal?        @map("actual_cost") @db.Decimal(12, 6)
+  currency            String?
+  errorCode           String?         @map("error_code")
+  retryable           Boolean?
+  nextAttemptAt       DateTime?       @map("next_attempt_at")
+  createdAt           DateTime        @default(now()) @map("created_at")
+  updatedAt           DateTime        @updatedAt @map("updated_at")
+
+  organization        Organization    @relation(fields: [organizationId], references: [id])
+  energyBillImport    EnergyBillImport @relation(fields: [importId], references: [id], onDelete: Restrict)
+  candidates          ExtractionCandidate[]
+
+  @@unique([importId, attemptNumber])
+  @@index([organizationId, startedAt])
+  @@index([status, leaseUntil])
+  @@map("extraction_attempts")
+}
+
 model ExtractionCandidate {
   id                 String          @id @default(uuid()) @db.Uuid
   importId           String          @map("import_id") @db.Uuid
+  attemptId          String?         @map("attempt_id") @db.Uuid
   source             String          @default("MANUAL")
   field              String
   rawValue           String?         @map("raw_value")
@@ -607,6 +651,7 @@ model ExtractionCandidate {
   createdAt          DateTime        @default(now()) @map("created_at")
 
   energyBillImport   EnergyBillImport @relation(fields: [importId], references: [id], onDelete: Restrict)
+  attempt            ExtractionAttempt? @relation(fields: [attemptId], references: [id], onDelete: Restrict)
 
   @@index([importId, field, createdAt])
   @@map("extraction_candidates")
