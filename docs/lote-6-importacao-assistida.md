@@ -37,11 +37,27 @@ decisões, vincula o documento à UC e emite recibo idempotente. Conflitos não
 aplicam alterações parciais. A leitura e correção manual existentes também
 passam a registrar revisões de proveniência.
 
-Este incremento não inclui consumidor da outbox, OCR, tentativas de extração,
-interface web de revisão, nem políticas de retry/cancelamento. Importações sem
+Este incremento não inclui consumidor da outbox, OCR nem interface web de revisão. Importações sem
 revisão continuam em `QUEUED`; o fluxo assistido ainda não está liberado para
 operação geral. A confirmação está disponível pela API para a revisão manual
 de uma UC existente.
+
+## Incremento 6A-3 — cancelamento e repetição explícitos
+
+Data: 05/10/2026. Implementado em `feat/lote-6-attempt-lifecycle`.
+
+O cancelamento aceita `QUEUED`, `REVIEW_REQUIRED` ou `FAILED`, valida a versão
+esperada, marca a importação como terminal `CANCELED`, encerra eventos ainda
+pendentes na outbox e registra ator, motivo e transição em uma tabela imutável.
+Estados em processamento, confirmação ou aplicação não são cancelados por este
+comando.
+
+O retry aceita somente `FAILED`, exige motivo e versão atual, preserva o mesmo
+documento READY e cria novo evento de outbox com chave de deduplicação própria.
+Ambos os comandos são idempotentes e revalidam organização, cliente e documento.
+Não há política de retry automático nem chamada a fornecedor; tentativas,
+leases, orçamento e cancelamento de operação externa permanecem na próxima
+fatia do worker, com parâmetros operacionais ainda pendentes.
 
 ### Validação
 
@@ -52,9 +68,12 @@ de uma UC existente.
   conflito sem aplicação parcial, replay, recibo e grants positivos/negativos.
 - `node --test tests/design.integration.mjs`: valida proveniência das leituras
   manuais e correções existentes.
-- `pnpm test:migrations`: migration aditiva validada em banco vazio e upgrade.
-- `pnpm test:integration`, `pnpm test:e2e` e `pnpm check`: executar e registrar
-  resultados após fechar o incremento 6A-2.
+- `pnpm api:generate`: OpenAPI e cliente TypeScript atualizados.
+- `pnpm test:migrations`: migration aditiva aprovada em banco vazio e upgrade.
+- `pnpm test:integration`: 101/101.
+- `pnpm test:e2e`: 31/31 jornadas responsivas existentes.
+- `pnpm check`: formato, lint, tipos, 1.250 testes unitários e build aprovados.
+- `git diff --check`: aprovado.
 
 As decisões operacionais de mapeamento de classe tarifária, fornecedor/região
 OCR e limites de custo/quota continuam pendentes e não são inferidas nesta fatia.

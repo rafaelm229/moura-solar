@@ -12,6 +12,7 @@ import {
   IsUUID,
   Matches,
   MaxLength,
+  MinLength,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -125,6 +126,19 @@ export class ConfirmEnergyBillImportDto {
 
   @ApiProperty() @IsUUID() reviewId!: string;
   @ApiProperty() @IsString() @Matches(/^[a-f0-9]{64}$/) reviewDigest!: string;
+}
+
+export class EnergyBillImportLifecycleDto {
+  @ApiProperty({ minimum: 1 })
+  @IsInt()
+  @Min(1)
+  expectedVersion!: number;
+
+  @ApiProperty({ minLength: 3, maxLength: 500 })
+  @IsString()
+  @MinLength(3)
+  @MaxLength(500)
+  reason!: string;
 }
 
 export class AppliedEnergyReadingDto {

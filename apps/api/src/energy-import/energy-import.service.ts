@@ -7,6 +7,7 @@ import { fail, hash } from '../identity/security';
 import type {
   ConfirmEnergyBillImportDto,
   CreateEnergyBillImportDto,
+  EnergyBillImportLifecycleDto,
   EnergyBillImportReceiptDto,
   EnergyBillImportViewDto,
   ImportMonthDecisionDto,
@@ -385,6 +386,152 @@ export class EnergyImportService {
           ...toView({ ...record, status: 'REVIEW_REQUIRED', version: record.version + 1 }),
           latestReview: toLatestReview(createdReview),
         } as unknown as Prisma.InputJsonObject;
+      },
+    );
+    return result as unknown as EnergyBillImportViewDto;
+  }
+
+  async cancel(
+    actor: ContextDto,
+    importId: string,
+    dto: EnergyBillImportLifecycleDto,
+    idempotencyKey: string,
+    traceId: string,
+  ): Promise<EnergyBillImportViewDto> {
+    const result = await this.store.command(
+      actor,
+      idempotencyKey,
+      { importId, ...dto },
+      'energy_imports:cancel',
+      async (tx) => {
+        await this.store.authorize(tx, actor, 'customers:read', false);
+        await this.store.authorize(tx, actor, 'documents:read', false);
+        const record = await tx.energyBillImport.findFirst({
+          where: {
+            id: importId,
+            organizationId: actor.organizationId,
+            customer: { AND: [customerScope(actor, 'customers:read')] },
+            documentVersion: { document: { AND: [documentScope(actor, 'documents:read')] } },
+          },
+        });
+        if (!record) fail('ENERGY_IMPORT_NOT_FOUND', 'Importação não encontrada.', 404);
+        if (record.version !== dto.expectedVersion)
+          fail('CONCURRENT_MODIFICATION', 'A importação mudou. Atualize antes de cancelar.', 409);
+        if (!['QUEUED', 'REVIEW_REQUIRED', 'FAILED'].includes(record.status))
+          fail(
+            'IMPORT_NOT_CANCELLABLE',
+            'O estado atual da importação não pode ser cancelado.',
+            409,
+          );
+
+        const nextVersion = record.version + 1;
+        const updated = await tx.energyBillImport.updateMany({
+          where: { id: record.id, version: dto.expectedVersion },
+          data: { status: 'CANCELED', cancellationRequestedAt: new Date(), version: nextVersion },
+        });
+        if (updated.count !== 1)
+          fail('CONCURRENT_MODIFICATION', 'A importação mudou. Atualize antes de cancelar.', 409);
+        await tx.importOutbox.updateMany({
+          where: { importId, status: 'PENDING' },
+          data: { status: 'CANCELED' },
+        });
+        await tx.energyImportTransition.create({
+          data: {
+            organizationId: actor.organizationId,
+            importId,
+            actorId: actor.userId,
+            action: 'CANCEL',
+            fromStatus: record.status,
+            toStatus: 'CANCELED',
+            version: nextVersion,
+            reason: dto.reason.trim(),
+          },
+        });
+        await this.store.audit(tx, 'ENERGY_BILL_IMPORT_CANCELED', actor, importId, traceId);
+        return {
+          ...toView({ ...record, status: 'CANCELED', version: nextVersion }),
+        } as Prisma.InputJsonObject;
+      },
+    );
+    return result as unknown as EnergyBillImportViewDto;
+  }
+
+  async retry(
+    actor: ContextDto,
+    importId: string,
+    dto: EnergyBillImportLifecycleDto,
+    idempotencyKey: string,
+    traceId: string,
+  ): Promise<EnergyBillImportViewDto> {
+    const result = await this.store.command(
+      actor,
+      idempotencyKey,
+      { importId, ...dto },
+      'energy_imports:retry',
+      async (tx) => {
+        await this.store.authorize(tx, actor, 'customers:read', false);
+        await this.store.authorize(tx, actor, 'documents:read', false);
+        const record = await tx.energyBillImport.findFirst({
+          where: {
+            id: importId,
+            organizationId: actor.organizationId,
+            customer: { AND: [customerScope(actor, 'customers:read')] },
+            documentVersion: { document: { AND: [documentScope(actor, 'documents:read')] } },
+          },
+          include: {
+            documentVersion: {
+              select: {
+                id: true,
+                persistenceState: true,
+                storedObject: { select: { verified: true, scanResult: true } },
+              },
+            },
+          },
+        });
+        if (!record) fail('ENERGY_IMPORT_NOT_FOUND', 'Importação não encontrada.', 404);
+        if (record.version !== dto.expectedVersion)
+          fail('CONCURRENT_MODIFICATION', 'A importação mudou. Atualize antes de repetir.', 409);
+        if (record.status !== 'FAILED')
+          fail('IMPORT_NOT_RETRYABLE', 'Somente uma importação FAILED pode ser repetida.', 409);
+        if (
+          record.documentVersion.persistenceState !== 'READY' ||
+          !record.documentVersion.storedObject?.verified ||
+          record.documentVersion.storedObject.scanResult !== 'CLEAN'
+        )
+          fail('DOCUMENT_NOT_READY', 'O documento original não está mais disponível.', 422);
+
+        const nextVersion = record.version + 1;
+        const updated = await tx.energyBillImport.updateMany({
+          where: { id: record.id, version: dto.expectedVersion, status: 'FAILED' },
+          data: { status: 'QUEUED', cancellationRequestedAt: null, version: nextVersion },
+        });
+        if (updated.count !== 1)
+          fail('CONCURRENT_MODIFICATION', 'A importação mudou. Atualize antes de repetir.', 409);
+        await tx.importOutbox.create({
+          data: {
+            organizationId: actor.organizationId,
+            importId,
+            eventType: 'ENERGY_BILL_IMPORT_QUEUED',
+            dedupeKey: `energy-bill-import:${importId}:retry:${nextVersion}`,
+            payload: { importId, documentVersionId: record.documentVersionId },
+          },
+        });
+        await tx.energyImportTransition.create({
+          data: {
+            organizationId: actor.organizationId,
+            importId,
+            actorId: actor.userId,
+            action: 'RETRY',
+            fromStatus: 'FAILED',
+            toStatus: 'QUEUED',
+            version: nextVersion,
+            reason: dto.reason.trim(),
+          },
+        });
+        await this.store.audit(tx, 'ENERGY_BILL_IMPORT_RETRIED', actor, importId, traceId);
+        return {
+          ...toView({ ...record, status: 'QUEUED', version: nextVersion }),
+        } as Prisma.InputJsonObject;
       },
     );
     return result as unknown as EnergyBillImportViewDto;
