@@ -178,6 +178,22 @@ export class DesignService {
           },
         });
 
+        await tx.energyReadingRevision.create({
+          data: {
+            organizationId: context.organizationId,
+            utilityUnitId,
+            readingId: reading.id,
+            version: reading.version,
+            source: reading.source,
+            authorId: context.userId,
+            currentValues: {
+              consumptionKwh: reading.consumptionKwh.toString(),
+              injectedKwh: reading.injectedKwh?.toString() ?? null,
+              billedAmount: reading.billedAmount?.toString() ?? null,
+            },
+          },
+        });
+
         await this.store.audit(
           tx,
           'COMMERCIAL_ENERGY_READING_RECORDED',
@@ -251,6 +267,29 @@ export class DesignService {
             version: current.version + 1,
             correctionReason: dto.correctionReason,
             notes: dto.notes ?? null,
+          },
+        });
+
+        await tx.energyReadingRevision.create({
+          data: {
+            organizationId: context.organizationId,
+            utilityUnitId,
+            readingId: corrected.id,
+            version: corrected.version,
+            source: corrected.source,
+            authorId: context.userId,
+            previousValues: {
+              consumptionKwh: current.consumptionKwh.toString(),
+              injectedKwh: current.injectedKwh?.toString() ?? null,
+              billedAmount: current.billedAmount?.toString() ?? null,
+              version: current.version,
+            },
+            currentValues: {
+              consumptionKwh: corrected.consumptionKwh.toString(),
+              injectedKwh: corrected.injectedKwh?.toString() ?? null,
+              billedAmount: corrected.billedAmount?.toString() ?? null,
+            },
+            reason: dto.correctionReason,
           },
         });
 

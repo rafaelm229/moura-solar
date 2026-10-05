@@ -7,6 +7,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Put,
   Req,
 } from '@nestjs/common';
 import {
@@ -18,7 +19,13 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { RequirePermission, type IdentityRequest } from '../identity/identity.guard';
-import { CreateEnergyBillImportDto, EnergyBillImportViewDto } from './energy-import.dto';
+import {
+  ConfirmEnergyBillImportDto,
+  CreateEnergyBillImportDto,
+  EnergyBillImportReceiptDto,
+  EnergyBillImportViewDto,
+  ReviewEnergyBillImportDto,
+} from './energy-import.dto';
 import { EnergyImportService } from './energy-import.service';
 
 @ApiTags('energy-imports')
@@ -56,5 +63,35 @@ export class EnergyImportController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<EnergyBillImportViewDto> {
     return this.service.get(req.actor, id);
+  }
+
+  @Put('energy-imports/:id/review')
+  @RequirePermission('energy_imports:review')
+  @ApiHeader({ name: 'idempotency-key', required: true })
+  @HttpCode(200)
+  @ApiBody({ type: ReviewEnergyBillImportDto })
+  @ApiOkResponse({ type: EnergyBillImportViewDto })
+  async review(
+    @Req() req: IdentityRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ReviewEnergyBillImportDto,
+    @Headers('idempotency-key') idempotencyKey: string,
+  ): Promise<EnergyBillImportViewDto> {
+    return this.service.review(req.actor, id, dto, idempotencyKey, req.requestId ?? 'trace');
+  }
+
+  @Post('energy-imports/:id/confirm')
+  @RequirePermission('energy_imports:confirm')
+  @ApiHeader({ name: 'idempotency-key', required: true })
+  @HttpCode(200)
+  @ApiBody({ type: ConfirmEnergyBillImportDto })
+  @ApiOkResponse({ type: EnergyBillImportReceiptDto })
+  async confirm(
+    @Req() req: IdentityRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ConfirmEnergyBillImportDto,
+    @Headers('idempotency-key') idempotencyKey: string,
+  ): Promise<EnergyBillImportReceiptDto> {
+    return this.service.confirm(req.actor, id, dto, idempotencyKey, req.requestId ?? 'trace');
   }
 }

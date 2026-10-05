@@ -24,6 +24,9 @@ model Organization {
   energyReadings EnergyReading[]
   energyBillImports EnergyBillImport[]
   energyImportOutbox ImportOutbox[]
+  importReviews ImportReview[]
+  importApplications ImportApplication[]
+  energyReadingRevisions EnergyReadingRevision[]
   surveys     Survey[]
   catalogItems CatalogItem[]
   designs     Design[]
@@ -374,6 +377,7 @@ model UtilityUnit {
   opportunities   Opportunity[]
   energyReadings  EnergyReading[]
   energyBillImports EnergyBillImport[]
+  energyReadingRevisions EnergyReadingRevision[]
   surveys         Survey[]
   documentLinks   DocumentUtilityUnitLink[]
 
@@ -492,12 +496,17 @@ model EnergyReading {
   status         String       @default("ACTIVE")
   version        Int          @default(1)
   correctionReason String?     @map("correction_reason")
+  sourceImportId String?       @map("source_import_id") @db.Uuid
+  sourceReviewId String?        @map("source_review_id") @db.Uuid
   notes          String?
   createdAt      DateTime     @default(now()) @map("created_at")
   updatedAt      DateTime     @updatedAt @map("updated_at")
 
   organization   Organization @relation(fields: [organizationId], references: [id])
   utilityUnit    UtilityUnit  @relation(fields: [utilityUnitId], references: [id], onDelete: Cascade)
+  sourceImport   EnergyBillImport? @relation("ImportReadings", fields: [sourceImportId], references: [id], onDelete: Restrict)
+  sourceReview   ImportReview? @relation("ReviewReadings", fields: [sourceReviewId], references: [id], onDelete: Restrict)
+  revisions      EnergyReadingRevision[]
 
   @@unique([utilityUnitId, referenceMonth, version])
   @@index([utilityUnitId, status, referenceMonth])
@@ -525,6 +534,11 @@ model EnergyBillImport {
   opportunity         Opportunity?              @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
   documentVersion     DossierDocumentVersion   @relation(fields: [documentVersionId], references: [id], onDelete: Restrict)
   outboxEvents        ImportOutbox[]
+  candidates          ExtractionCandidate[]
+  reviews             ImportReview[]
+  application         ImportApplication?
+  appliedReadings     EnergyReading[]          @relation("ImportReadings")
+  revisions           EnergyReadingRevision[]
 
   @@index([organizationId, customerId, createdAt])
   @@index([status, updatedAt])
@@ -551,6 +565,95 @@ model ImportOutbox {
   @@index([status, availableAt])
   @@index([importId])
   @@map("import_outbox")
+}
+
+model ExtractionCandidate {
+  id                 String          @id @default(uuid()) @db.Uuid
+  importId           String          @map("import_id") @db.Uuid
+  source             String          @default("MANUAL")
+  field              String
+  rawValue           String?         @map("raw_value")
+  normalizedValue    String?         @map("normalized_value")
+  unit               String?
+  page               Int?
+  region             Json?
+  providerConfidence Json?           @map("provider_confidence")
+  qualitySignals     Json            @map("quality_signals")
+  systemValidation   Json            @map("system_validation")
+  createdAt          DateTime        @default(now()) @map("created_at")
+
+  energyBillImport   EnergyBillImport @relation(fields: [importId], references: [id], onDelete: Restrict)
+
+  @@index([importId, field, createdAt])
+  @@map("extraction_candidates")
+}
+
+model ImportReview {
+  id             String             @id @default(uuid()) @db.Uuid
+  organizationId String             @map("organization_id") @db.Uuid
+  importId       String             @map("import_id") @db.Uuid
+  revision       Int
+  reviewedById   String             @map("reviewed_by_id") @db.Uuid
+  digest         String
+  decisions      Json
+  baseVersions   Json               @map("base_versions")
+  createdAt      DateTime           @default(now()) @map("created_at")
+
+  organization   Organization       @relation(fields: [organizationId], references: [id])
+  energyBillImport EnergyBillImport  @relation(fields: [importId], references: [id], onDelete: Restrict)
+  application    ImportApplication?
+  readings       EnergyReading[]    @relation("ReviewReadings")
+  revisions      EnergyReadingRevision[]
+
+  @@unique([importId, revision])
+  @@index([organizationId, createdAt])
+  @@map("import_reviews")
+}
+
+model ImportApplication {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  importId       String       @unique @map("import_id") @db.Uuid
+  reviewId       String       @unique @map("review_id") @db.Uuid
+  payloadHash    String       @map("payload_hash")
+  idempotencyKey String       @map("idempotency_key")
+  receipt        Json
+  committedAt    DateTime     @default(now()) @map("committed_at")
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  energyBillImport EnergyBillImport @relation(fields: [importId], references: [id], onDelete: Restrict)
+  review         ImportReview @relation(fields: [reviewId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, committedAt])
+  @@map("import_applications")
+}
+
+model EnergyReadingRevision {
+  id                String                @id @default(uuid()) @db.Uuid
+  organizationId    String                @map("organization_id") @db.Uuid
+  utilityUnitId     String                @map("utility_unit_id") @db.Uuid
+  readingId         String                @map("reading_id") @db.Uuid
+  version           Int
+  source            String
+  sourceImportId    String?               @map("source_import_id") @db.Uuid
+  sourceReviewId    String?               @map("source_review_id") @db.Uuid
+  documentVersionId String?               @map("document_version_id") @db.Uuid
+  authorId          String                @map("author_id") @db.Uuid
+  previousValues    Json?                 @map("previous_values")
+  currentValues     Json                  @map("current_values")
+  reason            String?
+  createdAt         DateTime              @default(now()) @map("created_at")
+
+  organization      Organization          @relation(fields: [organizationId], references: [id])
+  utilityUnit       UtilityUnit           @relation(fields: [utilityUnitId], references: [id], onDelete: Restrict)
+  reading           EnergyReading         @relation(fields: [readingId], references: [id], onDelete: Restrict)
+  sourceImport      EnergyBillImport?     @relation(fields: [sourceImportId], references: [id], onDelete: Restrict)
+  sourceReview      ImportReview?         @relation(fields: [sourceReviewId], references: [id], onDelete: Restrict)
+  documentVersion  DossierDocumentVersion? @relation(fields: [documentVersionId], references: [id], onDelete: Restrict)
+
+  @@index([readingId, version])
+  @@index([utilityUnitId, createdAt])
+  @@map("energy_reading_revisions")
 }
 
 model Survey {
@@ -2122,6 +2225,7 @@ model DossierDocumentVersion {
   document         DossierDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
   storedObject     StoredObject?   @relation(fields: [storedObjectId], references: [id])
   energyBillImport EnergyBillImport?
+  energyReadingRevisions EnergyReadingRevision[]
 
   @@unique([documentId, versionNumber])
   @@index([sha256])
