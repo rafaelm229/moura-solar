@@ -2508,6 +2508,38 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/customers/{customerId}/energy-imports': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['EnergyImportController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/energy-imports/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['EnergyImportController_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4619,6 +4651,34 @@ export interface components {
       archiveReason?: string | null;
       versions: components['schemas']['DossierVersionViewDto'][];
       events: components['schemas']['DossierHistoryEventDto'][];
+    };
+    CreateEnergyBillImportDto: {
+      /** @description Versão imutável e READY da conta no dossiê. */
+      documentVersionId: string;
+      /** @description UC existente do mesmo cliente, quando selecionada. */
+      utilityUnitId?: string;
+      /** @description Oportunidade vinculada ao mesmo cliente, quando selecionada. */
+      opportunityId?: string;
+    };
+    EnergyBillImportViewDto: {
+      id: string;
+      organizationId: string;
+      customerId: string;
+      utilityUnitId: string | null;
+      opportunityId: string | null;
+      documentVersionId: string;
+      /** @enum {string} */
+      status:
+        | 'QUEUED'
+        | 'PROCESSING'
+        | 'REVIEW_REQUIRED'
+        | 'CONFIRMING'
+        | 'APPLIED'
+        | 'FAILED'
+        | 'CANCELED';
+      version: number;
+      createdAt: string;
+      appliedAt: string | null;
     };
   };
   responses: never;
@@ -8801,6 +8861,54 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  EnergyImportController_create: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+      };
+      path: {
+        customerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateEnergyBillImportDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EnergyBillImportViewDto'];
+        };
+      };
+    };
+  };
+  EnergyImportController_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EnergyBillImportViewDto'];
+        };
       };
     };
   };

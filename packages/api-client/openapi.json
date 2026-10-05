@@ -6635,6 +6635,90 @@
         ],
         "tags": ["dossier"]
       }
+    },
+    "/api/v1/customers/{customerId}/energy-imports": {
+      "post": {
+        "operationId": "EnergyImportController_create",
+        "parameters": [
+          {
+            "name": "customerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEnergyBillImportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnergyBillImportViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["energy-imports"]
+      }
+    },
+    "/api/v1/energy-imports/{id}": {
+      "get": {
+        "operationId": "EnergyImportController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnergyBillImportViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["energy-imports"]
+      }
     }
   },
   "info": {
@@ -11377,6 +11461,83 @@
           }
         },
         "required": ["metadataVersion", "versions", "events"]
+      },
+      "CreateEnergyBillImportDto": {
+        "type": "object",
+        "properties": {
+          "documentVersionId": {
+            "type": "string",
+            "description": "Versão imutável e READY da conta no dossiê."
+          },
+          "utilityUnitId": {
+            "type": "string",
+            "description": "UC existente do mesmo cliente, quando selecionada."
+          },
+          "opportunityId": {
+            "type": "string",
+            "description": "Oportunidade vinculada ao mesmo cliente, quando selecionada."
+          }
+        },
+        "required": ["documentVersionId"]
+      },
+      "EnergyBillImportViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "customerId": {
+            "type": "string"
+          },
+          "utilityUnitId": {
+            "type": "string",
+            "nullable": true
+          },
+          "opportunityId": {
+            "type": "string",
+            "nullable": true
+          },
+          "documentVersionId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "QUEUED",
+              "PROCESSING",
+              "REVIEW_REQUIRED",
+              "CONFIRMING",
+              "APPLIED",
+              "FAILED",
+              "CANCELED"
+            ]
+          },
+          "version": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "appliedAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "organizationId",
+          "customerId",
+          "utilityUnitId",
+          "opportunityId",
+          "documentVersionId",
+          "status",
+          "version",
+          "createdAt",
+          "appliedAt"
+        ]
       }
     }
   }

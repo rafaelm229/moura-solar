@@ -62,6 +62,12 @@ export const permissionCatalog = [
   'engineering:read',
   'engineering:review',
   'engineering:update',
+  'energy_imports:create',
+  'energy_imports:read',
+  'energy_imports:review',
+  'energy_imports:confirm',
+  'energy_imports:cancel',
+  'energy_imports:retry',
   'finance:read',
   'finance:view_project_summary',
   'financial_gates:waive',
@@ -164,6 +170,12 @@ export const permissionCatalog = [
 export const initialRoles: Record<string, { permission: string; scope: string }[]> = {
   Administrador: [
     { permission: 'documents:identity_read', scope: 'organization' },
+    { permission: 'energy_imports:create', scope: 'organization' },
+    { permission: 'energy_imports:read', scope: 'organization' },
+    { permission: 'energy_imports:review', scope: 'organization' },
+    { permission: 'energy_imports:confirm', scope: 'organization' },
+    { permission: 'energy_imports:cancel', scope: 'organization' },
+    { permission: 'energy_imports:retry', scope: 'organization' },
     {
       permission: 'activities:manage',
       scope: 'organization',

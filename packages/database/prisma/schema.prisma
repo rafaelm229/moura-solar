@@ -22,6 +22,8 @@ model Organization {
   opportunities Opportunity[]
   activities  Activity[]
   energyReadings EnergyReading[]
+  energyBillImports EnergyBillImport[]
+  energyImportOutbox ImportOutbox[]
   surveys     Survey[]
   catalogItems CatalogItem[]
   designs     Design[]
@@ -296,6 +298,7 @@ model Customer {
   contacts          CustomerContact[]
   addresses         Address[]
   utilityUnits      UtilityUnit[]
+  energyBillImports EnergyBillImport[]
   opportunities     Opportunity[]
   activities        Activity[]
   supportTickets    SupportTicket[]
@@ -370,6 +373,7 @@ model UtilityUnit {
   address         Address?      @relation(fields: [addressId], references: [id])
   opportunities   Opportunity[]
   energyReadings  EnergyReading[]
+  energyBillImports EnergyBillImport[]
   surveys         Survey[]
   documentLinks   DocumentUtilityUnitLink[]
 
@@ -422,6 +426,7 @@ model Opportunity {
   serializedAssets     SerializedAsset[]
   operationalProject   OperationalProject?
   dossierLinks         DocumentOpportunityLink[]
+  energyBillImports    EnergyBillImport[]
 
   @@unique([organizationId, code])
   @@index([organizationId, state])
@@ -497,6 +502,55 @@ model EnergyReading {
   @@unique([utilityUnitId, referenceMonth, version])
   @@index([utilityUnitId, status, referenceMonth])
   @@map("energy_readings")
+}
+
+model EnergyBillImport {
+  id                  String                  @id @default(uuid()) @db.Uuid
+  organizationId      String                  @map("organization_id") @db.Uuid
+  customerId          String                  @map("customer_id") @db.Uuid
+  utilityUnitId       String?                 @map("utility_unit_id") @db.Uuid
+  opportunityId       String?                 @map("opportunity_id") @db.Uuid
+  documentVersionId   String                  @unique @map("document_version_id") @db.Uuid
+  status              String                  @default("QUEUED")
+  version             Int                     @default(1)
+  createdById         String                  @map("created_by_id") @db.Uuid
+  cancellationRequestedAt DateTime?            @map("cancellation_requested_at")
+  appliedAt           DateTime?                @map("applied_at")
+  createdAt           DateTime                 @default(now()) @map("created_at")
+  updatedAt           DateTime                 @updatedAt @map("updated_at")
+
+  organization        Organization             @relation(fields: [organizationId], references: [id])
+  customer            Customer                 @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  utilityUnit         UtilityUnit?              @relation(fields: [utilityUnitId], references: [id], onDelete: Restrict)
+  opportunity         Opportunity?              @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
+  documentVersion     DossierDocumentVersion   @relation(fields: [documentVersionId], references: [id], onDelete: Restrict)
+  outboxEvents        ImportOutbox[]
+
+  @@index([organizationId, customerId, createdAt])
+  @@index([status, updatedAt])
+  @@map("energy_bill_imports")
+}
+
+model ImportOutbox {
+  id             String          @id @default(uuid()) @db.Uuid
+  organizationId String          @map("organization_id") @db.Uuid
+  importId       String          @map("import_id") @db.Uuid
+  eventType      String          @map("event_type")
+  dedupeKey      String          @unique @map("dedupe_key")
+  payload        Json
+  status         String          @default("PENDING")
+  attempts       Int             @default(0)
+  availableAt    DateTime        @default(now()) @map("available_at")
+  leaseUntil     DateTime?       @map("lease_until")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  energyBillImport EnergyBillImport @relation(fields: [importId], references: [id], onDelete: Cascade)
+
+  @@index([status, availableAt])
+  @@index([importId])
+  @@map("import_outbox")
 }
 
 model Survey {
@@ -2067,6 +2121,7 @@ model DossierDocumentVersion {
 
   document         DossierDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
   storedObject     StoredObject?   @relation(fields: [storedObjectId], references: [id])
+  energyBillImport EnergyBillImport?
 
   @@unique([documentId, versionNumber])
   @@index([sha256])
