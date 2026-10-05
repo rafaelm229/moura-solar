@@ -131,6 +131,44 @@ export class ImportMonthEvidenceDto {
   billedAmountCandidateId?: string;
 }
 
+export class NewUtilityUnitReviewDto {
+  @ApiProperty({ minLength: 2 })
+  @IsString()
+  @MinLength(2)
+  @MaxLength(160)
+  distributorName!: string;
+
+  @ApiPropertyOptional({ maxLength: 80 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  externalCode?: string;
+
+  @ApiProperty({ description: 'Classe confirmada pela pessoa revisora.' })
+  @IsString()
+  @MinLength(2)
+  @MaxLength(80)
+  consumerClass!: string;
+
+  @ApiProperty({ description: 'Modalidade tarifária confirmada pela pessoa revisora.' })
+  @IsString()
+  @MinLength(2)
+  @MaxLength(80)
+  tariffMode!: string;
+
+  @ApiProperty({ description: 'Tipo de conexão confirmado pela pessoa revisora.' })
+  @IsString()
+  @MinLength(2)
+  @MaxLength(80)
+  connectionType!: string;
+
+  @ApiProperty({ description: 'Tensão confirmada pela pessoa revisora.' })
+  @IsString()
+  @MinLength(2)
+  @MaxLength(80)
+  voltage!: string;
+}
+
 export class ImportMonthDecisionDto {
   @ApiProperty({ example: '2026-08' })
   @IsString()
@@ -192,6 +230,12 @@ export class ReviewEnergyBillImportDto {
   @ValidateNested({ each: true })
   @Type(() => ImportMonthDecisionDto)
   months!: ImportMonthDecisionDto[];
+
+  @ApiPropertyOptional({ type: () => NewUtilityUnitReviewDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => NewUtilityUnitReviewDto)
+  newUtilityUnit?: NewUtilityUnitReviewDto;
 }
 
 export class ConfirmEnergyBillImportDto {

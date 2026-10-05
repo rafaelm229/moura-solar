@@ -181,3 +181,19 @@ pode continuar editando e precisa salvar novamente antes de confirmar.
 Validação: integração do importador 6/6, incluindo campo incompatível, candidato
 de outra importação e leitura final corrigida em relação ao candidato; E2E 8/8
 com retomada do rascunho e confirmação nos oito viewports.
+
+## Incremento 6B-4 — criar UC na confirmação
+
+A revisão pode iniciar sem UC e registrar, junto dos meses `INSERT`, os dados
+cadastrais informados e confirmados pela pessoa: distribuidora, classe, modalidade,
+conexão e tensão; código externo é opcional. A API exige `consumer_units:manage`
+ao revisar e revalida a permissão ao confirmar. Não deriva defaults da fatura.
+
+Salvar a revisão mantém a importação sem UC. A confirmação cria a UC, suas
+leituras, o vínculo do documento ao dossiê da UC, auditoria e recibo na mesma
+transação; falha reverte todos esses efeitos. A web permite retomar a revisão pela
+URL com os campos da nova UC e meses preenchidos.
+
+Validação: build da API aprovado; integração do importador 7/7, incluindo
+persistência nula antes da confirmação e criação/vínculo/leitura após confirmação.
+O OCR permanece desligado e nenhuma decisão de fornecedor ou custo foi tomada.

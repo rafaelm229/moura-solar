@@ -11985,6 +11985,36 @@
         },
         "required": ["referenceMonth", "decision"]
       },
+      "NewUtilityUnitReviewDto": {
+        "type": "object",
+        "properties": {
+          "distributorName": {
+            "type": "string",
+            "minLength": 2
+          },
+          "externalCode": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "consumerClass": {
+            "type": "string",
+            "description": "Classe confirmada pela pessoa revisora."
+          },
+          "tariffMode": {
+            "type": "string",
+            "description": "Modalidade tarifária confirmada pela pessoa revisora."
+          },
+          "connectionType": {
+            "type": "string",
+            "description": "Tipo de conexão confirmado pela pessoa revisora."
+          },
+          "voltage": {
+            "type": "string",
+            "description": "Tensão confirmada pela pessoa revisora."
+          }
+        },
+        "required": ["distributorName", "consumerClass", "tariffMode", "connectionType", "voltage"]
+      },
       "ReviewEnergyBillImportDto": {
         "type": "object",
         "properties": {
@@ -11999,6 +12029,9 @@
             "items": {
               "$ref": "#/components/schemas/ImportMonthDecisionDto"
             }
+          },
+          "newUtilityUnit": {
+            "$ref": "#/components/schemas/NewUtilityUnitReviewDto"
           }
         },
         "required": ["expectedVersion", "months"]

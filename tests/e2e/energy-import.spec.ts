@@ -198,5 +198,82 @@ for (const [width, height] of [
     await page.reload();
     await expect(page.getByRole('dialog', { name: 'Importação assistida de conta' })).toBeVisible();
     await expect(page.getByText('Estado: Aplicada')).toBeVisible();
+
+    await page
+      .getByRole('dialog', { name: 'Importação assistida de conta' })
+      .getByRole('button', { name: 'Fechar', exact: true })
+      .last()
+      .click();
+    await page.getByRole('button', { name: 'Novo Documento', exact: true }).click();
+    const secondUpload = page.getByRole('dialog', { name: 'Novo Documento no Dossiê' });
+    await secondUpload.getByLabel('Título Identificador*').fill(`Nova conta ${width}`);
+    const secondPdf: Buffer = await new Promise((resolve) => {
+      const doc = new PDFDocument();
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.text(`Nova conta de energia da UC ${width}`);
+      doc.end();
+    });
+    await secondUpload.getByLabel('Arquivo (PDF, PNG ou JPEG)*').setInputFiles({
+      name: `nova-conta-${width}.pdf`,
+      mimeType: 'application/pdf',
+      buffer: secondPdf,
+    });
+    await secondUpload.getByRole('button', { name: 'Concluir Upload' }).click();
+    await expect(secondUpload).not.toBeVisible();
+    await expect(page.getByText('Documento verificado e disponível.')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Importar conta de energia' }).click();
+    const newUnitDialog = page.getByRole('dialog', { name: 'Importação assistida de conta' });
+    await newUnitDialog
+      .getByLabel('Conta de energia READY')
+      .selectOption({ label: `Nova conta ${width} — nova-conta-${width}.pdf` });
+    await newUnitDialog.getByLabel('Unidade consumidora da conta').selectOption('__create__');
+    await newUnitDialog.getByLabel('Distribuidora', { exact: true }).fill('Distribuidora nova');
+    await newUnitDialog.getByLabel('Código da unidade (opcional)').fill(`UC-NOVA-${width}`);
+    await newUnitDialog.getByLabel('Classe de consumo').fill('RURAL');
+    await newUnitDialog.getByLabel('Modalidade tarifária').fill('CONVENCIONAL');
+    await newUnitDialog.getByLabel('Tipo de conexão').fill('MONOFÁSICA');
+    await newUnitDialog.getByLabel('Tensão').fill('127V');
+    await newUnitDialog.getByRole('button', { name: 'Criar importação' }).click();
+    await expect(newUnitDialog.getByText('Estado: Aguardando revisão')).toBeVisible();
+    await newUnitDialog.getByLabel('Mês de referência').fill('2026-09');
+    await newUnitDialog.getByLabel('Decisão').selectOption('INSERT');
+    await newUnitDialog.getByLabel('Consumo (kWh)').fill('231.50');
+    await newUnitDialog.getByLabel('Energia injetada (kWh)').fill('0');
+    await newUnitDialog.getByLabel('Total faturado (R$)').fill('198.20');
+    await newUnitDialog.getByRole('button', { name: 'Salvar revisão' }).click();
+    await expect(
+      newUnitDialog.getByText('Revisão salva. A leitura ainda não foi alterada.'),
+    ).toBeVisible();
+    await page.reload();
+    const resumedNewUnitDialog = page.getByRole('dialog', {
+      name: 'Importação assistida de conta',
+    });
+    await expect(resumedNewUnitDialog.getByLabel('Distribuidora', { exact: true })).toHaveValue(
+      'Distribuidora nova',
+    );
+    await expect(resumedNewUnitDialog.getByLabel('Código da unidade (opcional)')).toHaveValue(
+      `UC-NOVA-${width}`,
+    );
+    await expect(resumedNewUnitDialog.getByLabel('Mês de referência')).toHaveValue('2026-09');
+    await resumedNewUnitDialog.getByRole('button', { name: 'Confirmar importação' }).click();
+    await expect(resumedNewUnitDialog.getByText('Importação confirmada')).toBeVisible();
+    const unitsResponse = await page.request.get(
+      `http://localhost:3318/api/v1/customers/${customer.id}/utility-units`,
+      { headers },
+    );
+    expect(unitsResponse.status()).toBe(200);
+    const units = await unitsResponse.json();
+    expect(units).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          distributorName: 'Distribuidora nova',
+          externalCode: `UC-NOVA-${width}`,
+          consumerClass: 'RURAL',
+        }),
+      ]),
+    );
   });
 }

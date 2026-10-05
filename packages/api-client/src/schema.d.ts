@@ -4815,9 +4815,22 @@ export interface components {
       reason?: string;
       evidence?: components['schemas']['ImportMonthEvidenceDto'];
     };
+    NewUtilityUnitReviewDto: {
+      distributorName: string;
+      externalCode?: string;
+      /** @description Classe confirmada pela pessoa revisora. */
+      consumerClass: string;
+      /** @description Modalidade tarifária confirmada pela pessoa revisora. */
+      tariffMode: string;
+      /** @description Tipo de conexão confirmado pela pessoa revisora. */
+      connectionType: string;
+      /** @description Tensão confirmada pela pessoa revisora. */
+      voltage: string;
+    };
     ReviewEnergyBillImportDto: {
       expectedVersion: number;
       months: components['schemas']['ImportMonthDecisionDto'][];
+      newUtilityUnit?: components['schemas']['NewUtilityUnitReviewDto'];
     };
     ConfirmEnergyBillImportDto: {
       expectedVersion: number;

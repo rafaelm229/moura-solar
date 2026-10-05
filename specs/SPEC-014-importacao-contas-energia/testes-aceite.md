@@ -25,6 +25,13 @@ Testes futuros. Reaproveitar tests/design.integration.mjs e tests/e2e/design.spe
 | T-IMP-11 | IMP-01, IMP-12 | Teclado, sete viewports, câmera, zoom e erro de revisão; documento/campo comparáveis, seleção de candidato vinculada ao mês/campo e alterações protegidas       |
 | T-IMP-12 | IMP-06, IMP-07 | Revogar grant entre upload/revisão/confirm; API nega sem expor candidato ou mutar consumo; replay revalida autorização                                          |
 
+Complementos para criação de UC:
+
+- Ao revisar uma conta sem UC vinculada, exigir `consumer_units:manage` e valores explícitos de distribuidora, classe, modalidade, conexão e tensão; não preencher defaults ausentes da fatura.
+- Salvar a revisão mantém `utilityUnitId` nulo e não cria UC/leitura. Confirmar cria UC, leituras `INSERT`, vínculo do documento, auditoria e recibo na mesma transação.
+- Falha no vínculo documental, conflito de código existente ou grant revogado deixa zero UC/leitura e preserva a revisão para correção/repetição autorizada.
+- Retomar pela URL restaura os dados da nova UC e os meses da revisão; perfil sem `consumer_units:manage` não pode escolher nem confirmar criação.
+
 PoC deve reportar taxa de correção por campo, cobertura de meses, erro crítico de UC/mês/unidade, latência, custo por conta e taxa de fallback manual por distribuidora/formato. Não declarar precisão da produção por amostra pequena.
 
 Complementos verificáveis:

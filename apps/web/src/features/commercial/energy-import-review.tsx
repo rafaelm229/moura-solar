@@ -35,6 +35,14 @@ type SavedReviewMonth = {
   reason?: string | null;
   evidence?: ReviewMonth['evidence'];
 };
+type NewUtilityUnitDraft = {
+  distributorName: string;
+  externalCode: string;
+  consumerClass: string;
+  tariffMode: string;
+  connectionType: string;
+  voltage: string;
+};
 
 const candidateReviewFields: Record<
   string,
@@ -95,6 +103,14 @@ export function EnergyImportReview({
   const [importId, setImportId] = useState<string | null>(initialImportId);
   const [selectedDocumentId, setSelectedDocumentId] = useState('');
   const [selectedUnitId, setSelectedUnitId] = useState('');
+  const [newUtilityUnit, setNewUtilityUnit] = useState<NewUtilityUnitDraft>({
+    distributorName: '',
+    externalCode: '',
+    consumerClass: '',
+    tariffMode: '',
+    connectionType: '',
+    voltage: '',
+  });
   const [months, setMonths] = useState<ReviewMonth[]>([newMonth()]);
   const [candidateMonthTargets, setCandidateMonthTargets] = useState<Record<string, string>>({});
   const [reviewSaved, setReviewSaved] = useState(false);
@@ -105,6 +121,7 @@ export function EnergyImportReview({
   const canConfirm = allows(context, 'energy_imports:confirm');
   const canCancel = allows(context, 'energy_imports:cancel');
   const canReadUnits = allows(context, 'consumer_units:read');
+  const canManageUnits = allows(context, 'consumer_units:manage');
   const document = readyDocuments.find((item) => item.id === selectedDocumentId);
   const hasUnsavedReview =
     !reviewSaved &&
@@ -133,6 +150,14 @@ export function EnergyImportReview({
     setImportId(null);
     setSelectedDocumentId('');
     setSelectedUnitId('');
+    setNewUtilityUnit({
+      distributorName: '',
+      externalCode: '',
+      consumerClass: '',
+      tariffMode: '',
+      connectionType: '',
+      voltage: '',
+    });
     setMonths([newMonth()]);
     setCandidateMonthTargets({});
     setReviewSaved(false);
@@ -224,6 +249,15 @@ export function EnergyImportReview({
       result(api.GET('/api/v1/energy-imports/{id}', { params: { path: { id: importId! } } })),
     enabled: !!importId && isOpen,
   });
+  const creatingUnit =
+    selectedUnitId === '__create__' ||
+    (!!importId && !!importQuery.data && !importQuery.data.utilityUnitId);
+  const newUnitComplete =
+    newUtilityUnit.distributorName.trim().length >= 2 &&
+    newUtilityUnit.consumerClass.trim().length >= 2 &&
+    newUtilityUnit.tariffMode.trim().length >= 2 &&
+    newUtilityUnit.connectionType.trim().length >= 2 &&
+    newUtilityUnit.voltage.trim().length >= 2;
 
   const readingsQuery = useQuery({
     queryKey: ['energy-import-readings', importQuery.data?.utilityUnitId],
@@ -237,7 +271,12 @@ export function EnergyImportReview({
   });
 
   const savedReview = importQuery.data?.latestReview as
-    { id?: string; months?: { months?: SavedReviewMonth[] } } | undefined;
+    | {
+        id?: string;
+        months?: { months?: SavedReviewMonth[]; newUtilityUnit?: NewUtilityUnitDraft };
+      }
+    | undefined;
+  const savedNewUtilityUnit = savedReview?.months?.newUtilityUnit;
 
   useEffect(() => {
     const savedMonths = savedReview?.months?.months;
@@ -260,16 +299,22 @@ export function EnergyImportReview({
       }
     }
     setCandidateMonthTargets(targets);
+    if (savedNewUtilityUnit)
+      setNewUtilityUnit({
+        ...savedNewUtilityUnit,
+        externalCode: savedNewUtilityUnit.externalCode ?? '',
+      });
     setReviewSaved(true);
-  }, [importId, savedReview?.id, savedReview?.months?.months]);
+  }, [importId, savedReview?.id, savedReview?.months?.months, savedNewUtilityUnit]);
 
   const createMutation = useMutation({
     mutationFn: () => {
       if (!document?.currentVersion?.id) throw new Error('Selecione uma versão READY do dossiê.');
-      if (!selectedUnitId) throw new Error('Selecione a unidade consumidora desta conta.');
+      if (!selectedUnitId)
+        throw new Error('Selecione ou indique a criação da unidade consumidora.');
       const payload = {
         documentVersionId: document.currentVersion.id,
-        utilityUnitId: selectedUnitId,
+        ...(selectedUnitId !== '__create__' ? { utilityUnitId: selectedUnitId } : {}),
       };
       return result(
         api.POST('/api/v1/customers/{customerId}/energy-imports', {
@@ -297,6 +342,20 @@ export function EnergyImportReview({
       const readings = readingsQuery.data?.readings ?? [];
       const body = {
         expectedVersion: current.version,
+        ...(creatingUnit
+          ? {
+              newUtilityUnit: {
+                distributorName: newUtilityUnit.distributorName.trim(),
+                ...(newUtilityUnit.externalCode.trim()
+                  ? { externalCode: newUtilityUnit.externalCode.trim() }
+                  : {}),
+                consumerClass: newUtilityUnit.consumerClass.trim(),
+                tariffMode: newUtilityUnit.tariffMode.trim(),
+                connectionType: newUtilityUnit.connectionType.trim(),
+                voltage: newUtilityUnit.voltage.trim(),
+              },
+            }
+          : {}),
         months: validMonths.map((month) => {
           const existing = readings.find(
             (reading) => reading.referenceMonth === month.referenceMonth,
@@ -444,7 +503,10 @@ export function EnergyImportReview({
                 Unidade consumidora da conta
                 <select
                   value={selectedUnitId}
-                  onChange={(event) => setSelectedUnitId(event.target.value)}
+                  onChange={(event) => {
+                    setSelectedUnitId(event.target.value);
+                    setReviewSaved(false);
+                  }}
                 >
                   <option value="">Selecione uma UC cadastrada</option>
                   {utilityUnits.map((unit) => (
@@ -452,20 +514,30 @@ export function EnergyImportReview({
                       {unit.distributorName} — {unit.externalCode || 'Código não informado'}
                     </option>
                   ))}
+                  {canManageUnits && <option value="__create__">Criar nova UC ao confirmar</option>}
                 </select>
               </label>
               {utilityUnits.length === 0 && (
                 <p role="status">
-                  Este cliente ainda não tem UC cadastrada. Cadastre a UC antes de iniciar a
-                  revisão.
+                  Este cliente ainda não tem UC cadastrada.
+                  {canManageUnits
+                    ? ' Você pode informar uma nova UC para criá-la junto com a confirmação.'
+                    : ' Peça acesso ao cadastro de unidades consumidoras para continuar.'}
                 </p>
+              )}
+              {creatingUnit && canManageUnits && (
+                <NewUtilityUnitFields value={newUtilityUnit} onChange={setNewUtilityUnit} />
               )}
               <Feedback error={createMutation.error} />
               <Button
                 variant="primary"
                 icon="bolt"
                 loading={createMutation.isPending}
-                disabled={!document || !selectedUnitId || utilityUnits.length === 0}
+                disabled={
+                  !document ||
+                  !selectedUnitId ||
+                  (selectedUnitId === '__create__' && (!canManageUnits || !newUnitComplete))
+                }
                 onClick={() => createMutation.mutate()}
               >
                 Criar importação
@@ -613,7 +685,10 @@ export function EnergyImportReview({
                     Informe somente os meses presentes na conta. Cada mês exige uma decisão
                     explícita.
                   </p>
-                  {!canReadUnits && (
+                  {creatingUnit && canManageUnits && (
+                    <NewUtilityUnitFields value={newUtilityUnit} onChange={setNewUtilityUnit} />
+                  )}
+                  {!canReadUnits && !creatingUnit && (
                     <p role="alert">
                       Seu perfil precisa de leitura de unidades consumidoras para comparar os meses
                       existentes.
@@ -763,7 +838,12 @@ export function EnergyImportReview({
                       type="submit"
                       variant="primary"
                       loading={reviewMutation.isPending}
-                      disabled={!canReadUnits || readingsQuery.isPending || readingsQuery.isError}
+                      disabled={
+                        (creatingUnit
+                          ? !canManageUnits || !newUnitComplete
+                          : !canReadUnits || readingsQuery.isPending || readingsQuery.isError) ||
+                        reviewMutation.isPending
+                      }
                     >
                       Salvar revisão
                     </Button>
@@ -838,5 +918,49 @@ export function EnergyImportReview({
         </div>
       </Modal>
     </>
+  );
+}
+
+function NewUtilityUnitFields({
+  value,
+  onChange,
+}: {
+  value: NewUtilityUnitDraft;
+  onChange: (value: NewUtilityUnitDraft) => void;
+}) {
+  const field = (key: keyof NewUtilityUnitDraft, label: string, required = true) => (
+    <label key={key}>
+      {label}
+      <input
+        required={required}
+        minLength={required ? 2 : undefined}
+        maxLength={key === 'externalCode' ? 80 : 160}
+        value={value[key]}
+        onChange={(event) => onChange({ ...value, [key]: event.target.value })}
+      />
+    </label>
+  );
+  return (
+    <fieldset style={{ display: 'grid', gap: '0.65rem', minWidth: 0 }}>
+      <legend>Dados confirmados da nova unidade consumidora</legend>
+      <p>
+        Informe os dados da conta. A unidade e suas leituras só serão criadas ao confirmar esta
+        revisão.
+      </p>
+      <div
+        style={{
+          display: 'grid',
+          gap: '0.65rem',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 170px), 1fr))',
+        }}
+      >
+        {field('distributorName', 'Distribuidora')}
+        {field('externalCode', 'Código da unidade (opcional)', false)}
+        {field('consumerClass', 'Classe de consumo')}
+        {field('tariffMode', 'Modalidade tarifária')}
+        {field('connectionType', 'Tipo de conexão')}
+        {field('voltage', 'Tensão')}
+      </div>
+    </fieldset>
   );
 }
