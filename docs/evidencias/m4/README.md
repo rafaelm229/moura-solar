@@ -8,12 +8,12 @@ Validação local em Node 22.22.1, pnpm 11.25.0 e PostgreSQL 17 isolado.
 | Unitários API                    | 8 testes no motor de PDF e governança de ciclo de vida (`proposal.spec.ts`)                              |
 | `tests/proposal.integration.mjs` | 5 cenários HTTP/PostgreSQL completos de ciclo de vida, integridade de PDF e transições de esteira        |
 | `pnpm test:migrations`           | Upgrade sequencial M0 → M1 → M2 → M3 → M4 preserva integridade; reaplicação idempotente aprovada         |
-| `tests/e2e/proposal.spec.ts`     | 2 jornadas E2E completas aprovadas no Playwright (viewports 360px e 1440px)                              |
+| `tests/e2e/proposal.spec.ts`     | 4 jornadas E2E completas aprovadas no Playwright (viewports 360, 768, 1024 e 1440 px)                    |
 | Sigilo de Custos                 | Proibição estrita: custos internos, markup e margem bruta omitidos do PDF do cliente (SPEC-006 item 3)   |
 | Preservação de Dados             | Mascaramento de CPF/CNPJ de acordo com a LGPD nos documentos públicos                                    |
 | Gate B & Follow-up               | Transição automática para `PROPOSTA_APRESENTADA` no envio com agendamento de follow-up em 48h            |
 | Aceite & Contratação             | Transição automática para `CONTRATACAO` no aceite formal; bloqueio estrito contra novo aceite (HTTP 409) |
-| Responsividade Total             | Zero overflow horizontal em 360px (mobile) e 1440px (desktop), cards e ações responsivas                 |
+| Responsividade Total             | Zero overflow horizontal em 360, 768, 1024 e 1440 px, cards e ações responsivas                          |
 
 ## Jornadas e Cenários Validados
 
@@ -44,11 +44,19 @@ Validação local em Node 22.22.1, pnpm 11.25.0 e PostgreSQL 17 isolado.
    - Avanço automático da oportunidade para o estágio `CONTRATACAO`, gerando atividade de formalização contratual.
    - **Regra de Unicidade de Aceite (SPEC-006 item 19):** Tentativa subsequente de registrar aceite na mesma oportunidade é rejeitada com HTTP 409 Conflict.
 
-5. **Jornada Ponta a Ponta Playwright (360px e 1440px):**
+5. **Jornada Ponta a Ponta Playwright (360, 768, 1024 e 1440 px):**
    - Execução do fluxo completo: autenticação do operador comercial, criação de cliente e oportunidade, unidade consumidora, vistoria técnica, sugestão automatizada de dimensionamento, aprovação da versão técnica, geração da proposta comercial com PDF, envio via WhatsApp, verificação de avanço para `PROPOSTA_APRESENTADA` e registro de aceite formal com avanço para `CONTRATACAO`.
-   - Validação de adaptabilidade visual e ausência de scroll horizontal nos dois viewports oficiais do projeto.
+   - Validação de adaptabilidade visual e ausência de scroll horizontal nos quatro viewports testados.
+
+## Revalidação da apresentação em português — 07/10/2026
+
+- `pnpm check` aprovado; 5 cenários de integração da proposta e 8 jornadas E2E de proposta e contrato aprovados.
+- Resumo comercial, versões, ações, estados, condições de pagamento e PDF apresentam rótulos em português. As versões anteriores ficam recolhidas para facilitar a leitura da proposta atual.
+- As capturas abaixo mostram a proposta aceita em quatro larguras. A navegação e os campos ao redor pertencem à tela de oportunidades.
 
 ## Capturas representativas
 
 - [Proposta Comercial, PDF, Envio e Aceite Formal — 360 px (Mobile)](proposta-360.png)
+- [Proposta Comercial, PDF, Envio e Aceite Formal — 768 px (Tablet)](proposta-768.png)
+- [Proposta Comercial, PDF, Envio e Aceite Formal — 1024 px (Notebook)](proposta-1024.png)
 - [Proposta Comercial, PDF, Envio e Aceite Formal — 1440 px (Desktop)](proposta-1440.png)
