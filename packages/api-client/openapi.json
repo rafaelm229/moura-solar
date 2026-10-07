@@ -3794,6 +3794,33 @@
         "tags": ["financial"]
       }
     },
+    "/api/v1/inventory/module-availability": {
+      "get": {
+        "operationId": "InventoryController_listModuleAvailability",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ModuleAvailabilityViewDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["inventory"]
+      }
+    },
     "/api/v1/inventory/locations": {
       "get": {
         "operationId": "InventoryController_listLocations",
@@ -8745,6 +8772,10 @@
           "preferredModulePowerWp": {
             "type": "number",
             "default": 630
+          },
+          "preferredModuleCatalogItemId": {
+            "type": "string",
+            "format": "uuid"
           }
         },
         "required": ["targetMonthlyGenerationKwh"]
@@ -9893,6 +9924,20 @@
           }
         },
         "required": ["opportunityId", "beneficiaryName", "percentage"]
+      },
+      "ModuleAvailabilityViewDto": {
+        "type": "object",
+        "properties": {
+          "catalogItemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "available": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": ["catalogItemId", "available"]
       },
       "CreateStockLocationDto": {
         "type": "object",

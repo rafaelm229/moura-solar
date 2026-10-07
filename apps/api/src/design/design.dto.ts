@@ -7,6 +7,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   Matches,
   MaxLength,
   Min,
@@ -490,6 +491,11 @@ export class SuggestDesignDto {
   @IsNumber()
   @Min(100)
   preferredModulePowerWp?: number;
+
+  @ApiPropertyOptional({ type: String, format: 'uuid' })
+  @IsOptional()
+  @IsUUID()
+  preferredModuleCatalogItemId?: string;
 }
 
 export class DesignSuggestionViewDto {

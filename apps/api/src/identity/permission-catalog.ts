@@ -85,6 +85,7 @@ export const permissionCatalog = [
   'installations:review',
   'installations:upload_photos',
   'inventory:adjust',
+  'inventory:availability:read',
   'inventory:approve_count',
   'inventory:confirm_transfer',
   'inventory:consume',
@@ -526,6 +527,10 @@ export const initialRoles: Record<string, { permission: string; scope: string }[
     },
     {
       permission: 'inventory:read',
+      scope: 'organization',
+    },
+    {
+      permission: 'inventory:availability:read',
       scope: 'organization',
     },
     {
@@ -1067,6 +1072,10 @@ export const initialRoles: Record<string, { permission: string; scope: string }[
       scope: 'organization',
     },
     {
+      permission: 'inventory:availability:read',
+      scope: 'organization',
+    },
+    {
       permission: 'inventory:receive',
       scope: 'organization',
     },
@@ -1401,6 +1410,10 @@ export const initialRoles: Record<string, { permission: string; scope: string }[
       scope: 'own',
     },
     {
+      permission: 'inventory:availability:read',
+      scope: 'organization',
+    },
+    {
       permission: 'notifications:read_own',
       scope: 'own',
     },
@@ -1698,6 +1711,10 @@ export const initialRoles: Record<string, { permission: string; scope: string }[
     },
     {
       permission: 'inventory:read',
+      scope: 'organization',
+    },
+    {
+      permission: 'inventory:availability:read',
       scope: 'organization',
     },
     {

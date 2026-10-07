@@ -14,6 +14,25 @@ import {
 export class InventoryService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async listModuleAvailability(organizationId: string) {
+    const balances = await this.prisma.stockBalance.findMany({
+      where: {
+        organizationId,
+        catalogItem: { category: 'MODULE', status: 'ACTIVE' },
+        location: { status: 'ACTIVE', type: { notIn: ['QUARANTINE', 'TRANSIT'] } },
+      },
+      select: { catalogItemId: true, available: true },
+    });
+    const totals = new Map<string, number>();
+    for (const balance of balances) {
+      totals.set(
+        balance.catalogItemId,
+        (totals.get(balance.catalogItemId) ?? 0) + Number(balance.available),
+      );
+    }
+    return [...totals].map(([catalogItemId, available]) => ({ catalogItemId, available }));
+  }
+
   // ==========================================
   // LOCAIS DE ESTOQUE
   // ==========================================

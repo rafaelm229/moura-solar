@@ -393,15 +393,22 @@ test('exclusão lógica é idempotente e uma nova leitura preserva toda a cadeia
 });
 
 test('sugestão de dimensionamento: calcula kWp, módulos e inversores compatíveis', async () => {
+  const catalog = await admin.call('catalog?category=MODULE&status=ACTIVE', 'GET');
+  const selectedModule = catalog.body.find((item) => Number(item.powerRatingWp) > 0);
+  assert.ok(selectedModule);
   const suggestion = await admin.call('designs/suggest', 'POST', {
     targetMonthlyGenerationKwh: 600.0,
     specificYield: 135.0,
-    preferredModulePowerWp: 630,
+    preferredModuleCatalogItemId: selectedModule.id,
   });
   assert.equal(suggestion.status, 200);
   assert.equal(suggestion.body.classification, 'ESTIMATED');
-  assert.equal(suggestion.body.suggestedModuleQuantity, 8); // Math.ceil((600/135 * 1000) / 630) = ceil(7.05) = 8
-  assert.equal(suggestion.body.suggestedDcPowerKwp, 5.04); // 8 * 630 / 1000 = 5.04 kWp
+  assert.equal(suggestion.body.suggestedModuleSku, selectedModule.sku);
+  assert.equal(suggestion.body.suggestedModulePowerWp, Number(selectedModule.powerRatingWp));
+  assert.equal(
+    suggestion.body.suggestedModuleQuantity,
+    Math.ceil((600 / 135) * (1000 / Number(selectedModule.powerRatingWp))),
+  );
   assert.ok(suggestion.body.suggestedInverterPowerKw > 0);
   assert.ok(suggestion.body.estimatedMonthlyGenerationKwh >= 600.0);
 });
