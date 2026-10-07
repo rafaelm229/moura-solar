@@ -16,6 +16,7 @@ import {
   CreatePurchaseOrderDto,
   CreateStockLocationDto,
   CreateSupplierDto,
+  ModuleAvailabilityViewDto,
   ReceiveGoodsDto,
   RecordMovementDto,
   ReserveKitDto,
@@ -26,6 +27,13 @@ import {
 @Controller('inventory')
 export class InventoryController {
   constructor(private readonly service: InventoryService) {}
+
+  @Get('module-availability')
+  @RequirePermission('inventory:availability:read')
+  @ApiOkResponse({ type: [ModuleAvailabilityViewDto] })
+  async listModuleAvailability(@Req() req: IdentityRequest) {
+    return this.service.listModuleAvailability(req.actor.organizationId);
+  }
 
   // ==========================================
   // LOCAIS DE ESTOQUE

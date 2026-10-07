@@ -855,11 +855,28 @@ export class DesignService {
     const rawDcPowerKwp = targetMonthlyGenerationKwh / specificYield;
 
     // 2. Módulos sugeridos: busca módulo ativo no catálogo
-    const activeModule = await this.store.db.catalogItem.findFirst({
-      where: { organizationId: context.organizationId, category: 'MODULE', status: 'ACTIVE' },
-      orderBy: { referenceCost: 'asc' },
-    });
-    const modulePowerWp = dto.preferredModulePowerWp ?? Number(activeModule?.powerRatingWp ?? 630);
+    const activeModule = dto.preferredModuleCatalogItemId
+      ? await this.store.db.catalogItem.findFirst({
+          where: {
+            id: dto.preferredModuleCatalogItemId,
+            organizationId: context.organizationId,
+            category: 'MODULE',
+            status: 'ACTIVE',
+          },
+        })
+      : await this.store.db.catalogItem.findFirst({
+          where: { organizationId: context.organizationId, category: 'MODULE', status: 'ACTIVE' },
+          orderBy: { referenceCost: 'asc' },
+        });
+    if (dto.preferredModuleCatalogItemId && !activeModule) {
+      fail('MODULE_NOT_FOUND', 'O módulo selecionado não está ativo no catálogo.', 404);
+    }
+    const modulePowerWp = dto.preferredModuleCatalogItemId
+      ? Number(activeModule?.powerRatingWp)
+      : (dto.preferredModulePowerWp ?? Number(activeModule?.powerRatingWp ?? 630));
+    if (!Number.isFinite(modulePowerWp) || modulePowerWp <= 0) {
+      fail('MODULE_POWER_MISSING', 'O módulo selecionado não possui potência cadastrada.', 400);
+    }
     const suggestedModuleQuantity = Math.max(1, Math.ceil((rawDcPowerKwp * 1000) / modulePowerWp));
     const suggestedDcPowerKwp = round3((suggestedModuleQuantity * modulePowerWp) / 1000);
 
