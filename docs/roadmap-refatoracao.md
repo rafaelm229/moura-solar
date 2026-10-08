@@ -64,6 +64,10 @@ transporte e política de inbox/quarentena permanece pendente.
 O [R1-05](r1-inventario-integracao-2026-10-08.md) registra o inventário factual
 de auditoria, outbox de importação e projeções; não seleciona consumidor nem
 transporte.
+A [proposta ADR-007](adr/ADR-007-transporte-integracao-proposta.md) recomenda
+avaliar polling PostgreSQL para o piloto de importação/OCR, escolhido
+condicionalmente após os gates da SPEC-014; transporte e execução não estão
+aprovados.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
@@ -123,10 +127,11 @@ O [relatório de baseline R0](r0-baseline-2026-10-08.md) preserva o estado e as
 pendências observados naquela revisão; o PR #22 e seu CI não consolidaram a
 `main` nem dispensam revisão formal do baseline. A seção original que dizia que
 R1 não havia começado é histórica: R1-01 foi autorizado depois e a sequência
-atual está registrada acima. O próximo recorte técnico continua pendente de
-definir consumidor/piloto, transporte e política de inbox/quarentena/replay,
-respeitando as decisões operacionais ainda necessárias para OCR. O inventário
-R1-05 não habilita consumidor.
+atual está registrada acima. O domínio do piloto seguinte é importação/OCR,
+condicionado aos gates da SPEC-014. Ainda faltam contrato/efeito durável,
+transporte, inbox/retenção, retry/quarentena/replay e evidência de crash. O
+inventário R1-05 e a proposta ADR-007 não habilitam consumidor. Esta proposta de
+transporte não foi aprovada e não altera os gates do R1.
 
 ## Adiados, sem implementação nesta fase
 

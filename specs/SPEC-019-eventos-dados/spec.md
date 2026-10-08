@@ -100,7 +100,7 @@ mostra freshness/atraso; usuários só veem organização e escopo autorizados.
 
 - [x] Inventariar audit events, ImportOutbox e projeções existentes ([R1-05](../../docs/r1-inventario-integracao-2026-10-08.md)); inventário limitado aos caminhos localizados, sem escolha de transporte/consumidor.
 - [ ] Publicar contratos versionados em packages/contracts.
-- [ ] ADR de transporte e piloto outbox/inbox.
+- [ ] Aprovar transporte/inbox/retenção para o piloto condicional de importação/OCR; avaliar a [proposta ADR-007](../../docs/adr/ADR-007-transporte-integracao-proposta.md). Gates da SPEC-014 continuam bloqueando ativação.
 - [ ] Simular crash, duplicidade, atraso, replay e falha de consumidor.
 - [ ] Definir backfill e métricas Gold após estabilizar a V1.
 - [ ] Validar acesso, privacidade, retenção e reconciliação.
