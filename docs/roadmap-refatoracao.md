@@ -69,9 +69,9 @@ A [proposta ADR-007](adr/ADR-007-transporte-integracao-proposta.md) recomenda
 avaliar polling PostgreSQL para o piloto de importação/OCR, escolhido
 condicionalmente após os gates da SPEC-014; transporte e execução não estão
 aprovados.
-O [R1-07](r1-guard-evento-import-2026-10-08.md) implementa, em branch, a guarda
-de versão/payload no claim do worker; não ativa consumidor nem altera linhas
-legadas.
+O [R1-07](r1-guard-evento-import-2026-10-08.md) consolidou no PR #32 a guarda
+de versão/payload no claim do worker; CI #86 passou. Não ativa consumidor nem
+altera linhas legadas, portanto não exigiu deploy.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
