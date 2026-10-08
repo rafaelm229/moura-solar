@@ -5,6 +5,7 @@ const password = 'E2e-test-password-2026';
 for (const [width, height] of [
   [360, 800],
   [768, 1024],
+  [1024, 768],
   [1440, 900],
 ]) {
   test(`full proposal commercial lifecycle (PDF, delivery tracking, Gate B, formal acceptance) at ${width}px`, async ({
@@ -128,7 +129,7 @@ for (const [width, height] of [
       .first()
       .click();
     await expect(
-      page.getByRole('heading', { name: 'Emitir Nova Proposta Comercial (PDF)' }),
+      page.getByRole('heading', { name: 'Emitir nova proposta comercial (arquivo PDF)' }),
     ).toBeVisible();
 
     // Verify approved design version option is listed in dropdown
@@ -142,17 +143,18 @@ for (const [width, height] of [
       .fill('Instalação prevista para até 15 dias úteis após homologação.');
 
     // Submit proposal generation
-    await page.getByRole('button', { name: 'Gerar Proposta e PDF Oficial' }).click();
+    await page.getByRole('button', { name: 'Gerar proposta e arquivo PDF' }).click();
 
     // Verify proposal card is created with code and READY version
     await expect(page.getByText(/PROP-\d+/).first()).toBeVisible();
-    await expect(page.getByText('Versão 1').first()).toBeVisible();
-    await expect(page.getByText('READY').first()).toBeVisible();
+    await expect(page.getByText(/versão 1/i).first()).toBeVisible();
+    await expect(page.getByText('Pronta para envio').first()).toBeVisible();
 
     // Verify technical and commercial metrics
-    await expect(page.getByText('Potência Pico').first()).toBeVisible();
-    await expect(page.getByText('Geração Estimada').first()).toBeVisible();
-    await expect(page.getByText('Valor do Investimento (Preço Final)').first()).toBeVisible();
+    await expect(page.getByText('Potência do sistema').first()).toBeVisible();
+    await expect(page.getByText('Geração estimada por mês').first()).toBeVisible();
+    await expect(page.getByText('Investimento').first()).toBeVisible();
+    await expect(page.getByText(/desconto especial de 5%/).first()).toBeVisible();
 
     // Verify PDF document info and download button
     await expect(page.getByText(/proposta-PROP-\d+-v1\.pdf/).first()).toBeVisible();
@@ -160,12 +162,10 @@ for (const [width, height] of [
 
     // 8. Gate B: Record Delivery (WhatsApp)
     await page
-      .getByRole('button', { name: /Registrar Envio/ })
+      .getByRole('button', { name: /Registrar envio/ })
       .first()
       .click();
-    await expect(
-      page.getByRole('heading', { name: 'Registrar Envio da Proposta (Gate B)' }),
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Registrar envio da proposta' })).toBeVisible();
 
     await page.getByLabel('Destinatário *').fill(`(31) 98888-${width.toString().padStart(4, '0')}`);
     await page
@@ -174,21 +174,19 @@ for (const [width, height] of [
     await page.getByRole('button', { name: 'Confirmar Envio' }).click();
 
     // Verify status updated to SENT and delivery record appears
-    await expect(page.getByText('SENT').first()).toBeVisible();
-    await expect(page.getByText(/Histórico de Envios/)).toBeVisible();
+    await expect(page.getByText('Enviada ao cliente').first()).toBeVisible();
+    await expect(page.getByText(/Histórico de envios/)).toBeVisible();
     await expect(page.getByText(`(31) 98888-${width.toString().padStart(4, '0')}`)).toBeVisible();
 
     // Verify Gate B transition: Opportunity State advances to PROPOSTA_APRESENTADA
-    await expect(page.getByText('PROPOSTA_APRESENTADA').first()).toBeVisible();
+    await expect(page.getByText('Proposta apresentada').first()).toBeVisible();
 
     // 9. Record Formal Customer Acceptance
     await page
-      .getByRole('button', { name: /Registrar Aceite Formal/ })
+      .getByRole('button', { name: /Registrar aceite/ })
       .first()
       .click();
-    await expect(
-      page.getByRole('heading', { name: 'Registrar Aceite Formal do Cliente' }),
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Registrar aceite do cliente' })).toBeVisible();
 
     await page
       .getByLabel('Nome do Decisor / Signatário *')
@@ -196,16 +194,16 @@ for (const [width, height] of [
     await page
       .getByLabel('Observações do Aceite')
       .fill('Aceite confirmado formalmente pelo cliente com autorização de contratação.');
-    await page.getByRole('button', { name: 'Confirmar Aceite Formal' }).first().click();
+    await page.getByRole('button', { name: 'Confirmar aceite' }).first().click();
 
     // Verify version marked ACCEPTED, proposal marked CONTRATADA
-    await expect(page.getByText('ACCEPTED').first()).toBeVisible();
-    await expect(page.getByText('CONTRATADA (ACEITE FORMAL)')).toBeVisible();
-    await expect(page.getByText('Proposta Comercial Aceita Formalmente')).toBeVisible();
+    await expect(page.getByText('Aceita').first()).toBeVisible();
+    await expect(page.getByText('VERSÃO ACEITA')).toBeVisible();
+    await expect(page.getByText('Aceite formal registrado')).toBeVisible();
     await expect(page.getByText('Dr. Marcos Antunes (Diretor Executivo)')).toBeVisible();
 
     // Verify Opportunity State is now CONTRATACAO
-    await expect(page.getByText('CONTRATACAO').first()).toBeVisible();
+    await expect(page.getByText('Em contratação').first()).toBeVisible();
 
     // 10. Check viewport responsiveness (no horizontal scrollbar)
     await expect

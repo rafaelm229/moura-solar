@@ -36,7 +36,20 @@ export interface ProposalVersionView {
   id: string;
   proposalId: string;
   versionNumber: number;
-  status: 'DRAFT' | 'READY' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
+  status:
+    | 'DRAFT'
+    | 'PENDING_APPROVAL'
+    | 'APPROVED'
+    | 'GENERATING'
+    | 'READY'
+    | 'SENT'
+    | 'VIEWED'
+    | 'ACCEPTED'
+    | 'REJECTED'
+    | 'EXPIRED'
+    | 'SUPERSEDED'
+    | 'CANCELED'
+    | 'GENERATION_FAILED';
   systemPowerKwp?: number | string;
   estimatedMonthlyGenerationKwh?: number | string;
   totalInvestmentAmount?: number | string;
@@ -69,6 +82,62 @@ export interface ProposalView {
   updatedAt: string;
 }
 
+const proposalStatusLabels: Record<ProposalVersionView['status'], string> = {
+  DRAFT: 'Rascunho',
+  PENDING_APPROVAL: 'Aguardando aprovação',
+  APPROVED: 'Aprovada para geração',
+  GENERATING: 'Gerando documento',
+  READY: 'Pronta para envio',
+  SENT: 'Enviada ao cliente',
+  VIEWED: 'Visualizada pelo cliente',
+  ACCEPTED: 'Aceita',
+  REJECTED: 'Recusada',
+  EXPIRED: 'Vencida',
+  SUPERSEDED: 'Substituída',
+  CANCELED: 'Cancelada',
+  GENERATION_FAILED: 'Falha ao gerar documento',
+};
+
+const acceptanceMethodLabels: Record<string, string> = {
+  SIGNED_DOCUMENT: 'documento assinado em papel',
+  MESSAGE: 'confirmação por mensagem',
+  IN_PERSON: 'aceite presencial',
+  E_SIGNATURE: 'assinatura eletrônica',
+};
+
+const deliveryChannelLabels: Record<string, string> = {
+  WHATSAPP: 'WhatsApp',
+  EMAIL: 'e-mail',
+  IN_PERSON: 'presencial',
+  MANUAL: 'outro canal',
+};
+
+export const opportunityStateLabels: Record<string, string> = {
+  NOVO: 'Novo',
+  NOVA: 'Nova',
+  CONTATO_INICIAL: 'Contato inicial',
+  QUALIFICACAO: 'Qualificação',
+  QUALIFICADO: 'Qualificado',
+  VISITA_TECNICA: 'Visita técnica',
+  LEVANTAMENTO: 'Levantamento',
+  DIMENSIONAMENTO: 'Dimensionamento',
+  PROPOSTA: 'Proposta',
+  PROPOSTA_APRESENTADA: 'Proposta apresentada',
+  NEGOCIACAO: 'Em negociação',
+  CONTRATACAO: 'Em contratação',
+  VENDIDO: 'Vendido',
+  PERDIDO: 'Perdido',
+  CANCELADO: 'Cancelado',
+};
+
+function formatCurrency(value: number | string | undefined) {
+  return Number(value ?? 0).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+  });
+}
+
 type Design = Schemas['DesignViewDto'];
 
 interface ProposalsProps {
@@ -93,7 +162,7 @@ export function Proposals({
   const [selectedDesignVersionId, setSelectedDesignVersionId] = useState('');
   const [validityDays, setValidityDays] = useState(10);
   const [paymentConditionsText, setPaymentConditionsText] = useState(
-    'À vista com 5% de desconto especial ou Financiamento Bancário Solar em até 84 parcelas.',
+    'À vista, com desconto especial de 5%, ou financiamento bancário para energia solar em até 84 parcelas.',
   );
   const [observations, setObservations] = useState('');
 
@@ -332,7 +401,7 @@ export function Proposals({
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error(err);
-      alert('Não foi possível fazer download do PDF. Tente novamente.');
+      alert('Não foi possível baixar o arquivo da proposta. Tente novamente.');
     } finally {
       setDownloadingVersionId(null);
     }
@@ -366,11 +435,12 @@ export function Proposals({
             }}
           >
             <span className="device">
-              Geração de PDFs padronizados, controle de versões, registro de envios e aceite formal.
+              Gere a proposta, acompanhe suas versões e registre o envio e a resposta do cliente.
             </span>
             {opportunityState && (
               <span className={`badge badge-${opportunityState.toLowerCase()}`}>
-                {opportunityState}
+                {opportunityStateLabels[opportunityState] ??
+                  opportunityState.replaceAll('_', ' ').toLocaleLowerCase('pt-BR')}
               </span>
             )}
           </div>
@@ -410,7 +480,7 @@ export function Proposals({
             }}
           >
             <h4 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <Icon name="description" size={20} /> Emitir Nova Proposta Comercial (PDF)
+              <Icon name="description" size={20} /> Emitir nova proposta comercial (arquivo PDF)
             </h4>
             <button
               type="button"
@@ -493,7 +563,7 @@ export function Proposals({
                     value={validityDays}
                     onChange={(e) => setValidityDays(parseInt(e.target.value, 10) || 10)}
                   />
-                  <small className="device">Padrão SPEC-006: 10 dias corridos</small>
+                  <small className="device">Prazo padrão: 10 dias corridos</small>
                 </label>
 
                 <label style={{ gridColumn: '1 / -1' }}>
@@ -546,8 +616,8 @@ export function Proposals({
                   disabled={createProposalMutation.isPending || !selectedDesignVersionId}
                 >
                   {createProposalMutation.isPending
-                    ? 'Gerando PDF…'
-                    : 'Gerar Proposta e PDF Oficial'}
+                    ? 'Gerando arquivo PDF…'
+                    : 'Gerar proposta e arquivo PDF'}
                 </button>
               </div>
             </form>
@@ -577,8 +647,8 @@ export function Proposals({
           </div>
           <h4 style={{ margin: '0.5rem 0' }}>Nenhuma proposta emitida</h4>
           <p className="device" style={{ maxWidth: '28rem', margin: '0 auto 1.5rem auto' }}>
-            Converta dimensionamentos aprovados em propostas comerciais formais completas com PDF
-            para envio ao cliente via WhatsApp ou E-mail.
+            Crie uma proposta a partir de um dimensionamento aprovado. Depois, gere o arquivo PDF e
+            registre como ele foi entregue ao cliente.
           </p>
           {!readonly && canCreate && (
             <button
@@ -635,7 +705,7 @@ export function Proposals({
                 </span>
                 {hasAcceptedVersion && (
                   <span className="badge badge-ativo" style={{ fontSize: '0.75rem' }}>
-                    CONTRATADA (ACEITE FORMAL)
+                    VERSÃO ACEITA
                   </span>
                 )}
                 <span className="device">
@@ -660,31 +730,43 @@ export function Proposals({
                 const doc = version.documents?.[0];
                 const deliveries = version.deliveries ?? [];
                 const acceptance = version.acceptance;
+                const paymentSummary =
+                  typeof version.paymentConditions?.summary === 'string'
+                    ? version.paymentConditions.summary
+                    : null;
 
                 return (
-                  <div
+                  <details
                     key={version.id}
+                    open={version.versionNumber === versions[0]?.versionNumber || isAccepted}
                     style={{
-                      border: isAccepted
-                        ? '1px solid var(--status-success)'
-                        : '1px solid var(--color-border)',
-                      borderRadius: 'var(--radius-sm)',
-                      padding: '1rem',
-                      background: isAccepted ? 'rgba(34, 197, 94, 0.03)' : 'var(--color-surface)',
+                      border: `1px solid ${isAccepted ? 'var(--status-success)' : 'var(--color-border)'}`,
+                      borderRadius: 'var(--radius-md)',
+                      background: 'var(--color-surface)',
+                      overflow: 'hidden',
                     }}
                   >
-                    {/* Version Top Bar */}
-                    <div
+                    <summary
                       style={{
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
                         flexWrap: 'wrap',
-                        gap: '0.5rem',
-                        marginBottom: '0.75rem',
+                        gap: '1rem',
+                        padding: '1rem clamp(1rem, 2.5vw, 1.5rem)',
+                        cursor: 'pointer',
+                        background: isAccepted ? '#f1faf4' : 'var(--color-canvas)',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          flexWrap: 'wrap',
+                          gap: '0.65rem',
+                          minWidth: 0,
+                        }}
+                      >
                         <strong style={{ fontSize: '1rem' }}>Versão {version.versionNumber}</strong>
                         <span
                           className={`badge ${
@@ -697,354 +779,356 @@ export function Proposals({
                                   : 'badge-novo'
                           }`}
                         >
-                          {version.status}
+                          {proposalStatusLabels[version.status]}
+                        </span>
+                        <span className="device" style={{ fontSize: '0.8125rem' }}>
+                          Válida até{' '}
+                          {version.validUntil
+                            ? new Date(version.validUntil).toLocaleDateString('pt-BR')
+                            : `${version.validityDays} dias`}
                         </span>
                       </div>
-
-                      <div className="device" style={{ fontSize: '0.8125rem' }}>
-                        {version.validUntil
-                          ? `Válida até ${new Date(version.validUntil).toLocaleDateString('pt-BR')}`
-                          : `Validade: ${version.validityDays} dias`}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                        <span style={{ display: 'grid', gap: '0.15rem', textAlign: 'right' }}>
+                          <span className="device" style={{ fontSize: '0.75rem' }}>
+                            Investimento
+                          </span>
+                          <strong
+                            style={{
+                              color: 'var(--brand-primary)',
+                              fontSize: '1.25rem',
+                              fontVariantNumeric: 'tabular-nums',
+                            }}
+                          >
+                            {formatCurrency(version.finalAmount ?? version.finalPrice)}
+                          </strong>
+                        </span>
                       </div>
-                    </div>
+                    </summary>
 
-                    {/* Technical & Commercial Summary Cards */}
-                    <div
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-                        gap: '0.75rem',
-                        marginBottom: '1rem',
-                      }}
-                    >
+                    <div style={{ padding: 'clamp(1rem, 2.5vw, 1.5rem)' }}>
                       <div
                         style={{
-                          background: 'var(--color-canvas)',
-                          padding: '0.5rem 0.75rem',
-                          borderRadius: 'var(--radius-sm)',
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))',
+                          gap: '0.75rem',
+                          marginBottom: '1rem',
                         }}
                       >
-                        <span className="device" style={{ fontSize: '0.75rem', display: 'block' }}>
-                          Potência Pico
-                        </span>
-                        <strong style={{ fontSize: '1.1rem' }}>
-                          {Number(
-                            version.systemPowerKwp ?? version.technicalSnapshot?.dcPowerKwp ?? 0,
-                          ).toFixed(2)}{' '}
-                          kWp
-                        </strong>
-                      </div>
-
-                      <div
-                        style={{
-                          background: 'var(--color-canvas)',
-                          padding: '0.5rem 0.75rem',
-                          borderRadius: 'var(--radius-sm)',
-                        }}
-                      >
-                        <span className="device" style={{ fontSize: '0.75rem', display: 'block' }}>
-                          Geração Estimada
-                        </span>
-                        <strong style={{ fontSize: '1.1rem' }}>
-                          {Number(
-                            version.estimatedMonthlyGenerationKwh ??
-                              version.technicalSnapshot?.estimatedMonthlyGenerationKwh ??
-                              0,
-                          ).toFixed(0)}{' '}
-                          kWh/mês
-                        </strong>
-                      </div>
-
-                      <div
-                        style={{
-                          background: 'var(--color-canvas)',
-                          padding: '0.5rem 0.75rem',
-                          borderRadius: 'var(--radius-sm)',
-                          gridColumn: 'span 2',
-                        }}
-                      >
-                        <span className="device" style={{ fontSize: '0.75rem', display: 'block' }}>
-                          Valor do Investimento (Preço Final)
-                        </span>
-                        <strong
+                        <div
                           style={{
-                            fontSize: '1.25rem',
-                            color: 'var(--brand-primary)',
+                            background: 'var(--color-canvas)',
+                            padding: '0.75rem 1rem',
+                            borderRadius: 'var(--radius-sm)',
                           }}
                         >
-                          R${' '}
-                          {Number(version.finalAmount ?? version.finalPrice ?? 0).toLocaleString(
-                            'pt-BR',
-                            {
-                              minimumFractionDigits: 2,
-                            },
-                          )}
-                        </strong>
-                      </div>
-                    </div>
-
-                    {/* Observations */}
-                    {version.observations && (
-                      <p
-                        style={{
-                          fontSize: '0.875rem',
-                          margin: '0 0 0.75rem 0',
-                          color: 'var(--text-secondary)',
-                        }}
-                      >
-                        <strong>Observações:</strong> {version.observations}
-                      </p>
-                    )}
-
-                    {/* PDF Document Status */}
-                    {doc && (
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          flexWrap: 'wrap',
-                          gap: '0.5rem',
-                          padding: '0.5rem 0.75rem',
-                          background: 'var(--color-canvas)',
-                          borderRadius: 'var(--radius-sm)',
-                          marginBottom: '0.75rem',
-                          fontSize: '0.8125rem',
-                        }}
-                      >
-                        <div>
                           <span
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                            className="device"
+                            style={{ fontSize: '0.8125rem', display: 'block' }}
                           >
-                            <Icon name="description" size={16} /> {doc.fileName}
-                          </span>{' '}
-                          <span className="device">
-                            ({Math.round(doc.fileSize / 1024)} KB | Hash:{' '}
-                            {doc.contentHash.slice(0, 10)}…)
+                            Potência do sistema
+                          </span>
+                          <strong style={{ fontSize: '1.125rem' }}>
+                            {Number(
+                              version.systemPowerKwp ?? version.technicalSnapshot?.dcPowerKwp ?? 0,
+                            ).toFixed(2)}{' '}
+                            kWp
+                          </strong>
+                        </div>
+                        <div
+                          style={{
+                            background: 'var(--color-canvas)',
+                            padding: '0.75rem 1rem',
+                            borderRadius: 'var(--radius-sm)',
+                          }}
+                        >
+                          <span
+                            className="device"
+                            style={{ fontSize: '0.8125rem', display: 'block' }}
+                          >
+                            Geração estimada por mês
+                          </span>
+                          <strong style={{ fontSize: '1.125rem' }}>
+                            {Number(
+                              version.estimatedMonthlyGenerationKwh ??
+                                version.technicalSnapshot?.estimatedMonthlyGenerationKwh ??
+                                0,
+                            ).toFixed(0)}{' '}
+                            kWh/mês
+                          </strong>
+                        </div>
+                      </div>
+
+                      {paymentSummary && (
+                        <div
+                          style={{
+                            display: 'grid',
+                            gap: '0.25rem',
+                            padding: '0.75rem 1rem',
+                            marginBottom: '0.75rem',
+                            borderLeft: '3px solid var(--brand-primary)',
+                            background: 'var(--color-canvas)',
+                          }}
+                        >
+                          <strong style={{ fontSize: '0.875rem' }}>Condição de pagamento</strong>
+                          <span style={{ color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                            {paymentSummary}
                           </span>
                         </div>
-                        <button
-                          type="button"
+                      )}
+
+                      {/* Observations */}
+                      {version.observations && (
+                        <p
                           style={{
-                            padding: '0.25rem 0.6rem',
-                            fontSize: '0.8125rem',
-                            display: 'inline-flex',
+                            fontSize: '0.875rem',
+                            margin: '0 0 0.75rem 0',
+                            color: 'var(--text-secondary)',
+                          }}
+                        >
+                          <strong>Observações:</strong> {version.observations}
+                        </p>
+                      )}
+
+                      {/* PDF Document Status */}
+                      {doc && (
+                        <div
+                          style={{
+                            display: 'flex',
                             alignItems: 'center',
-                            gap: '0.35rem',
-                          }}
-                          onClick={() => handleDownloadPdf(version)}
-                          disabled={downloadingVersionId === version.id}
-                        >
-                          <Icon name="download" size={14} />
-                          {downloadingVersionId === version.id ? 'Baixando…' : 'Baixar PDF'}
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Acceptance Record Banner */}
-                    {acceptance && (
-                      <div
-                        className="notice"
-                        style={{
-                          background: 'rgba(34, 197, 94, 0.1)',
-                          border: '1px solid var(--status-success)',
-                          padding: '0.75rem',
-                          borderRadius: 'var(--radius-sm)',
-                          marginBottom: '0.75rem',
-                          fontSize: '0.875rem',
-                        }}
-                      >
-                        <strong style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                          <Icon name="check_circle" size={18} /> Proposta Comercial Aceita
-                          Formalmente
-                        </strong>
-                        <div>
-                          Aceito por <strong>{acceptance.acceptedByName}</strong> em{' '}
-                          {new Date(acceptance.acceptedAt).toLocaleString('pt-BR')} via{' '}
-                          <strong>{acceptance.method}</strong>.
-                        </div>
-                        {acceptance.notes && (
-                          <div style={{ marginTop: '0.25rem' }} className="device">
-                            Notas: {acceptance.notes}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Rejection Banner */}
-                    {isRejected && version.rejectionReason && (
-                      <div
-                        className="notice error"
-                        style={{
-                          background: 'rgba(239, 68, 68, 0.1)',
-                          border: '1px solid var(--status-danger)',
-                          padding: '0.75rem',
-                          borderRadius: 'var(--radius-sm)',
-                          marginBottom: '0.75rem',
-                          fontSize: '0.875rem',
-                        }}
-                      >
-                        <strong style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                          <Icon name="close" size={18} /> Proposta Rejeitada
-                        </strong>
-                        <div>Motivo: {version.rejectionReason}</div>
-                      </div>
-                    )}
-
-                    {/* Deliveries Timeline */}
-                    {deliveries.length > 0 && (
-                      <div style={{ marginBottom: '0.75rem' }}>
-                        <strong
-                          style={{
+                            justifyContent: 'space-between',
+                            flexWrap: 'wrap',
+                            gap: '0.5rem',
+                            padding: '0.5rem 0.75rem',
+                            background: 'var(--color-canvas)',
+                            borderRadius: 'var(--radius-sm)',
+                            marginBottom: '0.75rem',
                             fontSize: '0.8125rem',
-                            display: 'block',
-                            marginBottom: '0.25rem',
                           }}
                         >
-                          Histórico de Envios:
-                        </strong>
-                        <div style={{ display: 'grid', gap: '0.35rem', fontSize: '0.8125rem' }}>
-                          {deliveries.map((del) => (
+                          <div>
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.35rem',
+                              }}
+                            >
+                              <Icon name="description" size={16} /> {doc.fileName}
+                            </span>{' '}
+                            <span className="device">
+                              ({Math.round(doc.fileSize / 1024)} KB · PDF pronto)
+                            </span>
+                          </div>
+                          <details style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                            <summary style={{ cursor: 'pointer' }}>Integridade do arquivo</summary>
+                            <span>Código de integridade SHA: {doc.contentHash}</span>
+                          </details>
+                          <button
+                            type="button"
+                            style={{
+                              padding: '0.25rem 0.6rem',
+                              fontSize: '0.8125rem',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.35rem',
+                            }}
+                            onClick={() => handleDownloadPdf(version)}
+                            disabled={downloadingVersionId === version.id}
+                          >
+                            <Icon name="download" size={14} />
+                            {downloadingVersionId === version.id ? 'Baixando…' : 'Baixar PDF'}
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Acceptance Record Banner */}
+                      {acceptance && (
+                        <div
+                          className="notice"
+                          style={{
+                            background: 'rgba(34, 197, 94, 0.1)',
+                            border: '1px solid var(--status-success)',
+                            padding: '0.75rem',
+                            borderRadius: 'var(--radius-sm)',
+                            marginBottom: '0.75rem',
+                            fontSize: '0.875rem',
+                          }}
+                        >
+                          <strong style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <Icon name="check_circle" size={18} /> Aceite formal registrado
+                          </strong>
+                          <div>
+                            Aceito por <strong>{acceptance.acceptedByName}</strong> em{' '}
+                            {new Date(acceptance.acceptedAt).toLocaleString('pt-BR')} via{' '}
+                            <strong>
+                              {acceptanceMethodLabels[acceptance.method] ?? acceptance.method}
+                            </strong>
+                            .
+                          </div>
+                          {acceptance.notes && (
+                            <div style={{ marginTop: '0.25rem' }} className="device">
+                              Notas: {acceptance.notes}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Rejection Banner */}
+                      {isRejected && version.rejectionReason && (
+                        <div
+                          className="notice error"
+                          style={{
+                            background: 'rgba(239, 68, 68, 0.1)',
+                            border: '1px solid var(--status-danger)',
+                            padding: '0.75rem',
+                            borderRadius: 'var(--radius-sm)',
+                            marginBottom: '0.75rem',
+                            fontSize: '0.875rem',
+                          }}
+                        >
+                          <strong style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <Icon name="close" size={18} /> Proposta Rejeitada
+                          </strong>
+                          <div>
+                            Motivo:{' '}
+                            {{
+                              PRECO_ALTO: 'preço acima da expectativa',
+                              CONCORRENTE: 'cliente fechou com concorrente',
+                              FINANCIAMENTO_NEGADO: 'crédito ou financiamento negado',
+                              DESISTENCIA: 'cliente desistiu do projeto',
+                              OUTRO: 'outro motivo',
+                            }[version.rejectionReason] ?? version.rejectionReason}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Deliveries Timeline */}
+                      {deliveries.length > 0 && (
+                        <div style={{ marginBottom: '0.75rem' }}>
+                          <strong
+                            style={{
+                              fontSize: '0.8125rem',
+                              display: 'block',
+                              marginBottom: '0.25rem',
+                            }}
+                          >
+                            Histórico de envios:
+                          </strong>
+                          <div style={{ display: 'grid', gap: '0.35rem', fontSize: '0.8125rem' }}>
+                            {deliveries.map((del) => (
+                              <div
+                                key={del.id}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.5rem',
+                                  color: 'var(--text-secondary)',
+                                }}
+                              >
+                                <span>
+                                  <Icon name="send" size={14} style={{ marginRight: '0.35rem' }} />
+                                  {deliveryChannelLabels[del.channel] ?? 'outro canal'}:{' '}
+                                  <strong>{del.recipient}</strong> (
+                                  {new Date(del.sentAt).toLocaleString('pt-BR')})
+                                </span>
+                                {del.notes && <span className="device">— {del.notes}</span>}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Clear next action, based on the API status */}
+                      {!readonly && !hasAcceptedVersion && !isRejected && !isExpired && (
+                        <>
+                          {(isReady || isSent) && (
                             <div
-                              key={del.id}
                               style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '0.5rem',
-                                color: 'var(--text-secondary)',
+                                gap: '0.625rem',
+                                backgroundColor: 'var(--color-canvas)',
+                                borderLeft: `3px solid ${isReady ? 'var(--brand-primary)' : 'var(--status-info)'}`,
+                                padding: '0.75rem 1rem',
+                                marginTop: '1rem',
+                                fontSize: '0.875rem',
+                                color: 'var(--text-primary)',
                               }}
                             >
-                              <span>
-                                <Icon name="send" size={14} style={{ marginRight: '0.35rem' }} />
-                                {del.channel === 'WHATSAPP'
-                                  ? 'WhatsApp'
-                                  : del.channel === 'EMAIL'
-                                    ? 'E-mail'
-                                    : 'Presencial'}
-                                : <strong>{del.recipient}</strong> (
-                                {new Date(del.sentAt).toLocaleString('pt-BR')})
-                              </span>
-                              {del.notes && <span className="device">— {del.notes}</span>}
+                              <Icon name={isReady ? 'send' : 'schedule'} size={20} />
+                              <div>
+                                <strong>
+                                  {isReady
+                                    ? 'Próxima ação: enviar ao cliente.'
+                                    : 'Aguardando retorno do cliente.'}
+                                </strong>{' '}
+                                {isReady
+                                  ? 'Registre o canal e o destinatário para concluir o envio.'
+                                  : 'Quando houver uma resposta, registre o aceite ou a recusa.'}
+                              </div>
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                          )}
+                        </>
+                      )}
 
-                    {/* Next Step Guidance Banner */}
-                    {!readonly && !hasAcceptedVersion && !isRejected && !isExpired && (
-                      <>
-                        {isReady && (
-                          <div
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '0.75rem',
-                              backgroundColor: 'rgba(8, 116, 67, 0.08)',
-                              border: '1px solid var(--brand-primary, #087443)',
-                              borderRadius: 'var(--radius-sm, 6px)',
-                              padding: '0.75rem 1rem',
-                              marginTop: '0.75rem',
-                              fontSize: '0.875rem',
-                              color: 'var(--brand-primary-strong, #045c34)',
-                            }}
-                          >
-                            <Icon name="arrow_forward" size={20} />
-                            <div>
-                              <strong>Próximo Passo Comercial:</strong> Envie a proposta ao cliente
-                              e registre o canal de entrega abaixo para liberar o{' '}
-                              <strong>Aceite Formal</strong> e a etapa de contratação.
-                            </div>
-                          </div>
-                        )}
+                      {/* Action Buttons Toolbar */}
+                      {!readonly && !hasAcceptedVersion && (
+                        <div
+                          style={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            alignItems: 'center',
+                            gap: '0.625rem',
+                            marginTop: '0.75rem',
+                            paddingTop: '0.75rem',
+                            borderTop: '1px dashed var(--color-border)',
+                          }}
+                        >
+                          {canSend && (
+                            <button
+                              type="button"
+                              className={isReady ? 'btn btn--primary' : 'btn btn--secondary'}
+                              style={{
+                                padding: '0.55rem 1.1rem',
+                                fontSize: '0.875rem',
+                                minHeight: '44px',
+                                fontWeight: 600,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.4rem',
+                                backgroundColor: isReady
+                                  ? 'var(--brand-primary, #087443)'
+                                  : undefined,
+                                color: isReady ? '#ffffff' : undefined,
+                                border: isReady
+                                  ? '1px solid var(--brand-primary-strong, #045c34)'
+                                  : undefined,
+                                boxShadow: isReady ? '0 1px 3px rgba(0, 0, 0, 0.12)' : undefined,
+                              }}
+                              onClick={() => {
+                                setDeliveryVersionId(version.id);
+                                setAcceptVersionId(null);
+                                setRejectVersionId(null);
+                              }}
+                            >
+                              <Icon name="send" size={16} />
+                              {isReady ? 'Registrar envio ao cliente' : 'Registrar novo envio'}
+                            </button>
+                          )}
 
-                        {isSent && (
-                          <div
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '0.75rem',
-                              backgroundColor: 'rgba(21, 128, 61, 0.1)',
-                              border: '1px solid #16a34a',
-                              borderRadius: 'var(--radius-sm, 6px)',
-                              padding: '0.75rem 1rem',
-                              marginTop: '0.75rem',
-                              fontSize: '0.875rem',
-                              color: '#15803d',
-                            }}
-                          >
-                            <Icon name="verified" size={20} />
-                            <div>
-                              <strong>Proposta Entregue ao Cliente!</strong> Assim que o cliente der
-                              o retorno positivo, registre o <strong>Aceite Formal</strong> no botão
-                              verde destacado abaixo para avançar à etapa de Contratos.
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    )}
-
-                    {/* Action Buttons Toolbar */}
-                    {!readonly && !hasAcceptedVersion && (
-                      <div
-                        style={{
-                          display: 'flex',
-                          flexWrap: 'wrap',
-                          alignItems: 'center',
-                          gap: '0.625rem',
-                          marginTop: '0.75rem',
-                          paddingTop: '0.75rem',
-                          borderTop: '1px dashed var(--color-border)',
-                        }}
-                      >
-                        {canSend && (
-                          <button
-                            type="button"
-                            className={isReady ? 'btn btn--primary' : 'btn btn--secondary'}
-                            style={{
-                              padding: '0.55rem 1.1rem',
-                              fontSize: '0.875rem',
-                              minHeight: 'auto',
-                              fontWeight: 600,
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.4rem',
-                              backgroundColor: isReady
-                                ? 'var(--brand-primary, #087443)'
-                                : undefined,
-                              color: isReady ? '#ffffff' : undefined,
-                              border: isReady
-                                ? '1px solid var(--brand-primary-strong, #045c34)'
-                                : undefined,
-                              boxShadow: isReady ? '0 1px 3px rgba(0, 0, 0, 0.12)' : undefined,
-                            }}
-                            onClick={() => {
-                              setDeliveryVersionId(version.id);
-                              setAcceptVersionId(null);
-                              setRejectVersionId(null);
-                            }}
-                          >
-                            <Icon name="send" size={16} />
-                            {isReady
-                              ? '1. Registrar Envio ao Cliente (Gate B)'
-                              : 'Registrar Novo Envio'}
-                          </button>
-                        )}
-
-                        {canAccept &&
-                          (isSent ? (
+                          {canAccept && isSent && (
                             <button
                               type="button"
                               className="btn btn--success"
                               style={{
                                 padding: '0.6rem 1.25rem',
                                 fontSize: '0.9375rem',
-                                minHeight: 'auto',
+                                minHeight: '44px',
                                 backgroundColor: '#15803d',
                                 color: '#ffffff',
                                 border: '1px solid #166534',
                                 fontWeight: 700,
-                                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.18)',
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: '0.5rem',
@@ -1055,147 +1139,348 @@ export function Proposals({
                                 setRejectVersionId(null);
                               }}
                             >
-                              <Icon name="check" size={18} /> Registrar Aceite Formal do Cliente
+                              <Icon name="check" size={18} /> Registrar aceite do cliente
                             </button>
-                          ) : (
+                          )}
+
+                          {canReject && isSent && (
                             <button
                               type="button"
-                              className="btn"
-                              disabled
-                              title="O aceite formal requer o envio prévio da proposta ao cliente (Gate B)."
+                              className="btn btn--danger"
                               style={{
                                 padding: '0.55rem 1rem',
                                 fontSize: '0.875rem',
-                                minHeight: 'auto',
-                                backgroundColor: '#f1f5f9',
-                                color: '#64748b',
-                                border: '1px dashed #cbd5e1',
+                                minHeight: '44px',
+                                backgroundColor: '#fee2e2',
+                                color: '#b91c1c',
+                                border: '1px solid #ef4444',
                                 fontWeight: 600,
-                                cursor: 'not-allowed',
-                                opacity: 0.65,
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: '0.4rem',
                               }}
+                              onClick={() => {
+                                setRejectVersionId(version.id);
+                                setDeliveryVersionId(null);
+                                setAcceptVersionId(null);
+                              }}
                             >
-                              <Icon name="schedule" size={16} /> Registrar Aceite Formal (Aguardando
-                              Envio)
+                              <Icon name="close" size={16} /> Registrar recusa
                             </button>
-                          ))}
+                          )}
 
-                        {canReject && isSent && (
-                          <button
-                            type="button"
-                            className="btn btn--danger"
-                            style={{
-                              padding: '0.55rem 1rem',
-                              fontSize: '0.875rem',
-                              minHeight: 'auto',
-                              backgroundColor: '#fee2e2',
-                              color: '#b91c1c',
-                              border: '1px solid #ef4444',
-                              fontWeight: 600,
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.4rem',
-                            }}
-                            onClick={() => {
-                              setRejectVersionId(version.id);
-                              setDeliveryVersionId(null);
-                              setAcceptVersionId(null);
-                            }}
-                          >
-                            <Icon name="close" size={16} /> Registrar Rejeição
-                          </button>
-                        )}
+                          {canCreate && (
+                            <button
+                              type="button"
+                              className="btn btn--subtle"
+                              style={{
+                                padding: '0.55rem 1rem',
+                                fontSize: '0.875rem',
+                                minHeight: 'auto',
+                                fontWeight: 600,
+                              }}
+                              onClick={() => {
+                                setNewVersionParentId(version.id);
+                              }}
+                            >
+                              + Nova Versão
+                            </button>
+                          )}
+                        </div>
+                      )}
 
-                        {canCreate && (
-                          <button
-                            type="button"
-                            className="btn btn--subtle"
-                            style={{
-                              padding: '0.55rem 1rem',
-                              fontSize: '0.875rem',
-                              minHeight: 'auto',
-                              fontWeight: 600,
-                            }}
-                            onClick={() => {
-                              setNewVersionParentId(version.id);
-                            }}
-                          >
-                            + Nova Versão
-                          </button>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Inline Form: Register Delivery */}
-                    {deliveryVersionId === version.id && (
-                      <div
-                        className="notice"
-                        style={{
-                          marginTop: '0.75rem',
-                          background: 'var(--color-canvas)',
-                          padding: '1rem',
-                          borderRadius: 'var(--radius-sm)',
-                        }}
-                      >
-                        <h4 style={{ margin: '0 0 0.5rem 0' }}>
-                          Registrar Envio da Proposta (Gate B)
-                        </h4>
-                        <p className="device" style={{ margin: '0 0 0.75rem 0' }}>
-                          O envio formal atualiza a oportunidade para
-                          &quot;PROPOSTA_APRESENTADA&quot; e agenda atividade automática de
-                          follow-up em 48h.
-                        </p>
-                        <Feedback error={deliverMutation.error} />
-                        <form
-                          onSubmit={(e) => {
-                            e.preventDefault();
-                            deliverMutation.mutate(version.id);
+                      {/* Inline Form: Register Delivery */}
+                      {deliveryVersionId === version.id && (
+                        <div
+                          className="notice"
+                          style={{
+                            marginTop: '0.75rem',
+                            background: 'var(--color-canvas)',
+                            padding: '1rem',
+                            borderRadius: 'var(--radius-sm)',
                           }}
-                          style={{ display: 'grid', gap: '0.75rem' }}
                         >
-                          <div className="form-grid">
-                            <label>
-                              Canal de Envio *
-                              <select
-                                value={deliveryChannel}
-                                onChange={(e) =>
-                                  setDeliveryChannel(
-                                    e.target.value as 'WHATSAPP' | 'EMAIL' | 'IN_PERSON' | 'MANUAL',
-                                  )
-                                }
+                          <h4 style={{ margin: '0 0 0.5rem 0' }}>Registrar envio da proposta</h4>
+                          <p className="device" style={{ margin: '0 0 0.75rem 0' }}>
+                            Ao registrar o envio, a oportunidade avança para a etapa “Proposta
+                            apresentada” e um lembrete de acompanhamento é criado para daqui a 48
+                            horas.
+                          </p>
+                          <Feedback error={deliverMutation.error} />
+                          <form
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              deliverMutation.mutate(version.id);
+                            }}
+                            style={{ display: 'grid', gap: '0.75rem' }}
+                          >
+                            <div className="form-grid">
+                              <label>
+                                Canal de Envio *
+                                <select
+                                  value={deliveryChannel}
+                                  onChange={(e) =>
+                                    setDeliveryChannel(
+                                      e.target.value as
+                                        'WHATSAPP' | 'EMAIL' | 'IN_PERSON' | 'MANUAL',
+                                    )
+                                  }
+                                >
+                                  <option value="WHATSAPP">WhatsApp</option>
+                                  <option value="EMAIL">E-mail</option>
+                                  <option value="IN_PERSON">Presencial ou reunião</option>
+                                  <option value="MANUAL">Outro canal</option>
+                                </select>
+                              </label>
+
+                              <label>
+                                Destinatário *
+                                <input
+                                  type="text"
+                                  required
+                                  placeholder="ex: (31) 98765-4321 ou cliente@exemplo.com"
+                                  value={deliveryRecipient}
+                                  onChange={(e) => setDeliveryRecipient(e.target.value)}
+                                />
+                              </label>
+
+                              <label style={{ gridColumn: '1 / -1' }}>
+                                Notas do Envio
+                                <input
+                                  type="text"
+                                  placeholder="ex.: Arquivo PDF enviado pelo WhatsApp corporativo ao responsável financeiro."
+                                  value={deliveryNotes}
+                                  onChange={(e) => setDeliveryNotes(e.target.value)}
+                                />
+                              </label>
+                            </div>
+
+                            <div
+                              style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}
+                            >
+                              <button
+                                type="button"
+                                className="btn btn--subtle"
+                                style={{
+                                  backgroundColor: '#ffffff',
+                                  color: '#334155',
+                                  border: '1px solid #cbd5e1',
+                                  padding: '0.45rem 1rem',
+                                  borderRadius: '6px',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                }}
+                                onClick={() => setDeliveryVersionId(null)}
                               >
-                                <option value="WHATSAPP">WhatsApp</option>
-                                <option value="EMAIL">E-mail</option>
-                                <option value="IN_PERSON">Presencial / Reunião</option>
-                                <option value="MANUAL">Outro Canal</option>
-                              </select>
-                            </label>
+                                Cancelar
+                              </button>
+                              <button
+                                type="submit"
+                                disabled={deliverMutation.isPending || !deliveryRecipient}
+                              >
+                                {deliverMutation.isPending ? 'Registrando…' : 'Confirmar Envio'}
+                              </button>
+                            </div>
+                          </form>
+                        </div>
+                      )}
 
-                            <label>
-                              Destinatário *
-                              <input
-                                type="text"
-                                required
-                                placeholder="ex: (31) 98765-4321 ou cliente@email.com"
-                                value={deliveryRecipient}
-                                onChange={(e) => setDeliveryRecipient(e.target.value)}
-                              />
-                            </label>
+                      {/* Inline Form: Register Acceptance */}
+                      {acceptVersionId === version.id && (
+                        <div
+                          className="notice"
+                          style={{
+                            marginTop: '0.75rem',
+                            background: 'rgba(34, 197, 94, 0.08)',
+                            border: '1px solid var(--status-success)',
+                            padding: '1rem',
+                            borderRadius: 'var(--radius-sm)',
+                          }}
+                        >
+                          <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--status-success)' }}>
+                            Registrar aceite do cliente
+                          </h4>
+                          <p className="device" style={{ margin: '0 0 0.75rem 0' }}>
+                            O registro do aceite avança a oportunidade para a etapa de contratação e
+                            cria uma tarefa para formalizar o contrato.
+                          </p>
+                          <Feedback error={acceptMutation.error} />
+                          <form
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              acceptMutation.mutate(version.id);
+                            }}
+                            style={{ display: 'grid', gap: '0.75rem' }}
+                          >
+                            <div className="form-grid">
+                              <label>
+                                Forma de aceite *
+                                <select
+                                  value={acceptMethod}
+                                  onChange={(e) =>
+                                    setAcceptMethod(
+                                      e.target.value as
+                                        'SIGNED_DOCUMENT' | 'MESSAGE' | 'IN_PERSON' | 'E_SIGNATURE',
+                                    )
+                                  }
+                                >
+                                  <option value="MESSAGE">Confirmação por mensagem</option>
+                                  <option value="SIGNED_DOCUMENT">
+                                    Documento assinado em papel
+                                  </option>
+                                  <option value="E_SIGNATURE">Assinatura eletrônica</option>
+                                  <option value="IN_PERSON">Aceite presencial</option>
+                                </select>
+                              </label>
 
-                            <label style={{ gridColumn: '1 / -1' }}>
-                              Notas do Envio
-                              <input
-                                type="text"
-                                placeholder="ex: Enviado em PDF pelo WhatsApp corporativo ao diretor financeiro."
-                                value={deliveryNotes}
-                                onChange={(e) => setDeliveryNotes(e.target.value)}
-                              />
-                            </label>
-                          </div>
+                              <label>
+                                Nome do Decisor / Signatário *
+                                <input
+                                  type="text"
+                                  required
+                                  placeholder="ex: Roberto Carlos da Silva"
+                                  value={acceptedByName}
+                                  onChange={(e) => setAcceptedByName(e.target.value)}
+                                />
+                              </label>
 
+                              <label style={{ gridColumn: '1 / -1' }}>
+                                Observações do Aceite
+                                <input
+                                  type="text"
+                                  placeholder="ex: Aceite registrado via áudio/mensagem de WhatsApp confirmando a proposta."
+                                  value={acceptNotes}
+                                  onChange={(e) => setAcceptNotes(e.target.value)}
+                                />
+                              </label>
+                            </div>
+
+                            <div
+                              style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}
+                            >
+                              <button
+                                type="button"
+                                className="btn btn--subtle"
+                                onClick={() => setAcceptVersionId(null)}
+                              >
+                                Cancelar
+                              </button>
+                              <button
+                                type="submit"
+                                className="btn btn--success"
+                                style={{
+                                  background: '#15803d',
+                                  color: '#ffffff',
+                                  border: '1px solid #166534',
+                                  fontWeight: 600,
+                                }}
+                                disabled={acceptMutation.isPending || !acceptedByName}
+                              >
+                                {acceptMutation.isPending ? 'Confirmando…' : 'Confirmar aceite'}
+                              </button>
+                            </div>
+                          </form>
+                        </div>
+                      )}
+
+                      {/* Inline Form: Register Rejection */}
+                      {rejectVersionId === version.id && (
+                        <div
+                          className="notice error"
+                          style={{
+                            marginTop: '0.75rem',
+                            background: 'rgba(239, 68, 68, 0.08)',
+                            border: '1px solid var(--status-danger)',
+                            padding: '1rem',
+                            borderRadius: 'var(--radius-sm)',
+                          }}
+                        >
+                          <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--status-danger)' }}>
+                            Registrar recusa da proposta
+                          </h4>
+                          <Feedback error={rejectMutation.error} />
+                          <form
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              rejectMutation.mutate(version.id);
+                            }}
+                            style={{ display: 'grid', gap: '0.75rem' }}
+                          >
+                            <div className="form-grid">
+                              <label>
+                                Motivo da Recusa *
+                                <select
+                                  value={rejectReason}
+                                  onChange={(e) => setRejectReason(e.target.value)}
+                                >
+                                  <option value="PRECO_ALTO">Preço acima da expectativa</option>
+                                  <option value="CONCORRENTE">Fechou com concorrente</option>
+                                  <option value="FINANCIAMENTO_NEGADO">
+                                    Crédito/financiamento negado
+                                  </option>
+                                  <option value="DESISTENCIA">Desistência do projeto</option>
+                                  <option value="OUTRO">Outro motivo</option>
+                                </select>
+                              </label>
+
+                              <label style={{ gridColumn: '1 / -1' }}>
+                                Detalhes da recusa
+                                <input
+                                  type="text"
+                                  placeholder="ex: Solicitou refazer dimensionamento com módulos de maior potência."
+                                  value={rejectNotes}
+                                  onChange={(e) => setRejectNotes(e.target.value)}
+                                />
+                              </label>
+                            </div>
+
+                            <div
+                              style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}
+                            >
+                              <button
+                                type="button"
+                                className="btn btn--subtle"
+                                onClick={() => setRejectVersionId(null)}
+                              >
+                                Cancelar
+                              </button>
+                              <button
+                                type="submit"
+                                className="btn btn--danger"
+                                style={{
+                                  background: '#b91c1c',
+                                  color: '#ffffff',
+                                  border: '1px solid #991b1b',
+                                  fontWeight: 600,
+                                }}
+                                disabled={rejectMutation.isPending}
+                              >
+                                {rejectMutation.isPending ? 'Registrando…' : 'Confirmar recusa'}
+                              </button>
+                            </div>
+                          </form>
+                        </div>
+                      )}
+
+                      {/* Inline Form: Create Next Version */}
+                      {newVersionParentId === version.id && (
+                        <div
+                          className="notice"
+                          style={{
+                            marginTop: '0.75rem',
+                            background: 'var(--color-canvas)',
+                            padding: '1rem',
+                            borderRadius: 'var(--radius-sm)',
+                          }}
+                        >
+                          <h4 style={{ margin: '0 0 0.5rem 0' }}>
+                            Emitir Próxima Versão da Proposta
+                          </h4>
+                          <p className="device" style={{ margin: '0 0 0.75rem 0' }}>
+                            Será criada uma nova versão (v{version.versionNumber + 1}) para esta
+                            proposta comercial, permitindo novas revisões e reenvio formal.
+                          </p>
+                          <Feedback error={newVersionMutation.error} />
                           <div
                             style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}
                           >
@@ -1211,247 +1496,22 @@ export function Proposals({
                                 fontWeight: 600,
                                 cursor: 'pointer',
                               }}
-                              onClick={() => setDeliveryVersionId(null)}
+                              onClick={() => setNewVersionParentId(null)}
                             >
                               Cancelar
                             </button>
-                            <button
-                              type="submit"
-                              disabled={deliverMutation.isPending || !deliveryRecipient}
-                            >
-                              {deliverMutation.isPending ? 'Registrando…' : 'Confirmar Envio'}
-                            </button>
-                          </div>
-                        </form>
-                      </div>
-                    )}
-
-                    {/* Inline Form: Register Acceptance */}
-                    {acceptVersionId === version.id && (
-                      <div
-                        className="notice"
-                        style={{
-                          marginTop: '0.75rem',
-                          background: 'rgba(34, 197, 94, 0.08)',
-                          border: '1px solid var(--status-success)',
-                          padding: '1rem',
-                          borderRadius: 'var(--radius-sm)',
-                        }}
-                      >
-                        <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--status-success)' }}>
-                          Registrar Aceite Formal do Cliente
-                        </h4>
-                        <p className="device" style={{ margin: '0 0 0.75rem 0' }}>
-                          O aceite formal marca a proposta como vencedora, transita a oportunidade
-                          para &quot;CONTRATACAO&quot; e cria a tarefa de formalização do contrato.
-                        </p>
-                        <Feedback error={acceptMutation.error} />
-                        <form
-                          onSubmit={(e) => {
-                            e.preventDefault();
-                            acceptMutation.mutate(version.id);
-                          }}
-                          style={{ display: 'grid', gap: '0.75rem' }}
-                        >
-                          <div className="form-grid">
-                            <label>
-                              Forma de Aceite *
-                              <select
-                                value={acceptMethod}
-                                onChange={(e) =>
-                                  setAcceptMethod(
-                                    e.target.value as
-                                      'SIGNED_DOCUMENT' | 'MESSAGE' | 'IN_PERSON' | 'E_SIGNATURE',
-                                  )
-                                }
-                              >
-                                <option value="MESSAGE">Mensagem Escrita / WhatsApp</option>
-                                <option value="SIGNED_DOCUMENT">Documento Assinado Físico</option>
-                                <option value="E_SIGNATURE">
-                                  Assinatura Eletrônica (DocuSign/Gov.br)
-                                </option>
-                                <option value="IN_PERSON">Acordo Presencial</option>
-                              </select>
-                            </label>
-
-                            <label>
-                              Nome do Decisor / Signatário *
-                              <input
-                                type="text"
-                                required
-                                placeholder="ex: Roberto Carlos da Silva"
-                                value={acceptedByName}
-                                onChange={(e) => setAcceptedByName(e.target.value)}
-                              />
-                            </label>
-
-                            <label style={{ gridColumn: '1 / -1' }}>
-                              Observações do Aceite
-                              <input
-                                type="text"
-                                placeholder="ex: Aceite registrado via áudio/mensagem de WhatsApp confirmando a proposta."
-                                value={acceptNotes}
-                                onChange={(e) => setAcceptNotes(e.target.value)}
-                              />
-                            </label>
-                          </div>
-
-                          <div
-                            style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}
-                          >
                             <button
                               type="button"
-                              className="btn btn--subtle"
-                              onClick={() => setAcceptVersionId(null)}
+                              onClick={() => newVersionMutation.mutate(version.id)}
+                              disabled={newVersionMutation.isPending}
                             >
-                              Cancelar
-                            </button>
-                            <button
-                              type="submit"
-                              className="btn btn--success"
-                              style={{
-                                background: '#15803d',
-                                color: '#ffffff',
-                                border: '1px solid #166534',
-                                fontWeight: 600,
-                              }}
-                              disabled={acceptMutation.isPending || !acceptedByName}
-                            >
-                              {acceptMutation.isPending
-                                ? 'Confirmando…'
-                                : 'Confirmar Aceite Formal'}
+                              {newVersionMutation.isPending ? 'Emitindo…' : 'Confirmar Nova Versão'}
                             </button>
                           </div>
-                        </form>
-                      </div>
-                    )}
-
-                    {/* Inline Form: Register Rejection */}
-                    {rejectVersionId === version.id && (
-                      <div
-                        className="notice error"
-                        style={{
-                          marginTop: '0.75rem',
-                          background: 'rgba(239, 68, 68, 0.08)',
-                          border: '1px solid var(--status-danger)',
-                          padding: '1rem',
-                          borderRadius: 'var(--radius-sm)',
-                        }}
-                      >
-                        <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--status-danger)' }}>
-                          Registrar Rejeição da Versão
-                        </h4>
-                        <Feedback error={rejectMutation.error} />
-                        <form
-                          onSubmit={(e) => {
-                            e.preventDefault();
-                            rejectMutation.mutate(version.id);
-                          }}
-                          style={{ display: 'grid', gap: '0.75rem' }}
-                        >
-                          <div className="form-grid">
-                            <label>
-                              Motivo da Recusa *
-                              <select
-                                value={rejectReason}
-                                onChange={(e) => setRejectReason(e.target.value)}
-                              >
-                                <option value="PRECO_ALTO">Preço acima da expectativa</option>
-                                <option value="CONCORRENTE">Fechou com concorrente</option>
-                                <option value="FINANCIAMENTO_NEGADO">
-                                  Crédito/financiamento negado
-                                </option>
-                                <option value="DESISTENCIA">Desistência do projeto</option>
-                                <option value="OUTRO">Outro motivo</option>
-                              </select>
-                            </label>
-
-                            <label style={{ gridColumn: '1 / -1' }}>
-                              Detalhes da Rejeição
-                              <input
-                                type="text"
-                                placeholder="ex: Solicitou refazer dimensionamento com módulos de maior potência."
-                                value={rejectNotes}
-                                onChange={(e) => setRejectNotes(e.target.value)}
-                              />
-                            </label>
-                          </div>
-
-                          <div
-                            style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}
-                          >
-                            <button
-                              type="button"
-                              className="btn btn--subtle"
-                              onClick={() => setRejectVersionId(null)}
-                            >
-                              Cancelar
-                            </button>
-                            <button
-                              type="submit"
-                              className="btn btn--danger"
-                              style={{
-                                background: '#b91c1c',
-                                color: '#ffffff',
-                                border: '1px solid #991b1b',
-                                fontWeight: 600,
-                              }}
-                              disabled={rejectMutation.isPending}
-                            >
-                              {rejectMutation.isPending ? 'Registrando…' : 'Confirmar Rejeição'}
-                            </button>
-                          </div>
-                        </form>
-                      </div>
-                    )}
-
-                    {/* Inline Form: Create Next Version */}
-                    {newVersionParentId === version.id && (
-                      <div
-                        className="notice"
-                        style={{
-                          marginTop: '0.75rem',
-                          background: 'var(--color-canvas)',
-                          padding: '1rem',
-                          borderRadius: 'var(--radius-sm)',
-                        }}
-                      >
-                        <h4 style={{ margin: '0 0 0.5rem 0' }}>
-                          Emitir Próxima Versão da Proposta
-                        </h4>
-                        <p className="device" style={{ margin: '0 0 0.75rem 0' }}>
-                          Será criada uma nova versão (v{version.versionNumber + 1}) para esta
-                          proposta comercial, permitindo novas revisões e reenvio formal.
-                        </p>
-                        <Feedback error={newVersionMutation.error} />
-                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                          <button
-                            type="button"
-                            className="btn btn--subtle"
-                            style={{
-                              backgroundColor: '#ffffff',
-                              color: '#334155',
-                              border: '1px solid #cbd5e1',
-                              padding: '0.45rem 1rem',
-                              borderRadius: '6px',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                            }}
-                            onClick={() => setNewVersionParentId(null)}
-                          >
-                            Cancelar
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => newVersionMutation.mutate(version.id)}
-                            disabled={newVersionMutation.isPending}
-                          >
-                            {newVersionMutation.isPending ? 'Emitindo…' : 'Confirmar Nova Versão'}
-                          </button>
                         </div>
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
+                  </details>
                 );
               })}
             </div>

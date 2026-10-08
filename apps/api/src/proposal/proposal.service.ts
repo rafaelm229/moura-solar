@@ -19,6 +19,22 @@ import { createHash } from 'node:crypto';
 import { ConfigService } from '@nestjs/config';
 import { AuditService } from '../database/audit.service';
 
+const proposalStatusLabels: Record<string, string> = {
+  DRAFT: 'rascunho',
+  PENDING_APPROVAL: 'aguardando aprovação',
+  APPROVED: 'aprovada para geração',
+  GENERATING: 'em geração',
+  READY: 'pronta para envio',
+  SENT: 'enviada ao cliente',
+  VIEWED: 'visualizada pelo cliente',
+  ACCEPTED: 'aceita',
+  REJECTED: 'recusada',
+  EXPIRED: 'vencida',
+  SUPERSEDED: 'substituída',
+  CANCELED: 'cancelada',
+  GENERATION_FAILED: 'falha ao gerar o documento',
+};
+
 @Injectable()
 export class ProposalService {
   constructor(
@@ -105,14 +121,14 @@ export class ProposalService {
         ? modules
             .map((m) => `${Number(m.quantity)}x ${m.catalogItem?.name ?? m.description}`)
             .join(' + ')
-        : `${Math.round(Number(designVersion.dcPowerKwp) * 1.8)}x Módulos Fotovoltaicos Monocristalinos Tier-1`;
+        : `${Math.round(Number(designVersion.dcPowerKwp) * 1.8)} módulos fotovoltaicos monocristalinos de fabricantes classificados como nível 1`;
 
     const invertersDescription =
       inverters.length > 0
         ? inverters
             .map((inv) => `${Number(inv.quantity)}x ${inv.catalogItem?.name ?? inv.description}`)
             .join(' + ')
-        : `Inversor Solar On-Grid ${designVersion.acPowerKw.toFixed(1)} kW homologado`;
+        : `Inversor solar de ${designVersion.acPowerKw.toFixed(1)} kW conectado à rede e homologado`;
 
     // 5. Build Snapshots
     const tariff = 0.95; // Default reference tariff
@@ -589,7 +605,7 @@ export class ProposalService {
           opportunityId: opp.id,
           customerId: opp.customerId,
           type: 'FOLLOW_UP',
-          subject: `Follow-up: Proposta ${version.proposal.code} v${version.versionNumber}`,
+          subject: `Acompanhar proposta ${version.proposal.code}, versão ${version.versionNumber}`,
           description: `Acompanhar análise da proposta comercial enviada via ${dto.channel} ao cliente. Validade: ${new Intl.DateTimeFormat('pt-BR').format(validUntil)}.`,
           assigneeUserId: opp.ownerUserId,
           dueAt: followUpDueAt,
@@ -656,7 +672,7 @@ export class ProposalService {
       // SPEC-006: Version must be SENT or VIEWED to be accepted
       if (version.status !== 'SENT' && version.status !== 'VIEWED') {
         throw new UnprocessableEntityException(
-          `Apenas propostas enviadas (SENT) podem ser aceitas. Status atual: ${version.status}`,
+          `O aceite só pode ser registrado depois que a proposta for enviada ao cliente. Situação atual: ${proposalStatusLabels[version.status] ?? 'indisponível'}.`,
         );
       }
 

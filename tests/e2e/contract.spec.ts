@@ -136,32 +136,32 @@ for (const [width, height] of [
       .first()
       .click();
     await expect(
-      page.getByRole('heading', { name: 'Emitir Nova Proposta Comercial (PDF)' }),
+      page.getByRole('heading', { name: 'Emitir nova proposta comercial (arquivo PDF)' }),
     ).toBeVisible();
 
     await page.getByLabel('Prazo de Validade (dias corridos) *').fill('15');
-    await page.getByRole('button', { name: 'Gerar Proposta e PDF Oficial' }).click();
+    await page.getByRole('button', { name: 'Gerar proposta e arquivo PDF' }).click();
 
-    await expect(page.getByText('READY').first()).toBeVisible();
+    await expect(page.getByText('Pronta para envio').first()).toBeVisible();
 
     // Send proposal delivery
     await page
-      .getByRole('button', { name: /Registrar Envio/ })
+      .getByRole('button', { name: /Registrar envio/ })
       .first()
       .click();
     await page.getByLabel('Destinatário *').fill(`(81) 98888-${width.toString().padStart(4, '0')}`);
     await page.getByRole('button', { name: 'Confirmar Envio' }).click();
-    await expect(page.getByText('SENT').first()).toBeVisible();
+    await expect(page.getByText('Enviada ao cliente').first()).toBeVisible();
 
     // Accept proposal
     await page
-      .getByRole('button', { name: /Registrar Aceite Formal/ })
+      .getByRole('button', { name: /Registrar aceite do cliente/ })
       .first()
       .click();
     await page.getByLabel('Nome do Decisor / Signatário *').fill(`Decisor Contrato ${width}`);
-    await page.getByRole('button', { name: 'Confirmar Aceite Formal' }).first().click();
-    await expect(page.getByText('CONTRATADA (ACEITE FORMAL)')).toBeVisible();
-    await expect(page.getByText('CONTRATACAO').first()).toBeVisible();
+    await page.getByRole('button', { name: 'Confirmar aceite' }).first().click();
+    await expect(page.getByText('VERSÃO ACEITA')).toBeVisible();
+    await expect(page.getByText('Em contratação').first()).toBeVisible();
 
     // 8. Navigate to M5: Contratos & Documentos sub-tab
     await page.getByRole('button', { name: 'Contratos & Documentos' }).click();

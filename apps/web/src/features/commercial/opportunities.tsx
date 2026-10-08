@@ -7,7 +7,7 @@ import { Icon } from '../../components/icons/material-symbol';
 import { EnergyReadings } from '../design/consumption';
 import { TechnicalSurvey } from '../design/survey';
 import { SolarDesigner } from '../design/solar-designer';
-import { Proposals } from '../proposal/proposals';
+import { Proposals, opportunityStateLabels } from '../proposal/proposals';
 import { ContractsView } from '../contract/contracts';
 import { OpportunityFinancial } from '../financial/financial';
 import { CustomerDossier } from './dossier';
@@ -424,7 +424,10 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
                 <span
                   className={`badge badge-${(detailQuery.data?.state ?? selectedOpp.state).toLowerCase()}`}
                 >
-                  {detailQuery.data?.state ?? selectedOpp.state}
+                  {opportunityStateLabels[detailQuery.data?.state ?? selectedOpp.state] ??
+                    (detailQuery.data?.state ?? selectedOpp.state)
+                      .replaceAll('_', ' ')
+                      .toLocaleLowerCase('pt-BR')}
                 </span>{' '}
                 | Versão: {detailQuery.data?.version ?? selectedOpp.version}
               </p>

@@ -289,7 +289,7 @@ test('registro de envio (WHATSAPP) atualiza validade (10 dias), transita oportun
   const followUp = actRes.body.find((a) => a.type === 'FOLLOW_UP');
   assert.ok(followUp, 'Atividade automática de follow-up deve existir');
   assert.equal(followUp.status, 'OPEN');
-  assert.match(followUp.subject, /Follow-up: Proposta PROP-0001/);
+  assert.match(followUp.subject, /Acompanhar proposta PROP-0001, versão 1/);
 });
 
 test('registro de aceite marca proposta como ACCEPTED, avança oportunidade para CONTRATACAO e bloqueia novos aceites (HTTP 409)', async () => {
