@@ -61,6 +61,8 @@ implantado localmente, sem publicação ou consumidor ativo. O
 [R1-03](docs/r1-versionamento-outbox-import-2026-10-08.md) foi mesclado e
 liberado somente no Compose local; versiona metadados do outbox existente sem
 alterar payloads ou ativar o worker.
+O [R1-04](docs/r1-validacao-eventos-import-2026-10-08.md) adiciona validação
+runtime dos dois payloads conhecidos, sem ligar consumidor ou OCR.
 
 Capacidades registradas no plano histórico:
 

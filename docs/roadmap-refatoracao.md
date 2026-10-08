@@ -4,7 +4,9 @@
 
 **Direção:** refatorar a plataforma existente; manter Material Design
 
-**Escopo desta atualização:** documentação, sem implementação, push, PR ou merge
+**Escopo da revisão documental inicial (07/10/2026):** não incluía
+implementação/push/PR/merge. Incrementos R1 posteriores foram autorizados e têm
+seus próprios estados, evidências e merges registrados abaixo.
 
 ## Fonte e autoridade
 
@@ -55,7 +57,9 @@ o PR #23 o mesclou nessa branch e o Compose local foi atualizado. O
 no PR #24 (`b4eb441`) e implantado/verificado no Compose local; produção não foi
 implantada. O [R1-03 de versionamento](r1-versionamento-outbox-import-2026-10-08.md)
 foi mesclado no PR #26 e liberado somente no Compose local; trabalhador,
-publicação e OCR continuam inativos.
+publicação e OCR continuam inativos. O
+[R1-04 de validação](r1-validacao-eventos-import-2026-10-08.md) está em
+implementação em branch, sem consumidor ativo.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
@@ -111,12 +115,12 @@ A saga proposta deve reconciliar estado, não inventar uma nova regra de venda.
 
 ## Estado de R0 e próximo incremento
 
-R0 documental/técnico registra branch e commits efetivos, capacidades, testes,
-divergências e plano de consolidação no
-[relatório de baseline](r0-baseline-2026-10-08.md). Sua promoção a **Validado** exige
-revisão das evidências; o CI da branch de entrega passou no PR #22. Tag de baseline
-somente depois de revisão e quando sua criação estiver autorizada. Não começar R1 com baseline
-presumido.
+O [relatório de baseline R0](r0-baseline-2026-10-08.md) preserva o estado e as
+pendências observados naquela revisão; o PR #22 e seu CI não consolidaram a
+`main` nem dispensam revisão formal do baseline. A seção original que dizia que
+R1 não havia começado é histórica: R1-01 foi autorizado depois e a sequência
+atual está registrada acima. O próximo incremento ativo é
+[R1-04](r1-validacao-eventos-import-2026-10-08.md), sem consumidor ativo.
 
 ## Adiados, sem implementação nesta fase
 

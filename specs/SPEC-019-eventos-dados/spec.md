@@ -36,6 +36,11 @@ O [R1-03](../../docs/r1-versionamento-outbox-import-2026-10-08.md) declara
 importação. Linhas anteriores permanecem sem versão declarada; nenhum evento é
 publicado ou processado por consumidor ativo.
 
+O [R1-04](../../docs/r1-validacao-eventos-import-2026-10-08.md) valida em runtime
+tipo, versão e campos mínimos dos dois payloads v1 conhecidos em
+`packages/contracts`. O parser não é invocado por consumidor operacional e
+rejeita versão legada/desconhecida até que política explícita seja definida.
+
 Eventos candidatos: customer.created, lead.created, opportunity.created,
 project.created, consumption.validated, proposal.generated, proposal.accepted,
 contract.signed, inventory.reserved, finance.receivable_created.
