@@ -4,8 +4,8 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Implementado em branch `codex/r1-import-correlation`; CI remoto,
-revisão e consolidação pendentes.
+**Estado:** Consolidado no PR #24 (`b4eb441`) em
+`feat/proposal-visual-clarity`; liberado no Compose local em 08/10/2026.
 
 **SPECs:** [SPEC-014](../specs/SPEC-014-importacao-contas-energia/spec.md),
 [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
@@ -44,12 +44,23 @@ para futura adaptação explícita.
   idempotente não cria evento nem troca sua correlação. A leitura do worker
   aceita `NULL` histórico. Autorização positiva/negativa e transação continuam
   cobertas pelas integrações existentes.
-- **Verificação local:** `pnpm check` passou (formatação, lint, tipos, API
+- **Verificação local antes do PR:** `pnpm check` passou (formatação, lint, tipos, API
   1.257/1.257, web 5/5 e builds; parte das tarefas usou cache Turbo).
   `pnpm test:migrations` passou nas três suítes, incluindo upgrade com linha
   legada, e as integrações completas passaram 106/106 em schemas isolados.
   O teste direcionado de importação/worker passou 11/11. `pnpm api:generate`
-  reproduziu o cliente sem diff. CI do PR ainda será registrado.
+  reproduziu o cliente sem diff. O CI do PR #24 passou, incluindo `pnpm check`,
+  migrations, integração completa e E2E.
+- **Consolidação e deploy local:** PR #24 foi mesclado em
+  `feat/proposal-visual-clarity` no commit `b4eb441`; `main` não foi alterada.
+  A cópia de segurança `/tmp/moura-solar-r1-02-predeploy-20261008.dump` foi
+  validada com `pg_restore --list` antes da migration. O Compose aplicou
+  `20261008000100_import_outbox_correlation` com sucesso. A consulta ao catálogo
+  confirmou `import_outbox.correlation_id` nullable e sem default. A imagem da
+  API, construída do tree R1-02 consolidado, substituiu somente o serviço API;
+  ele reportou `healthy` e `/api/v1/health/ready` respondeu `ok`. Web respondeu
+  HTTP 200; Postgres, MinIO e ClamAV permaneceram saudáveis. Nenhum volume foi
+  removido ou restaurado.
 - **Rollback:** voltar o código API/worker anterior; a coluna aditiva pode
   permanecer sem efeito. Não apagar dados, desfazer migrations aplicadas ou
   restaurar banco antigo por causa deste campo. Uma nova correlação não será
