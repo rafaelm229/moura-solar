@@ -4,8 +4,8 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Implementado em branch `codex/r1-04-import-event-decoder`; CI remota
-pendente.
+**Estado:** Consolidado no commit `ecb5884` de
+`feat/proposal-visual-clarity`; não requer deploy sem consumidor runtime.
 
 **SPECs:** [SPEC-014](../specs/SPEC-014-importacao-contas-energia/spec.md),
 [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
@@ -60,12 +60,21 @@ este incremento não declara suporte a linha histórica.
   lint, typecheck, testes (API 1.257/1.257; web 5/5; contratos 7/7) e builds.
   Diretórios locais preexistentes foram ignorados temporariamente pelo Prettier;
   `.prettierignore` foi restaurado sem diff.
+- CI do PR #28, [run 80](https://github.com/rafaelm229/moura-solar/actions/runs/37852349178),
+  passou: `pnpm check`, geração API sem diff, migrations, integração e E2E
+  completos. O PR foi mesclado no commit
+  `ecb58849d2680504a3227daf49254a9b665ecbde`.
 - Integrações/E2E locais não executados: o incremento não altera API, persistência,
-  worker ou UI; a CI remota executará migrations, integração e E2E completos.
+  worker ou UI. Migrations, integração e E2E completos passaram na CI remota.
+- Nenhum deploy foi feito para R1-04: o parser não é chamado por serviços ativos,
+  portanto atualizar imagem local não mudaria comportamento disponível. O Compose
+  permanece no R1-03; worker/OCR continuam desativados.
 
 ## Limites e próximo recorte
 
 O parser não verifica o envelope completo, assinatura/autenticidade, autorização,
-ordenação, idempotência ou entrega. Consumidor/inbox, transporte e política de
-quarentena/replay exigem incremento posterior e decisão específica; a existência
-do parser não autoriza publicação ou ativação do worker.
+ordenação, idempotência ou entrega. O próximo recorte de R1 precisa decidir um
+consumidor/piloto que não contorne os gates da PoC de OCR e registrar transporte,
+inbox e política de quarentena/replay antes de operar. Nenhum broker ou consumidor
+foi escolhido por antecipação; a existência do parser não autoriza publicação ou
+ativação do worker.
