@@ -41,7 +41,7 @@ jobs:
       - run: git diff --exit-code -- packages/api-client
       - name: Start real document storage and scanner
         run: |
-          docker run -d --name minio -p 9000:9000 -e MINIO_ROOT_USER=ci-minio -e MINIO_ROOT_PASSWORD=ci-minio-test-secret quay.io/minio/minio:latest server /data
+          docker run -d --name minio -p 9000:9000 -e MINIO_ROOT_USER=ci-minio -e MINIO_ROOT_PASSWORD=ci-minio-test-secret ghcr.io/coollabsio/minio@sha256:69b55a1c1c5dc285ce04db96689f5b2102317fc77a50680a1874ca6efd1c87f9 server /data
           docker run -d --name clamav -p 3310:3310 clamav/clamav:1.4
       - run: pnpm test:migrations
       - run: pnpm test:integration
