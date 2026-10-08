@@ -50,8 +50,9 @@ pnpm dev
 
 O plano histórico registra a fundação executável e os marcos M1 a M10 como
 implementados e validados na época. Essa declaração não atesta consolidação na
-`main`, liberação produtiva nem validação do checkout atual; R0 fará o inventário
-de capacidades e repetirá as verificações pertinentes:
+`main` nem liberação produtiva. O [R0 em branch](docs/r0-baseline-2026-10-08.md)
+inventariou capacidades e repetiu as verificações pertinentes; CI remoto passou
+no PR #22, que ainda aguarda revisão:
 
 - **M1:** Identidade, Autenticação, Perfis, Sessões e RBAC (SPEC-002)
 - **M2:** Comercial: Clientes, Unidades Consumidoras e Oportunidades (SPEC-004)

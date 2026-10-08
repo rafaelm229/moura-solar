@@ -47,7 +47,7 @@ e resolvidas antes da implementação afetada; não mudar gates silenciosamente.
 
 R0 está **Implementado em branch** conforme o
 [relatório de baseline de 08/10/2026](r0-baseline-2026-10-08.md), com validação
-remota e consolidação pendentes. R1–R13 permanecem **Planejados**. Direção aprovada
+remota aprovada e revisão/consolidação pendentes. R1–R13 permanecem **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
 | Marco | Entrega                                                                                            | Dependências                               | Evidência de saída                                                                                                |
@@ -105,8 +105,8 @@ A saga proposta deve reconciliar estado, não inventar uma nova regra de venda.
 R0 documental/técnico registra branch e commits efetivos, capacidades, testes,
 divergências e plano de consolidação no
 [relatório de baseline](r0-baseline-2026-10-08.md). Sua promoção a **Validado** exige
-revisão das evidências e CI da branch de entrega. Tag de baseline somente depois
-de verde e quando sua criação estiver autorizada. Não começar R1 com baseline
+revisão das evidências; o CI da branch de entrega passou no PR #22. Tag de baseline
+somente depois de revisão e quando sua criação estiver autorizada. Não começar R1 com baseline
 presumido.
 
 ## Adiados, sem implementação nesta fase
