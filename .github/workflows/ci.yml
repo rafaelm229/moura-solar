@@ -45,6 +45,8 @@ jobs:
           docker run -d --name clamav -p 3310:3310 clamav/clamav:1.4
       - run: pnpm test:migrations
       - run: pnpm test:integration
+        env:
+          TEST_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e
       - uses: actions/upload-artifact@v4
