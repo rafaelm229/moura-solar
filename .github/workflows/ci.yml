@@ -24,7 +24,6 @@ jobs:
       TEST_S3_ACCESS_KEY: ci-minio
       TEST_S3_SECRET_KEY: ci-minio-test-secret
       TEST_S3_BUCKET: moura-solar-tests
-      TEST_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
