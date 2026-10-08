@@ -15,3 +15,43 @@ export type EnergyBillImportAppliedEventV1 = {
     reviewId: string;
   };
 };
+
+export type EnergyBillImportEventV1 =
+  EnergyBillImportQueuedEventV1 | EnergyBillImportAppliedEventV1;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function hasIdentifier(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+/** Validates only the known v1 import payloads; this does not publish or consume events. */
+export function parseEnergyBillImportEventV1(value: unknown): EnergyBillImportEventV1 {
+  if (!isRecord(value)) throw new TypeError('Energy bill import event must be an object');
+  if (
+    value.eventType !== 'ENERGY_BILL_IMPORT_QUEUED' &&
+    value.eventType !== 'ENERGY_BILL_IMPORT_APPLIED'
+  ) {
+    throw new TypeError('Energy bill import event eventType is unsupported');
+  }
+  if (value.schemaVersion !== 1) {
+    throw new TypeError('Energy bill import event schemaVersion is unsupported');
+  }
+  if (!isRecord(value.payload)) {
+    throw new TypeError('Energy bill import event payload must be an object');
+  }
+
+  const requiredIdentifiers =
+    value.eventType === 'ENERGY_BILL_IMPORT_QUEUED'
+      ? ['importId', 'documentVersionId']
+      : ['importId', 'reviewId'];
+  for (const field of requiredIdentifiers) {
+    if (!hasIdentifier(value.payload[field])) {
+      throw new TypeError(`Energy bill import event payload ${field} is required`);
+    }
+  }
+
+  return value as unknown as EnergyBillImportEventV1;
+}
