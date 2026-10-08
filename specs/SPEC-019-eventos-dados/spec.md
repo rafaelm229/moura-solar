@@ -31,6 +31,11 @@ O [R1-02](../../docs/r1-correlacao-import-outbox-2026-10-08.md) persiste a
 correlação de origem nas novas linhas do `ImportOutbox` existente. Linhas antigas
 continuam válidas com correlação ausente; isto não ativa publicação ou inbox.
 
+O [R1-03](../../docs/r1-versionamento-outbox-import-2026-10-08.md) declara
+`schema_version = 1` para os eventos novos de intake/retry e confirmação da
+importação. Linhas anteriores permanecem sem versão declarada; nenhum evento é
+publicado ou processado por consumidor ativo.
+
 Eventos candidatos: customer.created, lead.created, opportunity.created,
 project.created, consumption.validated, proposal.generated, proposal.accepted,
 contract.signed, inventory.reserved, finance.receivable_created.

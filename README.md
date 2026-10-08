@@ -56,8 +56,10 @@ no PR #22, mesclado em `feat/proposal-visual-clarity`. A revisão formal do
 baseline e a consolidação em `main` seguem pendentes. O
 [incremento R1-01](docs/r1-contratos-integracao-2026-10-08.md) foi mesclado
 nessa branch e implantado localmente. O
-[R1-02](docs/r1-correlacao-import-outbox-2026-10-08.md) registra a correlação
-dos eventos de importação em branch, sem publicação ou consumidor ativo.
+[R1-02](docs/r1-correlacao-import-outbox-2026-10-08.md) foi consolidado e
+implantado localmente, sem publicação ou consumidor ativo. O
+[R1-03](docs/r1-versionamento-outbox-import-2026-10-08.md) versiona os metadados
+do outbox existente sem alterar payloads ou ativar o worker.
 
 Capacidades registradas no plano histórico:
 

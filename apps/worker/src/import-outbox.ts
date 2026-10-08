@@ -6,6 +6,7 @@ export type ImportOutboxClaim = {
   organizationId: string;
   importId: string;
   eventType: string;
+  schemaVersion: number | null;
   correlationId: string | null;
   dedupeKey: string;
   payload: Prisma.JsonValue;
@@ -546,6 +547,7 @@ export async function claimNextImportOutbox(
       event.organization_id AS "organizationId",
       event.import_id AS "importId",
       event.event_type AS "eventType",
+      event.schema_version AS "schemaVersion",
       event.correlation_id AS "correlationId",
       event.dedupe_key AS "dedupeKey",
       event.payload,

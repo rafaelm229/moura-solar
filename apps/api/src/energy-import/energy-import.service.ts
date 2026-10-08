@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import type {
+  EnergyBillImportAppliedEventV1,
+  EnergyBillImportQueuedEventV1,
+} from '@moura-solar/contracts';
 import { customerScope, documentScope } from '../dossier/dossier-policy';
 import { IdentityStore } from '../identity/identity.store';
 import type { ContextDto } from '../identity/identity.dto';
@@ -24,6 +28,24 @@ type ReviewRecord = {
   decisions: Prisma.JsonValue;
   createdAt: Date;
 };
+
+const queuedImportEventV1 = (
+  importId: string,
+  documentVersionId: string,
+): EnergyBillImportQueuedEventV1 => ({
+  eventType: 'ENERGY_BILL_IMPORT_QUEUED',
+  schemaVersion: 1,
+  payload: { importId, documentVersionId },
+});
+
+const appliedImportEventV1 = (
+  importId: string,
+  reviewId: string,
+): EnergyBillImportAppliedEventV1 => ({
+  eventType: 'ENERGY_BILL_IMPORT_APPLIED',
+  schemaVersion: 1,
+  payload: { importId, reviewId },
+});
 
 const normalizeMonths = (months: ImportMonthDecisionDto[]) =>
   [...months]
@@ -211,10 +233,9 @@ export class EnergyImportService {
           data: {
             organizationId: actor.organizationId,
             importId: record.id,
-            eventType: 'ENERGY_BILL_IMPORT_QUEUED',
             correlationId: traceId,
             dedupeKey: `energy-bill-import:${record.id}:queued`,
-            payload: { importId: record.id, documentVersionId: record.documentVersionId },
+            ...queuedImportEventV1(record.id, record.documentVersionId),
           },
         });
         await this.store.audit(tx, 'ENERGY_BILL_IMPORT_QUEUED', actor, record.id, traceId);
@@ -685,10 +706,9 @@ export class EnergyImportService {
           data: {
             organizationId: actor.organizationId,
             importId,
-            eventType: 'ENERGY_BILL_IMPORT_QUEUED',
             correlationId: traceId,
             dedupeKey: `energy-bill-import:${importId}:retry:${nextVersion}`,
-            payload: { importId, documentVersionId: record.documentVersionId },
+            ...queuedImportEventV1(importId, record.documentVersionId),
           },
         });
         await tx.energyImportTransition.create({
@@ -1068,10 +1088,9 @@ export class EnergyImportService {
           data: {
             organizationId: actor.organizationId,
             importId: record.id,
-            eventType: 'ENERGY_BILL_IMPORT_APPLIED',
             correlationId: traceId,
             dedupeKey: `energy-bill-import:${record.id}:applied`,
-            payload: { importId: record.id, reviewId: review.id },
+            ...appliedImportEventV1(record.id, review.id),
           },
         });
         await this.store.audit(tx, 'ENERGY_BILL_IMPORT_APPLIED', actor, record.id, traceId);

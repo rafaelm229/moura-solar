@@ -241,6 +241,7 @@ test('READY intake writes one queued import and a minimal outbox event atomicall
   assert.equal(record.status, 'QUEUED');
   assert.equal(outbox.length, 1);
   assert.equal(outbox[0].status, 'PENDING');
+  assert.equal(outbox[0].schemaVersion, 1);
   assert.equal(outbox[0].correlationId, 'r1-import-intake-001');
   assert.deepEqual(outbox[0].payload, {
     importId: created.body.id,
@@ -753,6 +754,7 @@ test('manual review is immutable and confirmation atomically applies versions wi
     where: { importId: created.body.id, eventType: 'ENERGY_BILL_IMPORT_APPLIED' },
   });
   assert.equal(appliedEvent.correlationId, 'r1-import-confirm-001');
+  assert.equal(appliedEvent.schemaVersion, 1);
   assert.equal(
     await db.documentUtilityUnitLink.count({
       where: { utilityUnitId, document: { versions: { some: { id: applicationVersionId } } } },
@@ -981,6 +983,7 @@ test('cancel and explicit retry are versioned, audited, scoped, and idempotent',
   assert.equal(retryEvents.length, 2);
   assert.ok(retryEvents.every((event) => event.payload.documentVersionId === retryVersionId));
   assert.equal(retryEvents[1].correlationId, 'r1-import-retry-001');
+  assert.equal(retryEvents[1].schemaVersion, 1);
   const retryTransition = await db.energyImportTransition.findUnique({
     where: { importId_version: { importId: retryImport.body.id, version: 2 } },
   });
