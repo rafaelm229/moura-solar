@@ -1,3 +1,8 @@
+> Atualização de direção — 07/10/2026: este documento preserva o histórico dos
+> lotes 0–7. A prioridade vigente está no [roadmap de refatoração](roadmap-refatoracao.md).
+> Manter Material Design conforme SPEC-003 v0.4.0; não executar um novo redesign.
+> Reconciliar cada lote com evidência atual antes de reexecutar ou marcar conclusão.
+
 # Plano de evolução — UX, documentos e contas de energia
 
 **Status:** Proposta para revisão

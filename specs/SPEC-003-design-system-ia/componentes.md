@@ -29,3 +29,11 @@ Estados de página: carregamento inicial com estrutura estável; atualização m
 Confirmação de comando mostra entidade, versão, consequência e requisitos; após resposta atualiza listas, detalhe e jornada. Pagamentos mostram valor, conta, data e projeto. Estados e validações vêm da API, não de uma segunda máquina visual.
 
 A migração reaproveita Feedback, cliente gerado, React Query e formulários atuais onde compatíveis. Extrair somente componentes afetados. Não condicionar início a fragmentar todos os arquivos, trocar todos os formulários ou introduzir biblioteca nova.
+
+## Continuidade de Material Design — 07/10/2026
+
+Conforme SPEC-003 v0.4.0, preservar Material Design e identidade Moura Solar.
+Reutilizar valores e componentes compatíveis aplicados no código; a tabela acima
+é proposta, não inventário de implementação. Mapear tokens sem troca global de CSS
+ou adoção automática de biblioteca. Superfícies sólidas, elevação moderada, foco,
+contraste e estados completos substituem qualquer intenção anterior de Liquid Glass.

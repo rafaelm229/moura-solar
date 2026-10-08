@@ -10,7 +10,7 @@
 - Regras críticas são transacionais, auditáveis e idempotentes. Avaliar concorrência
   otimista para evitar sobrescrita silenciosa.
 - Componentes não devem concentrar regras de múltiplos domínios. Respeitar as
-  fronteiras do monólito modular e seus casos de uso.
+  fronteiras do monólito modular atual e dos serviços extraídos conforme SPEC-016.
 - Nenhum dado de negócio pode depender de Local Storage ou outro cache do aparelho.
 
 ## Experiência e escopo
@@ -43,3 +43,43 @@
 - Não remover volumes nem redefinir bancos existentes sem autorização explícita.
 - Enviar a branch e abrir PR vinculado às SPECs quando o marco estiver validado,
   incluindo roteiro de demonstração e evidências.
+
+## Roadmap e execução assistida por IA — decisão de 07/10/2026
+
+- Ler primeiro `docs/roadmap-refatoracao.md`, a SPEC-000, a SPEC-003 e a SPEC-016.
+  Consultar `docs/registro-features.md` e as SPECs do incremento.
+- Refatorar a plataforma existente; preservar regras, dados, testes, PDFs, contratos,
+  autenticação e capacidades autorizadas. M0–M10 são histórico, não prova de release.
+- Manter Material Design adaptado à identidade Moura Solar e os componentes/tokens
+  compatíveis já utilizados. Não introduzir Liquid Glass, redesenho Apple,
+  tema escuro obrigatório ou troca de biblioteca sem decisão explícita.
+- A arquitetura atual é um monólito modular. Microserviços são alvo evolutivo,
+  com extração incremental e evidência; nunca declarar infraestrutura pronta
+  apenas porque consta do roadmap.
+- Prioridade: R0 baseline; R1 fundação de integração; R2 identidade;
+  R3 cliente/CRM/projeto; R4 catálogo; R5 localização/consumo/solar/preço;
+  R6 propostas; R7 contratos; R8 estoque; R9 financeiro; R10 aceite integrado.
+- Engenharia, homologação, instalação, pós-venda e automações existentes continuam
+  funcionando. Sua expansão/refatoração vem depois da V1; corrigir regressões
+  nesses módulos continua permitido.
+- Documentos acompanham a V1 quando necessários. OCR depende da PoC, das decisões
+  operacionais e de consumidor ativo; não confundir intake/revisão com extração.
+- Toda feature tem ID, fase, SPEC, dependências, aceite e evidência no registro.
+  Um item no roadmap não autoriza implementar todo o backlog na tarefa atual.
+- Executar somente o incremento solicitado ou marcado como ativo com autorização.
+  Na ausência de incremento técnico autorizado, concluir documentação e indicar
+  a próxima etapa. Não inventar políticas fiscais, gates, alçadas ou fornecedores.
+- Antes de implementar: inventariar comportamento atual, definir diferenças,
+  riscos, migração compatível, testes pertinentes e rollback do incremento.
+- Após implementar: registrar arquivos, commit, ambiente, comandos/resultados e
+  limitações. Atualizar tarefas/rastreabilidade e contratos afetados.
+- Estados permitidos: Planejado, Em especificação, Pronto para execução,
+  Em implementação, Implementado em branch, Validado, Consolidado, Liberado.
+  Só promover estado com evidência correspondente.
+- Não remover testes ou reduzir expectativas para tornar a refatoração verde.
+  Não substituir snapshots históricos por consultas aos dados atuais.
+- Operações distribuídas usam transações locais, outbox/inbox e compensação
+  quando aplicável; não presumir transação ACID entre bancos de serviços.
+- Não fazer push, abrir PR, merge, criar tag remota ou implantar sem autorização
+  específica para a tarefa vigente. A regra anterior de envio de PR aplica-se
+  somente quando esse envio estiver autorizado.

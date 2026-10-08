@@ -33,3 +33,11 @@ Medir combinações reais, inclusive hover, selecionado, erro e sobreposição. 
 Fonte proposta: Inter local quando disponível e licenciada, fallback system-ui. Campos 16 px; corpo 14–16 px; auxiliar 12–14 px sem informação essencial diminuta; títulos 20–30 px; line-height 1.5 em corpo. Valores usam numerais tabulares e unidade. Não exigir download externo de fonte para operar.
 
 Espaçamento: 4, 8, 12, 16, 20, 24, 32, 40, 48 px. Raios 8–10 px, borda 1 px, sombras discretas somente para hierarquia. Formulários limitam largura de leitura; painéis usam espaço disponível. Alvos 44 px, campo 48 px. Documentar aliases do CSS atual antes de mapear para packages/design-tokens; não substituir styles.css de uma vez.
+
+## Continuidade de Material Design — 07/10/2026
+
+Conforme SPEC-003 v0.4.0, preservar Material Design e identidade Moura Solar.
+Reutilizar valores e componentes compatíveis aplicados no código; a tabela acima
+é proposta, não inventário de implementação. Mapear tokens sem troca global de CSS
+ou adoção automática de biblioteca. Superfícies sólidas, elevação moderada, foco,
+contraste e estados completos substituem qualquer intenção anterior de Liquid Glass.

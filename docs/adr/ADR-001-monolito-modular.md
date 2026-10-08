@@ -22,3 +22,9 @@ mantidas para permitir extração futura, caso métricas justifiquem.
 - Transações entre módulos permanecem possíveis.
 - Exige disciplina para impedir acoplamento por acesso direto a tabelas.
 - Escala inicialmente por réplicas da aplicação e workers separados.
+
+## Evolução de 07/10/2026
+
+Esta ADR registra a escolha inicial. A [ADR-005](ADR-005-refatoracao-gradual-servicos.md)
+estabelece a direção vigente de extração gradual, preservando o monólito modular
+para os domínios ainda não extraídos. O alvo não indica serviços já implantados.
