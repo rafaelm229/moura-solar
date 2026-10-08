@@ -64,6 +64,8 @@ alterar payloads ou ativar o worker.
 O [R1-04](docs/r1-validacao-eventos-import-2026-10-08.md) foi consolidado no
 PR #28: valida runtime os dois payloads conhecidos, sem ligar consumidor ou OCR;
 por isso não exigiu deploy local.
+O [R1-05](docs/r1-inventario-integracao-2026-10-08.md) documenta o inventário
+encontrado de auditoria, outbox de importação e projeções, sem ativar consumidor.
 
 Capacidades registradas no plano histórico:
 

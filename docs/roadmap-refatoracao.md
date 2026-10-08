@@ -61,6 +61,9 @@ publicação e OCR continuam inativos. O
 [R1-04 de validação](r1-validacao-eventos-import-2026-10-08.md) foi consolidado
 no PR #28, sem deploy por não haver consumidor runtime. A seleção de consumidor,
 transporte e política de inbox/quarentena permanece pendente.
+O [R1-05](r1-inventario-integracao-2026-10-08.md) registra o inventário factual
+de auditoria, outbox de importação e projeções; não seleciona consumidor nem
+transporte.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
@@ -120,8 +123,10 @@ O [relatório de baseline R0](r0-baseline-2026-10-08.md) preserva o estado e as
 pendências observados naquela revisão; o PR #22 e seu CI não consolidaram a
 `main` nem dispensam revisão formal do baseline. A seção original que dizia que
 R1 não havia começado é histórica: R1-01 foi autorizado depois e a sequência
-atual está registrada acima. O próximo incremento ativo é
-[R1-04](r1-validacao-eventos-import-2026-10-08.md), sem consumidor ativo.
+atual está registrada acima. O próximo recorte técnico continua pendente de
+definir consumidor/piloto, transporte e política de inbox/quarentena/replay,
+respeitando as decisões operacionais ainda necessárias para OCR. O inventário
+R1-05 não habilita consumidor.
 
 ## Adiados, sem implementação nesta fase
 
