@@ -41,6 +41,11 @@ tipo, versão e campos mínimos dos dois payloads v1 conhecidos em
 `packages/contracts`. O parser não é invocado por consumidor operacional e
 rejeita versão legada/desconhecida até que política explícita seja definida.
 
+O [R1-07](../../docs/r1-guard-evento-import-2026-10-08.md) conecta o parser ao
+preparo futuro de tentativas e limita claims aos eventos QUEUED v1 com IDs
+coerentes com importação e versão documental. Eventos incompatíveis permanecem
+intocados e o entrypoint do worker continua sem consumidor ativo.
+
 Eventos candidatos: customer.created, lead.created, opportunity.created,
 project.created, consumption.validated, proposal.generated, proposal.accepted,
 contract.signed, inventory.reserved, finance.receivable_created.
