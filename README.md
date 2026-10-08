@@ -69,6 +69,8 @@ encontrado de auditoria, outbox de importação e projeções, sem ativar consum
 A proposta [ADR-007](docs/adr/ADR-007-transporte-integracao-proposta.md) avalia
 polling PostgreSQL como transporte inicial; o domínio do piloto OCR foi
 escolhido condicionalmente aos gates da PoC, sem autorização de ativação.
+O [R1-07](docs/r1-guard-evento-import-2026-10-08.md) restringe o claim a payloads
+v1 coerentes no worker; o entrypoint continua sem consumidor ativo.
 
 Capacidades registradas no plano histórico:
 

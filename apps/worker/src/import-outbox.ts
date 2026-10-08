@@ -158,6 +158,19 @@ export async function prepareImportAttempt(
     throw new Error('Invalid worker identity');
   if (!Number.isFinite(now.getTime())) throw new Error('Invalid current time');
 
+  const { parseEnergyBillImportEventV1 } = await import('@moura-solar/contracts');
+  const parsedEvent = parseEnergyBillImportEventV1({
+    eventType: claim.eventType,
+    schemaVersion: claim.schemaVersion,
+    payload: claim.payload,
+  });
+  if (
+    parsedEvent.eventType !== 'ENERGY_BILL_IMPORT_QUEUED' ||
+    parsedEvent.payload.importId !== claim.importId
+  ) {
+    throw new TypeError('Energy bill import event does not match its outbox claim');
+  }
+
   return prisma.$transaction(
     async (tx) => {
       const event = await tx.importOutbox.findFirst({
@@ -209,6 +222,9 @@ export async function prepareImportAttempt(
           },
         });
         return null;
+      }
+      if (parsedEvent.payload.documentVersionId !== billImport.documentVersionId) {
+        throw new TypeError('Energy bill import event does not match its document version');
       }
 
       const documentRef = {
@@ -522,15 +538,25 @@ export async function claimNextImportOutbox(
   validateLease(workerId, now, leaseUntil);
   const rows = await prisma.$queryRaw<ImportOutboxClaim[]>`
     WITH next_event AS (
-      SELECT id
-      FROM import_outbox
-      WHERE event_type = 'ENERGY_BILL_IMPORT_QUEUED'
+      SELECT event.id
+      FROM import_outbox AS event
+      JOIN energy_bill_imports AS bill_import
+        ON bill_import.id = event.import_id
+        AND bill_import.organization_id = event.organization_id
+      WHERE event.event_type = 'ENERGY_BILL_IMPORT_QUEUED'
+        AND event.schema_version = 1
+        AND jsonb_typeof(event.payload) = 'object'
+        AND jsonb_typeof(event.payload->'importId') = 'string'
+        AND btrim(event.payload->>'importId') = event.import_id::text
+        AND jsonb_typeof(event.payload->'documentVersionId') = 'string'
+        AND btrim(event.payload->>'documentVersionId') <> ''
+        AND bill_import.document_version_id::text = event.payload->>'documentVersionId'
         AND (
-          (status = 'PENDING' AND available_at <= ${now})
-          OR (status = 'PROCESSING' AND lease_until <= ${now})
+          (event.status = 'PENDING' AND event.available_at <= ${now})
+          OR (event.status = 'PROCESSING' AND event.lease_until <= ${now})
         )
-      ORDER BY available_at, created_at, id
-      FOR UPDATE SKIP LOCKED
+      ORDER BY event.available_at, event.created_at, event.id
+      FOR UPDATE OF event SKIP LOCKED
       LIMIT 1
     )
     UPDATE import_outbox AS event

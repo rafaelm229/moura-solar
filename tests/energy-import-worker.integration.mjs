@@ -242,6 +242,7 @@ test('outbox release preserves a safe code and delays the next claim until its d
         .organizationId,
       importId,
       eventType: 'ENERGY_BILL_IMPORT_QUEUED',
+      schemaVersion: 1,
       dedupeKey: `worker-test:${importId}:retry`,
       payload: { importId, documentVersionId },
     },
@@ -326,6 +327,7 @@ test('expired SUBMITTING attempt without operation id becomes UNKNOWN and is nev
       organizationId,
       importId: billImport.id,
       eventType: 'ENERGY_BILL_IMPORT_QUEUED',
+      schemaVersion: 1,
       dedupeKey: `worker-test:${billImport.id}:uncertain`,
       payload: { importId: billImport.id, documentVersionId: version.id },
     },
@@ -392,4 +394,78 @@ test('expired SUBMITTING attempt without operation id becomes UNKNOWN and is nev
     }),
     1,
   );
+});
+
+test('claims only compatible v1 outbox payloads and leaves legacy or mismatched rows untouched', async () => {
+  const fixtures = [
+    { key: 'legacy', schemaVersion: undefined, payload: 'valid' },
+    { key: 'future', schemaVersion: 2, payload: 'valid' },
+    { key: 'wrong-import', schemaVersion: 1, payload: 'wrong-import' },
+    { key: 'wrong-document', schemaVersion: 1, payload: 'wrong-document' },
+    { key: 'valid', schemaVersion: 1, payload: 'valid' },
+  ];
+  const rows = [];
+
+  for (const fixture of fixtures) {
+    const payload =
+      fixture.payload === 'wrong-import'
+        ? { importId: randomUUID(), documentVersionId }
+        : fixture.payload === 'wrong-document'
+          ? { importId, documentVersionId: randomUUID() }
+          : { importId, documentVersionId };
+    const event = await db.importOutbox.create({
+      data: {
+        organizationId,
+        importId,
+        eventType: 'ENERGY_BILL_IMPORT_QUEUED',
+        ...(fixture.schemaVersion === undefined ? {} : { schemaVersion: fixture.schemaVersion }),
+        dedupeKey: `worker-test:${importId}:${fixture.key}`,
+        payload,
+      },
+    });
+    rows.push({ event, payloadKind: fixture.payload });
+  }
+
+  const now = new Date(Date.now() + 1_000);
+  const claim = await claimNextImportOutbox(
+    db,
+    'worker-v1-guard',
+    now,
+    new Date(now.getTime() + 30_000),
+  );
+  const valid = rows.find((row) => row.payloadKind === 'valid' && row.event.schemaVersion === 1);
+  assert.ok(valid);
+  assert.equal(claim?.id, valid.event.id);
+  assert.equal(claim?.schemaVersion, 1);
+
+  await assert.rejects(
+    prepareImportAttempt(db, { ...claim, schemaVersion: null }, now),
+    /schemaVersion is unsupported/,
+  );
+  await assert.rejects(
+    prepareImportAttempt(
+      db,
+      { ...claim, payload: { importId: randomUUID(), documentVersionId } },
+      now,
+    ),
+    /does not match its outbox claim/,
+  );
+  await assert.rejects(
+    prepareImportAttempt(
+      db,
+      { ...claim, payload: { importId, documentVersionId: randomUUID() } },
+      now,
+    ),
+    /does not match its document version/,
+  );
+  assert.equal(await db.extractionAttempt.count({ where: { outboxId: claim.id } }), 0);
+
+  const untouched = await db.importOutbox.findMany({
+    where: {
+      id: { in: rows.filter((row) => row.event.id !== valid.event.id).map((row) => row.event.id) },
+    },
+    orderBy: { dedupeKey: 'asc' },
+  });
+  assert.equal(untouched.length, 4);
+  assert.ok(untouched.every((event) => event.status === 'PENDING' && event.attempts === 0));
 });

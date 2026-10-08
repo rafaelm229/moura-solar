@@ -11,6 +11,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@moura-solar/contracts": "workspace:*",
     "@prisma/client": "^6.16.2"
   },
   "devDependencies": {
