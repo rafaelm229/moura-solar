@@ -297,5 +297,6 @@ for (const [width, height] of [
     await expect(
       duplicateDialog.getByRole('heading', { name: 'Dados sugeridos pela extração' }),
     ).toBeVisible();
+    await page.unrouteAll({ behavior: 'wait' });
   });
 }
