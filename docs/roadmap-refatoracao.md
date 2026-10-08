@@ -58,8 +58,9 @@ no PR #24 (`b4eb441`) e implantado/verificado no Compose local; produção não 
 implantada. O [R1-03 de versionamento](r1-versionamento-outbox-import-2026-10-08.md)
 foi mesclado no PR #26 e liberado somente no Compose local; trabalhador,
 publicação e OCR continuam inativos. O
-[R1-04 de validação](r1-validacao-eventos-import-2026-10-08.md) está em
-implementação em branch, sem consumidor ativo.
+[R1-04 de validação](r1-validacao-eventos-import-2026-10-08.md) foi consolidado
+no PR #28, sem deploy por não haver consumidor runtime. A seleção de consumidor,
+transporte e política de inbox/quarentena permanece pendente.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
