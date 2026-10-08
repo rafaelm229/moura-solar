@@ -4,8 +4,8 @@
 
 **Fase:** R1 — integração gradual
 
-**Estado:** Implementado em branch; `pnpm check`, testes de integração focados e
-suíte completa passaram; CI da branch pendente.
+**Estado:** Consolidado no PR #32 após CI #86 aprovada. Não requer deploy:
+o entrypoint continua sem consumidor ativo.
 
 **SPECs:** [SPEC-014](../specs/SPEC-014-importacao-contas-energia/spec.md),
 [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
@@ -42,8 +42,10 @@ condicionalmente após os gates da PoC.
   caminhos v1 válidos já exercitados continuam compatíveis.
 - **Testes:** `node --test tests/energy-import-worker.integration.mjs` passou
   4/4 em PostgreSQL local de teste; `pnpm check` passou; `pnpm test:integration`
-  passou 107/107 em PostgreSQL local de teste. CI da branch ainda precisa passar
-  antes do estado Validado.
+  passou 107/107 em PostgreSQL local de teste. CI #86 passou incluindo check,
+  geração API, migrations, integração e E2E. PR #32 foi mesclado em
+  `feat/proposal-visual-clarity`; não houve deploy por manter o consumidor
+  desativado.
 - **Rollback:** reverter o filtro, a chamada do parser, a dependência workspace e
   este documento. Não há migration nem linhas alteradas para desfazer; manter
   intactos contratos e metadados de R1-03.
