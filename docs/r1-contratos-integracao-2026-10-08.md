@@ -4,8 +4,9 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Implementado em branch `codex/r1-integration-contracts`; validação
-remota, revisão e consolidação pendentes.
+**Estado:** Implementado em branch `codex/r1-integration-contracts`; CI remoto
+aprovado e PR #23 mesclado em `feat/proposal-visual-clarity`. Revisão formal e
+consolidação em `main` pendentes.
 
 **SPECs:** [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
 [SPEC-019](../specs/SPEC-019-eventos-dados/spec.md); família F-34.
@@ -64,3 +65,12 @@ o ADR correspondente seguem pendentes; não introduzir broker por antecipação.
 Inventariar um fato de domínio e sua transação, estabelecer contrato de payload
 com o dono, decidir transporte/consumidor e demonstrar outbox → inbox com
 duplicata, crash, replay e autorização. Não habilitar OCR por esse piloto.
+
+## Acompanhamento após o PR #23
+
+O PR #23 passou no CI remoto (`pnpm check`, migrations, integrações e E2E) e foi
+mesclado em `feat/proposal-visual-clarity` no commit `055a026`. As imagens API/web
+da árvore mesclada foram aplicadas somente ao Docker Compose local; health da
+API e HTTP 200 da web foram verificados. A `main` e produção não foram alteradas.
+O [R1-02](r1-correlacao-import-outbox-2026-10-08.md) continua a trilha de
+integração sem ativar consumidores.

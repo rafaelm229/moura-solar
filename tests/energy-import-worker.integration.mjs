@@ -127,6 +127,7 @@ test('outbox claims are exclusive, recover expired leases, and reject stale ackn
   );
   assert.ok(first);
   assert.equal(first.importId, importId);
+  assert.equal(first.correlationId, null);
   assert.deepEqual(first.payload, { importId, documentVersionId });
   assert.equal(first.attempts, 1);
   const attempt = await prepareImportAttempt(db, first, now);
