@@ -51,7 +51,9 @@ remota aprovada e revisão/consolidação pendentes. O PR #22 foi incorporado em
 `feat/proposal-visual-clarity`, sem mudar a `main`. R1 começou em branch somente
 com o [incremento R1-01 de contratos](r1-contratos-integracao-2026-10-08.md);
 o PR #23 o mesclou nessa branch e o Compose local foi atualizado. O
-[R1-02 de correlação](r1-correlacao-import-outbox-2026-10-08.md) está em branch.
+[R1-02 de correlação](r1-correlacao-import-outbox-2026-10-08.md) foi mesclado
+no PR #24 (`b4eb441`) e implantado/verificado no Compose local; produção não foi
+implantada.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
