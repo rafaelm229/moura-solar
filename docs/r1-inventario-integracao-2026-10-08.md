@@ -4,8 +4,8 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Inventário documental em branch; não habilita produtor, consumidor,
-transporte ou processamento.
+**Estado:** Inventário documental (snapshot de 08/10/2026); não habilita
+produtor, consumidor, transporte ou processamento.
 
 **SPECs:** [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md),
 [SPEC-019](../specs/SPEC-019-eventos-dados/spec.md); família F-34.
@@ -29,8 +29,8 @@ R1-04 (parser dos eventos conhecidos), todos presentes na branch de referência.
   outbox e projeções, indicar lacunas sem afirmar completude global e apontar a
   decisão operacional ainda necessária.
 - **Testes:** revisão dos arquivos citados, links locais, formatação Markdown e
-  `git diff --check`. `pnpm check` é registrado no PR se executado como gate; este
-  recorte não altera código.
+  `git diff --check`; `pnpm check` passou neste incremento. Este recorte não
+  altera código.
 - **Rollback:** reverter somente este documento e suas referências; não há efeito
   persistido nem consumidor a drenar.
 
