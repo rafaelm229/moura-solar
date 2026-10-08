@@ -58,8 +58,9 @@ baseline e a consolidação em `main` seguem pendentes. O
 nessa branch e implantado localmente. O
 [R1-02](docs/r1-correlacao-import-outbox-2026-10-08.md) foi consolidado e
 implantado localmente, sem publicação ou consumidor ativo. O
-[R1-03](docs/r1-versionamento-outbox-import-2026-10-08.md) versiona os metadados
-do outbox existente sem alterar payloads ou ativar o worker.
+[R1-03](docs/r1-versionamento-outbox-import-2026-10-08.md) foi mesclado e
+liberado somente no Compose local; versiona metadados do outbox existente sem
+alterar payloads ou ativar o worker.
 
 Capacidades registradas no plano histórico:
 

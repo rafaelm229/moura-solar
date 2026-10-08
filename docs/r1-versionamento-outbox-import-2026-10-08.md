@@ -4,8 +4,9 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Implementado em branch `codex/r1-import-event-versioning`; CI, merge
-e implantação local ainda pendentes.
+**Estado:** Consolidado no commit `b0a153c` de
+`feat/proposal-visual-clarity`; liberado somente no Compose local.
+Produção não implantada.
 
 **SPECs:** [SPEC-014](../specs/SPEC-014-importacao-contas-energia/spec.md),
 [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
@@ -73,8 +74,24 @@ estado de negócio. O worker/OCR permanece inativo.
   identidade, navegação, PDF/DOCX e viewports existentes.
 - `PATH=/tmp/moura-solar-r0-bin:$PATH pnpm api:generate` e
   `git diff --exit-code -- packages/api-client`: passaram, sem alteração gerada.
-- CI da branch, merge e implantação local ainda não foram executados. Registrar
-  seus resultados e ambiente antes de promover o estado.
+- CI no PR #26 passou integralmente (workflow 77; instalação, `pnpm check`,
+  geração de cliente, migrations, integração e E2E). O PR foi mesclado no commit
+  `b0a153cc750ac28b76b48e6ee7139c6490064aab`.
+- Implantação: revisão limpa do commit mesclado, Compose local
+  `moura-solar-platform`. O dump PostgreSQL custom format foi gravado em
+  `/tmp/moura-solar-r1-03-predeploy-20261008.dump` (29.477.235 bytes, modo 0600,
+  SHA-256 `9a3fb03080e763fd56495ad91fffe42216c964ce34fe0ee0841380b6b83cda9f`)
+  e validado com `pg_restore --list`. As imagens anteriores de API/tools foram
+  preservadas com tags `pre-r1-03-20261008`.
+- `docker compose ... run --rm --no-deps migrate` aplicou somente
+  `20261008000200_import_outbox_schema_version`; a coluna foi confirmada nullable
+  e o registro de migration, concluído. `docker compose ... up -d --no-deps
+--no-build api` atualizou somente a API. Readiness da API passou, web respondeu
+  HTTP 200, PostgreSQL/API/ClamAV ficaram healthy e MinIO/web permaneceram em
+  execução. Nenhum worker foi iniciado; nenhum volume foi removido.
+- Rollback operacional: voltar a imagem da API tagueada
+  `pre-r1-03-20261008`; manter a migration/coluna aditiva e os dados. O backup
+  permanece como proteção, não como procedimento de rollback padrão.
 - Nenhum teste inicia worker, chama provedor OCR ou exige broker.
 
 ## Limites e próximo recorte
