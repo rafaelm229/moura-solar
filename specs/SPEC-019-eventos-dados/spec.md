@@ -22,6 +22,11 @@ aggregateId, aggregateVersion quando aplicável, producer, correlationId,
 causationId e payload validado. Minimizar dados pessoais. Controle de ordenação e
 particionamento deve ser definido por agregado. Horário de ingestão difere do fato.
 
+R1-01 inicia apenas o [envelope compartilhado](../../docs/r1-contratos-integracao-2026-10-08.md)
+em `packages/contracts`. A validação estrutural não valida `eventType`, versão ou
+payload específicos nem publica eventos. O `ImportOutbox` legado permanece com
+seu formato até adaptação explícita e testada.
+
 Eventos candidatos: customer.created, lead.created, opportunity.created,
 project.created, consumption.validated, proposal.generated, proposal.accepted,
 contract.signed, inventory.reserved, finance.receivable_created.
