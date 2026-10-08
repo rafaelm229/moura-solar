@@ -2,7 +2,8 @@
 
 **Data:** 08/10/2026
 
-**Status:** Proposto; aprovação do transporte e do piloto pendente
+**Status:** Proposta de transporte pendente; domínio do piloto escolhido
+condicionalmente pelo usuário em 08/10/2026
 
 **Fase:** R1 — integração gradual
 
@@ -19,8 +20,9 @@ nesta revisão.
 
 A pesquisa da PoC da SPEC-014 não enviou documentos nem executou benchmark. Não
 há fornecedor, corpus operacional, limite de custo/quota ou política de dados
-aprovados. Portanto, importação/OCR não pode ser ativada como piloto consumidor
-até que esses gates e um consumidor durável estejam aprovados.
+aprovados. O usuário escolheu o domínio de importação/OCR para o piloto futuro,
+condicionado à aprovação desses gates e de um consumidor durável; essa escolha
+não autoriza ativação agora.
 
 ## Opções consideradas
 
@@ -32,18 +34,21 @@ até que esses gates e um consumidor durável estejam aprovados.
 
 ## Decisão proposta — não aprovada
 
-Para o **primeiro** consumidor de integração, preferir polling do outbox em
-PostgreSQL com transações e leases, sem instalar ou promover um broker geral.
-Isto é uma recomendação para validação, não um contrato aceito nem autorização
-para iniciar polling operacional.
+O domínio do **primeiro** piloto foi escolhido: consumidor durável da importação
+de contas de energia, com OCR somente após os gates da SPEC-014. O evento exato,
+o efeito do consumidor e o contrato com o dono do domínio ainda serão definidos.
+Para transporte, preferir polling do outbox em PostgreSQL com transações e
+leases, sem instalar ou promover um broker geral. Essa parte permanece uma
+recomendação para validação, não um contrato aceito nem autorização para iniciar
+polling operacional.
 
-Antes de implementação, responsáveis devem aprovar: (1) evento e domínio piloto,
-(2) proprietário do fato e consumidor, (3) transporte e inbox/dedupe, (4) retenção
-e exclusão — o vínculo existente de `ImportOutbox` tem `onDelete: Cascade` — e
-(5) política de retry, quarentena, replay autorizado e reconciliação. Se o piloto
-for OCR, também cumprir os gates de corpus, privacidade, fornecedor, limites de
-custo/quota e critérios de qualidade definidos pela SPEC-014. Até essas decisões,
-worker, OCR e publicação permanecem desativados.
+Antes de implementação, responsáveis devem definir: (1) semântica do evento e
+efeito durável do consumidor com o dono da importação, (2) transporte e
+inbox/dedupe, (3) retenção e exclusão — o vínculo existente de `ImportOutbox` tem
+`onDelete: Cascade` — e (4) política de retry, quarentena, replay autorizado e
+reconciliação. Também devem cumprir os gates de corpus, privacidade, fornecedor,
+limites de custo/quota e critérios de qualidade definidos pela SPEC-014. Até
+essas decisões, worker, OCR e publicação permanecem desativados.
 
 Não assumir exactly-once global. A futura implementação deve provar efeito e
 inbox idempotentes em transação local, correlation/causation, retries limitados,
@@ -74,6 +79,8 @@ carga/latência/falha, custo total e plano de migração sem perda ou duplicidad
 
 ## Aprovação requerida
 
-Este arquivo **não** registra decisão final. Aprovar ou alterar a recomendação
-PostgreSQL, escolher o piloto e autorizar seu incremento em separado. Nenhuma
-operação automática fica autorizada pelo status deste ADR.
+Este arquivo **não** registra decisão final de transporte. A intenção de pilotar
+importação/OCR após os gates foi escolhida, mas o contrato do consumidor e os
+requisitos operacionais continuam pendentes. Aprovar ou alterar a recomendação
+PostgreSQL antes do incremento de transporte. Nenhuma operação automática fica
+autorizada pelo status deste ADR.

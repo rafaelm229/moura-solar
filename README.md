@@ -67,7 +67,8 @@ por isso não exigiu deploy local.
 O [R1-05](docs/r1-inventario-integracao-2026-10-08.md) documenta o inventário
 encontrado de auditoria, outbox de importação e projeções, sem ativar consumidor.
 A proposta [ADR-007](docs/adr/ADR-007-transporte-integracao-proposta.md) avalia
-polling PostgreSQL como transporte inicial; piloto e aprovação seguem pendentes.
+polling PostgreSQL como transporte inicial; o domínio do piloto OCR foi
+escolhido condicionalmente aos gates da PoC, sem autorização de ativação.
 
 Capacidades registradas no plano histórico:
 
