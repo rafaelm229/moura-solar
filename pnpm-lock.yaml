@@ -72,6 +72,9 @@ importers:
         specifier: ^7.8.2
         version: 7.8.2
     devDependencies:
+      '@moura-solar/database':
+        specifier: workspace:*
+        version: link:../../packages/database
       '@nestjs/cli':
         specifier: ^11.0.10
         version: 11.0.24(@types/node@24.19.0)(esbuild@0.28.2)(postcss@8.5.28)(prettier@3.9.9)
@@ -158,6 +161,9 @@ importers:
         specifier: ^6.16.2
         version: 6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
     devDependencies:
+      '@moura-solar/database':
+        specifier: workspace:*
+        version: link:../../packages/database
       '@moura-solar/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config

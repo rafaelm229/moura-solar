@@ -48,7 +48,9 @@ Fronteira lógica não obriga deploy imediato de cada linha. Location Intelligen
 
 Opportunity pertence ao CRM. Project coordena contexto operacional por referências,
 sem tomar propriedade de proposta, estoque ou financeiro. Já existe
-OperationalProject; R3 deve mapear IDs, criação atual após venda, histórico e links.
+OperationalProject; R3 deve mapear IDs, momento efetivo de criação, histórico e links.
+O caso de uso atual aceita uma oportunidade e não comprova, sozinho, venda
+concluída; a política do ciclo precisa de decisão antes de mudar banco ou gates.
 
 A possibilidade de projeto em preparação antes da proposta precisa de decisão
 registrada sobre ciclo de vida e migração. Não criar automaticamente um segundo

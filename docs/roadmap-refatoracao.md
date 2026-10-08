@@ -45,8 +45,10 @@ e resolvidas antes da implementação afetada; não mudar gates silenciosamente.
 
 ## Sequência executável
 
-Todos os novos marcos abaixo estão **Planejados**. Direção aprovada não significa
-aceite técnico de cada contrato, política ou migração.
+R0 está **Implementado em branch** conforme o
+[relatório de baseline de 08/10/2026](r0-baseline-2026-10-08.md), com validação
+remota e consolidação pendentes. R1–R13 permanecem **Planejados**. Direção aprovada
+não significa aceite técnico de cada contrato, política ou migração.
 
 | Marco | Entrega                                                                                            | Dependências                               | Evidência de saída                                                                                                |
 | ----- | -------------------------------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
@@ -98,12 +100,14 @@ contratual, material e financeiro continuam derivados de regras reais. Eventos
 como `contract.signed` não dispensam conferência/aprovação exigidas.
 A saga proposta deve reconciliar estado, não inventar uma nova regra de venda.
 
-## Próximo incremento
+## Estado de R0 e próximo incremento
 
-R0 documental/técnico: registrar branch e commits efetivos; comparar capacidades,
-specs e testes; propor consolidação sem merge automático; executar validações no
-checkout autorizado e gerar relatório. Tag de baseline somente depois de verde e
-quando sua criação estiver autorizada. Não começar R1 com baseline presumido.
+R0 documental/técnico registra branch e commits efetivos, capacidades, testes,
+divergências e plano de consolidação no
+[relatório de baseline](r0-baseline-2026-10-08.md). Sua promoção a **Validado** exige
+revisão das evidências e CI da branch de entrega. Tag de baseline somente depois
+de verde e quando sua criação estiver autorizada. Não começar R1 com baseline
+presumido.
 
 ## Adiados, sem implementação nesta fase
 
