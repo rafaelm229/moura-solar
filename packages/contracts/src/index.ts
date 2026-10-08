@@ -13,3 +13,6 @@ export interface ApiErrorResponse {
   details: Record<string, unknown>;
   traceId: string;
 }
+
+export { parseIntegrationEvent } from './integration-event.js';
+export type { IntegrationEvent } from './integration-event.js';

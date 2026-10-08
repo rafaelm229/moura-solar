@@ -52,7 +52,12 @@ O plano histórico registra a fundação executável e os marcos M1 a M10 como
 implementados e validados na época. Essa declaração não atesta consolidação na
 `main` nem liberação produtiva. O [R0 em branch](docs/r0-baseline-2026-10-08.md)
 inventariou capacidades e repetiu as verificações pertinentes; CI remoto passou
-no PR #22, que ainda aguarda revisão:
+no PR #22, mesclado em `feat/proposal-visual-clarity`. A revisão formal do
+baseline e a consolidação em `main` seguem pendentes. O
+[incremento R1-01](docs/r1-contratos-integracao-2026-10-08.md) iniciou apenas o
+contrato do envelope de eventos em branch, sem publicação ou consumidor ativo.
+
+Capacidades registradas no plano histórico:
 
 - **M1:** Identidade, Autenticação, Perfis, Sessões e RBAC (SPEC-002)
 - **M2:** Comercial: Clientes, Unidades Consumidoras e Oportunidades (SPEC-004)

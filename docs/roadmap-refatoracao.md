@@ -47,7 +47,10 @@ e resolvidas antes da implementação afetada; não mudar gates silenciosamente.
 
 R0 está **Implementado em branch** conforme o
 [relatório de baseline de 08/10/2026](r0-baseline-2026-10-08.md), com validação
-remota aprovada e revisão/consolidação pendentes. R1–R13 permanecem **Planejados**. Direção aprovada
+remota aprovada e revisão/consolidação pendentes. O PR #22 foi incorporado em
+`feat/proposal-visual-clarity`, sem mudar a `main`. R1 começou em branch somente
+com o [incremento R1-01 de contratos](r1-contratos-integracao-2026-10-08.md);
+o marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
 | Marco | Entrega                                                                                            | Dependências                               | Evidência de saída                                                                                                |
