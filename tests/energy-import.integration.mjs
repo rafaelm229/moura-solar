@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
+import { storageEnv } from './storage-env.mjs';
 
 const require = createRequire(new URL('../apps/api/package.json', import.meta.url));
 const { PrismaClient } = require('@prisma/client');
@@ -13,6 +14,7 @@ const schema = `test_imp_${randomUUID().replaceAll('-', '')}`;
 url.searchParams.set('schema', schema);
 const env = {
   ...process.env,
+  ...storageEnv,
   PATH: `${process.cwd()}/.bin:${process.env.PATH}`,
   DATABASE_URL: url.toString(),
   NODE_ENV: 'test',
