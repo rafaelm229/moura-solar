@@ -27,6 +27,10 @@ em `packages/contracts`. A validação estrutural não valida `eventType`, vers�
 payload específicos nem publica eventos. O `ImportOutbox` legado permanece com
 seu formato até adaptação explícita e testada.
 
+O [R1-02](../../docs/r1-correlacao-import-outbox-2026-10-08.md) persiste a
+correlação de origem nas novas linhas do `ImportOutbox` existente. Linhas antigas
+continuam válidas com correlação ausente; isto não ativa publicação ou inbox.
+
 Eventos candidatos: customer.created, lead.created, opportunity.created,
 project.created, consumption.validated, proposal.generated, proposal.accepted,
 contract.signed, inventory.reserved, finance.receivable_created.

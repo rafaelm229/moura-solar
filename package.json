@@ -22,7 +22,7 @@
     "api:generate": "node scripts/generate-api.mjs",
     "test:integration": "pnpm --filter @moura-solar/api build && pnpm --filter @moura-solar/worker build && node --test --test-concurrency=1 tests/identity.integration.mjs tests/commercial.integration.mjs tests/design.integration.mjs tests/energy-import.integration.mjs tests/energy-import-worker.integration.mjs tests/proposal.integration.mjs tests/contract.integration.mjs tests/financial.integration.mjs tests/inventory.integration.mjs tests/engineering.integration.mjs tests/after-sales.integration.mjs tests/automations.integration.mjs tests/dossier.integration.mjs",
     "test:e2e": "pnpm --filter @moura-solar/api build && playwright test",
-    "test:migrations": "node tests/migrations.mjs && node tests/dossier-migrations.mjs",
+    "test:migrations": "node tests/migrations.mjs && node tests/dossier-migrations.mjs && node tests/import-outbox-correlation-migrations.mjs",
     "identity:bootstrap": "node --env-file=.env scripts/bootstrap.mjs",
     "db:seed": "node --env-file=.env scripts/seed-development.mjs"
   },

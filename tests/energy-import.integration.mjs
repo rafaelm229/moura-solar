@@ -191,7 +191,10 @@ after(async () => {
 
 test('READY intake writes one queued import and a minimal outbox event atomically and idempotently', async () => {
   const input = { documentVersionId: readyVersionId };
-  const headers = { 'idempotency-key': 'energy-import-ready-intake-key' };
+  const headers = {
+    'idempotency-key': 'energy-import-ready-intake-key',
+    'x-request-id': 'r1-import-intake-001',
+  };
   const created = await admin.call(
     `customers/${customerId}/energy-imports`,
     'POST',
@@ -203,7 +206,10 @@ test('READY intake writes one queued import and a minimal outbox event atomicall
   assert.equal(created.body.version, 1);
   assert.equal(created.body.documentVersionId, readyVersionId);
 
-  const replay = await admin.call(`customers/${customerId}/energy-imports`, 'POST', input, headers);
+  const replay = await admin.call(`customers/${customerId}/energy-imports`, 'POST', input, {
+    ...headers,
+    'x-request-id': 'r1-import-intake-replay-002',
+  });
   assert.equal(replay.status, 201);
   assert.equal(replay.body.id, created.body.id);
 
@@ -235,6 +241,7 @@ test('READY intake writes one queued import and a minimal outbox event atomicall
   assert.equal(record.status, 'QUEUED');
   assert.equal(outbox.length, 1);
   assert.equal(outbox[0].status, 'PENDING');
+  assert.equal(outbox[0].correlationId, 'r1-import-intake-001');
   assert.deepEqual(outbox[0].payload, {
     importId: created.body.id,
     documentVersionId: readyVersionId,
@@ -683,7 +690,10 @@ test('manual review is immutable and confirmation atomically applies versions wi
     reviewId: revised.body.latestReview.id,
     reviewDigest: revised.body.latestReview.digest,
   };
-  const confirmHeaders = { 'idempotency-key': 'energy-import-final-confirm-key' };
+  const confirmHeaders = {
+    'idempotency-key': 'energy-import-final-confirm-key',
+    'x-request-id': 'r1-import-confirm-001',
+  };
   const receipt = await admin.call(
     `energy-imports/${created.body.id}/confirm`,
     'POST',
@@ -739,6 +749,10 @@ test('manual review is immutable and confirmation atomically applies versions wi
     await db.importOutbox.count({ where: { importId: created.body.id, status: 'PENDING' } }),
     2,
   );
+  const appliedEvent = await db.importOutbox.findFirst({
+    where: { importId: created.body.id, eventType: 'ENERGY_BILL_IMPORT_APPLIED' },
+  });
+  assert.equal(appliedEvent.correlationId, 'r1-import-confirm-001');
   assert.equal(
     await db.documentUtilityUnitLink.count({
       where: { utilityUnitId, document: { versions: { some: { id: applicationVersionId } } } },
@@ -935,7 +949,10 @@ test('cancel and explicit retry are versioned, audited, scoped, and idempotent',
   });
 
   const retryInput = { expectedVersion: 1, reason: 'Falha transitória revisada pelo operador' };
-  const retryHeaders = { 'idempotency-key': 'energy-import-retry-command-key' };
+  const retryHeaders = {
+    'idempotency-key': 'energy-import-retry-command-key',
+    'x-request-id': 'r1-import-retry-001',
+  };
   const retried = await admin.call(
     `energy-imports/${retryImport.body.id}/retry`,
     'POST',
@@ -963,6 +980,7 @@ test('cancel and explicit retry are versioned, audited, scoped, and idempotent',
   });
   assert.equal(retryEvents.length, 2);
   assert.ok(retryEvents.every((event) => event.payload.documentVersionId === retryVersionId));
+  assert.equal(retryEvents[1].correlationId, 'r1-import-retry-001');
   const retryTransition = await db.energyImportTransition.findUnique({
     where: { importId_version: { importId: retryImport.body.id, version: 2 } },
   });

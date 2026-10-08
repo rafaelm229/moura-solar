@@ -54,8 +54,10 @@ implementados e validados na época. Essa declaração não atesta consolidaçã
 inventariou capacidades e repetiu as verificações pertinentes; CI remoto passou
 no PR #22, mesclado em `feat/proposal-visual-clarity`. A revisão formal do
 baseline e a consolidação em `main` seguem pendentes. O
-[incremento R1-01](docs/r1-contratos-integracao-2026-10-08.md) iniciou apenas o
-contrato do envelope de eventos em branch, sem publicação ou consumidor ativo.
+[incremento R1-01](docs/r1-contratos-integracao-2026-10-08.md) foi mesclado
+nessa branch e implantado localmente. O
+[R1-02](docs/r1-correlacao-import-outbox-2026-10-08.md) registra a correlação
+dos eventos de importação em branch, sem publicação ou consumidor ativo.
 
 Capacidades registradas no plano histórico:
 
