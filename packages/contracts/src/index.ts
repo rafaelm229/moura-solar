@@ -16,3 +16,7 @@ export interface ApiErrorResponse {
 
 export { parseIntegrationEvent } from './integration-event.js';
 export type { IntegrationEvent } from './integration-event.js';
+export type {
+  EnergyBillImportAppliedEventV1,
+  EnergyBillImportQueuedEventV1,
+} from './energy-import-events.js';

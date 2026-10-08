@@ -106,6 +106,7 @@ before(async () => {
       organizationId: organization.id,
       importId,
       eventType: 'ENERGY_BILL_IMPORT_QUEUED',
+      schemaVersion: 1,
       dedupeKey: `worker-test:${importId}:first`,
       payload: { importId, documentVersionId },
     },
@@ -128,6 +129,7 @@ test('outbox claims are exclusive, recover expired leases, and reject stale ackn
   assert.ok(first);
   assert.equal(first.importId, importId);
   assert.equal(first.correlationId, null);
+  assert.equal(first.schemaVersion, 1);
   assert.deepEqual(first.payload, { importId, documentVersionId });
   assert.equal(first.attempts, 1);
   const attempt = await prepareImportAttempt(db, first, now);

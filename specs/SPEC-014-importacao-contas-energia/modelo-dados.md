@@ -20,7 +20,12 @@ EnergyReading já tem organizationId, utilityUnitId, referenceMonth, consumption
 | ImportReview          | importId FK, revisão imutável, autor/data, decisões por campo/mês, IDs de ExtractionCandidate usados como evidência, valor anterior, valor confirmado, justificativa, versões de base e digest |
 | EnergyReadingRevision | readingId FK, version, valores anteriores/novos, revisão/import/documentVersion FKs opcionais, autor/origem; append-only, também para mudanças manuais futuras                                 |
 | ImportApplication     | importId único, revisão FK, payloadHash, recibo, IDs/versões aplicados, idempotencyKey, committedAt                                                                                            |
-| ImportOutbox          | evento e chave únicos, payload mínimo, estado/lease/tentativas; gravado junto à mudança que publica                                                                                            |
+| ImportOutbox          | evento e chave únicos, versão/correlação opcionais, payload mínimo, estado/lease/tentativas; gravado junto à mudança que publica                                                               |
+
+Os eventos `ENERGY_BILL_IMPORT_QUEUED` e `ENERGY_BILL_IMPORT_APPLIED` novos usam
+schema version 1 com payloads mínimos tipados em `packages/contracts`. Linhas
+anteriores sem `schema_version` permanecem legadas e sem backfill; versão declarada
+não ativa publicação ou consumidor.
 
 Candidatos e revisão são evidência, não uma série de consumo paralela usada em cálculo. Endpoints manuais e importador devem usar o mesmo caso de uso transacional de leituras com versão. Não encadear N chamadas HTTP de upsert. EnergyReading conserva unicidade; valor faturado e injetado nulos não são zero.
 

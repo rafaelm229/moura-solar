@@ -555,6 +555,7 @@ model ImportOutbox {
   organizationId String          @map("organization_id") @db.Uuid
   importId       String          @map("import_id") @db.Uuid
   eventType      String          @map("event_type")
+  schemaVersion  Int?            @map("schema_version")
   correlationId  String?         @map("correlation_id")
   dedupeKey      String          @unique @map("dedupe_key")
   payload        Json
