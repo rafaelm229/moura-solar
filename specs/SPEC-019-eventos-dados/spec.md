@@ -98,7 +98,7 @@ mostra freshness/atraso; usuários só veem organização e escopo autorizados.
 
 ## Tarefas
 
-- [ ] Inventariar audit events, ImportOutbox e projeções existentes.
+- [x] Inventariar audit events, ImportOutbox e projeções existentes ([R1-05](../../docs/r1-inventario-integracao-2026-10-08.md)); inventário limitado aos caminhos localizados, sem escolha de transporte/consumidor.
 - [ ] Publicar contratos versionados em packages/contracts.
 - [ ] ADR de transporte e piloto outbox/inbox.
 - [ ] Simular crash, duplicidade, atraso, replay e falha de consumidor.
