@@ -1654,3 +1654,123 @@ test('activity creation emits a minimal correlated event atomically with its aud
   assert.equal(JSON.stringify(event.payload).includes(subject), false);
   assert.equal(JSON.stringify(event.payload).includes(description), false);
 });
+
+test('activity cancellation emits a minimal correlated event atomically with its audit', async () => {
+  const customer = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: `Cliente cancelamento atividade ${randomUUID()}`,
+  });
+  assert.equal(customer.status, 201);
+  const activity = await seller.call('activities', 'POST', {
+    customerId: customer.body.id,
+    type: 'TASK',
+    subject: 'Atividade a cancelar',
+    description: 'Descrição que não deve ser publicada',
+    dueAt: new Date(Date.now() + 86400000).toISOString(),
+  });
+  assert.equal(activity.status, 201);
+
+  const activityId = activity.body.id;
+  const eventCountBefore = await db.integrationOutbox.count({
+    where: { eventType: 'ACTIVITY_CANCELED', aggregateId: activityId },
+  });
+  const auditCountBefore = await db.auditEvent.count({
+    where: { action: 'commercial.activity_canceled', entityId: activityId },
+  });
+  const unauthenticated = await new Client().call(`activities/${activityId}/cancel`, 'POST', {
+    expectedVersion: 1,
+  });
+  assert.equal(unauthenticated.status, 401);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'ACTIVITY_CANCELED', aggregateId: activityId },
+    }),
+    eventCountBefore,
+  );
+
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_activity_canceled_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'ACTIVITY_CANCELED' THEN
+        RAISE EXCEPTION 'forced activity cancellation outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_activity_canceled_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_activity_canceled_outbox_for_test()
+  `);
+  const failed = await seller.call(`activities/${activityId}/cancel`, 'POST', {
+    expectedVersion: 1,
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_activity_canceled_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(
+    `DROP FUNCTION "${schema}".reject_activity_canceled_outbox_for_test()`,
+  );
+  assert.equal(failed.status, 500);
+  const afterFailure = await db.activity.findUnique({ where: { id: activityId } });
+  assert.equal(afterFailure.status, 'OPEN');
+  assert.equal(afterFailure.version, 1);
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'commercial.activity_canceled', entityId: activityId },
+    }),
+    auditCountBefore,
+  );
+
+  const requestId = `r1-activity-canceled-${randomUUID()}`;
+  const canceled = await seller.call(
+    `activities/${activityId}/cancel`,
+    'POST',
+    { expectedVersion: 1 },
+    { 'x-request-id': requestId },
+  );
+  assert.equal(canceled.status, 200);
+  assert.equal(canceled.body.status, 'CANCELED');
+  assert.equal(canceled.body.version, 2);
+  const audit = await db.auditEvent.findFirst({
+    where: {
+      action: 'commercial.activity_canceled',
+      entityId: activityId,
+      traceId: requestId,
+    },
+  });
+  assert.ok(audit);
+  const event = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `ACTIVITY_CANCELED:${audit.id}` },
+  });
+  assert.ok(event);
+  assert.equal(event.eventType, 'ACTIVITY_CANCELED');
+  assert.equal(event.schemaVersion, 1);
+  assert.equal(event.aggregateType, 'Activity');
+  assert.equal(event.aggregateId, activityId);
+  assert.equal(event.producer, 'crm');
+  assert.equal(event.correlationId, requestId);
+  assert.equal(event.publishedAt, null);
+  assert.deepEqual(event.payload, {
+    activityId,
+    auditEventId: audit.id,
+    customerId: customer.body.id,
+  });
+  assert.equal(JSON.stringify(event.payload).includes('Atividade a cancelar'), false);
+  assert.equal(
+    JSON.stringify(event.payload).includes('Descrição que não deve ser publicada'),
+    false,
+  );
+
+  const stale = await seller.call(`activities/${activityId}/cancel`, 'POST', {
+    expectedVersion: 1,
+  });
+  assert.equal(stale.status, 409);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'ACTIVITY_CANCELED', aggregateId: activityId },
+    }),
+    eventCountBefore + 1,
+  );
+});

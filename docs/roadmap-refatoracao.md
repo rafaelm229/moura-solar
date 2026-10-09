@@ -127,6 +127,9 @@ O [R1-24](r1-24-outbox-criacao-atividade.md) foi implementado nesta branch:
 contrato e gravação atômica de `ACTIVITY_CREATED`, com payload mínimo e sem
 publicação ou consumidor; PR #55 consolidado em `ca681e3`, CI #111 completa
 verde.
+O [R1-25](r1-25-outbox-cancelamento-atividade.md) está em implementação para
+registrar `ACTIVITY_CANCELED` v1 junto da auditoria, usando IDs mínimos e sem
+publicação ou consumidor.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
