@@ -4,8 +4,9 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Em implementação na branch
-`codex/r1-32-proposal-acceptance-activity-event`.
+**Estado:** Consolidado no branch `feat/proposal-visual-clarity` pelo PR #71,
+merge `ceb84ad9b7ea9e5f3c268790da0f95904212ab11`. Não representa liberação em
+`main` nem ativação de consumidor.
 
 **SPECs:** [SPEC-006](../specs/SPEC-006-propostas/spec.md),
 [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
@@ -38,8 +39,8 @@ formalização e persiste `PROPOSAL_ACCEPTED` na transação local.
 - Injetar falha na gravação do evento filho e confirmar rollback integral do
   aceite, versão, oportunidade, transição, atividade, auditoria e evento pai.
 - Preservar a resposta HTTP e o comportamento atual de aceite duplicado (409).
-- Validar com integração PostgreSQL, `pnpm check`, Prettier, links e
-  `git diff --check`; registrar separadamente qualquer falha de CI externa.
+- Integração PostgreSQL, `pnpm check`, Prettier, links e `git diff --check`
+  passaram localmente; CI remota não iniciou checkout/testes.
 
 ## Execução e evidências
 
@@ -48,9 +49,12 @@ formalização e persiste `PROPOSAL_ACCEPTED` na transação local.
   passaram no PostgreSQL/MinIO/ClamAV local, incluindo rollback do evento filho.
 - `pnpm check`: passou fora do sandbox; o primeiro intento no sandbox bloqueou
   os dois testes existentes de DOCX com `spawnSync unzip EPERM`.
-- Prettier e `git diff --check`: passaram. Links serão verificados novamente
-  após concluir os links cruzados desta entrega.
-- CI remota: não executada, pois a branch ainda não foi enviada.
+- Prettier, links locais e `git diff --check`: passaram.
+- CI #127 falhou em `Initialize containers`, antes do checkout e dos testes: o
+  runner expirou ao tentar baixar `postgres:17-alpine` do Docker Hub. Resultado
+  de CI: **não validado**.
+- Consolidação: PR #71 em `feat/proposal-visual-clarity`, merge
+  `ceb84ad9b7ea9e5f3c268790da0f95904212ab11`.
 
 ## Rollback
 
