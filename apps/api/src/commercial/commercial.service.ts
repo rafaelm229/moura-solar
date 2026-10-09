@@ -1306,8 +1306,9 @@ export class CommercialService {
         },
       });
 
+      let nextActivityId: string | undefined;
       if (dto.nextActivity) {
-        await tx.activity.create({
+        const nextActivity = await tx.activity.create({
           data: {
             organizationId: actor.organizationId,
             opportunityId: opp.id,
@@ -1321,6 +1322,7 @@ export class CommercialService {
             version: 1,
           },
         });
+        nextActivityId = nextActivity.id;
       }
 
       const transition = await tx.opportunityTransition.create({
@@ -1334,7 +1336,13 @@ export class CommercialService {
         },
       });
 
-      await this.store.audit(tx, 'commercial.opportunity_qualified', actor, opportunityId, traceId);
+      const audit = await this.store.audit(
+        tx,
+        'commercial.opportunity_qualified',
+        actor,
+        opportunityId,
+        traceId,
+      );
 
       const event: OpportunityQualifiedEventV1 = {
         eventId: randomUUID(),
@@ -1369,6 +1377,40 @@ export class CommercialService {
           dedupeKey: `OPPORTUNITY_QUALIFIED:${transition.id}`,
         },
       });
+
+      if (nextActivityId) {
+        const activityEvent: ActivityCreatedEventV1 = {
+          eventId: randomUUID(),
+          eventType: 'ACTIVITY_CREATED',
+          schemaVersion: 1,
+          occurredAt: audit.createdAt.toISOString(),
+          organizationId: actor.organizationId,
+          aggregateId: nextActivityId,
+          producer: 'crm',
+          correlationId: traceId,
+          payload: {
+            activityId: nextActivityId,
+            auditEventId: audit.id,
+            customerId: opp.customerId,
+            opportunityId: opp.id,
+          },
+        };
+        await tx.integrationOutbox.create({
+          data: {
+            id: activityEvent.eventId,
+            organizationId: activityEvent.organizationId,
+            eventType: activityEvent.eventType,
+            schemaVersion: activityEvent.schemaVersion,
+            aggregateType: 'Activity',
+            aggregateId: activityEvent.aggregateId,
+            producer: activityEvent.producer,
+            correlationId: activityEvent.correlationId,
+            occurredAt: audit.createdAt,
+            payload: activityEvent.payload,
+            dedupeKey: `ACTIVITY_CREATED:${audit.id}:${nextActivityId}`,
+          },
+        });
+      }
 
       return updated;
     });
