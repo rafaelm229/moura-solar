@@ -20,11 +20,13 @@ export type {
   ActivityCanceledEventV1,
   ActivityCompletedEventV1,
   ActivityCreatedEventV1,
+  ActivityRescheduledEventV1,
 } from './activity-events.js';
 export {
   parseActivityCanceledEventV1,
   parseActivityCompletedEventV1,
   parseActivityCreatedEventV1,
+  parseActivityRescheduledEventV1,
 } from './activity-events.js';
 export type {
   EnergyBillImportAppliedEventV1,
