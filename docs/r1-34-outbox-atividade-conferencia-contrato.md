@@ -4,8 +4,9 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Implementado em branch
-`codex/r1-34-contract-review-activity-event`; aguardando CI e consolidação.
+**Estado:** Consolidado no branch `feat/proposal-visual-clarity` pelo PR #75,
+merge `431a8a4d7ba79b4bfdd9e117f84bceafa04b519e`. Não representa liberação em
+`main` nem ativação de consumidor.
 
 **Commit de implementação:** `2a6332667e4b5544cb67402b614f1fabb74b4d95`.
 
@@ -53,7 +54,10 @@ e auditoria em uma transação local.
   temporariamente as pastas não rastreadas `.vscode/` e
   `moura-solar-specs-roadmap/` da varredura de Prettier.
 - Prettier dos arquivos afetados, links locais e `git diff --check`: passaram.
-- CI remota ainda pendente; a consolidação dependerá de revisar seu resultado.
+- CI #131 do PR #75 passou em `pnpm check`, geração do cliente, diff do cliente,
+  migrations, integração, E2E e limpeza dos containers.
+- Consolidação: PR #75 em `feat/proposal-visual-clarity`, merge
+  `431a8a4d7ba79b4bfdd9e117f84bceafa04b519e`.
 
 ## Rollback
 
