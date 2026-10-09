@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { randomUUID } from 'node:crypto';
+import type { CatalogItemCreatedEventV1, CatalogItemUpdatedEventV1 } from '@moura-solar/contracts';
 import { IdentityStore, Tx } from '../identity/identity.store';
 import { fail } from '../identity/security';
 import type { ContextDto } from '../identity/identity.dto';
@@ -608,13 +610,44 @@ export class DesignService {
         },
       });
 
-      await this.store.audit(
+      const audit = await this.store.audit(
         tx,
         'CATALOG_ITEM_CREATED',
         { organizationId: context.organizationId, id: context.id },
         item.id,
         traceId,
       );
+
+      const event: CatalogItemCreatedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'CATALOG_ITEM_CREATED',
+        schemaVersion: 1,
+        occurredAt: audit.createdAt.toISOString(),
+        organizationId: context.organizationId,
+        aggregateId: item.id,
+        producer: 'catalog',
+        correlationId: traceId,
+        payload: {
+          catalogItemId: item.id,
+          auditEventId: audit.id,
+          version: item.version,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'CatalogItem',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: audit.createdAt,
+          payload: event.payload,
+          dedupeKey: `CATALOG_ITEM_CREATED:${audit.id}:${item.id}:${item.version}`,
+        },
+      });
 
       return {
         id: item.id,
@@ -676,13 +709,44 @@ export class DesignService {
         },
       });
 
-      await this.store.audit(
+      const audit = await this.store.audit(
         tx,
         'CATALOG_ITEM_UPDATED',
         { organizationId: context.organizationId, id: context.id },
         id,
         traceId,
       );
+
+      const event: CatalogItemUpdatedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'CATALOG_ITEM_UPDATED',
+        schemaVersion: 1,
+        occurredAt: audit.createdAt.toISOString(),
+        organizationId: context.organizationId,
+        aggregateId: updated.id,
+        producer: 'catalog',
+        correlationId: traceId,
+        payload: {
+          catalogItemId: updated.id,
+          auditEventId: audit.id,
+          version: updated.version,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'CatalogItem',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: audit.createdAt,
+          payload: event.payload,
+          dedupeKey: `CATALOG_ITEM_UPDATED:${audit.id}:${updated.id}:${updated.version}`,
+        },
+      });
 
       return {
         id: updated.id,

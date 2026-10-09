@@ -75,6 +75,11 @@ dados técnicos pertinentes. Mudança no cadastro não altera documento já apro
 Substituição técnica e efeito em preço/geração/prazo exigem fluxo de revisão e
 aprovação conforme SPEC-005/006/007; não substituir apenas por semelhança de nome.
 
+O [R1-35](../../docs/r1-35-outbox-eventos-catalogo.md) registra criação e
+atualização do CatalogItem na outbox local com ID, auditoria e versão apenas.
+Não envia valores, saldos, fornecedores, dados fiscais, atributos técnicos ou
+documentos; não transfere propriedade nem ativa consumidor.
+
 ## Requisitos e aceite
 
 | ID     | Critério                                                                                        |

@@ -60,6 +60,11 @@ export {
   parseCustomerRestoredEventV1,
   parseCustomerUpdatedEventV1,
 } from './customer-events.js';
+export type { CatalogItemCreatedEventV1, CatalogItemUpdatedEventV1 } from './catalog-events.js';
+export {
+  parseCatalogItemCreatedEventV1,
+  parseCatalogItemUpdatedEventV1,
+} from './catalog-events.js';
 export type {
   OpportunityCreatedEventV1,
   OpportunityLostEventV1,

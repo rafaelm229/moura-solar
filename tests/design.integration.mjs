@@ -57,7 +57,7 @@ class Client {
     } catch {
       parsedBody = text;
     }
-    return { status: response.status, body: parsedBody };
+    return { status: response.status, body: parsedBody, headers: response.headers };
   }
 }
 
@@ -390,6 +390,164 @@ test('exclusão lógica é idempotente e uma nova leitura preserva toda a cadeia
   assert.equal(may.history.length, active.version);
   assert.equal(may.history[0].version, active.version);
   assert.equal(may.history[0].status, 'DELETED');
+});
+
+test('eventos de catálogo são transacionais, correlacionados e não carregam valores comerciais', async () => {
+  const sku = `R1-35-${randomUUID().slice(0, 8).toUpperCase()}`;
+  const createBody = {
+    sku,
+    kind: 'MATERIAL',
+    category: 'MODULE',
+    name: 'Módulo fotovoltaico de integração',
+    manufacturer: 'Fixture',
+    model: 'R1-35',
+    unitOfMeasure: 'UN',
+    powerRatingWp: 600,
+    referenceCost: 650,
+    referencePrice: 850,
+  };
+
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_catalog_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type IN ('CATALOG_ITEM_CREATED', 'CATALOG_ITEM_UPDATED') THEN
+        RAISE EXCEPTION 'forced catalog outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_catalog_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_catalog_outbox_for_test()
+  `);
+  const organizationId = (await db.organization.findFirst()).id;
+  const catalogCountBeforeFailedCreate = await db.catalogItem.count({ where: { organizationId } });
+  const createAuditCountBeforeFailure = await db.auditEvent.count({
+    where: { action: 'CATALOG_ITEM_CREATED' },
+  });
+  const outboxCountBeforeFailure = await db.integrationOutbox.count({
+    where: { eventType: 'CATALOG_ITEM_CREATED' },
+  });
+  const failedCreate = await admin.call('catalog', 'POST', createBody);
+  assert.equal(failedCreate.status, 500);
+  assert.equal(
+    await db.catalogItem.count({ where: { organizationId } }),
+    catalogCountBeforeFailedCreate,
+  );
+  assert.equal(
+    await db.auditEvent.count({ where: { action: 'CATALOG_ITEM_CREATED' } }),
+    createAuditCountBeforeFailure,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'CATALOG_ITEM_CREATED' } }),
+    outboxCountBeforeFailure,
+  );
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_catalog_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_catalog_outbox_for_test()`);
+
+  const created = await admin.call('catalog', 'POST', createBody);
+  assert.equal(created.status, 200);
+  const item = await db.catalogItem.findUnique({ where: { id: created.body.id } });
+  const createAudit = await db.auditEvent.findFirst({
+    where: { action: 'CATALOG_ITEM_CREATED', entityId: item.id },
+    orderBy: { createdAt: 'desc' },
+  });
+  const createEvent = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `CATALOG_ITEM_CREATED:${createAudit.id}:${item.id}:${item.version}` },
+  });
+  assert.ok(createEvent);
+  assert.equal(createEvent.aggregateType, 'CatalogItem');
+  assert.equal(createEvent.aggregateId, item.id);
+  assert.equal(createEvent.payload.version, item.version);
+  assert.equal(createEvent.correlationId, created.headers.get('x-request-id'));
+  assert.deepEqual(createEvent.payload, {
+    catalogItemId: item.id,
+    auditEventId: createAudit.id,
+    version: item.version,
+  });
+
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_catalog_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'CATALOG_ITEM_UPDATED' THEN
+        RAISE EXCEPTION 'forced catalog update outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_catalog_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_catalog_outbox_for_test()
+  `);
+  const updateAuditCountBeforeFailure = await db.auditEvent.count({
+    where: { action: 'CATALOG_ITEM_UPDATED', entityId: item.id },
+  });
+  const updateOutboxCountBeforeFailure = await db.integrationOutbox.count({
+    where: { eventType: 'CATALOG_ITEM_UPDATED' },
+  });
+  const failedUpdate = await admin.call(`catalog/${item.id}`, 'PUT', {
+    referenceCost: 875,
+    expectedVersion: item.version,
+  });
+  assert.equal(failedUpdate.status, 500);
+  const afterFailure = await db.catalogItem.findUnique({ where: { id: item.id } });
+  assert.equal(afterFailure.version, item.version);
+  assert.equal(Number(afterFailure.referenceCost), Number(item.referenceCost));
+  assert.equal(
+    await db.auditEvent.count({ where: { action: 'CATALOG_ITEM_UPDATED', entityId: item.id } }),
+    updateAuditCountBeforeFailure,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'CATALOG_ITEM_UPDATED' } }),
+    updateOutboxCountBeforeFailure,
+  );
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_catalog_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_catalog_outbox_for_test()`);
+
+  const updated = await admin.call(`catalog/${item.id}`, 'PUT', {
+    referenceCost: 875,
+    expectedVersion: item.version,
+  });
+  assert.equal(updated.status, 200);
+  const updateAudit = await db.auditEvent.findFirst({
+    where: { action: 'CATALOG_ITEM_UPDATED', entityId: item.id },
+    orderBy: { createdAt: 'desc' },
+  });
+  const updateEvent = await db.integrationOutbox.findFirst({
+    where: {
+      dedupeKey: `CATALOG_ITEM_UPDATED:${updateAudit.id}:${item.id}:${updated.body.version}`,
+    },
+  });
+  assert.ok(updateEvent);
+  assert.equal(updateEvent.payload.version, updated.body.version);
+  assert.equal(updateEvent.correlationId, updated.headers.get('x-request-id'));
+  assert.deepEqual(updateEvent.payload, {
+    catalogItemId: item.id,
+    auditEventId: updateAudit.id,
+    version: updated.body.version,
+  });
+
+  const inverter = await admin.call('catalog', 'POST', {
+    sku: `R1-35-INV-${randomUUID().slice(0, 8).toUpperCase()}`,
+    kind: 'MATERIAL',
+    category: 'INVERTER',
+    name: 'Inversor fotovoltaico de integração',
+    manufacturer: 'Fixture',
+    model: 'R1-35-INV',
+    unitOfMeasure: 'UN',
+    powerRatingKw: 6,
+    referenceCost: 4200,
+    referencePrice: 5600,
+  });
+  assert.equal(inverter.status, 200);
 });
 
 test('sugestão de dimensionamento: calcula kWp, módulos e inversores compatíveis', async () => {
