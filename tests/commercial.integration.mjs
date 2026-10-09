@@ -575,6 +575,115 @@ test('optimistic concurrency prevents silent overwrite on customer updates', asy
   assert.equal(stale.body.code, 'CONCURRENT_MODIFICATION');
 });
 
+test('customer updates emit a minimal correlated event atomically with their audit', async () => {
+  const originalName = `Cliente atualização ${randomUUID()}`;
+  const created = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: originalName,
+    taxId: randomUUID().replace(/\D/g, ''),
+  });
+  assert.equal(created.status, 201);
+  const customerId = created.body.id;
+  const auditCount = await db.auditEvent.count({
+    where: { action: 'commercial.customer_updated', entityId: customerId },
+  });
+  const eventCount = await db.integrationOutbox.count({
+    where: { eventType: 'CUSTOMER_UPDATED', aggregateId: customerId },
+  });
+
+  const unauthenticated = await new Client().call(`customers/${customerId}`, 'PATCH', {
+    expectedVersion: 1,
+    tradeName: 'Sem autenticação',
+  });
+  assert.equal(unauthenticated.status, 401);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'CUSTOMER_UPDATED', aggregateId: customerId },
+    }),
+    eventCount,
+  );
+
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_customer_updated_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'CUSTOMER_UPDATED' THEN
+        RAISE EXCEPTION 'forced customer update outbox failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_customer_updated_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_customer_updated_outbox_for_test()
+  `);
+  const failed = await seller.call(`customers/${customerId}`, 'PATCH', {
+    expectedVersion: 1,
+    legalName: 'Atualização que deve reverter',
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_customer_updated_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_customer_updated_outbox_for_test()`);
+  assert.equal(failed.status, 500);
+  const afterFailure = await db.customer.findUnique({ where: { id: customerId } });
+  assert.equal(afterFailure.version, 1);
+  assert.equal(afterFailure.legalName, originalName);
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'commercial.customer_updated', entityId: customerId },
+    }),
+    auditCount,
+  );
+
+  const legalName = `Cliente atualizado ${randomUUID()}`;
+  const taxId = randomUUID().replace(/\D/g, '');
+  const requestId = `r1-customer-updated-${randomUUID()}`;
+  const updated = await seller.call(
+    `customers/${customerId}`,
+    'PATCH',
+    { expectedVersion: 1, legalName, taxId, notes: 'Observação privada' },
+    { 'x-request-id': requestId },
+  );
+  assert.equal(updated.status, 200);
+  assert.equal(updated.body.version, 2);
+  const audit = await db.auditEvent.findFirst({
+    where: {
+      action: 'commercial.customer_updated',
+      entityId: customerId,
+      traceId: requestId,
+    },
+  });
+  assert.ok(audit);
+  const event = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `CUSTOMER_UPDATED:${audit.id}` },
+  });
+  assert.ok(event);
+  assert.equal(event.eventType, 'CUSTOMER_UPDATED');
+  assert.equal(event.aggregateType, 'Customer');
+  assert.equal(event.aggregateId, customerId);
+  assert.equal(event.correlationId, requestId);
+  assert.equal(event.publishedAt, null);
+  assert.deepEqual(event.payload, { customerId, auditEventId: audit.id });
+  const serializedPayload = JSON.stringify(event.payload);
+  assert.equal(serializedPayload.includes(legalName), false);
+  assert.equal(serializedPayload.includes(taxId), false);
+  assert.equal(serializedPayload.includes('Observação privada'), false);
+
+  const stale = await seller.call(`customers/${customerId}`, 'PATCH', {
+    expectedVersion: 1,
+    tradeName: 'Atualização obsoleta',
+  });
+  assert.equal(stale.status, 409);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'CUSTOMER_UPDATED', aggregateId: customerId },
+    }),
+    eventCount + 1,
+  );
+});
+
 test('utility unit rejects duplicate code for same distributor', async () => {
   const cust = await seller.call('customers', 'POST', {
     kind: 'PERSON',
