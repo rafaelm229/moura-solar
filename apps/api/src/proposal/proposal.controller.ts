@@ -106,7 +106,13 @@ export class ProposalController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: RecordProposalDeliveryDto,
   ) {
-    return this.service.recordDelivery(req.actor.organizationId, id, req.actor.userId, dto);
+    return this.service.recordDelivery(
+      req.actor.organizationId,
+      id,
+      req.actor.userId,
+      dto,
+      req.requestId ?? 'trace',
+    );
   }
 
   @Post('proposal-versions/:id/accept')

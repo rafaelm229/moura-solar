@@ -71,6 +71,11 @@ O [R1-13](../../docs/r1-13-outbox-criacao-proposta.md) registra
 significa criação do registro; geração e prontidão do PDF são posteriores e não
 são prometidas por esse contrato.
 
+O [R1-14](../../docs/r1-14-outbox-entrega-proposta.md) registra
+`PROPOSAL_DELIVERED` v1 na mesma transação que persiste a entrega manual, os
+efeitos de estado e a atividade de acompanhamento. O evento não envia mensagem
+nem confirma recebimento.
+
 Eventos candidatos: lead.created, project.created, consumption.validated,
 proposal.generated, contract.signed, inventory.reserved,
 finance.receivable_created.
@@ -133,7 +138,8 @@ mostra freshness/atraso; usuários só veem organização e escopo autorizados.
 - [x] Emitir `CUSTOMER_CREATED` v1 atomicamente com o cadastro, sem PII no evento ([R1-10](../../docs/r1-10-outbox-cadastro-cliente.md)); consolidado no PR #35, sem dispatcher/consumidor.
 - [x] Emitir `OPPORTUNITY_CREATED` v1 atomicamente com oportunidade/atividade inicial, sem texto comercial no evento ([R1-11](../../docs/r1-11-outbox-criacao-oportunidade.md)); consolidado no PR #36, sem dispatcher/consumidor.
 - [x] Emitir `UTILITY_UNIT_CREATED` v1 atomicamente com criação/vínculo de UC, sem códigos de conta ou dados legíveis no evento ([R1-12](../../docs/r1-12-outbox-criacao-uc.md)); consolidado no PR #37, sem dispatcher/consumidor.
-- [x] Emitir `PROPOSAL_CREATED` v1 atomicamente com proposta e versão inicial, sem snapshots ou valores comerciais no evento ([R1-13](../../docs/r1-13-outbox-criacao-proposta.md)); validado localmente, CI pendente, sem dispatcher/consumidor.
+- [x] Emitir `PROPOSAL_CREATED` v1 atomicamente com proposta e versão inicial, sem snapshots ou valores comerciais no evento ([R1-13](../../docs/r1-13-outbox-criacao-proposta.md)); consolidado no PR #39, sem dispatcher/consumidor.
+- [x] Emitir `PROPOSAL_DELIVERED` v1 atomicamente com o registro manual de entrega, sem canal/destinatário ([R1-14](../../docs/r1-14-outbox-entrega-proposta.md)); validado localmente, CI pendente, sem dispatcher/consumidor.
 - [ ] Definir e publicar contratos versionados dos demais fatos necessários em packages/contracts; R1-08 cobre somente `PROPOSAL_ACCEPTED`.
 - [ ] Definir transporte, outbox/inbox e retenção somente quando houver produtor e consumidor justificados para um fluxo vigente. A PoC OCR foi encerrada pela [ADR-008](../../docs/adr/ADR-008-importacao-manual-sem-ocr.md); a proposta de transporte [ADR-007](../../docs/adr/ADR-007-transporte-integracao-proposta.md) é histórica e não autoriza ativação.
 - [ ] Simular crash, duplicidade, atraso, replay e falha de consumidor.
