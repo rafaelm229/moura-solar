@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import type {
+  ActivityCreatedEventV1,
   CustomerArchivedEventV1,
   CustomerCreatedEventV1,
   CustomerRestoredEventV1,
@@ -1574,7 +1575,44 @@ export class CommercialService {
         },
       });
 
-      await this.store.audit(tx, 'commercial.activity_created', actor, activity.id, traceId);
+      const audit = await this.store.audit(
+        tx,
+        'commercial.activity_created',
+        actor,
+        activity.id,
+        traceId,
+      );
+      const event: ActivityCreatedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'ACTIVITY_CREATED',
+        schemaVersion: 1,
+        occurredAt: audit.createdAt.toISOString(),
+        organizationId: actor.organizationId,
+        aggregateId: activity.id,
+        producer: 'crm',
+        correlationId: traceId,
+        payload: {
+          activityId: activity.id,
+          auditEventId: audit.id,
+          ...(activity.customerId ? { customerId: activity.customerId } : {}),
+          ...(activity.opportunityId ? { opportunityId: activity.opportunityId } : {}),
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Activity',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: audit.createdAt,
+          payload: event.payload,
+          dedupeKey: `ACTIVITY_CREATED:${audit.id}`,
+        },
+      });
       return activity;
     });
   }

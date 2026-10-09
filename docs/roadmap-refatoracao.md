@@ -123,6 +123,9 @@ O [R1-23](r1-23-outbox-atualizacao-oportunidade.md) foi consolidado no PR #53
 (`b0b2940`), com CI #109 completa verde, para registrar atualização versionada
 de oportunidade com auditoria, sem publicar título, necessidade, consumo,
 prioridade ou outros valores comerciais.
+O [R1-24](r1-24-outbox-criacao-atividade.md) foi implementado nesta branch:
+contrato e gravação atômica de `ACTIVITY_CREATED`, com payload mínimo e sem
+publicação ou consumidor; CI remota e consolidação permanecem pendentes.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 

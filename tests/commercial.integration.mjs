@@ -1545,3 +1545,112 @@ test('customer archive and restore emit minimal events atomically with their aud
   assert.equal(restoreEvent.publishedAt, null);
   assert.deepEqual(restoreEvent.payload, { customerId, auditEventId: restoreAudit.id });
 });
+
+test('activity creation emits a minimal correlated event atomically with its audit', async () => {
+  const customer = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: `Cliente atividade R1 ${randomUUID()}`,
+  });
+  assert.equal(customer.status, 201);
+
+  const failedSubject = `Atividade rollback ${randomUUID()}`;
+  const eventCountBefore = await db.integrationOutbox.count({
+    where: { eventType: 'ACTIVITY_CREATED' },
+  });
+  const auditCountBefore = await db.auditEvent.count({
+    where: { action: 'commercial.activity_created' },
+  });
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_activity_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'ACTIVITY_CREATED' THEN
+        RAISE EXCEPTION 'forced activity outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_activity_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_activity_outbox_for_test()
+  `);
+  const failed = await seller.call('activities', 'POST', {
+    customerId: customer.body.id,
+    type: 'CALL',
+    subject: failedSubject,
+    description: 'Descrição de teste que deve ser revertida',
+    dueAt: new Date(Date.now() + 86400000).toISOString(),
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_activity_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_activity_outbox_for_test()`);
+
+  assert.equal(failed.status, 500);
+  assert.equal(await db.activity.count({ where: { subject: failedSubject } }), 0);
+  assert.equal(
+    await db.auditEvent.count({ where: { action: 'commercial.activity_created' } }),
+    auditCountBefore,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'ACTIVITY_CREATED' } }),
+    eventCountBefore,
+  );
+
+  const unauthenticated = await new Client().call('activities', 'POST', {
+    customerId: customer.body.id,
+    type: 'CALL',
+    subject: 'Sem autenticação',
+    dueAt: new Date(Date.now() + 86400000).toISOString(),
+  });
+  assert.equal(unauthenticated.status, 401);
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'ACTIVITY_CREATED' } }),
+    eventCountBefore,
+  );
+
+  const requestId = `r1-activity-${randomUUID()}`;
+  const subject = `Retorno ao cliente ${randomUUID()}`;
+  const description = `Descrição privada ${randomUUID()}`;
+  const created = await seller.call(
+    'activities',
+    'POST',
+    {
+      customerId: customer.body.id,
+      type: 'CALL',
+      subject,
+      description,
+      dueAt: new Date(Date.now() + 86400000).toISOString(),
+    },
+    { 'x-request-id': requestId },
+  );
+  assert.equal(created.status, 201);
+
+  const audit = await db.auditEvent.findFirst({
+    where: {
+      action: 'commercial.activity_created',
+      entityId: created.body.id,
+      traceId: requestId,
+    },
+  });
+  assert.ok(audit);
+  const event = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `ACTIVITY_CREATED:${audit.id}` },
+  });
+  assert.ok(event, 'Atividade e evento outbox devem persistir juntos');
+  assert.equal(event.eventType, 'ACTIVITY_CREATED');
+  assert.equal(event.schemaVersion, 1);
+  assert.equal(event.aggregateType, 'Activity');
+  assert.equal(event.aggregateId, created.body.id);
+  assert.equal(event.producer, 'crm');
+  assert.equal(event.correlationId, requestId);
+  assert.equal(event.publishedAt, null);
+  assert.deepEqual(event.payload, {
+    activityId: created.body.id,
+    auditEventId: audit.id,
+    customerId: customer.body.id,
+  });
+  assert.equal(JSON.stringify(event.payload).includes(subject), false);
+  assert.equal(JSON.stringify(event.payload).includes(description), false);
+});
