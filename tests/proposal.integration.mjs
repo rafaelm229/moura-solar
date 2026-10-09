@@ -578,3 +578,95 @@ test('criar nova versão persiste linhagem e evento outbox na mesma transação'
     opportunityId: testOpportunityId,
   });
 });
+
+test('rejeitar proposta persiste evento mínimo correlacionado atomicamente com status e auditoria', async () => {
+  const proposal = await db.proposal.findFirst({ where: { opportunityId: testOpportunityId } });
+  const version = await db.proposalVersion.findFirst({
+    where: { proposalId: proposal.id, versionNumber: 2 },
+  });
+  assert.ok(version);
+  const auditCountBefore = await db.auditEvent.count({
+    where: { action: 'PROPOSAL_REJECTED', entityId: proposal.id },
+  });
+  const observationsBefore = version.observations;
+  const anonymous = new Client();
+  const unauthorized = await anonymous.call(`proposal-versions/${version.id}/reject`, 'POST', {
+    reason: 'Unauthenticated rejection must be denied',
+  });
+  assert.equal(unauthorized.status, 401);
+  assert.equal(await db.integrationOutbox.count({ where: { eventType: 'PROPOSAL_REJECTED' } }), 0);
+
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_proposal_rejected_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'PROPOSAL_REJECTED' THEN
+        RAISE EXCEPTION 'forced proposal rejection outbox failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_proposal_rejected_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_proposal_rejected_outbox_for_test()
+  `);
+  const failedRejection = await admin.call(`proposal-versions/${version.id}/reject`, 'POST', {
+    reason: 'Rollback test reason must not persist',
+    notes: 'Rollback test notes must not persist',
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_proposal_rejected_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(
+    `DROP FUNCTION "${schema}".reject_proposal_rejected_outbox_for_test()`,
+  );
+  assert.equal(failedRejection.status, 500);
+  const afterFailure = await db.proposalVersion.findUnique({ where: { id: version.id } });
+  assert.equal(afterFailure.status, 'READY');
+  assert.equal(afterFailure.observations, observationsBefore);
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'PROPOSAL_REJECTED', entityId: proposal.id },
+    }),
+    auditCountBefore,
+  );
+
+  const requestId = 'r1-proposal-rejected-integration';
+  const rejection = await admin.call(
+    `proposal-versions/${version.id}/reject`,
+    'POST',
+    {
+      reason: 'Cliente escolheu outra condição comercial',
+      notes: 'Conferência privada do time comercial',
+    },
+    { 'x-request-id': requestId },
+  );
+  assert.equal(rejection.status, 200);
+  assert.equal(rejection.body.status, 'REJECTED');
+  const rejectionAudit = await db.auditEvent.findFirst({
+    where: {
+      action: 'PROPOSAL_REJECTED',
+      entityId: proposal.id,
+      traceId: requestId,
+    },
+  });
+  assert.ok(rejectionAudit);
+  const event = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `PROPOSAL_REJECTED:${rejectionAudit.id}` },
+  });
+  assert.ok(event, 'Rejeição, auditoria e evento outbox devem persistir juntos');
+  assert.equal(event.eventType, 'PROPOSAL_REJECTED');
+  assert.equal(event.schemaVersion, 1);
+  assert.equal(event.aggregateType, 'Proposal');
+  assert.equal(event.aggregateId, proposal.id);
+  assert.equal(event.producer, 'proposal');
+  assert.equal(event.correlationId, requestId);
+  assert.equal(event.publishedAt, null);
+  assert.deepEqual(event.payload, {
+    rejectionId: rejectionAudit.id,
+    proposalId: proposal.id,
+    proposalVersionId: version.id,
+    opportunityId: testOpportunityId,
+  });
+});

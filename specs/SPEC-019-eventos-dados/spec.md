@@ -160,6 +160,7 @@ mostra freshness/atraso; usuários só veem organização e escopo autorizados.
 - [x] Emitir `OPPORTUNITY_QUALIFIED` v1 atomicamente com a transição persistida, sem texto comercial ou de atividade ([R1-16](../../docs/r1-16-outbox-qualificacao-oportunidade.md)); consolidado no PR #42, CI completa verde, sem dispatcher/consumidor.
 - [x] Emitir `OPPORTUNITY_LOST` v1 atomicamente com transição persistida, sem motivo/observações ([R1-17](../../docs/r1-17-outbox-perda-oportunidade.md)); consolidado no PR #43, CI completa verde, sem dispatcher/consumidor.
 - [x] Emitir `OPPORTUNITY_REOPENED` v1 atomicamente com transição persistida, sem justificativa ([R1-18](../../docs/r1-18-outbox-reabertura-oportunidade.md)); consolidado no PR #44, CI completa verde, sem dispatcher/consumidor.
+- [ ] Emitir `PROPOSAL_REJECTED` v1 atomicamente com status e auditoria, sem motivo/notas ([R1-19](../../docs/r1-19-outbox-rejeicao-proposta.md)); em implementação, sem dispatcher/consumidor.
 - [ ] Definir e publicar contratos versionados dos demais fatos necessários em packages/contracts; R1-08 cobre somente `PROPOSAL_ACCEPTED`.
 - [ ] Definir transporte, outbox/inbox e retenção somente quando houver produtor e consumidor justificados para um fluxo vigente. A PoC OCR foi encerrada pela [ADR-008](../../docs/adr/ADR-008-importacao-manual-sem-ocr.md); a proposta de transporte [ADR-007](../../docs/adr/ADR-007-transporte-integracao-proposta.md) é histórica e não autoriza ativação.
 - [ ] Simular crash, duplicidade, atraso, replay e falha de consumidor.

@@ -105,7 +105,10 @@ transição durável; o evento omite motivo e observações da perda. O
 [R1-18](r1-18-outbox-reabertura-oportunidade.md) foi consolidado no PR #44
 (`97788b4`), com CI completa verde, para registrar `OPPORTUNITY_REOPENED` junto
 da transição de reabertura já permitida; o evento omite a justificativa e segue
-sem dispatcher ou consumidor.
+sem dispatcher ou consumidor. O [R1-19](r1-19-outbox-rejeicao-proposta.md) está
+em implementação para registrar `PROPOSAL_REJECTED` na transação existente,
+usando o ID da auditoria para identidade/deduplicação e sem motivo ou notas no
+payload.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 

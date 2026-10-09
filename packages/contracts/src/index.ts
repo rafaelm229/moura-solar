@@ -26,12 +26,14 @@ export type {
   ProposalAcceptedEventV1,
   ProposalCreatedEventV1,
   ProposalDeliveredEventV1,
+  ProposalRejectedEventV1,
   ProposalVersionCreatedEventV1,
 } from './proposal-events.js';
 export {
   parseProposalAcceptedEventV1,
   parseProposalCreatedEventV1,
   parseProposalDeliveredEventV1,
+  parseProposalRejectedEventV1,
   parseProposalVersionCreatedEventV1,
 } from './proposal-events.js';
 export type { CustomerCreatedEventV1 } from './customer-events.js';

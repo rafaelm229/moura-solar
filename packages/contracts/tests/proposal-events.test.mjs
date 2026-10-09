@@ -5,6 +5,7 @@ import {
   parseProposalAcceptedEventV1,
   parseProposalCreatedEventV1,
   parseProposalDeliveredEventV1,
+  parseProposalRejectedEventV1,
   parseProposalVersionCreatedEventV1,
 } from '../dist/index.js';
 
@@ -244,5 +245,63 @@ describe('proposal accepted event v1 contract', () => {
       /acceptanceId is required/,
     );
     assert.throws(() => parseProposalAcceptedEventV1(null), /must be an object/);
+  });
+});
+
+const validRejectedEvent = () => ({
+  eventId: 'event-rejected-1',
+  eventType: 'PROPOSAL_REJECTED',
+  schemaVersion: 1,
+  occurredAt: '2026-10-09T12:00:00.000Z',
+  organizationId: 'organization-1',
+  aggregateId: 'proposal-1',
+  producer: 'proposal',
+  correlationId: 'request-rejection-1',
+  payload: {
+    rejectionId: 'rejection-1',
+    proposalId: 'proposal-1',
+    proposalVersionId: 'proposal-version-1',
+    opportunityId: 'opportunity-1',
+  },
+});
+
+describe('proposal rejected event v1 contract', () => {
+  it('accepts a minimal rejection fact without reason or notes', () => {
+    const event = validRejectedEvent();
+    assert.equal(parseProposalRejectedEventV1(event), event);
+  });
+
+  it('rejects unsupported type, version, aggregate mismatch and extra text', () => {
+    assert.throws(
+      () => parseProposalRejectedEventV1({ ...validRejectedEvent(), eventType: 'PROPOSAL_SENT' }),
+      /eventType is unsupported/,
+    );
+    assert.throws(
+      () => parseProposalRejectedEventV1({ ...validRejectedEvent(), schemaVersion: 2 }),
+      /schemaVersion is unsupported/,
+    );
+    assert.throws(
+      () => parseProposalRejectedEventV1({ ...validRejectedEvent(), aggregateId: 'other' }),
+      /must match aggregateId/,
+    );
+    const withReason = validRejectedEvent();
+    withReason.payload.reason = 'Sensitive customer explanation';
+    assert.throws(() => parseProposalRejectedEventV1(withReason), /unsupported fields/);
+  });
+
+  it('rejects missing and empty identifiers', () => {
+    for (const field of ['rejectionId', 'proposalId', 'proposalVersionId', 'opportunityId']) {
+      const event = validRejectedEvent();
+      delete event.payload[field];
+      assert.throws(() => parseProposalRejectedEventV1(event), new RegExp(`${field} is required`));
+    }
+    assert.throws(
+      () =>
+        parseProposalRejectedEventV1({
+          ...validRejectedEvent(),
+          payload: { ...validRejectedEvent().payload, proposalVersionId: ' ' },
+        }),
+      /proposalVersionId is required/,
+    );
   });
 });

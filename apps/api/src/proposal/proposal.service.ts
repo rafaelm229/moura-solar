@@ -22,6 +22,7 @@ import type {
   ProposalAcceptedEventV1,
   ProposalCreatedEventV1,
   ProposalDeliveredEventV1,
+  ProposalRejectedEventV1,
   ProposalVersionCreatedEventV1,
 } from '@moura-solar/contracts';
 
@@ -887,9 +888,11 @@ export class ProposalService {
     versionId: string,
     userId: string,
     dto: RecordProposalRejectionDto,
+    correlationId: string,
   ) {
     const version = await this.prisma.proposalVersion.findFirst({
       where: { id: versionId, organizationId },
+      include: { proposal: { select: { opportunityId: true } } },
     });
 
     if (!version) {
@@ -907,15 +910,49 @@ export class ProposalService {
         },
       });
 
-      await this.audit.record(
+      const rejection = await this.audit.record(
         {
           organizationId,
           actorId: userId,
           action: 'PROPOSAL_REJECTED',
           entityId: version.proposalId,
+          traceId: correlationId,
         },
         tx,
       );
+
+      const event: ProposalRejectedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'PROPOSAL_REJECTED',
+        schemaVersion: 1,
+        occurredAt: rejection.createdAt.toISOString(),
+        organizationId,
+        aggregateId: version.proposalId,
+        producer: 'proposal',
+        correlationId,
+        payload: {
+          rejectionId: rejection.id,
+          proposalId: version.proposalId,
+          proposalVersionId: version.id,
+          opportunityId: version.proposal.opportunityId,
+        },
+      };
+
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Proposal',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: rejection.createdAt,
+          payload: event.payload,
+          dedupeKey: `PROPOSAL_REJECTED:${rejection.id}`,
+        },
+      });
 
       return updated;
     });
