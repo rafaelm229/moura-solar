@@ -137,9 +137,10 @@ publicação/consumidor.
 O [R1-27](r1-27-outbox-reagendamento-atividade.md) foi consolidado no PR #61
 (`35d49dc`), com CI #117 completa verde, para registrar `ACTIVITY_RESCHEDULED`
 v1 com IDs mínimos, sem data/notas e sem publicação/consumidor.
-O [R1-28](r1-28-outbox-primeira-atividade-oportunidade.md) está em implementação
-para emitir `ACTIVITY_CREATED` v1 também para a primeira atividade criada junto
-com a oportunidade; follow-ups de outros comandos continuam fora deste escopo.
+O [R1-28](r1-28-outbox-primeira-atividade-oportunidade.md) foi consolidado no
+PR #63 (`ac139dc`), com CI #119 completa verde, para emitir `ACTIVITY_CREATED`
+v1 também para a primeira atividade criada junto com a oportunidade;
+follow-ups de outros comandos continuam fora deste escopo.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 

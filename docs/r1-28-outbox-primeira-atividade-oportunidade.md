@@ -4,8 +4,9 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Em implementação na branch
-`codex/r1-28-opportunity-first-activity-event`.
+**Estado:** Consolidado.
+
+**Implementação:** PR #63, merge squash `ac139dc21cada0e9d39bdcd2a38fda42a430fde8`.
 
 **SPECs:** [SPEC-001](../specs/SPEC-001-jornada-cliente/spec.md),
 [SPEC-004](../specs/SPEC-004-clientes-oportunidades/spec.md),
@@ -40,7 +41,12 @@ transacional de primeira atividade já existem.
 - `node --test --test-concurrency=1 tests/commercial.integration.mjs`: 19/19
   passaram no PostgreSQL/MinIO/ClamAV local, incluindo os eventos pai/filho e
   rollback integral.
-- CI de branch ainda pendente; por isso o estado continua Em implementação.
+- `pnpm check`: passou; API 1.257/1.257 testes e builds sem falhas.
+- CI #119 passou integralmente: `pnpm check`, geração da API, migrations,
+  integração e E2E.
+- PR #63 foi consolidado em `ac139dc21cada0e9d39bdcd2a38fda42a430fde8`.
+- A atualização documental pós-merge será registrada em PR separado, sem
+  alteração da implementação consolidada.
 
 ## Critérios de aceite
 
