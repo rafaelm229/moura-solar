@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import type { CustomerCreatedEventV1 } from '@moura-solar/contracts';
+import type { CustomerCreatedEventV1, OpportunityCreatedEventV1 } from '@moura-solar/contracts';
 import { Prisma } from '@prisma/client';
 import { IdentityStore } from '../identity/identity.store';
 import { canAccess } from '../identity/identity.policy';
@@ -904,6 +904,38 @@ export class CommercialService {
       });
 
       await this.store.audit(tx, 'commercial.opportunity_created', actor, opp.id, traceId);
+
+      const event: OpportunityCreatedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'OPPORTUNITY_CREATED',
+        schemaVersion: 1,
+        occurredAt: opp.createdAt.toISOString(),
+        organizationId: actor.organizationId,
+        aggregateId: opp.id,
+        producer: 'crm',
+        correlationId: traceId,
+        payload: {
+          opportunityId: opp.id,
+          customerId: opp.customerId,
+          ...(opp.utilityUnitId ? { utilityUnitId: opp.utilityUnitId } : {}),
+        },
+      };
+
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Opportunity',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: opp.createdAt,
+          payload: event.payload,
+          dedupeKey: `OPPORTUNITY_CREATED:${opp.id}`,
+        },
+      });
       return opp;
     });
   }

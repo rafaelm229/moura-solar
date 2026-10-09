@@ -4,7 +4,8 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Validado localmente na branch `codex/r1-10-customer-created`.
+**Estado:** Consolidado em `feat/proposal-visual-clarity` pelo PR #35
+(`4607133`).
 
 **SPECs:** [SPEC-004](../specs/SPEC-004-clientes-oportunidades/spec.md),
 [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
@@ -51,5 +52,4 @@ CRM (9/9), `pnpm check` (format/lint/types/tests/build), links locais e
 `git diff --check` passaram. A integração usou PostgreSQL Compose e limpou apenas
 o schema efêmero; o container foi parado sem remover o volume. CI remota ainda
 passou em todas as etapas no commit `cc3b68a` do PR #35, incluindo migrations,
-integração e E2E. Esta nota registra a evidência daquele commit; alteração
-posterior na branch requer CI própria antes do merge.
+integração e E2E. O PR foi squash-merged em `4607133`; não houve deploy.

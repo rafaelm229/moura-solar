@@ -56,7 +56,11 @@ worker, transporte ou consumidor.
 
 O [R1-10](../../docs/r1-10-outbox-cadastro-cliente.md) valida e persiste
 `CUSTOMER_CREATED` v1 na mesma transação local do cadastro, com payload mínimo
-sem dados pessoais. A linha permanece não publicada.
+sem dados pessoais. O PR #35 foi consolidado; a linha permanece não publicada.
+
+O [R1-11](../../docs/r1-11-outbox-criacao-oportunidade.md) valida e persiste
+`OPPORTUNITY_CREATED` v1 na transação local que cria oportunidade e atividade
+inicial. O payload contém apenas identificadores e permanece não publicado.
 
 Eventos candidatos: customer.created, lead.created, opportunity.created,
 project.created, consumption.validated, proposal.generated, proposal.accepted,
@@ -117,7 +121,8 @@ mostra freshness/atraso; usuários só veem organização e escopo autorizados.
 
 - [x] Inventariar audit events, ImportOutbox e projeções existentes ([R1-05](../../docs/r1-inventario-integracao-2026-10-08.md)); inventário limitado aos caminhos localizados, sem escolha de transporte/consumidor.
 - [x] Persistir `PROPOSAL_ACCEPTED` v1 na outbox local, atomicamente com aceite ([R1-09](../../docs/r1-09-outbox-aceite-proposta.md)); sem dispatcher/consumidor.
-- [x] Emitir `CUSTOMER_CREATED` v1 atomicamente com o cadastro, sem PII no evento ([R1-10](../../docs/r1-10-outbox-cadastro-cliente.md)); validado localmente, sem dispatcher/consumidor.
+- [x] Emitir `CUSTOMER_CREATED` v1 atomicamente com o cadastro, sem PII no evento ([R1-10](../../docs/r1-10-outbox-cadastro-cliente.md)); consolidado no PR #35, sem dispatcher/consumidor.
+- [x] Emitir `OPPORTUNITY_CREATED` v1 atomicamente com oportunidade/atividade inicial, sem texto comercial no evento ([R1-11](../../docs/r1-11-outbox-criacao-oportunidade.md)); validado localmente, sem dispatcher/consumidor.
 - [ ] Definir e publicar contratos versionados dos demais fatos necessários em packages/contracts; R1-08 cobre somente `PROPOSAL_ACCEPTED`.
 - [ ] Definir transporte, outbox/inbox e retenção somente quando houver produtor e consumidor justificados para um fluxo vigente. A PoC OCR foi encerrada pela [ADR-008](../../docs/adr/ADR-008-importacao-manual-sem-ocr.md); a proposta de transporte [ADR-007](../../docs/adr/ADR-007-transporte-integracao-proposta.md) é histórica e não autoriza ativação.
 - [ ] Simular crash, duplicidade, atraso, replay e falha de consumidor.
