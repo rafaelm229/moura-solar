@@ -1056,3 +1056,147 @@ test('archive customer is rejected when active opportunities exist', async () =>
   assert.equal(adminArchive.status, 422);
   assert.equal(adminArchive.body.code, 'CUSTOMER_HAS_ACTIVE_OPPORTUNITIES');
 });
+
+test('customer archive and restore emit minimal events atomically with their audit rows', async () => {
+  const created = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: `Cliente ciclo de vida ${randomUUID()}`,
+  });
+  assert.equal(created.status, 201);
+  const customerId = created.body.id;
+
+  const archiveAuditCount = await db.auditEvent.count({
+    where: { action: 'commercial.customer_archived', entityId: customerId },
+  });
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_customer_archived_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'CUSTOMER_ARCHIVED' THEN
+        RAISE EXCEPTION 'forced customer archive outbox failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_customer_archived_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_customer_archived_outbox_for_test()
+  `);
+  const failedArchive = await admin.call(`customers/${customerId}/archive`, 'POST', {
+    expectedVersion: 1,
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_customer_archived_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(
+    `DROP FUNCTION "${schema}".reject_customer_archived_outbox_for_test()`,
+  );
+  assert.equal(failedArchive.status, 500);
+  const afterFailedArchive = await db.customer.findUnique({ where: { id: customerId } });
+  assert.equal(afterFailedArchive.status, 'ACTIVE');
+  assert.equal(afterFailedArchive.version, 1);
+  assert.equal(afterFailedArchive.archivedAt, null);
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'commercial.customer_archived', entityId: customerId },
+    }),
+    archiveAuditCount,
+  );
+
+  const archiveRequestId = `r1-customer-archived-${randomUUID()}`;
+  const archived = await admin.call(
+    `customers/${customerId}/archive`,
+    'POST',
+    { expectedVersion: 1 },
+    { 'x-request-id': archiveRequestId },
+  );
+  assert.equal(archived.status, 200);
+  assert.equal(archived.body.status, 'ARCHIVED');
+  const archiveAudit = await db.auditEvent.findFirst({
+    where: {
+      action: 'commercial.customer_archived',
+      entityId: customerId,
+      traceId: archiveRequestId,
+    },
+  });
+  assert.ok(archiveAudit);
+  const archiveEvent = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `CUSTOMER_ARCHIVED:${archiveAudit.id}` },
+  });
+  assert.ok(archiveEvent);
+  assert.equal(archiveEvent.eventType, 'CUSTOMER_ARCHIVED');
+  assert.equal(archiveEvent.aggregateType, 'Customer');
+  assert.equal(archiveEvent.aggregateId, customerId);
+  assert.equal(archiveEvent.correlationId, archiveRequestId);
+  assert.equal(archiveEvent.publishedAt, null);
+  assert.deepEqual(archiveEvent.payload, { customerId, auditEventId: archiveAudit.id });
+
+  const archivedAt = archived.body.archivedAt;
+  const restoreAuditCount = await db.auditEvent.count({
+    where: { action: 'commercial.customer_restored', entityId: customerId },
+  });
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_customer_restored_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'CUSTOMER_RESTORED' THEN
+        RAISE EXCEPTION 'forced customer restore outbox failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_customer_restored_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_customer_restored_outbox_for_test()
+  `);
+  const failedRestore = await admin.call(`customers/${customerId}/restore`, 'POST', {
+    expectedVersion: 2,
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_customer_restored_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(
+    `DROP FUNCTION "${schema}".reject_customer_restored_outbox_for_test()`,
+  );
+  assert.equal(failedRestore.status, 500);
+  const afterFailedRestore = await db.customer.findUnique({ where: { id: customerId } });
+  assert.equal(afterFailedRestore.status, 'ARCHIVED');
+  assert.equal(afterFailedRestore.version, 2);
+  assert.equal(afterFailedRestore.archivedAt.toISOString(), archivedAt);
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'commercial.customer_restored', entityId: customerId },
+    }),
+    restoreAuditCount,
+  );
+
+  const restoreRequestId = `r1-customer-restored-${randomUUID()}`;
+  const restored = await admin.call(
+    `customers/${customerId}/restore`,
+    'POST',
+    { expectedVersion: 2 },
+    { 'x-request-id': restoreRequestId },
+  );
+  assert.equal(restored.status, 200);
+  assert.equal(restored.body.status, 'ACTIVE');
+  const restoreAudit = await db.auditEvent.findFirst({
+    where: {
+      action: 'commercial.customer_restored',
+      entityId: customerId,
+      traceId: restoreRequestId,
+    },
+  });
+  assert.ok(restoreAudit);
+  const restoreEvent = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `CUSTOMER_RESTORED:${restoreAudit.id}` },
+  });
+  assert.ok(restoreEvent);
+  assert.equal(restoreEvent.eventType, 'CUSTOMER_RESTORED');
+  assert.equal(restoreEvent.aggregateType, 'Customer');
+  assert.equal(restoreEvent.aggregateId, customerId);
+  assert.equal(restoreEvent.correlationId, restoreRequestId);
+  assert.equal(restoreEvent.publishedAt, null);
+  assert.deepEqual(restoreEvent.payload, { customerId, auditEventId: restoreAudit.id });
+});
