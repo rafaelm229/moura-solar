@@ -38,6 +38,16 @@ export type ProposalAcceptedEventV1 = IntegrationEvent<{
   schemaVersion: 1;
 };
 
+export type ProposalRejectedEventV1 = IntegrationEvent<{
+  rejectionId: string;
+  proposalId: string;
+  proposalVersionId: string;
+  opportunityId: string;
+}> & {
+  eventType: 'PROPOSAL_REJECTED';
+  schemaVersion: 1;
+};
+
 function hasIdentifier(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
@@ -160,4 +170,39 @@ export function parseProposalAcceptedEventV1(value: unknown): ProposalAcceptedEv
   }
 
   return event as ProposalAcceptedEventV1;
+}
+
+/** Validates a minimal proposal-rejection fact without rejection reason or notes. */
+export function parseProposalRejectedEventV1(value: unknown): ProposalRejectedEventV1 {
+  const event = parseIntegrationEvent(value);
+
+  if (event.eventType !== 'PROPOSAL_REJECTED') {
+    throw new TypeError('Proposal event eventType is unsupported');
+  }
+  if (event.schemaVersion !== 1) {
+    throw new TypeError('Proposal event schemaVersion is unsupported');
+  }
+  for (const field of [
+    'rejectionId',
+    'proposalId',
+    'proposalVersionId',
+    'opportunityId',
+  ] as const) {
+    if (!hasIdentifier(event.payload[field])) {
+      throw new TypeError(`Proposal event payload ${field} is required`);
+    }
+  }
+  if (event.payload.proposalId !== event.aggregateId) {
+    throw new TypeError('Proposal event payload proposalId must match aggregateId');
+  }
+  if (
+    Object.keys(event.payload).some(
+      (field) =>
+        !['rejectionId', 'proposalId', 'proposalVersionId', 'opportunityId'].includes(field),
+    )
+  ) {
+    throw new TypeError('Proposal event payload contains unsupported fields');
+  }
+
+  return event as ProposalRejectedEventV1;
 }

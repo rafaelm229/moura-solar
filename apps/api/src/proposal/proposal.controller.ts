@@ -142,7 +142,13 @@ export class ProposalController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: RecordProposalRejectionDto,
   ) {
-    return this.service.recordRejection(req.actor.organizationId, id, req.actor.userId, dto);
+    return this.service.recordRejection(
+      req.actor.organizationId,
+      id,
+      req.actor.userId,
+      dto,
+      req.requestId ?? 'trace',
+    );
   }
 
   @Post('proposal-versions/:id/new-version')
