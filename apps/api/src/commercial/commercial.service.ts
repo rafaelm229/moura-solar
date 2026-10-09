@@ -1056,7 +1056,7 @@ export class CommercialService {
       });
 
       // FV1.3 rule: Oportunidade e primeira atividade criadas na mesma transação
-      await tx.activity.create({
+      const firstActivity = await tx.activity.create({
         data: {
           organizationId: actor.organizationId,
           opportunityId: opp.id,
@@ -1083,7 +1083,13 @@ export class CommercialService {
         },
       });
 
-      await this.store.audit(tx, 'commercial.opportunity_created', actor, opp.id, traceId);
+      const audit = await this.store.audit(
+        tx,
+        'commercial.opportunity_created',
+        actor,
+        opp.id,
+        traceId,
+      );
 
       const event: OpportunityCreatedEventV1 = {
         eventId: randomUUID(),
@@ -1114,6 +1120,38 @@ export class CommercialService {
           occurredAt: opp.createdAt,
           payload: event.payload,
           dedupeKey: `OPPORTUNITY_CREATED:${opp.id}`,
+        },
+      });
+
+      const activityEvent: ActivityCreatedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'ACTIVITY_CREATED',
+        schemaVersion: 1,
+        occurredAt: audit.createdAt.toISOString(),
+        organizationId: actor.organizationId,
+        aggregateId: firstActivity.id,
+        producer: 'crm',
+        correlationId: traceId,
+        payload: {
+          activityId: firstActivity.id,
+          auditEventId: audit.id,
+          customerId: opp.customerId,
+          opportunityId: opp.id,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: activityEvent.eventId,
+          organizationId: activityEvent.organizationId,
+          eventType: activityEvent.eventType,
+          schemaVersion: activityEvent.schemaVersion,
+          aggregateType: 'Activity',
+          aggregateId: activityEvent.aggregateId,
+          producer: activityEvent.producer,
+          correlationId: activityEvent.correlationId,
+          occurredAt: audit.createdAt,
+          payload: activityEvent.payload,
+          dedupeKey: `ACTIVITY_CREATED:${audit.id}:${firstActivity.id}`,
         },
       });
       return opp;
