@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { parseUtilityUnitCreatedEventV1 } from '../dist/index.js';
+import { parseUtilityUnitCreatedEventV1, parseUtilityUnitUpdatedEventV1 } from '../dist/index.js';
 
 function validEvent() {
   return {
@@ -64,5 +64,38 @@ test('UtilityUnitCreatedEventV1 rejects inconsistent, missing, or non-minimal pa
         payload: { ...validEvent().payload, externalCode: 'ACCOUNT-123' },
       }),
     /unsupported fields/,
+  );
+});
+
+test('UtilityUnitUpdatedEventV1 accepts only minimal update identifiers', () => {
+  const event = {
+    ...validEvent(),
+    eventType: 'UTILITY_UNIT_UPDATED',
+    payload: {
+      utilityUnitId: validEvent().aggregateId,
+      customerId: '0c93c425-fbaa-4dc2-9ca5-1e14dba0aefa',
+      auditEventId: 'b81d0d9d-7053-4696-8974-a7a59e9882b9',
+    },
+  };
+  assert.deepEqual(parseUtilityUnitUpdatedEventV1(event), event);
+  assert.throws(
+    () => parseUtilityUnitUpdatedEventV1({ ...event, schemaVersion: 2 }),
+    /schemaVersion is unsupported/,
+  );
+  assert.throws(
+    () =>
+      parseUtilityUnitUpdatedEventV1({
+        ...event,
+        payload: { ...event.payload, distributorName: 'Distribuidora' },
+      }),
+    /unsupported fields/,
+  );
+  assert.throws(
+    () =>
+      parseUtilityUnitUpdatedEventV1({
+        ...event,
+        payload: { ...event.payload, utilityUnitId: 'different-unit' },
+      }),
+    /must match aggregateId/,
   );
 });

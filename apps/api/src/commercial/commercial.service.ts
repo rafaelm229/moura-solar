@@ -9,6 +9,7 @@ import type {
   OpportunityQualifiedEventV1,
   OpportunityReopenedEventV1,
   UtilityUnitCreatedEventV1,
+  UtilityUnitUpdatedEventV1,
 } from '@moura-solar/contracts';
 import { Prisma } from '@prisma/client';
 import { IdentityStore } from '../identity/identity.store';
@@ -852,7 +853,43 @@ export class CommercialService {
         },
       });
 
-      await this.store.audit(tx, 'commercial.utility_unit_updated', actor, utilityUnitId, traceId);
+      const audit = await this.store.audit(
+        tx,
+        'commercial.utility_unit_updated',
+        actor,
+        utilityUnitId,
+        traceId,
+      );
+      const event: UtilityUnitUpdatedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'UTILITY_UNIT_UPDATED',
+        schemaVersion: 1,
+        occurredAt: audit.createdAt.toISOString(),
+        organizationId: actor.organizationId,
+        aggregateId: utilityUnitId,
+        producer: 'crm',
+        correlationId: traceId,
+        payload: {
+          utilityUnitId,
+          customerId: updated.customerId,
+          auditEventId: audit.id,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'UtilityUnit',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: audit.createdAt,
+          payload: event.payload,
+          dedupeKey: `UTILITY_UNIT_UPDATED:${audit.id}`,
+        },
+      });
       return updated;
     });
   }

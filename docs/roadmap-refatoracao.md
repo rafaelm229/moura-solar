@@ -109,9 +109,12 @@ sem dispatcher ou consumidor. O [R1-19](r1-19-outbox-rejeicao-proposta.md) foi
 consolidado no PR #46 (`8a5159c`), com CI completa verde, para registrar
 `PROPOSAL_REJECTED` na transação existente, usando o ID da auditoria para
 identidade/deduplicação e sem motivo ou notas no payload. O
-[R1-20](r1-20-outbox-arquivo-restauracao-cliente.md) está em implementação para
-registrar arquivamento/restauração de cliente com payload mínimo ligado à
-auditoria, preservando permissões e o gate de oportunidades ativas.
+[R1-20](r1-20-outbox-arquivo-restauracao-cliente.md) foi consolidado no PR #48
+(`d4f1d8e`), com CI completa verde, para registrar arquivamento/restauração de
+cliente com payload mínimo ligado à auditoria, preservando permissões e o gate
+de oportunidades ativas. O [R1-21](r1-21-outbox-atualizacao-uc.md) está em
+implementação para registrar atualização versionada da UC com auditoria, sem
+expor distribuidora, código da conta ou atributos técnicos no evento.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 

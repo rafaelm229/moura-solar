@@ -58,5 +58,11 @@ export {
   parseOpportunityQualifiedEventV1,
   parseOpportunityReopenedEventV1,
 } from './opportunity-events.js';
-export type { UtilityUnitCreatedEventV1 } from './utility-unit-events.js';
-export { parseUtilityUnitCreatedEventV1 } from './utility-unit-events.js';
+export type {
+  UtilityUnitCreatedEventV1,
+  UtilityUnitUpdatedEventV1,
+} from './utility-unit-events.js';
+export {
+  parseUtilityUnitCreatedEventV1,
+  parseUtilityUnitUpdatedEventV1,
+} from './utility-unit-events.js';

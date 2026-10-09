@@ -435,6 +435,118 @@ test('utility unit creation emits minimal correlated event atomically', async ()
   assert.equal(JSON.stringify(event.payload).includes('Distribuidora'), false);
 });
 
+test('utility-unit updates emit a minimal correlated event atomically with their audit', async () => {
+  const customer = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: `Cliente UC atualização ${randomUUID()}`,
+  });
+  assert.equal(customer.status, 201);
+  const created = await seller.call(`customers/${customer.body.id}/utility-units`, 'POST', {
+    distributorName: 'Distribuidora inicial',
+    externalCode: `UC-${randomUUID()}`,
+  });
+  assert.equal(created.status, 201);
+  const utilityUnitId = created.body.id;
+  const auditCount = await db.auditEvent.count({
+    where: { action: 'commercial.utility_unit_updated', entityId: utilityUnitId },
+  });
+  const eventCount = await db.integrationOutbox.count({
+    where: { eventType: 'UTILITY_UNIT_UPDATED', aggregateId: utilityUnitId },
+  });
+  const unauthenticated = await new Client().call(`utility-units/${utilityUnitId}`, 'PATCH', {
+    expectedVersion: 1,
+    distributorName: 'Sem autenticação',
+  });
+  assert.equal(unauthenticated.status, 401);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'UTILITY_UNIT_UPDATED', aggregateId: utilityUnitId },
+    }),
+    eventCount,
+  );
+
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_utility_unit_updated_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'UTILITY_UNIT_UPDATED' THEN
+        RAISE EXCEPTION 'forced utility unit update outbox failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_utility_unit_updated_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_utility_unit_updated_outbox_for_test()
+  `);
+  const failed = await seller.call(`utility-units/${utilityUnitId}`, 'PATCH', {
+    expectedVersion: 1,
+    distributorName: 'Distribuidora que deve reverter',
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_utility_unit_updated_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(
+    `DROP FUNCTION "${schema}".reject_utility_unit_updated_outbox_for_test()`,
+  );
+  assert.equal(failed.status, 500);
+  const afterFailure = await db.utilityUnit.findUnique({ where: { id: utilityUnitId } });
+  assert.equal(afterFailure.version, 1);
+  assert.equal(afterFailure.distributorName, 'Distribuidora inicial');
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'commercial.utility_unit_updated', entityId: utilityUnitId },
+    }),
+    auditCount,
+  );
+
+  const requestId = `r1-utility-unit-updated-${randomUUID()}`;
+  const updated = await seller.call(
+    `utility-units/${utilityUnitId}`,
+    'PATCH',
+    { expectedVersion: 1, distributorName: 'Distribuidora validada' },
+    { 'x-request-id': requestId },
+  );
+  assert.equal(updated.status, 200);
+  assert.equal(updated.body.version, 2);
+  const audit = await db.auditEvent.findFirst({
+    where: {
+      action: 'commercial.utility_unit_updated',
+      entityId: utilityUnitId,
+      traceId: requestId,
+    },
+  });
+  assert.ok(audit);
+  const event = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `UTILITY_UNIT_UPDATED:${audit.id}` },
+  });
+  assert.ok(event);
+  assert.equal(event.eventType, 'UTILITY_UNIT_UPDATED');
+  assert.equal(event.aggregateType, 'UtilityUnit');
+  assert.equal(event.aggregateId, utilityUnitId);
+  assert.equal(event.correlationId, requestId);
+  assert.equal(event.publishedAt, null);
+  assert.deepEqual(event.payload, {
+    utilityUnitId,
+    customerId: customer.body.id,
+    auditEventId: audit.id,
+  });
+  assert.equal(JSON.stringify(event.payload).includes('Distribuidora'), false);
+
+  const stale = await seller.call(`utility-units/${utilityUnitId}`, 'PATCH', {
+    expectedVersion: 1,
+    distributorName: 'Atualização obsoleta',
+  });
+  assert.equal(stale.status, 409);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'UTILITY_UNIT_UPDATED', aggregateId: utilityUnitId },
+    }),
+    1,
+  );
+});
+
 test('optimistic concurrency prevents silent overwrite on customer updates', async () => {
   const created = await seller.call('customers', 'POST', {
     kind: 'COMPANY',
