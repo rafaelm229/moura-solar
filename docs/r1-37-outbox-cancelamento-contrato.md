@@ -4,8 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Validado em branch `codex/r1-37-contract-canceled-event`; CI remota e
-consolidação ainda pendentes.
+**Estado:** Consolidado no PR #81, merge `7ff3b85`; CI #137 completa verde.
 
 **SPECs:** [SPEC-007](../specs/SPEC-007-contratos-documentos/spec.md),
 [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
@@ -54,7 +53,8 @@ consolidados; cancelamento e auditoria já existentes.
   exigido pelos testes DOCX; nenhuma expectativa foi alterada.
 - `pnpm api:generate`: sucesso, sem diferença em `packages/api-client`.
 - Prettier, links locais afetados e `git diff --check`: sem erros.
-- CI remota e consolidação ainda não executadas.
+- CI #137 passou por `pnpm check`, geração, migrations, integração e E2E.
+- Consolidado na branch `feat/proposal-visual-clarity`; não liberado em `main`.
 
 ## Rollback
 
