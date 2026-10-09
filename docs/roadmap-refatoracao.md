@@ -134,9 +134,9 @@ O [R1-26](r1-26-outbox-conclusao-atividade.md) foi consolidado no PR #59
 (`56b3074`), com CI #115 completa verde, para registrar `ACTIVITY_COMPLETED` v1
 e o ID opcional do follow-up, sem resultado ou texto de atividade e sem
 publicação/consumidor.
-O [R1-27](r1-27-outbox-reagendamento-atividade.md) está em implementação para
-registrar `ACTIVITY_RESCHEDULED` v1 com IDs mínimos, sem data/notas e sem
-publicação/consumidor.
+O [R1-27](r1-27-outbox-reagendamento-atividade.md) foi consolidado no PR #61
+(`35d49dc`), com CI #117 completa verde, para registrar `ACTIVITY_RESCHEDULED`
+v1 com IDs mínimos, sem data/notas e sem publicação/consumidor.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
