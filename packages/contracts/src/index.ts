@@ -16,6 +16,8 @@ export interface ApiErrorResponse {
 
 export { parseIntegrationEvent } from './integration-event.js';
 export type { IntegrationEvent } from './integration-event.js';
+export type { ActivityCreatedEventV1 } from './activity-events.js';
+export { parseActivityCreatedEventV1 } from './activity-events.js';
 export type {
   EnergyBillImportAppliedEventV1,
   EnergyBillImportEventV1,
