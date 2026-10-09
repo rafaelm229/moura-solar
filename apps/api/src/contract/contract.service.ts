@@ -14,6 +14,7 @@ import { ContractGeneratorService, type ContractTemplateData } from './contract-
 import { FinancialService } from '../financial/financial.service';
 import type {
   ActivityCreatedEventV1,
+  ContractAmendmentRecordedEventV1,
   ContractCanceledEventV1,
   ContractDeliveredEventV1,
 } from '@moura-solar/contracts';
@@ -1468,6 +1469,7 @@ export class ContractService {
     contractId: string,
     userId: string,
     dto: CreateAmendmentDto,
+    correlationId: string,
   ) {
     const contract = await this.getContract(organizationId, contractId);
     if (['CANCELED', 'TERMINATED'].includes(contract.state)) {
@@ -1483,7 +1485,7 @@ export class ContractService {
           notes: `${contract.notes ? `${contract.notes}\n` : ''}Aditivo: ${dto.reason}`,
         },
       });
-      await this.audit.record(
+      const amendmentAudit = await this.audit.record(
         {
           organizationId,
           actorId: userId,
@@ -1492,6 +1494,37 @@ export class ContractService {
         },
         tx,
       );
+
+      const event: ContractAmendmentRecordedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'CONTRACT_AMENDMENT_RECORDED',
+        schemaVersion: 1,
+        occurredAt: amendmentAudit.createdAt.toISOString(),
+        organizationId,
+        aggregateId: contract.id,
+        producer: 'contracts',
+        correlationId,
+        payload: {
+          contractId: contract.id,
+          auditEventId: amendmentAudit.id,
+          opportunityId: contract.opportunityId,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Contract',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: amendmentAudit.createdAt,
+          payload: event.payload,
+          dedupeKey: `CONTRACT_AMENDMENT_RECORDED:${amendmentAudit.id}`,
+        },
+      });
     });
     return this.getContract(organizationId, contractId);
   }

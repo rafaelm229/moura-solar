@@ -1,6 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseContractCanceledEventV1, parseContractDeliveredEventV1 } from '../dist/index.js';
+import {
+  parseContractAmendmentRecordedEventV1,
+  parseContractCanceledEventV1,
+  parseContractDeliveredEventV1,
+} from '../dist/index.js';
 
 const delivered = {
   eventId: 'event-delivered',
@@ -69,6 +73,41 @@ test('CONTRACT_CANCELED v1 rejects unsupported types, versions, mismatches and d
     parseContractCanceledEventV1({
       ...canceled,
       payload: { ...canceled.payload, reason: 'motivo confidencial' },
+    }),
+  );
+});
+
+const amendmentRecorded = {
+  ...delivered,
+  eventType: 'CONTRACT_AMENDMENT_RECORDED',
+  payload: {
+    contractId: 'contract-1',
+    auditEventId: 'audit-amendment-1',
+    opportunityId: 'opportunity-1',
+  },
+};
+
+test('CONTRACT_AMENDMENT_RECORDED v1 accepts only identifiers from the audit', () => {
+  assert.deepEqual(parseContractAmendmentRecordedEventV1(amendmentRecorded), amendmentRecorded);
+});
+
+test('CONTRACT_AMENDMENT_RECORDED v1 rejects unsupported types, versions, mismatches and details', () => {
+  assert.throws(() =>
+    parseContractAmendmentRecordedEventV1({ ...amendmentRecorded, eventType: 'CONTRACT_AMENDED' }),
+  );
+  assert.throws(() =>
+    parseContractAmendmentRecordedEventV1({ ...amendmentRecorded, schemaVersion: 2 }),
+  );
+  assert.throws(() =>
+    parseContractAmendmentRecordedEventV1({
+      ...amendmentRecorded,
+      payload: { ...amendmentRecorded.payload, contractId: 'other' },
+    }),
+  );
+  assert.throws(() =>
+    parseContractAmendmentRecordedEventV1({
+      ...amendmentRecorded,
+      payload: { ...amendmentRecorded.payload, reason: 'termo confidencial' },
     }),
   );
 });

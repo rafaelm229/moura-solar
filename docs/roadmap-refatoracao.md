@@ -185,6 +185,11 @@ O [R1-37](r1-37-outbox-cancelamento-contrato.md) foi consolidado no PR #81,
 merge `7ff3b85`, CI #137 completa verde: `CONTRACT_CANCELED` v1 é escrito junto
 da auditoria na mesma transação, com IDs apenas e sem motivo. Não ativa
 consumidor, compensação financeira ou efeito externo; sem migration.
+O [R1-38](r1-38-outbox-registro-aditivo-contrato.md) está implementado na
+branch `codex/r1-38-contract-amendment-event`: `CONTRACT_AMENDMENT_RECORDED` v1
+acompanha somente o registro manual e a auditoria, sem detalhes do aditivo. Não
+significa documento de aditivo implementado. `pnpm check` e a integração local
+passaram; CI e consolidação ainda pendentes.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 

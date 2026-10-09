@@ -220,6 +220,11 @@ marcar manualmente os outros gates.
 - Pode exigir nova aprovação comercial, técnica, financeira e jurídica.
 - Ao ativar, atualiza somente os dados operacionais explicitamente definidos.
 
+O `CONTRACT_AMENDMENT_RECORDED` v1 de R1-38 acompanha apenas a operação atual
+de registro manual e sua auditoria. Ele não comprova versão-base, alterações
+estruturadas, aprovação ou documento próprio de aditivo; esses requisitos
+continuam pendentes nesta SPEC.
+
 ## 13. Cancelamento e término
 
 - Exigem motivo padronizado, observação e permissão.
