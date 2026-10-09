@@ -4,8 +4,9 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Em implementação na branch
-`codex/r1-31-proposal-delivery-activity-event`.
+**Estado:** Consolidado no branch `feat/proposal-visual-clarity` pelo PR #69,
+merge `fcb2b96438bb43b987ebe7b0540f3b6ce1359a09`. Não representa liberação em
+`main` nem ativação de consumidor.
 
 **SPECs:** [SPEC-001](../specs/SPEC-001-jornada-cliente/spec.md),
 [SPEC-006](../specs/SPEC-006-propostas/spec.md),
@@ -36,7 +37,14 @@ transição de oportunidade e follow-up automático já ocorrem na mesma transa�
 - `pnpm --filter @moura-solar/api build`: passou.
 - `node --test --test-concurrency=1 tests/proposal.integration.mjs`: 7/7
   passaram no PostgreSQL/MinIO/ClamAV local, incluindo rollback do evento filho.
-- `pnpm check`, CI, links locais, Prettier e `git diff --check` ainda pendentes.
+- `pnpm check`: passou localmente após as alterações do incremento e da
+  documentação.
+- Prettier, links locais dos documentos afetados e `git diff --check`: passaram.
+- CI #125 falhou em `Initialize containers`, antes do checkout e dos testes: o
+  runner expirou e atingiu o limite de pull não autenticado do Docker Hub ao
+  baixar `postgres:17-alpine`. Resultado de CI: **não validado**.
+- Consolidação: PR #69 em `feat/proposal-visual-clarity`, merge
+  `fcb2b96438bb43b987ebe7b0540f3b6ce1359a09`.
 
 ## Critérios de aceite
 
@@ -46,8 +54,9 @@ transição de oportunidade e follow-up automático já ocorrem na mesma transa�
   do evento com a atividade automática.
 - Falha ao gravar o evento filho reverte entrega, versão, follow-up, auditoria e
   `PROPOSAL_DELIVERED`.
-- `pnpm check`, integração de proposta PostgreSQL, CI, links locais, Prettier e
-  `git diff --check`.
+- `pnpm check`, integração de proposta PostgreSQL, links locais, Prettier e
+  `git diff --check` aprovados localmente; CI remota pendente de infraestrutura
+  porque não iniciou checkout/testes.
 - Rollback remove apenas o produtor filho, preservando a entrega e o evento pai.
 
 ## Limites
