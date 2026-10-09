@@ -4,8 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Validado localmente na branch `codex/r1-19-proposal-rejected`;
-CI e consolidação ainda pendentes.
+**Estado:** Consolidado no PR #46, merge commit `8a5159c`; CI completa verde.
 
 **SPECs:** [SPEC-006](../specs/SPEC-006-propostas/spec.md),
 [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
@@ -54,7 +53,8 @@ Os testes de `@moura-solar/contracts` passaram (42/42); build da API passou;
 `tests/proposal.integration.mjs` passou 7/7 com PostgreSQL e MinIO locais,
 incluindo 401 sem sessão, payload correlacionado e rollback forçado.
 `pnpm check` passou em formatação, lint, typecheck, 1.257 testes da API, 5 da
-web, 24 testes offline do harness histórico da PoC e build. Prettier, links
-locais e `git diff --check` passaram. Nenhuma migration. CI e consolidação ainda
-pendentes; R1 permanece em andamento. A importação de contas continua manual
-conforme ADR-008, fora do escopo deste incremento.
+web, 24 testes offline do harness histórico da PoC e build. CI completa passou
+com geração da API, migrations, integrações e E2E. Prettier, links locais e
+`git diff --check` passaram. Nenhuma migration de aplicação. R1 permanece em
+andamento. A importação de contas continua manual conforme ADR-008, fora do
+escopo deste incremento.
