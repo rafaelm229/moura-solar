@@ -87,6 +87,9 @@ CI completa e foi consolidado no PR #36 (`0f0e6ce`). O [R1-12](r1-12-outbox-cria
 foi validado localmente para persistir `UTILITY_UNIT_CREATED` com IDs mínimos
 nos dois caminhos existentes de criação de UC, passou CI completa e foi
 consolidado no PR #37 (`8551df2`); permanece sem dispatcher ou consumidor.
+O [R1-13](r1-13-outbox-criacao-proposta.md) foi validado localmente para
+versionar e persistir a criação de proposta atomicamente, sem prometer prontidão
+de PDF; CI remota pendente, sem ativar consumidor.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 

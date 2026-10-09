@@ -18,7 +18,7 @@ import {
 import { createHash, randomUUID } from 'node:crypto';
 import { ConfigService } from '@nestjs/config';
 import { AuditService } from '../database/audit.service';
-import type { ProposalAcceptedEventV1 } from '@moura-solar/contracts';
+import type { ProposalAcceptedEventV1, ProposalCreatedEventV1 } from '@moura-solar/contracts';
 
 const proposalStatusLabels: Record<string, string> = {
   DRAFT: 'rascunho',
@@ -46,7 +46,12 @@ export class ProposalService {
     private readonly audit: AuditService,
   ) {}
 
-  async createProposal(organizationId: string, userId: string, dto: CreateProposalDto) {
+  async createProposal(
+    organizationId: string,
+    userId: string,
+    dto: CreateProposalDto,
+    correlationId: string,
+  ) {
     // 1. Fetch Opportunity
     const opportunity = await this.prisma.opportunity.findFirst({
       where: { id: dto.opportunityId, organizationId },
@@ -258,6 +263,38 @@ export class ProposalService {
             },
             tx,
           );
+
+          const event: ProposalCreatedEventV1 = {
+            eventId: randomUUID(),
+            eventType: 'PROPOSAL_CREATED',
+            schemaVersion: 1,
+            occurredAt: prop.createdAt.toISOString(),
+            organizationId,
+            aggregateId: prop.id,
+            producer: 'proposal',
+            correlationId,
+            payload: {
+              proposalId: prop.id,
+              proposalVersionId: version.id,
+              opportunityId: opportunity.id,
+            },
+          };
+
+          await tx.integrationOutbox.create({
+            data: {
+              id: event.eventId,
+              organizationId: event.organizationId,
+              eventType: event.eventType,
+              schemaVersion: event.schemaVersion,
+              aggregateType: 'Proposal',
+              aggregateId: event.aggregateId,
+              producer: event.producer,
+              correlationId: event.correlationId,
+              occurredAt: prop.createdAt,
+              payload: event.payload,
+              dedupeKey: `PROPOSAL_CREATED:${prop.id}`,
+            },
+          });
 
           return { proposal: prop, version };
         });
