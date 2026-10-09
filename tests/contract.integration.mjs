@@ -289,12 +289,18 @@ test('4. Registro de envio do contrato formal (SPEC-007 Item 8)', async () => {
     where: { action: 'CONTRACT_DELIVERED', entityId: contractId },
   });
   const beforeDeliveryCount = await db.contractDelivery.count({ where: { contractId } });
+  const beforeContractEventCount = await db.integrationOutbox.count({
+    where: { eventType: 'CONTRACT_DELIVERED' },
+  });
+  const beforeActivityEventCount = await db.integrationOutbox.count({
+    where: { eventType: 'ACTIVITY_CREATED' },
+  });
 
   await db.$executeRawUnsafe(`
     CREATE FUNCTION "${schema}".reject_activity_created_outbox_for_test() RETURNS trigger AS $$
     BEGIN
-      IF NEW.event_type = 'ACTIVITY_CREATED' THEN
-        RAISE EXCEPTION 'forced activity outbox insert failure';
+      IF NEW.event_type = 'CONTRACT_DELIVERED' THEN
+        RAISE EXCEPTION 'forced contract outbox insert failure';
       END IF;
       RETURN NEW;
     END;
@@ -323,6 +329,14 @@ test('4. Registro de envio do contrato formal (SPEC-007 Item 8)', async () => {
   assert.equal(
     await db.auditEvent.count({ where: { action: 'CONTRACT_DELIVERED', entityId: contractId } }),
     beforeAuditCount,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'CONTRACT_DELIVERED' } }),
+    beforeContractEventCount,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'ACTIVITY_CREATED' } }),
+    beforeActivityEventCount,
   );
   assert.equal((await db.contract.findUnique({ where: { id: contractId } })).state, 'READY');
 
@@ -367,6 +381,27 @@ test('4. Registro de envio do contrato formal (SPEC-007 Item 8)', async () => {
     opportunityId: testOpportunityId,
   });
   assert.equal(activityEvent.occurredAt.toISOString(), deliveryAudit.createdAt.toISOString());
+
+  const contractEvent = await db.integrationOutbox.findFirst({
+    where: {
+      organizationId: followUp.organizationId,
+      dedupeKey: `CONTRACT_DELIVERED:${deliveryAudit.id}:${deliveryRes.body.delivery.id}`,
+    },
+  });
+  assert.ok(contractEvent, 'Entrega manual deve emitir evento de contrato');
+  assert.equal(contractEvent.eventType, 'CONTRACT_DELIVERED');
+  assert.equal(contractEvent.schemaVersion, 1);
+  assert.equal(contractEvent.aggregateType, 'Contract');
+  assert.equal(contractEvent.aggregateId, contractId);
+  assert.equal(contractEvent.correlationId, deliveryRes.headers.get('x-request-id'));
+  assert.equal(contractEvent.publishedAt, null);
+  assert.deepEqual(contractEvent.payload, {
+    contractId,
+    deliveryId: deliveryRes.body.delivery.id,
+    auditEventId: deliveryAudit.id,
+    opportunityId: testOpportunityId,
+  });
+  assert.equal(contractEvent.occurredAt.toISOString(), deliveryAudit.createdAt.toISOString());
 });
 
 test('5. Upload de via assinada sem ativação prematura (SPEC-007 Item 4 e 9)', async () => {
