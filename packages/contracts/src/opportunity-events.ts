@@ -30,6 +30,16 @@ export type OpportunityLostEventV1 = IntegrationEvent<{
   schemaVersion: 1;
 };
 
+export type OpportunityReopenedEventV1 = IntegrationEvent<{
+  opportunityId: string;
+  transitionId: string;
+  fromState: 'PERDIDO' | 'CANCELADO';
+  toState: 'NOVO';
+}> & {
+  eventType: 'OPPORTUNITY_REOPENED';
+  schemaVersion: 1;
+};
+
 function hasIdentifier(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
@@ -134,4 +144,39 @@ export function parseOpportunityLostEventV1(value: unknown): OpportunityLostEven
   }
 
   return event as OpportunityLostEventV1;
+}
+
+/** Validates a minimal, permissioned opportunity-reopen transition without justification text. */
+export function parseOpportunityReopenedEventV1(value: unknown): OpportunityReopenedEventV1 {
+  const event = parseIntegrationEvent(value);
+
+  if (event.eventType !== 'OPPORTUNITY_REOPENED') {
+    throw new TypeError('Opportunity event eventType is unsupported');
+  }
+  if (event.schemaVersion !== 1) {
+    throw new TypeError('Opportunity event schemaVersion is unsupported');
+  }
+  for (const field of ['opportunityId', 'transitionId'] as const) {
+    if (!hasIdentifier(event.payload[field])) {
+      throw new TypeError(`Opportunity event payload ${field} is required`);
+    }
+  }
+  if (event.payload.opportunityId !== event.aggregateId) {
+    throw new TypeError('Opportunity event payload opportunityId must match aggregateId');
+  }
+  if (!['PERDIDO', 'CANCELADO'].includes(String(event.payload.fromState))) {
+    throw new TypeError('Opportunity event payload fromState is unsupported');
+  }
+  if (event.payload.toState !== 'NOVO') {
+    throw new TypeError('Opportunity event payload toState is unsupported');
+  }
+  if (
+    Object.keys(event.payload).some(
+      (field) => !['opportunityId', 'transitionId', 'fromState', 'toState'].includes(field),
+    )
+  ) {
+    throw new TypeError('Opportunity event payload contains unsupported fields');
+  }
+
+  return event as OpportunityReopenedEventV1;
 }

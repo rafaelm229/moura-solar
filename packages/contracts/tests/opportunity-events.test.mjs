@@ -4,6 +4,7 @@ import {
   parseOpportunityCreatedEventV1,
   parseOpportunityLostEventV1,
   parseOpportunityQualifiedEventV1,
+  parseOpportunityReopenedEventV1,
 } from '../dist/index.js';
 
 function validEvent() {
@@ -191,4 +192,80 @@ test('OpportunityLostEventV1 rejects mismatched aggregate, missing IDs, and extr
   const withReason = validLostEvent();
   withReason.payload.lossReason = 'PII or commercial reason';
   assert.throws(() => parseOpportunityLostEventV1(withReason), /unsupported fields/);
+});
+
+function validReopenedEvent() {
+  return {
+    eventId: 'reopened-event-1',
+    eventType: 'OPPORTUNITY_REOPENED',
+    schemaVersion: 1,
+    occurredAt: '2026-10-09T12:00:00.000Z',
+    organizationId: 'organization-1',
+    aggregateId: 'opportunity-1',
+    producer: 'crm',
+    correlationId: 'request-reopen-1',
+    payload: {
+      opportunityId: 'opportunity-1',
+      transitionId: 'transition-reopen-1',
+      fromState: 'PERDIDO',
+      toState: 'NOVO',
+    },
+  };
+}
+
+test('OpportunityReopenedEventV1 accepts a minimal permissioned reopen transition', () => {
+  const event = validReopenedEvent();
+  assert.deepEqual(parseOpportunityReopenedEventV1(event), event);
+  const canceled = {
+    ...event,
+    payload: { ...event.payload, fromState: 'CANCELADO' },
+  };
+  assert.deepEqual(parseOpportunityReopenedEventV1(canceled), canceled);
+});
+
+test('OpportunityReopenedEventV1 rejects unsupported type, version, or state', () => {
+  assert.throws(
+    () =>
+      parseOpportunityReopenedEventV1({
+        ...validReopenedEvent(),
+        eventType: 'OPPORTUNITY_UPDATED',
+      }),
+    /eventType is unsupported/,
+  );
+  assert.throws(
+    () => parseOpportunityReopenedEventV1({ ...validReopenedEvent(), schemaVersion: 2 }),
+    /schemaVersion is unsupported/,
+  );
+  for (const [field, value] of [
+    ['fromState', 'QUALIFICADO'],
+    ['toState', 'PERDIDO'],
+  ]) {
+    assert.throws(
+      () =>
+        parseOpportunityReopenedEventV1({
+          ...validReopenedEvent(),
+          payload: { ...validReopenedEvent().payload, [field]: value },
+        }),
+      new RegExp(`${field} is unsupported`),
+    );
+  }
+});
+
+test('OpportunityReopenedEventV1 rejects mismatches, missing identifiers, and extra text', () => {
+  assert.throws(
+    () =>
+      parseOpportunityReopenedEventV1({
+        ...validReopenedEvent(),
+        aggregateId: 'other-opportunity',
+      }),
+    /must match aggregateId/,
+  );
+  for (const field of ['opportunityId', 'transitionId']) {
+    const event = validReopenedEvent();
+    delete event.payload[field];
+    assert.throws(() => parseOpportunityReopenedEventV1(event), new RegExp(`${field} is required`));
+  }
+  const withJustification = validReopenedEvent();
+  withJustification.payload.justification = 'Do not publish this text';
+  assert.throws(() => parseOpportunityReopenedEventV1(withJustification), /unsupported fields/);
 });

@@ -941,13 +941,88 @@ test('opportunity creation is atomic with first activity; transition requires ex
   });
   assert.equal(sellerReopen.status, 403);
 
-  // Admin with opportunities:reopen succeeds and restores state to NOVO
-  const adminReopen = await admin.call(`opportunities/${oppId}/reopen`, 'POST', {
-    expectedVersion: 4,
-    justification: 'Gerente/Admin aprovou reabertura após renegociação',
+  const transitionCountBeforeReopen = await db.opportunityTransition.count({
+    where: { opportunityId: oppId },
   });
+  const reopenAuditCountBefore = await db.auditEvent.count({
+    where: { action: 'commercial.opportunity_reopened', entityId: oppId },
+  });
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_opportunity_reopened_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'OPPORTUNITY_REOPENED' THEN
+        RAISE EXCEPTION 'forced opportunity reopen outbox failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_opportunity_reopened_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_opportunity_reopened_outbox_for_test()
+  `);
+  const failedReopen = await admin.call(`opportunities/${oppId}/reopen`, 'POST', {
+    expectedVersion: 4,
+    justification: 'Falha esperada no outbox; não deve persistir.',
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_opportunity_reopened_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(
+    `DROP FUNCTION "${schema}".reject_opportunity_reopened_outbox_for_test()`,
+  );
+  assert.equal(failedReopen.status, 500);
+  const afterFailedReopen = await db.opportunity.findUnique({ where: { id: oppId } });
+  assert.equal(afterFailedReopen.state, 'PERDIDO');
+  assert.equal(afterFailedReopen.version, 4);
+  assert.equal(afterFailedReopen.lossReason, 'PRECO_ELEVADO');
+  assert.equal(afterFailedReopen.lossNotes, 'Cliente optou por adiar a compra');
+  assert.equal(
+    await db.opportunityTransition.count({ where: { opportunityId: oppId } }),
+    transitionCountBeforeReopen,
+  );
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'commercial.opportunity_reopened', entityId: oppId },
+    }),
+    reopenAuditCountBefore,
+  );
+
+  // Admin with opportunities:reopen succeeds and restores state to NOVO
+  const reopenRequestId = `r1-opportunity-reopened-${randomUUID()}`;
+  const adminReopen = await admin.call(
+    `opportunities/${oppId}/reopen`,
+    'POST',
+    {
+      expectedVersion: 4,
+      justification: 'Gerente/Admin aprovou reabertura após renegociação',
+    },
+    { 'x-request-id': reopenRequestId },
+  );
   assert.equal(adminReopen.status, 200);
   assert.equal(adminReopen.body.state, 'NOVO');
+  const reopenTransition = await db.opportunityTransition.findFirst({
+    where: { opportunityId: oppId, command: 'reopen' },
+  });
+  assert.ok(reopenTransition);
+  const reopenEvent = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `OPPORTUNITY_REOPENED:${reopenTransition.id}` },
+  });
+  assert.ok(reopenEvent, 'Reabertura, transição e evento outbox devem persistir juntos');
+  assert.equal(reopenEvent.eventType, 'OPPORTUNITY_REOPENED');
+  assert.equal(reopenEvent.schemaVersion, 1);
+  assert.equal(reopenEvent.aggregateType, 'Opportunity');
+  assert.equal(reopenEvent.aggregateId, oppId);
+  assert.equal(reopenEvent.producer, 'crm');
+  assert.equal(reopenEvent.correlationId, reopenRequestId);
+  assert.equal(reopenEvent.publishedAt, null);
+  assert.deepEqual(reopenEvent.payload, {
+    opportunityId: oppId,
+    transitionId: reopenTransition.id,
+    fromState: 'PERDIDO',
+    toState: 'NOVO',
+  });
 });
 
 test('archive customer is rejected when active opportunities exist', async () => {
