@@ -4,6 +4,7 @@ import {
   parseCustomerArchivedEventV1,
   parseCustomerCreatedEventV1,
   parseCustomerRestoredEventV1,
+  parseCustomerUpdatedEventV1,
 } from '../dist/index.js';
 
 function validEvent() {
@@ -116,4 +117,25 @@ test('Customer lifecycle events require both customer and audit identifiers', ()
       assert.throws(() => parse(event), new RegExp(`${field} is required`));
     }
   }
+});
+
+test('CustomerUpdatedEventV1 accepts only customer and audit identifiers', () => {
+  const event = validLifecycleEvent('CUSTOMER_UPDATED');
+  assert.deepEqual(parseCustomerUpdatedEventV1(event), event);
+  assert.throws(
+    () => parseCustomerUpdatedEventV1({ ...event, schemaVersion: 2 }),
+    /schemaVersion is unsupported/,
+  );
+  assert.throws(
+    () =>
+      parseCustomerUpdatedEventV1({
+        ...event,
+        payload: { ...event.payload, legalName: 'Nome privado' },
+      }),
+    /unsupported fields/,
+  );
+  assert.throws(
+    () => parseCustomerUpdatedEventV1({ ...event, aggregateId: 'other-customer' }),
+    /must match aggregateId/,
+  );
 });

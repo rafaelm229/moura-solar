@@ -21,6 +21,14 @@ export type CustomerRestoredEventV1 = IntegrationEvent<{
   schemaVersion: 1;
 };
 
+export type CustomerUpdatedEventV1 = IntegrationEvent<{
+  customerId: string;
+  auditEventId: string;
+}> & {
+  eventType: 'CUSTOMER_UPDATED';
+  schemaVersion: 1;
+};
+
 /** Validates the minimal customer-created contract without exposing customer details. */
 export function parseCustomerCreatedEventV1(value: unknown): CustomerCreatedEventV1 {
   const event = parseIntegrationEvent(value);
@@ -46,8 +54,8 @@ export function parseCustomerCreatedEventV1(value: unknown): CustomerCreatedEven
 
 function parseCustomerLifecycleEventV1(
   value: unknown,
-  eventType: 'CUSTOMER_ARCHIVED' | 'CUSTOMER_RESTORED',
-): CustomerArchivedEventV1 | CustomerRestoredEventV1 {
+  eventType: 'CUSTOMER_ARCHIVED' | 'CUSTOMER_RESTORED' | 'CUSTOMER_UPDATED',
+): CustomerArchivedEventV1 | CustomerRestoredEventV1 | CustomerUpdatedEventV1 {
   const event = parseIntegrationEvent(value);
 
   if (event.eventType !== eventType) {
@@ -68,7 +76,7 @@ function parseCustomerLifecycleEventV1(
     throw new TypeError('Customer event payload contains unsupported fields');
   }
 
-  return event as CustomerArchivedEventV1 | CustomerRestoredEventV1;
+  return event as CustomerArchivedEventV1 | CustomerRestoredEventV1 | CustomerUpdatedEventV1;
 }
 
 /** Validates customer archive fact without customer or contact data. */
@@ -79,4 +87,9 @@ export function parseCustomerArchivedEventV1(value: unknown): CustomerArchivedEv
 /** Validates customer restoration fact without customer or contact data. */
 export function parseCustomerRestoredEventV1(value: unknown): CustomerRestoredEventV1 {
   return parseCustomerLifecycleEventV1(value, 'CUSTOMER_RESTORED') as CustomerRestoredEventV1;
+}
+
+/** Validates a minimal customer update fact without personal or commercial data. */
+export function parseCustomerUpdatedEventV1(value: unknown): CustomerUpdatedEventV1 {
+  return parseCustomerLifecycleEventV1(value, 'CUSTOMER_UPDATED') as CustomerUpdatedEventV1;
 }

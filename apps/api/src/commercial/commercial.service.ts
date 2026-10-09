@@ -4,6 +4,7 @@ import type {
   CustomerArchivedEventV1,
   CustomerCreatedEventV1,
   CustomerRestoredEventV1,
+  CustomerUpdatedEventV1,
   OpportunityCreatedEventV1,
   OpportunityLostEventV1,
   OpportunityQualifiedEventV1,
@@ -500,7 +501,39 @@ export class CommercialService {
         },
       });
 
-      await this.store.audit(tx, 'commercial.customer_updated', actor, customerId, traceId);
+      const audit = await this.store.audit(
+        tx,
+        'commercial.customer_updated',
+        actor,
+        customerId,
+        traceId,
+      );
+      const event: CustomerUpdatedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'CUSTOMER_UPDATED',
+        schemaVersion: 1,
+        occurredAt: audit.createdAt.toISOString(),
+        organizationId: actor.organizationId,
+        aggregateId: customerId,
+        producer: 'crm',
+        correlationId: traceId,
+        payload: { customerId, auditEventId: audit.id },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Customer',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: audit.createdAt,
+          payload: event.payload,
+          dedupeKey: `CUSTOMER_UPDATED:${audit.id}`,
+        },
+      });
       return updated;
     });
   }

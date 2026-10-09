@@ -40,11 +40,13 @@ export type {
   CustomerArchivedEventV1,
   CustomerCreatedEventV1,
   CustomerRestoredEventV1,
+  CustomerUpdatedEventV1,
 } from './customer-events.js';
 export {
   parseCustomerArchivedEventV1,
   parseCustomerCreatedEventV1,
   parseCustomerRestoredEventV1,
+  parseCustomerUpdatedEventV1,
 } from './customer-events.js';
 export type {
   OpportunityCreatedEventV1,
