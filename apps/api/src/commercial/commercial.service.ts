@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import type {
+  CustomerArchivedEventV1,
   CustomerCreatedEventV1,
+  CustomerRestoredEventV1,
   OpportunityCreatedEventV1,
   OpportunityLostEventV1,
   OpportunityQualifiedEventV1,
@@ -539,7 +541,39 @@ export class CommercialService {
         },
       });
 
-      await this.store.audit(tx, 'commercial.customer_archived', actor, customerId, traceId);
+      const audit = await this.store.audit(
+        tx,
+        'commercial.customer_archived',
+        actor,
+        customerId,
+        traceId,
+      );
+      const event: CustomerArchivedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'CUSTOMER_ARCHIVED',
+        schemaVersion: 1,
+        occurredAt: audit.createdAt.toISOString(),
+        organizationId: actor.organizationId,
+        aggregateId: customerId,
+        producer: 'crm',
+        correlationId: traceId,
+        payload: { customerId, auditEventId: audit.id },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Customer',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: audit.createdAt,
+          payload: event.payload,
+          dedupeKey: `CUSTOMER_ARCHIVED:${audit.id}`,
+        },
+      });
       return updated;
     });
   }
@@ -568,7 +602,39 @@ export class CommercialService {
         },
       });
 
-      await this.store.audit(tx, 'commercial.customer_restored', actor, customerId, traceId);
+      const audit = await this.store.audit(
+        tx,
+        'commercial.customer_restored',
+        actor,
+        customerId,
+        traceId,
+      );
+      const event: CustomerRestoredEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'CUSTOMER_RESTORED',
+        schemaVersion: 1,
+        occurredAt: audit.createdAt.toISOString(),
+        organizationId: actor.organizationId,
+        aggregateId: customerId,
+        producer: 'crm',
+        correlationId: traceId,
+        payload: { customerId, auditEventId: audit.id },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Customer',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: audit.createdAt,
+          payload: event.payload,
+          dedupeKey: `CUSTOMER_RESTORED:${audit.id}`,
+        },
+      });
       return updated;
     });
   }

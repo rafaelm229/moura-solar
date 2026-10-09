@@ -36,8 +36,16 @@ export {
   parseProposalRejectedEventV1,
   parseProposalVersionCreatedEventV1,
 } from './proposal-events.js';
-export type { CustomerCreatedEventV1 } from './customer-events.js';
-export { parseCustomerCreatedEventV1 } from './customer-events.js';
+export type {
+  CustomerArchivedEventV1,
+  CustomerCreatedEventV1,
+  CustomerRestoredEventV1,
+} from './customer-events.js';
+export {
+  parseCustomerArchivedEventV1,
+  parseCustomerCreatedEventV1,
+  parseCustomerRestoredEventV1,
+} from './customer-events.js';
 export type {
   OpportunityCreatedEventV1,
   OpportunityLostEventV1,
