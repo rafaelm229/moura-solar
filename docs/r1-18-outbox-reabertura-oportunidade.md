@@ -4,8 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Validado localmente na branch `codex/r1-18-opportunity-reopened`;
-CI e consolidação ainda pendentes.
+**Estado:** Consolidado no PR #44, merge commit `97788b4`; CI completa verde.
 
 **SPECs:** [SPEC-001](../specs/SPEC-001-jornada-cliente/spec.md),
 [SPEC-004](../specs/SPEC-004-clientes-oportunidades/spec.md),
@@ -57,7 +56,7 @@ Os testes de `@moura-solar/contracts` passaram (39/39); build da API passou;
 `tests/commercial.integration.mjs` passou 11/11 com PostgreSQL e MinIO locais,
 incluindo autorização e rollback da reabertura. `pnpm check` passou em formatação,
 lint, typecheck, 1.257 testes da API, 5 da web, 24 testes offline do harness
-histórico da PoC e build. Prettier, links locais e `git diff --check` passaram.
-Nenhuma migration. CI e consolidação ainda não ocorreram; R1 permanece em
-andamento. A importação de contas continua manual conforme ADR-008, fora do
-escopo deste incremento.
+histórico da PoC e build. CI completa passou com geração da API, migrations,
+integrações e E2E. Prettier, links locais e `git diff --check` passaram.
+Nenhuma migration de aplicação. R1 permanece em andamento. A importação de
+contas continua manual conforme ADR-008, fora do escopo deste incremento.
