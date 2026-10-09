@@ -108,7 +108,8 @@ da transição de reabertura já permitida; o evento omite a justificativa e seg
 sem dispatcher ou consumidor. O [R1-19](r1-19-outbox-rejeicao-proposta.md) está
 em implementação para registrar `PROPOSAL_REJECTED` na transação existente,
 usando o ID da auditoria para identidade/deduplicação e sem motivo ou notas no
-payload.
+payload. Foi consolidado no PR #46 (`8a5159c`), com CI completa verde e sem
+dispatcher ou consumidor.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
