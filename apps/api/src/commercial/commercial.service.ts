@@ -4,6 +4,7 @@ import type {
   ActivityCanceledEventV1,
   ActivityCompletedEventV1,
   ActivityCreatedEventV1,
+  ActivityRescheduledEventV1,
   CustomerArchivedEventV1,
   CustomerCreatedEventV1,
   CustomerRestoredEventV1,
@@ -1744,7 +1745,44 @@ export class CommercialService {
         },
       });
 
-      await this.store.audit(tx, 'commercial.activity_rescheduled', actor, activityId, traceId);
+      const audit = await this.store.audit(
+        tx,
+        'commercial.activity_rescheduled',
+        actor,
+        activityId,
+        traceId,
+      );
+      const event: ActivityRescheduledEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'ACTIVITY_RESCHEDULED',
+        schemaVersion: 1,
+        occurredAt: audit.createdAt.toISOString(),
+        organizationId: actor.organizationId,
+        aggregateId: activityId,
+        producer: 'crm',
+        correlationId: traceId,
+        payload: {
+          activityId,
+          auditEventId: audit.id,
+          ...(activity.customerId ? { customerId: activity.customerId } : {}),
+          ...(activity.opportunityId ? { opportunityId: activity.opportunityId } : {}),
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Activity',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: audit.createdAt,
+          payload: event.payload,
+          dedupeKey: `ACTIVITY_RESCHEDULED:${audit.id}`,
+        },
+      });
       return updated;
     });
   }

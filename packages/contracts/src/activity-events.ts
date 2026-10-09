@@ -31,6 +31,16 @@ export type ActivityCompletedEventV1 = IntegrationEvent<{
   schemaVersion: 1;
 };
 
+export type ActivityRescheduledEventV1 = IntegrationEvent<{
+  activityId: string;
+  auditEventId: string;
+  customerId?: string;
+  opportunityId?: string;
+}> & {
+  eventType: 'ACTIVITY_RESCHEDULED';
+  schemaVersion: 1;
+};
+
 function hasIdentifier(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
@@ -138,4 +148,38 @@ export function parseActivityCompletedEventV1(value: unknown): ActivityCompleted
   }
 
   return event as ActivityCompletedEventV1;
+}
+
+/** Validates activity rescheduling without due date, notes, or activity text. */
+export function parseActivityRescheduledEventV1(value: unknown): ActivityRescheduledEventV1 {
+  const event = parseIntegrationEvent(value);
+
+  if (event.eventType !== 'ACTIVITY_RESCHEDULED') {
+    throw new TypeError('Activity event eventType is unsupported');
+  }
+  if (event.schemaVersion !== 1) {
+    throw new TypeError('Activity event schemaVersion is unsupported');
+  }
+  for (const field of ['activityId', 'auditEventId'] as const) {
+    if (!hasIdentifier(event.payload[field])) {
+      throw new TypeError(`Activity event payload ${field} is required`);
+    }
+  }
+  if (event.payload.activityId !== event.aggregateId) {
+    throw new TypeError('Activity event payload activityId must match aggregateId');
+  }
+  for (const field of ['customerId', 'opportunityId'] as const) {
+    if (event.payload[field] !== undefined && !hasIdentifier(event.payload[field])) {
+      throw new TypeError(`Activity event payload ${field} must be nonempty`);
+    }
+  }
+  if (
+    Object.keys(event.payload).some(
+      (field) => !['activityId', 'auditEventId', 'customerId', 'opportunityId'].includes(field),
+    )
+  ) {
+    throw new TypeError('Activity event payload contains unsupported fields');
+  }
+
+  return event as ActivityRescheduledEventV1;
 }

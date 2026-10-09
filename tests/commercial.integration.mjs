@@ -1926,3 +1926,136 @@ test('activity completion emits a minimal event with an optional follow-up ID at
     eventCountBefore + 1,
   );
 });
+
+test('activity reschedule emits a minimal correlated event atomically with its audit', async () => {
+  const customer = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: `Cliente reagendamento atividade ${randomUUID()}`,
+  });
+  assert.equal(customer.status, 201);
+  const initialDueAt = new Date(Date.now() + 86400000);
+  const activity = await seller.call('activities', 'POST', {
+    customerId: customer.body.id,
+    type: 'CALL',
+    subject: 'Atividade a reagendar',
+    description: 'Descrição inicial',
+    dueAt: initialDueAt.toISOString(),
+  });
+  assert.equal(activity.status, 201);
+  const activityId = activity.body.id;
+  const eventCountBefore = await db.integrationOutbox.count({
+    where: { eventType: 'ACTIVITY_RESCHEDULED', aggregateId: activityId },
+  });
+  const auditCountBefore = await db.auditEvent.count({
+    where: { action: 'commercial.activity_rescheduled', entityId: activityId },
+  });
+
+  const unauthenticated = await new Client().call(`activities/${activityId}/reschedule`, 'POST', {
+    expectedVersion: 1,
+    dueAt: new Date(Date.now() + 172800000).toISOString(),
+  });
+  assert.equal(unauthenticated.status, 401);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'ACTIVITY_RESCHEDULED', aggregateId: activityId },
+    }),
+    eventCountBefore,
+  );
+
+  const rejectedDueAt = new Date(Date.now() + 259200000);
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_activity_rescheduled_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'ACTIVITY_RESCHEDULED' THEN
+        RAISE EXCEPTION 'forced activity reschedule outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_activity_rescheduled_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_activity_rescheduled_outbox_for_test()
+  `);
+  const failed = await seller.call(`activities/${activityId}/reschedule`, 'POST', {
+    expectedVersion: 1,
+    dueAt: rejectedDueAt.toISOString(),
+    notes: 'Observação privada rollback',
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_activity_rescheduled_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(
+    `DROP FUNCTION "${schema}".reject_activity_rescheduled_outbox_for_test()`,
+  );
+  assert.equal(failed.status, 500);
+  const afterFailure = await db.activity.findUnique({ where: { id: activityId } });
+  assert.equal(afterFailure.dueAt.toISOString(), initialDueAt.toISOString());
+  assert.equal(afterFailure.version, 1);
+  assert.equal(afterFailure.description, 'Descrição inicial');
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'commercial.activity_rescheduled', entityId: activityId },
+    }),
+    auditCountBefore,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'ACTIVITY_RESCHEDULED', aggregateId: activityId },
+    }),
+    eventCountBefore,
+  );
+
+  const requestId = `r1-activity-rescheduled-${randomUUID()}`;
+  const dueAt = new Date(Date.now() + 345600000);
+  const notes = `Observação privada ${randomUUID()}`;
+  const rescheduled = await seller.call(
+    `activities/${activityId}/reschedule`,
+    'POST',
+    { expectedVersion: 1, dueAt: dueAt.toISOString(), notes },
+    { 'x-request-id': requestId },
+  );
+  assert.equal(rescheduled.status, 200);
+  assert.equal(rescheduled.body.version, 2);
+  assert.equal(new Date(rescheduled.body.dueAt).toISOString(), dueAt.toISOString());
+  assert.match(rescheduled.body.description, /Observação privada/);
+  const audit = await db.auditEvent.findFirst({
+    where: {
+      action: 'commercial.activity_rescheduled',
+      entityId: activityId,
+      traceId: requestId,
+    },
+  });
+  assert.ok(audit);
+  const event = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `ACTIVITY_RESCHEDULED:${audit.id}` },
+  });
+  assert.ok(event);
+  assert.equal(event.eventType, 'ACTIVITY_RESCHEDULED');
+  assert.equal(event.schemaVersion, 1);
+  assert.equal(event.aggregateType, 'Activity');
+  assert.equal(event.aggregateId, activityId);
+  assert.equal(event.producer, 'crm');
+  assert.equal(event.correlationId, requestId);
+  assert.equal(event.publishedAt, null);
+  assert.deepEqual(event.payload, {
+    activityId,
+    auditEventId: audit.id,
+    customerId: customer.body.id,
+  });
+  assert.equal(JSON.stringify(event.payload).includes(dueAt.toISOString()), false);
+  assert.equal(JSON.stringify(event.payload).includes(notes), false);
+
+  const stale = await seller.call(`activities/${activityId}/reschedule`, 'POST', {
+    expectedVersion: 1,
+    dueAt: new Date(Date.now() + 432000000).toISOString(),
+  });
+  assert.equal(stale.status, 409);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'ACTIVITY_RESCHEDULED', aggregateId: activityId },
+    }),
+    eventCountBefore + 1,
+  );
+});

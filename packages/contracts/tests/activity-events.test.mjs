@@ -4,6 +4,7 @@ import {
   parseActivityCanceledEventV1,
   parseActivityCompletedEventV1,
   parseActivityCreatedEventV1,
+  parseActivityRescheduledEventV1,
 } from '../dist/index.js';
 
 function validEvent() {
@@ -144,6 +145,36 @@ test('ActivityCompletedEventV1 rejects unsupported type/version and result data'
       parseActivityCompletedEventV1({
         ...event,
         payload: { ...event.payload, resultNotes: 'private result' },
+      }),
+    /unsupported fields/,
+  );
+});
+
+test('ActivityRescheduledEventV1 accepts minimal IDs and optional links', () => {
+  const event = { ...validEvent(), eventType: 'ACTIVITY_RESCHEDULED' };
+  assert.deepEqual(parseActivityRescheduledEventV1(event), event);
+  const linked = {
+    ...event,
+    payload: { ...event.payload, customerId: 'customer-1', opportunityId: 'opportunity-1' },
+  };
+  assert.deepEqual(parseActivityRescheduledEventV1(linked), linked);
+});
+
+test('ActivityRescheduledEventV1 rejects unsupported type/version and schedule details', () => {
+  const event = { ...validEvent(), eventType: 'ACTIVITY_RESCHEDULED' };
+  assert.throws(
+    () => parseActivityRescheduledEventV1({ ...event, eventType: 'ACTIVITY_COMPLETED' }),
+    /eventType is unsupported/,
+  );
+  assert.throws(
+    () => parseActivityRescheduledEventV1({ ...event, schemaVersion: 2 }),
+    /schemaVersion is unsupported/,
+  );
+  assert.throws(
+    () =>
+      parseActivityRescheduledEventV1({
+        ...event,
+        payload: { ...event.payload, dueAt: '2026-10-10T12:00:00.000Z', notes: 'private' },
       }),
     /unsupported fields/,
   );
