@@ -66,9 +66,10 @@ PR #28: valida runtime os dois payloads conhecidos, sem ligar consumidor ou OCR;
 por isso não exigiu deploy local.
 O [R1-05](docs/r1-inventario-integracao-2026-10-08.md) documenta o inventário
 encontrado de auditoria, outbox de importação e projeções, sem ativar consumidor.
-A proposta [ADR-007](docs/adr/ADR-007-transporte-integracao-proposta.md) avalia
-polling PostgreSQL como transporte inicial; o domínio do piloto OCR foi
-escolhido condicionalmente aos gates da PoC, sem autorização de ativação.
+A proposta histórica [ADR-007](docs/adr/ADR-007-transporte-integracao-proposta.md)
+avaliou polling PostgreSQL para o piloto OCR, depois retirado pela
+[ADR-008](docs/adr/ADR-008-importacao-manual-sem-ocr.md). Contas continuam com
+transcrição e conferência manuais; não há PoC nem extração automática planejada.
 O [R1-07](docs/r1-guard-evento-import-2026-10-08.md) restringe o claim a payloads
 v1 coerentes no worker; o entrypoint continua sem consumidor ativo.
 

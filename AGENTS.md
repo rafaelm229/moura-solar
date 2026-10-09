@@ -62,8 +62,9 @@
 - Engenharia, homologação, instalação, pós-venda e automações existentes continuam
   funcionando. Sua expansão/refatoração vem depois da V1; corrigir regressões
   nesses módulos continua permitido.
-- Documentos acompanham a V1 quando necessários. OCR depende da PoC, das decisões
-  operacionais e de consumidor ativo; não confundir intake/revisão com extração.
+- Documentos acompanham a V1 quando necessários. Contas de energia seguem com
+  intake, transcrição, revisão e confirmação manuais conforme ADR-008; não há PoC,
+  OCR ou extração automática no roadmap vigente.
 - Toda feature tem ID, fase, SPEC, dependências, aceite e evidência no registro.
   Um item no roadmap não autoriza implementar todo o backlog na tarefa atual.
 - Executar somente o incremento solicitado ou marcado como ativo com autorização.
