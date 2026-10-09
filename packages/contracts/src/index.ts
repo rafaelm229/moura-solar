@@ -40,11 +40,13 @@ export type {
   OpportunityCreatedEventV1,
   OpportunityLostEventV1,
   OpportunityQualifiedEventV1,
+  OpportunityReopenedEventV1,
 } from './opportunity-events.js';
 export {
   parseOpportunityCreatedEventV1,
   parseOpportunityLostEventV1,
   parseOpportunityQualifiedEventV1,
+  parseOpportunityReopenedEventV1,
 } from './opportunity-events.js';
 export type { UtilityUnitCreatedEventV1 } from './utility-unit-events.js';
 export { parseUtilityUnitCreatedEventV1 } from './utility-unit-events.js';

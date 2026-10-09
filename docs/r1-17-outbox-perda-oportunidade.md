@@ -4,7 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Em implementação na branch `codex/r1-17-opportunity-lost`.
+**Estado:** Consolidado no PR #43, merge commit `60a73ec`; CI completa verde.
 
 **SPECs:** [SPEC-001](../specs/SPEC-001-jornada-cliente/spec.md),
 [SPEC-004](../specs/SPEC-004-clientes-oportunidades/spec.md),
@@ -53,5 +53,6 @@ Os testes de `@moura-solar/contracts` passaram (36/36); build da API passou;
 `tests/commercial.integration.mjs` passou 11/11 com PostgreSQL/MinIO locais,
 incluindo rollback total da transação. `pnpm check` passou em formatação, lint,
 typecheck, 1.257 testes e build; Prettier, links locais e `git diff --check`
-passaram. Nenhuma migration. R1 continua em andamento. Não altera regras de
-perda/reabertura nem a importação manual de contas definida pela ADR-008.
+passaram. CI completa passou antes da consolidação. Nenhuma migration. R1
+continua em andamento. Não altera regras de perda/reabertura nem a importação
+manual de contas definida pela ADR-008.

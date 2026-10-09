@@ -98,9 +98,13 @@ atomicamente com nova versão, auditoria e linhagem, sem snapshots ou preço; PD
 continua sendo gerado depois da transação. O [R1-16](r1-16-outbox-qualificacao-oportunidade.md)
 foi consolidado no PR #42 (`6442fc7`) com CI completa para registrar
 `OPPORTUNITY_QUALIFIED` junto da transição CRM já persistida; deduplicação usa
-o ID imutável da transição e os gates permanecem iguais. O [R1-17](r1-17-outbox-perda-oportunidade.md)
-está em implementação para registrar `OPPORTUNITY_LOST` ligado à transição
-durável; o evento omite motivo e observações da perda.
+o ID imutável da transição e os gates permanecem iguais. O
+[R1-17](r1-17-outbox-perda-oportunidade.md) foi consolidado no PR #43
+(`60a73ec`), com CI completa, para registrar `OPPORTUNITY_LOST` junto da
+transição durável; o evento omite motivo e observações da perda. O
+[R1-18](r1-18-outbox-reabertura-oportunidade.md) está em implementação para
+registrar `OPPORTUNITY_REOPENED` junto da transição de reabertura já permitida;
+o evento omite a justificativa.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
