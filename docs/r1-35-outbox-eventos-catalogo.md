@@ -4,8 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Implementado em branch `codex/r1-35-catalog-events`; validação local
-concluída, aguardando CI.
+**Estado:** Consolidado no PR #77, merge `2680bff`; CI #133 completa verde.
 
 **SPECs:** [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md),
 [SPEC-017](../specs/SPEC-017-catalogo-produtos/spec.md) e
@@ -48,8 +47,10 @@ CatalogItem e suas auditorias já usam transações locais.
   incluindo correlação, payload mínimo e rollback de criação/atualização no
   PostgreSQL local com schema isolado.
 - `pnpm --filter @moura-solar/contracts test`: 60/60; build da API concluído.
-- `git diff --check`: sem erros. CI remota ainda não executada; não declarado
-  consolidado nem liberado.
+- CI #133: `pnpm check`, geração da API, migrations, integração completa e E2E
+  passaram.
+- Links locais, Prettier e `git diff --check`: sem erros.
+- Consolidado na branch `feat/proposal-visual-clarity`; não liberado em `main`.
 
 ## Rollback
 
