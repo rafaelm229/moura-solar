@@ -500,28 +500,39 @@ test('registro de envio (WHATSAPP) atualiza validade (10 dias), transita oportun
   });
 });
 
-test('registro de aceite marca proposta como ACCEPTED, avança oportunidade para CONTRATACAO e bloqueia novos aceites (HTTP 409)', async () => {
+test('registro de aceite cria eventos de aceite e atividade atomicamente, avança oportunidade e bloqueia novo aceite (HTTP 409)', async () => {
   const propList = await admin.call(`opportunities/${testOpportunityId}/proposals`);
   const versionId = propList.body[0].versions[0].id;
+  const beforeActivityCount = await db.activity.count({
+    where: { opportunityId: testOpportunityId },
+  });
+  const beforeAuditCount = await db.auditEvent.count({
+    where: { action: 'PROPOSAL_ACCEPTED', entityId: propList.body[0].id },
+  });
 
   await db.$executeRawUnsafe(`
-    CREATE FUNCTION "${schema}".reject_outbox_for_test() RETURNS trigger AS $$
-    BEGIN RAISE EXCEPTION 'forced outbox insert failure'; END;
+    CREATE FUNCTION "${schema}".reject_activity_created_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'ACTIVITY_CREATED' THEN
+        RAISE EXCEPTION 'forced activity outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
     $$ LANGUAGE plpgsql
   `);
   await db.$executeRawUnsafe(`
-    CREATE TRIGGER reject_outbox_for_test
+    CREATE TRIGGER reject_activity_created_outbox_for_test
     BEFORE INSERT ON "${schema}"."integration_outbox"
-    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_outbox_for_test()
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_activity_created_outbox_for_test()
   `);
   const failedAcceptRes = await admin.call(`proposal-versions/${versionId}/accept`, 'POST', {
     method: 'MESSAGE',
     acceptedByName: 'Aceite com falha de persistência',
   });
   await db.$executeRawUnsafe(
-    `DROP TRIGGER reject_outbox_for_test ON "${schema}"."integration_outbox"`,
+    `DROP TRIGGER reject_activity_created_outbox_for_test ON "${schema}"."integration_outbox"`,
   );
-  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_outbox_for_test()`);
+  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_activity_created_outbox_for_test()`);
   assert.equal(failedAcceptRes.status, 500);
   assert.equal(await db.proposalAcceptance.count({ where: { proposalVersionId: versionId } }), 0);
   assert.equal(
@@ -529,6 +540,26 @@ test('registro de aceite marca proposta como ACCEPTED, avança oportunidade para
       where: { aggregateId: propList.body[0].id, eventType: 'PROPOSAL_ACCEPTED' },
     }),
     0,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { aggregateId: propList.body[0].id, eventType: 'PROPOSAL_ACCEPTED' },
+    }),
+    0,
+  );
+  assert.equal(
+    await db.activity.count({ where: { opportunityId: testOpportunityId } }),
+    beforeActivityCount,
+  );
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'PROPOSAL_ACCEPTED', entityId: propList.body[0].id },
+    }),
+    beforeAuditCount,
+  );
+  assert.equal(
+    (await db.opportunity.findUnique({ where: { id: testOpportunityId } })).state,
+    'PROPOSTA_APRESENTADA',
   );
   assert.equal((await db.proposalVersion.findUnique({ where: { id: versionId } })).status, 'SENT');
 
@@ -581,6 +612,30 @@ test('registro de aceite marca proposta como ACCEPTED, avança oportunidade para
     (a) => a.type === 'MEETING' && a.subject.includes('Formalização Contratual'),
   );
   assert.ok(contractActivity, 'Atividade de formalização contratual deve ser criada');
+  const acceptanceAudit = await db.auditEvent.findFirst({
+    where: { action: 'PROPOSAL_ACCEPTED', entityId: propList.body[0].id },
+    orderBy: { createdAt: 'desc' },
+  });
+  const activityEvent = await db.integrationOutbox.findFirst({
+    where: {
+      organizationId: acceptance.organizationId,
+      dedupeKey: `ACTIVITY_CREATED:${acceptanceAudit.id}:${contractActivity.id}`,
+    },
+  });
+  assert.ok(activityEvent, 'Criação da atividade deve ter evento na outbox');
+  assert.equal(activityEvent.eventType, 'ACTIVITY_CREATED');
+  assert.equal(activityEvent.schemaVersion, 1);
+  assert.equal(activityEvent.aggregateType, 'Activity');
+  assert.equal(activityEvent.aggregateId, contractActivity.id);
+  assert.equal(activityEvent.correlationId, acceptRes.headers.get('x-request-id'));
+  assert.equal(activityEvent.publishedAt, null);
+  assert.deepEqual(activityEvent.payload, {
+    activityId: contractActivity.id,
+    auditEventId: acceptanceAudit.id,
+    customerId: testCustomerId,
+    opportunityId: testOpportunityId,
+  });
+  assert.equal(activityEvent.occurredAt.toISOString(), acceptanceAudit.createdAt.toISOString());
 
   // SPEC-006 Item 19: Second acceptance attempt on the same opportunity must fail with 409 Conflict
   const secondAcceptRes = await admin.call(`proposal-versions/${versionId}/accept`, 'POST', {

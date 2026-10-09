@@ -852,7 +852,7 @@ export class ProposalService {
       });
 
       // 7. Create contract formalization activity
-      await tx.activity.create({
+      const contractActivity = await tx.activity.create({
         data: {
           organizationId,
           opportunityId: opp.id,
@@ -867,7 +867,7 @@ export class ProposalService {
       });
 
       // 8. Audit event
-      await this.audit.record(
+      const acceptanceAudit = await this.audit.record(
         {
           organizationId,
           actorId: userId,
@@ -907,6 +907,38 @@ export class ProposalService {
           occurredAt: acceptedAt,
           payload: event.payload,
           dedupeKey: `PROPOSAL_ACCEPTED:${acceptance.id}`,
+        },
+      });
+
+      const activityEvent: ActivityCreatedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'ACTIVITY_CREATED',
+        schemaVersion: 1,
+        occurredAt: acceptanceAudit.createdAt.toISOString(),
+        organizationId,
+        aggregateId: contractActivity.id,
+        producer: 'crm',
+        correlationId,
+        payload: {
+          activityId: contractActivity.id,
+          auditEventId: acceptanceAudit.id,
+          customerId: opp.customerId,
+          opportunityId: opp.id,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: activityEvent.eventId,
+          organizationId: activityEvent.organizationId,
+          eventType: activityEvent.eventType,
+          schemaVersion: activityEvent.schemaVersion,
+          aggregateType: 'Activity',
+          aggregateId: activityEvent.aggregateId,
+          producer: activityEvent.producer,
+          correlationId: activityEvent.correlationId,
+          occurredAt: acceptanceAudit.createdAt,
+          payload: activityEvent.payload,
+          dedupeKey: `ACTIVITY_CREATED:${acceptanceAudit.id}:${contractActivity.id}`,
         },
       });
 
