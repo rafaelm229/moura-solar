@@ -156,6 +156,9 @@ registro de entrega de proposta. `pnpm check` e a integração de propostas
 passaram localmente; a CI #125 falhou antes do checkout/testes ao baixar
 `postgres:17-alpine` do Docker Hub (timeout/limite anônimo), portanto a CI remota
 não foi validada.
+O [R1-32](r1-32-outbox-atividade-formalizacao-proposta.md) está em implementação
+para registrar `ACTIVITY_CREATED` v1 para a atividade de formalização criada no
+aceite da proposta, compartilhando a auditoria existente e sem ativar consumidor.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
