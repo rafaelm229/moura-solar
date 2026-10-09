@@ -73,6 +73,10 @@ roadmap por ADR-008. Ela não seleciona um consumidor ativo.
 O [R1-07](r1-guard-evento-import-2026-10-08.md) consolidou no PR #32 a guarda
 de versão/payload no claim do worker; CI #86 passou. Não ativa consumidor nem
 altera linhas legadas, portanto não exigiu deploy.
+O [R1-08](r1-08-contrato-aceite-proposta.md) foi validado no commit `df2b571`;
+define apenas o contrato de aceite de proposta. R1-09 adiciona a persistência
+transacional local desse fato e passou testes locais de migration, integração e
+`pnpm check`; continua sem consumidor, dispatcher ou transporte.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
@@ -137,7 +141,8 @@ ADR-008; não há piloto OCR planejado. R1-07 protege claims v1, mas ainda falta
 transporte, inbox/retenção, retry/quarentena/replay e evidência de crash. O
 inventário R1-05 e a proposta histórica ADR-007 não habilitam consumidor. A
 decisão ADR-008 deixa sem escopo o consumidor de OCR; os demais gates do R1
-continuam independentes.
+continuam independentes. R1-09 não aprova despacho; inbox, retries, replay,
+retenção final e reconciliação seguem pendentes.
 
 ## Adiados, sem implementação nesta fase
 

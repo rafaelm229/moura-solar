@@ -50,6 +50,10 @@ O [R1-08](../../docs/r1-08-contrato-aceite-proposta.md) adiciona o contrato
 versionado de `PROPOSAL_ACCEPTED` em `packages/contracts`. Ele não publica o fato,
 altera a transação atual de aceite nem escolhe consumidor ou transporte.
 
+O [R1-09](../../docs/r1-09-outbox-aceite-proposta.md) persiste o evento v1 na
+mesma transação local do aceite. A linha ainda não é despachada e não ativa
+worker, transporte ou consumidor.
+
 Eventos candidatos: customer.created, lead.created, opportunity.created,
 project.created, consumption.validated, proposal.generated, proposal.accepted,
 contract.signed, inventory.reserved, finance.receivable_created.
@@ -108,7 +112,8 @@ mostra freshness/atraso; usuários só veem organização e escopo autorizados.
 ## Tarefas
 
 - [x] Inventariar audit events, ImportOutbox e projeções existentes ([R1-05](../../docs/r1-inventario-integracao-2026-10-08.md)); inventário limitado aos caminhos localizados, sem escolha de transporte/consumidor.
-- [ ] Definir e publicar contratos versionados dos demais fatos necessários em packages/contracts.
+- [x] Persistir `PROPOSAL_ACCEPTED` v1 na outbox local, atomicamente com aceite ([R1-09](../../docs/r1-09-outbox-aceite-proposta.md)); sem dispatcher/consumidor.
+- [ ] Definir e publicar contratos versionados dos demais fatos necessários em packages/contracts; R1-08 cobre somente `PROPOSAL_ACCEPTED`.
 - [ ] Definir transporte, outbox/inbox e retenção somente quando houver produtor e consumidor justificados para um fluxo vigente. A PoC OCR foi encerrada pela [ADR-008](../../docs/adr/ADR-008-importacao-manual-sem-ocr.md); a proposta de transporte [ADR-007](../../docs/adr/ADR-007-transporte-integracao-proposta.md) é histórica e não autoriza ativação.
 - [ ] Simular crash, duplicidade, atraso, replay e falha de consumidor.
 - [ ] Definir backfill e métricas Gold após estabilizar a V1.

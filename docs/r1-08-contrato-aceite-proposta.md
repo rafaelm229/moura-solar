@@ -4,8 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Implementado em branch `codex/poc-01-decisions`; validação local
-pendente.
+**Estado:** Validado localmente em `codex/poc-01-decisions`, commit `df2b571`.
 
 **SPECs:** [SPEC-006](../specs/SPEC-006-propostas/spec.md),
 [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e

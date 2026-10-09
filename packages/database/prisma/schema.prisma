@@ -24,6 +24,7 @@ model Organization {
   energyReadings EnergyReading[]
   energyBillImports EnergyBillImport[]
   energyImportOutbox ImportOutbox[]
+  integrationOutboxEvents IntegrationOutbox[]
   importReviews ImportReview[]
   importApplications ImportApplication[]
   energyReadingRevisions EnergyReadingRevision[]
@@ -265,6 +266,29 @@ model AuditEvent {
 
   @@index([organizationId, createdAt])
   @@map("audit_events")
+}
+
+model IntegrationOutbox {
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  eventType      String    @map("event_type")
+  schemaVersion  Int       @map("schema_version")
+  aggregateType  String    @map("aggregate_type")
+  aggregateId    String    @map("aggregate_id")
+  producer       String
+  correlationId  String    @map("correlation_id")
+  occurredAt     DateTime  @map("occurred_at")
+  payload        Json      @db.JsonB
+  dedupeKey      String    @map("dedupe_key")
+  publishedAt    DateTime? @map("published_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, dedupeKey])
+  @@index([organizationId, publishedAt, createdAt])
+  @@index([aggregateType, aggregateId, createdAt])
+  @@map("integration_outbox")
 }
 
 model IdentityCommand {

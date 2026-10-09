@@ -15,9 +15,10 @@ import {
   RecordProposalAcceptanceDto,
   RecordProposalRejectionDto,
 } from './proposal.dto';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { ConfigService } from '@nestjs/config';
 import { AuditService } from '../database/audit.service';
+import type { ProposalAcceptedEventV1 } from '@moura-solar/contracts';
 
 const proposalStatusLabels: Record<string, string> = {
   DRAFT: 'rascunho',
@@ -635,6 +636,7 @@ export class ProposalService {
     versionId: string,
     userId: string,
     dto: RecordProposalAcceptanceDto,
+    correlationId: string,
   ) {
     const acceptedAt = new Date();
 
@@ -764,6 +766,39 @@ export class ProposalService {
         },
         tx,
       );
+
+      const eventId = randomUUID();
+      const event: ProposalAcceptedEventV1 = {
+        eventId,
+        eventType: 'PROPOSAL_ACCEPTED',
+        schemaVersion: 1,
+        occurredAt: acceptedAt.toISOString(),
+        organizationId,
+        aggregateId: version.proposalId,
+        producer: 'proposal',
+        correlationId,
+        payload: {
+          acceptanceId: acceptance.id,
+          proposalVersionId: version.id,
+          opportunityId: opp.id,
+        },
+      };
+
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Proposal',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: acceptedAt,
+          payload: event.payload,
+          dedupeKey: `PROPOSAL_ACCEPTED:${acceptance.id}`,
+        },
+      });
 
       return acceptance;
     });
