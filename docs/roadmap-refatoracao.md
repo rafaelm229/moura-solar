@@ -82,9 +82,11 @@ implementação, foi validado localmente, passou CI completa e foi consolidado n
 PR #35 (`4607133`) para versionar e persistir `CUSTOMER_CREATED` atomicamente com
 o cadastro, com payload mínimo e sem PII. O [R1-11](r1-11-outbox-criacao-oportunidade.md)
 está em implementação para persistir `OPPORTUNITY_CREATED` com IDs mínimos na
-transação existente, sem dispatcher ou consumidor.
-R1-11 passou validação local de contrato, integração, `pnpm check` e links; CI
-remota ainda está pendente.
+transação existente, sem dispatcher ou consumidor. R1-11 passou validação local,
+CI completa e foi consolidado no PR #36 (`0f0e6ce`). O [R1-12](r1-12-outbox-criacao-uc.md)
+foi validado localmente para persistir `UTILITY_UNIT_CREATED` com IDs mínimos
+nos dois caminhos existentes de criação de UC; CI remota ainda pendente, sem
+dispatcher ou consumidor.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 

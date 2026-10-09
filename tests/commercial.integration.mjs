@@ -354,6 +354,87 @@ test('opportunity creation emits minimal correlated event atomically with its fi
   assert.equal(JSON.stringify(event.payload).includes(activitySubject), false);
 });
 
+test('utility unit creation emits minimal correlated event atomically', async () => {
+  const customer = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: `Cliente UC R1 ${randomUUID()}`,
+  });
+  assert.equal(customer.status, 201);
+
+  const failedCode = `FAIL-${randomUUID()}`;
+  const auditCountBefore = await db.auditEvent.count({
+    where: { action: 'commercial.utility_unit_created' },
+  });
+  const eventCountBefore = await db.integrationOutbox.count({
+    where: { eventType: 'UTILITY_UNIT_CREATED' },
+  });
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_utility_unit_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'UTILITY_UNIT_CREATED' THEN
+        RAISE EXCEPTION 'forced utility unit outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_utility_unit_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_utility_unit_outbox_for_test()
+  `);
+  const failed = await seller.call(`customers/${customer.body.id}/utility-units`, 'POST', {
+    distributorName: 'Distribuidora R1 falha',
+    externalCode: failedCode,
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_utility_unit_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_utility_unit_outbox_for_test()`);
+
+  assert.equal(failed.status, 500);
+  assert.equal(await db.utilityUnit.count({ where: { customerId: customer.body.id } }), 0);
+  assert.equal(
+    await db.auditEvent.count({ where: { action: 'commercial.utility_unit_created' } }),
+    auditCountBefore,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'UTILITY_UNIT_CREATED' } }),
+    eventCountBefore,
+  );
+
+  const requestId = `r1-utility-unit-${randomUUID()}`;
+  const externalCode = `UC-${randomUUID()}`;
+  const created = await seller.call(
+    `customers/${customer.body.id}/utility-units`,
+    'POST',
+    {
+      distributorName: 'Distribuidora R1 validada',
+      externalCode,
+    },
+    { 'x-request-id': requestId },
+  );
+  assert.equal(created.status, 201);
+
+  const event = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `UTILITY_UNIT_CREATED:${created.body.id}` },
+  });
+  assert.ok(event, 'UC e evento outbox devem persistir juntos');
+  assert.equal(event.eventType, 'UTILITY_UNIT_CREATED');
+  assert.equal(event.schemaVersion, 1);
+  assert.equal(event.aggregateType, 'UtilityUnit');
+  assert.equal(event.aggregateId, created.body.id);
+  assert.equal(event.producer, 'crm');
+  assert.equal(event.correlationId, requestId);
+  assert.equal(event.publishedAt, null);
+  assert.deepEqual(event.payload, {
+    utilityUnitId: created.body.id,
+    customerId: customer.body.id,
+  });
+  assert.equal(JSON.stringify(event.payload).includes(externalCode), false);
+  assert.equal(JSON.stringify(event.payload).includes('Distribuidora'), false);
+});
+
 test('optimistic concurrency prevents silent overwrite on customer updates', async () => {
   const created = await seller.call('customers', 'POST', {
     kind: 'COMPANY',
