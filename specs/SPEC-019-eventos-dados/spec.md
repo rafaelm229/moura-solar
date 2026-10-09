@@ -46,6 +46,10 @@ preparo futuro de tentativas e limita claims aos eventos QUEUED v1 com IDs
 coerentes com importação e versão documental. Eventos incompatíveis permanecem
 intocados e o entrypoint do worker continua sem consumidor ativo.
 
+O [R1-08](../../docs/r1-08-contrato-aceite-proposta.md) adiciona o contrato
+versionado de `PROPOSAL_ACCEPTED` em `packages/contracts`. Ele não publica o fato,
+altera a transação atual de aceite nem escolhe consumidor ou transporte.
+
 Eventos candidatos: customer.created, lead.created, opportunity.created,
 project.created, consumption.validated, proposal.generated, proposal.accepted,
 contract.signed, inventory.reserved, finance.receivable_created.
@@ -104,8 +108,8 @@ mostra freshness/atraso; usuários só veem organização e escopo autorizados.
 ## Tarefas
 
 - [x] Inventariar audit events, ImportOutbox e projeções existentes ([R1-05](../../docs/r1-inventario-integracao-2026-10-08.md)); inventário limitado aos caminhos localizados, sem escolha de transporte/consumidor.
-- [ ] Publicar contratos versionados em packages/contracts.
-- [ ] Aprovar transporte/inbox/retenção para o piloto condicional de importação/OCR; avaliar a [proposta ADR-007](../../docs/adr/ADR-007-transporte-integracao-proposta.md). Gates da SPEC-014 continuam bloqueando ativação.
+- [ ] Definir e publicar contratos versionados dos demais fatos necessários em packages/contracts.
+- [ ] Definir transporte, outbox/inbox e retenção somente quando houver produtor e consumidor justificados para um fluxo vigente. A PoC OCR foi encerrada pela [ADR-008](../../docs/adr/ADR-008-importacao-manual-sem-ocr.md); a proposta de transporte [ADR-007](../../docs/adr/ADR-007-transporte-integracao-proposta.md) é histórica e não autoriza ativação.
 - [ ] Simular crash, duplicidade, atraso, replay e falha de consumidor.
 - [ ] Definir backfill e métricas Gold após estabilizar a V1.
 - [ ] Validar acesso, privacidade, retenção e reconciliação.
