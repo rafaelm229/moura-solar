@@ -10,6 +10,11 @@ registra os parâmetros que haviam sido considerados; não executar seus comando
 Nenhuma conta foi processada, nenhum serviço externo foi contratado e nenhum
 gasto foi realizado. A extração de contas permanece fora do escopo atual.
 
+Todo o conteúdo operacional abaixo — pré-requisitos, comandos, adapters, métricas
+e candidatos de fornecedor — é arquivo histórico da proposta encerrada. Não
+coletar corpus, preparar ambiente, executar comandos nem chamar qualquer API de
+leitura. A SPEC-014 vigente define transcrição manual, revisão e confirmação.
+
 O benchmark e adapter foram preparados para avaliação offline e não fazem parte
 do fluxo ativo de importação.
 

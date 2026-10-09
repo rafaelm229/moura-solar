@@ -325,6 +325,12 @@ test('registro de envio (WHATSAPP) atualiza validade (10 dias), transita oportun
   const followUpCountBefore = await db.activity.count({
     where: { opportunityId: testOpportunityId, type: 'FOLLOW_UP' },
   });
+  const proposalDeliveredEventCountBefore = await db.integrationOutbox.count({
+    where: { eventType: 'PROPOSAL_DELIVERED' },
+  });
+  const activityCreatedEventCountBefore = await db.integrationOutbox.count({
+    where: { eventType: 'ACTIVITY_CREATED' },
+  });
   await db.$executeRawUnsafe(`
     CREATE FUNCTION "${schema}".reject_proposal_delivery_outbox_for_test() RETURNS trigger AS $$
     BEGIN
@@ -366,6 +372,61 @@ test('registro de envio (WHATSAPP) atualiza validade (10 dias), transita oportun
       where: { opportunityId: testOpportunityId, type: 'FOLLOW_UP' },
     }),
     followUpCountBefore,
+  );
+
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_proposal_followup_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'ACTIVITY_CREATED' THEN
+        RAISE EXCEPTION 'forced proposal follow-up outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_proposal_followup_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_proposal_followup_outbox_for_test()
+  `);
+  const failedFollowUpEvent = await admin.call(
+    `proposal-versions/${versionId}/deliveries`,
+    'POST',
+    {
+      channel: 'EMAIL',
+      recipient: 'financeiro@moura.test',
+      notes: 'A falha do evento filho deve reverter a entrega.',
+    },
+  );
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_proposal_followup_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(
+    `DROP FUNCTION "${schema}".reject_proposal_followup_outbox_for_test()`,
+  );
+  assert.equal(failedFollowUpEvent.status, 500);
+  assert.equal(
+    await db.proposalDelivery.count({ where: { proposalVersionId: versionId } }),
+    deliveryCountBefore,
+  );
+  assert.equal((await db.proposalVersion.findUnique({ where: { id: versionId } })).status, 'READY');
+  assert.equal(
+    await db.auditEvent.count({ where: { action: 'PROPOSAL_DELIVERED' } }),
+    auditCountBefore,
+  );
+  assert.equal(
+    await db.activity.count({
+      where: { opportunityId: testOpportunityId, type: 'FOLLOW_UP' },
+    }),
+    followUpCountBefore,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'PROPOSAL_DELIVERED' } }),
+    proposalDeliveredEventCountBefore,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'ACTIVITY_CREATED' } }),
+    activityCreatedEventCountBefore,
   );
 
   const deliveryRes = await admin.call(`proposal-versions/${versionId}/deliveries`, 'POST', {
@@ -410,6 +471,33 @@ test('registro de envio (WHATSAPP) atualiza validade (10 dias), transita oportun
   assert.ok(followUp, 'Atividade automática de follow-up deve existir');
   assert.equal(followUp.status, 'OPEN');
   assert.match(followUp.subject, /Acompanhar proposta PROP-0001, versão 1/);
+  const deliveryAudit = await db.auditEvent.findFirst({
+    where: {
+      action: 'PROPOSAL_DELIVERED',
+      entityId: propList.body[0].id,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  assert.ok(deliveryAudit);
+  const followUpRecord = await db.activity.findUnique({ where: { id: followUp.id } });
+  assert.ok(followUpRecord);
+  const followUpEvent = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `ACTIVITY_CREATED:${deliveryAudit.id}:${followUp.id}` },
+  });
+  assert.ok(followUpEvent);
+  assert.equal(followUpEvent.eventType, 'ACTIVITY_CREATED');
+  assert.equal(followUpEvent.schemaVersion, 1);
+  assert.equal(followUpEvent.aggregateType, 'Activity');
+  assert.equal(followUpEvent.aggregateId, followUp.id);
+  assert.equal(followUpEvent.producer, 'crm');
+  assert.equal(followUpEvent.correlationId, deliveryRes.headers.get('x-request-id'));
+  assert.equal(followUpEvent.publishedAt, null);
+  assert.deepEqual(followUpEvent.payload, {
+    activityId: followUp.id,
+    auditEventId: deliveryAudit.id,
+    customerId: followUpRecord.customerId,
+    opportunityId: testOpportunityId,
+  });
 });
 
 test('registro de aceite marca proposta como ACCEPTED, avança oportunidade para CONTRATACAO e bloqueia novos aceites (HTTP 409)', async () => {

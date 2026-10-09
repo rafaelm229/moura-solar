@@ -150,6 +150,9 @@ O [R1-30](r1-30-outbox-followup-conclusao-atividade.md) foi consolidado no PR
 conclusão de uma atividade. `pnpm check` e integração comercial passaram
 localmente; a CI #123 e sua repetição falharam antes dos testes por rate limit do
 Docker Hub.
+O [R1-31](r1-31-outbox-followup-entrega-proposta.md) está em implementação para
+registrar `ACTIVITY_CREATED` v1 para o follow-up criado no registro de entrega
+de proposta.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 

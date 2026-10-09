@@ -19,6 +19,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { ConfigService } from '@nestjs/config';
 import { AuditService } from '../database/audit.service';
 import type {
+  ActivityCreatedEventV1,
   ProposalAcceptedEventV1,
   ProposalCreatedEventV1,
   ProposalDeliveredEventV1,
@@ -644,7 +645,7 @@ export class ProposalService {
 
       // 4. Create automatic follow-up activity
       const followUpDueAt = new Date(sentAt.getTime() + 2 * 86400000); // 2 days
-      await tx.activity.create({
+      const followUpActivity = await tx.activity.create({
         data: {
           organizationId,
           opportunityId: opp.id,
@@ -659,7 +660,7 @@ export class ProposalService {
       });
 
       // 5. Audit event
-      await this.audit.record(
+      const deliveryAudit = await this.audit.record(
         {
           organizationId,
           actorId: userId,
@@ -699,6 +700,38 @@ export class ProposalService {
           occurredAt: delivery.sentAt,
           payload: event.payload,
           dedupeKey: `PROPOSAL_DELIVERED:${delivery.id}`,
+        },
+      });
+
+      const activityEvent: ActivityCreatedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'ACTIVITY_CREATED',
+        schemaVersion: 1,
+        occurredAt: deliveryAudit.createdAt.toISOString(),
+        organizationId,
+        aggregateId: followUpActivity.id,
+        producer: 'crm',
+        correlationId,
+        payload: {
+          activityId: followUpActivity.id,
+          auditEventId: deliveryAudit.id,
+          customerId: opp.customerId,
+          opportunityId: opp.id,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: activityEvent.eventId,
+          organizationId: activityEvent.organizationId,
+          eventType: activityEvent.eventType,
+          schemaVersion: activityEvent.schemaVersion,
+          aggregateType: 'Activity',
+          aggregateId: activityEvent.aggregateId,
+          producer: activityEvent.producer,
+          correlationId: activityEvent.correlationId,
+          occurredAt: deliveryAudit.createdAt,
+          payload: activityEvent.payload,
+          dedupeKey: `ACTIVITY_CREATED:${deliveryAudit.id}:${followUpActivity.id}`,
         },
       });
 
