@@ -167,6 +167,11 @@ contrato para assinatura, compartilhando a auditoria existente e sem ativar
 consumidor. `pnpm check` e integração de contratos passaram localmente. A CI #129
 falhou antes do checkout/testes por timeout no pull de `postgres:17-alpine`,
 portanto não foi validada.
+O [R1-34](r1-34-outbox-atividade-conferencia-contrato.md) implementa em branch
+`ACTIVITY_CREATED` v1 para a atividade criada pela decisão humana de conferência
+do contrato, aprovado ou rejeitado. Reutiliza auditoria/correlação e transação
+locais; não altera checklist, gates, resposta nem ativa consumidor. Integração
+7/7 e `pnpm check` passaram localmente; CI e consolidação ainda pendentes.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 

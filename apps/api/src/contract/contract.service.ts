@@ -1210,6 +1210,7 @@ export class ContractService {
     contractId: string,
     userId: string,
     dto: VerifySignedContractDto,
+    correlationId: string,
   ) {
     const contract = await this.getContract(organizationId, contractId);
 
@@ -1242,6 +1243,8 @@ export class ContractService {
     const reviewedAt = new Date();
 
     const result = await this.prisma.$transaction(async (tx) => {
+      let reviewActivityId = '';
+
       // 1. Record review
       const review = await tx.signedContractReview.create({
         data: {
@@ -1323,7 +1326,7 @@ export class ContractService {
         }
 
         // 5. Schedule next engineering activity
-        await tx.activity.create({
+        const reviewActivity = await tx.activity.create({
           data: {
             organizationId,
             opportunityId: opp.id,
@@ -1336,6 +1339,7 @@ export class ContractService {
             status: 'OPEN',
           },
         });
+        reviewActivityId = reviewActivity.id;
       } else {
         // REJECTED
         // Contract reverts to READY so a corrected file can be sent/uploaded
@@ -1344,7 +1348,7 @@ export class ContractService {
           data: { state: 'READY' },
         });
 
-        await tx.activity.create({
+        const reviewActivity = await tx.activity.create({
           data: {
             organizationId,
             opportunityId: contract.opportunityId,
@@ -1357,9 +1361,10 @@ export class ContractService {
             status: 'OPEN',
           },
         });
+        reviewActivityId = reviewActivity.id;
       }
 
-      await this.audit.record(
+      const reviewAudit = await this.audit.record(
         {
           organizationId,
           actorId: userId,
@@ -1371,6 +1376,38 @@ export class ContractService {
         },
         tx,
       );
+
+      const activityEvent: ActivityCreatedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'ACTIVITY_CREATED',
+        schemaVersion: 1,
+        occurredAt: reviewAudit.createdAt.toISOString(),
+        organizationId,
+        aggregateId: reviewActivityId,
+        producer: 'crm',
+        correlationId,
+        payload: {
+          activityId: reviewActivityId,
+          auditEventId: reviewAudit.id,
+          customerId: contract.opportunity.customer.id,
+          opportunityId: contract.opportunityId,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: activityEvent.eventId,
+          organizationId: activityEvent.organizationId,
+          eventType: activityEvent.eventType,
+          schemaVersion: activityEvent.schemaVersion,
+          aggregateType: 'Activity',
+          aggregateId: activityEvent.aggregateId,
+          producer: activityEvent.producer,
+          correlationId: activityEvent.correlationId,
+          occurredAt: reviewAudit.createdAt,
+          payload: activityEvent.payload,
+          dedupeKey: `ACTIVITY_CREATED:${reviewAudit.id}:${reviewActivityId}`,
+        },
+      });
 
       return review;
     });
