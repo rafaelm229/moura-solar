@@ -4,7 +4,9 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Em implementação na branch `codex/r1-33-contract-activity-event`.
+**Estado:** Consolidado no branch `feat/proposal-visual-clarity` pelo PR #73,
+merge `33f7213a822e0687a5c8f138022897a65fece081`. Não representa liberação em
+`main` nem ativação de consumidor.
 
 **SPECs:** [SPEC-007](../specs/SPEC-007-contratos-documentos/spec.md),
 [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
@@ -48,7 +50,11 @@ follow-up e registra `CONTRACT_DELIVERED` na transação local.
 - `pnpm check`: passou fora do sandbox; cobre formatação, lint, typecheck, testes
   e build.
 - Prettier, links locais e `git diff --check`: passaram.
-- CI remota: ainda não executada; será registrada após abrir o PR.
+- CI #129 falhou em `Initialize containers`, antes do checkout e dos testes: o
+  runner expirou ao baixar `postgres:17-alpine` do Docker Hub. Resultado de CI:
+  **não validado**.
+- Consolidação: PR #73 em `feat/proposal-visual-clarity`, merge
+  `33f7213a822e0687a5c8f138022897a65fece081`.
 
 ## Rollback
 
