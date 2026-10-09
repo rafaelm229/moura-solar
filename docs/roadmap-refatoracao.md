@@ -161,9 +161,12 @@ PR #71 (`ceb84ad`) para registrar `ACTIVITY_CREATED` v1 para a atividade de
 formalização criada no aceite da proposta. `pnpm check` e integração de propostas
 passaram localmente; a CI #127 falhou antes do checkout/testes ao baixar
 `postgres:17-alpine`, portanto não foi validada.
-O [R1-33](r1-33-outbox-followup-entrega-contrato.md) está em implementação para
-registrar `ACTIVITY_CREATED` v1 no follow-up criado ao enviar contrato para
-assinatura, compartilhando a auditoria existente e sem ativar consumidor.
+O [R1-33](r1-33-outbox-followup-entrega-contrato.md) foi consolidado no PR #73
+(`33f7213`) para registrar `ACTIVITY_CREATED` v1 no follow-up criado ao enviar
+contrato para assinatura, compartilhando a auditoria existente e sem ativar
+consumidor. `pnpm check` e integração de contratos passaram localmente. A CI #129
+falhou antes do checkout/testes por timeout no pull de `postgres:17-alpine`,
+portanto não foi validada.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
