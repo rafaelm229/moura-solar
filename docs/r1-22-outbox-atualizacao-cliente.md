@@ -4,7 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Em implementação na branch `codex/r1-22-customer-updated`.
+**Estado:** Consolidado no PR #51, merge commit `03363d8`; CI completa verde.
 
 **SPECs:** [SPEC-004](../specs/SPEC-004-clientes-oportunidades/spec.md),
 [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
@@ -45,6 +45,13 @@ persistidas na mesma transação local e o endpoint exige `customers:update`.
 
 ## Evidência e limites
 
-Validação local, integração, CI e consolidação serão registradas após execução.
-Sem migration. Nenhum consumidor ou publicação é ativado. A importação e leitura
-de contas seguem manuais conforme ADR-008.
+`@moura-solar/contracts` passou 47/47 testes e a API compilou. A integração
+comercial passou 14/14 com PostgreSQL/MinIO locais, incluindo 401 sem sessão,
+rollback forçado da outbox, correlação, payload sem PII e 409 por versão
+obsoleta. `pnpm check` passou: Prettier, lint, typecheck, 1.257 testes da API,
+47 testes de contratos, 5 web, 24 testes offline do harness histórico da PoC e
+build. Links locais, Prettier e `git diff --check` passaram. CI #107 concluiu
+com sucesso, incluindo geração de API, migrations, integração e E2E. O PR #51
+foi consolidado na branch de feature em `03363d8`. Nenhuma migration; nenhum
+consumidor ou publicação é ativado. A importação e leitura de contas seguem
+manuais conforme ADR-008.
