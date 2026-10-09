@@ -10,6 +10,16 @@ export type ActivityCreatedEventV1 = IntegrationEvent<{
   schemaVersion: 1;
 };
 
+export type ActivityCanceledEventV1 = IntegrationEvent<{
+  activityId: string;
+  auditEventId: string;
+  customerId?: string;
+  opportunityId?: string;
+}> & {
+  eventType: 'ACTIVITY_CANCELED';
+  schemaVersion: 1;
+};
+
 function hasIdentifier(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
@@ -46,4 +56,38 @@ export function parseActivityCreatedEventV1(value: unknown): ActivityCreatedEven
   }
 
   return event as ActivityCreatedEventV1;
+}
+
+/** Validates activity cancellation without reason or other activity details. */
+export function parseActivityCanceledEventV1(value: unknown): ActivityCanceledEventV1 {
+  const event = parseIntegrationEvent(value);
+
+  if (event.eventType !== 'ACTIVITY_CANCELED') {
+    throw new TypeError('Activity event eventType is unsupported');
+  }
+  if (event.schemaVersion !== 1) {
+    throw new TypeError('Activity event schemaVersion is unsupported');
+  }
+  for (const field of ['activityId', 'auditEventId'] as const) {
+    if (!hasIdentifier(event.payload[field])) {
+      throw new TypeError(`Activity event payload ${field} is required`);
+    }
+  }
+  if (event.payload.activityId !== event.aggregateId) {
+    throw new TypeError('Activity event payload activityId must match aggregateId');
+  }
+  for (const field of ['customerId', 'opportunityId'] as const) {
+    if (event.payload[field] !== undefined && !hasIdentifier(event.payload[field])) {
+      throw new TypeError(`Activity event payload ${field} must be nonempty`);
+    }
+  }
+  if (
+    Object.keys(event.payload).some(
+      (field) => !['activityId', 'auditEventId', 'customerId', 'opportunityId'].includes(field),
+    )
+  ) {
+    throw new TypeError('Activity event payload contains unsupported fields');
+  }
+
+  return event as ActivityCanceledEventV1;
 }

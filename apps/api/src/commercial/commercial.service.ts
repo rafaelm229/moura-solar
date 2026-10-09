@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import type {
+  ActivityCanceledEventV1,
   ActivityCreatedEventV1,
   CustomerArchivedEventV1,
   CustomerCreatedEventV1,
@@ -1733,7 +1734,44 @@ export class CommercialService {
         },
       });
 
-      await this.store.audit(tx, 'commercial.activity_canceled', actor, activityId, traceId);
+      const audit = await this.store.audit(
+        tx,
+        'commercial.activity_canceled',
+        actor,
+        activityId,
+        traceId,
+      );
+      const event: ActivityCanceledEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'ACTIVITY_CANCELED',
+        schemaVersion: 1,
+        occurredAt: audit.createdAt.toISOString(),
+        organizationId: actor.organizationId,
+        aggregateId: activityId,
+        producer: 'crm',
+        correlationId: traceId,
+        payload: {
+          activityId,
+          auditEventId: audit.id,
+          ...(activity.customerId ? { customerId: activity.customerId } : {}),
+          ...(activity.opportunityId ? { opportunityId: activity.opportunityId } : {}),
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Activity',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: audit.createdAt,
+          payload: event.payload,
+          dedupeKey: `ACTIVITY_CANCELED:${audit.id}`,
+        },
+      });
       return updated;
     });
   }
