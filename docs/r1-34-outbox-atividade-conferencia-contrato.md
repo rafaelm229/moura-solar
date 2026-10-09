@@ -7,6 +7,8 @@
 **Estado:** Implementado em branch
 `codex/r1-34-contract-review-activity-event`; aguardando CI e consolidação.
 
+**Commit de implementação:** `2a6332667e4b5544cb67402b614f1fabb74b4d95`.
+
 **SPECs:** [SPEC-007](../specs/SPEC-007-contratos-documentos/spec.md),
 [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
 [SPEC-019](../specs/SPEC-019-eventos-dados/spec.md); família F-34.

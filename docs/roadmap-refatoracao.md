@@ -166,7 +166,8 @@ O [R1-33](r1-33-outbox-followup-entrega-contrato.md) foi consolidado no PR #73
 contrato para assinatura, compartilhando a auditoria existente e sem ativar
 consumidor. `pnpm check` e integração de contratos passaram localmente. A CI #129
 falhou antes do checkout/testes por timeout no pull de `postgres:17-alpine`,
-portanto não foi validada.
+portanto não foi validada. A repetição CI #130 no PR documental #74 concluiu
+checks, migrações, integração e E2E com sucesso.
 O [R1-34](r1-34-outbox-atividade-conferencia-contrato.md) implementa em branch
 `ACTIVITY_CREATED` v1 para a atividade criada pela decisão humana de conferência
 do contrato, aprovado ou rejeitado. Reutiliza auditoria/correlação e transação
