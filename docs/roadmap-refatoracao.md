@@ -78,9 +78,13 @@ define apenas o contrato de aceite de proposta. R1-09 adiciona a persistência
 transacional local desse fato, passou CI completo e foi consolidado na branch
 `feat/proposal-visual-clarity` pelo PR #34 (`295326c`); continua sem consumidor,
 dispatcher ou transporte. O [R1-10](r1-10-outbox-cadastro-cliente.md) está em
-implementação e foi validado localmente para versionar e persistir
-`CUSTOMER_CREATED` atomicamente com o cadastro, com payload mínimo e sem PII;
-CI remota do incremento ainda está pendente e nenhum consumidor será ativado.
+implementação, foi validado localmente, passou CI completa e foi consolidado no
+PR #35 (`4607133`) para versionar e persistir `CUSTOMER_CREATED` atomicamente com
+o cadastro, com payload mínimo e sem PII. O [R1-11](r1-11-outbox-criacao-oportunidade.md)
+está em implementação para persistir `OPPORTUNITY_CREATED` com IDs mínimos na
+transação existente, sem dispatcher ou consumidor.
+R1-11 passou validação local de contrato, integração, `pnpm check` e links; CI
+remota ainda está pendente.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 

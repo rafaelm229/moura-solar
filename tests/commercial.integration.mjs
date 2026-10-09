@@ -261,6 +261,99 @@ test('customer creation writes a minimal correlated outbox event atomically', as
   );
 });
 
+test('opportunity creation emits minimal correlated event atomically with its first activity', async () => {
+  const customer = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: `Cliente da oportunidade ${randomUUID()}`,
+  });
+  assert.equal(customer.status, 201);
+
+  const failedTitle = `Oportunidade rollback ${randomUUID()}`;
+  const failedActivitySubject = `Atividade rollback ${randomUUID()}`;
+  const auditCountBefore = await db.auditEvent.count({
+    where: { action: 'commercial.opportunity_created' },
+  });
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_opportunity_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'OPPORTUNITY_CREATED' THEN
+        RAISE EXCEPTION 'forced opportunity outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_opportunity_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_opportunity_outbox_for_test()
+  `);
+  const failed = await seller.call('opportunities', 'POST', {
+    customerId: customer.body.id,
+    title: failedTitle,
+    needSummary: 'Dados que não devem ficar após falha',
+    firstActivity: {
+      type: 'CALL',
+      subject: failedActivitySubject,
+      dueAt: new Date(Date.now() + 86400000).toISOString(),
+    },
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_opportunity_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_opportunity_outbox_for_test()`);
+
+  assert.equal(failed.status, 500);
+  assert.equal(await db.opportunity.count({ where: { title: failedTitle } }), 0);
+  assert.equal(await db.activity.count({ where: { subject: failedActivitySubject } }), 0);
+  assert.equal(
+    await db.opportunityTransition.count({ where: { opportunity: { title: failedTitle } } }),
+    0,
+  );
+  assert.equal(
+    await db.auditEvent.count({ where: { action: 'commercial.opportunity_created' } }),
+    auditCountBefore,
+  );
+
+  const requestId = `r1-opportunity-${randomUUID()}`;
+  const title = `Oportunidade R1 ${randomUUID()}`;
+  const activitySubject = `Contato inicial ${randomUUID()}`;
+  const created = await seller.call(
+    'opportunities',
+    'POST',
+    {
+      customerId: customer.body.id,
+      title,
+      needSummary: 'Resumo comercial fora do payload do evento',
+      firstActivity: {
+        type: 'CALL',
+        subject: activitySubject,
+        dueAt: new Date(Date.now() + 86400000).toISOString(),
+      },
+    },
+    { 'x-request-id': requestId },
+  );
+  assert.equal(created.status, 201);
+
+  const event = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `OPPORTUNITY_CREATED:${created.body.id}` },
+  });
+  assert.ok(event, 'Oportunidade e evento outbox devem persistir juntos');
+  assert.equal(event.eventType, 'OPPORTUNITY_CREATED');
+  assert.equal(event.schemaVersion, 1);
+  assert.equal(event.aggregateType, 'Opportunity');
+  assert.equal(event.aggregateId, created.body.id);
+  assert.equal(event.producer, 'crm');
+  assert.equal(event.correlationId, requestId);
+  assert.equal(event.publishedAt, null);
+  assert.deepEqual(event.payload, {
+    opportunityId: created.body.id,
+    customerId: customer.body.id,
+  });
+  assert.equal(JSON.stringify(event.payload).includes(title), false);
+  assert.equal(JSON.stringify(event.payload).includes(activitySubject), false);
+});
+
 test('optimistic concurrency prevents silent overwrite on customer updates', async () => {
   const created = await seller.call('customers', 'POST', {
     kind: 'COMPANY',

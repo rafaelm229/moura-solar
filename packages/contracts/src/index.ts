@@ -26,3 +26,5 @@ export type { ProposalAcceptedEventV1 } from './proposal-events.js';
 export { parseProposalAcceptedEventV1 } from './proposal-events.js';
 export type { CustomerCreatedEventV1 } from './customer-events.js';
 export { parseCustomerCreatedEventV1 } from './customer-events.js';
+export type { OpportunityCreatedEventV1 } from './opportunity-events.js';
+export { parseOpportunityCreatedEventV1 } from './opportunity-events.js';
