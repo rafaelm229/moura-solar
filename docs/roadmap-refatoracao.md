@@ -173,6 +173,10 @@ O [R1-34](r1-34-outbox-atividade-conferencia-contrato.md) foi consolidado no PR
 pela decisão humana de conferência do contrato, aprovada ou rejeitada. Reutiliza
 auditoria/correlação e transação locais; não altera checklist, gates, resposta
 nem ativa consumidor. Integração local 7/7 e CI #131 completa passaram.
+O [R1-35](r1-35-outbox-eventos-catalogo.md) foi implementado na branch
+`codex/r1-35-catalog-events`: criação e atualização de CatalogItem registram IDs
+e versão no payload, sem valores ou projeções de preço/estoque. Validação local
+passou; CI está pendente. Nenhuma migration ou consumidor está no escopo.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
