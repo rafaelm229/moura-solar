@@ -1774,3 +1774,155 @@ test('activity cancellation emits a minimal correlated event atomically with its
     eventCountBefore + 1,
   );
 });
+
+test('activity completion emits a minimal event with an optional follow-up ID atomically', async () => {
+  const customer = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: `Cliente conclusão atividade ${randomUUID()}`,
+  });
+  assert.equal(customer.status, 201);
+  const activity = await seller.call('activities', 'POST', {
+    customerId: customer.body.id,
+    type: 'CALL',
+    subject: 'Contato a concluir',
+    description: 'Descrição interna da atividade',
+    dueAt: new Date(Date.now() + 86400000).toISOString(),
+  });
+  assert.equal(activity.status, 201);
+  const activityId = activity.body.id;
+  const eventCountBefore = await db.integrationOutbox.count({
+    where: { eventType: 'ACTIVITY_COMPLETED', aggregateId: activityId },
+  });
+  const auditCountBefore = await db.auditEvent.count({
+    where: { action: 'commercial.activity_completed', entityId: activityId },
+  });
+
+  const unauthenticated = await new Client().call(`activities/${activityId}/complete`, 'POST', {
+    expectedVersion: 1,
+    resultCode: 'DONE',
+  });
+  assert.equal(unauthenticated.status, 401);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'ACTIVITY_COMPLETED', aggregateId: activityId },
+    }),
+    eventCountBefore,
+  );
+
+  const followupSubject = `Follow-up rollback ${randomUUID()}`;
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_activity_completed_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'ACTIVITY_COMPLETED' THEN
+        RAISE EXCEPTION 'forced activity completion outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_activity_completed_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_activity_completed_outbox_for_test()
+  `);
+  const failed = await seller.call(`activities/${activityId}/complete`, 'POST', {
+    expectedVersion: 1,
+    resultCode: 'DONE',
+    resultNotes: 'Resultado privado rollback',
+    nextActivity: {
+      type: 'TASK',
+      subject: followupSubject,
+      description: 'Follow-up rollback privado',
+      dueAt: new Date(Date.now() + 172800000).toISOString(),
+    },
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_activity_completed_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(
+    `DROP FUNCTION "${schema}".reject_activity_completed_outbox_for_test()`,
+  );
+  assert.equal(failed.status, 500);
+  const afterFailure = await db.activity.findUnique({ where: { id: activityId } });
+  assert.equal(afterFailure.status, 'OPEN');
+  assert.equal(afterFailure.version, 1);
+  assert.equal(await db.activity.count({ where: { subject: followupSubject } }), 0);
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'commercial.activity_completed', entityId: activityId },
+    }),
+    auditCountBefore,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'ACTIVITY_COMPLETED', aggregateId: activityId },
+    }),
+    eventCountBefore,
+  );
+
+  const requestId = `r1-activity-completed-${randomUUID()}`;
+  const resultNotes = `Observação privada ${randomUUID()}`;
+  const followupDescription = `Descrição follow-up privada ${randomUUID()}`;
+  const completed = await seller.call(
+    `activities/${activityId}/complete`,
+    'POST',
+    {
+      expectedVersion: 1,
+      resultCode: 'DONE',
+      resultNotes,
+      nextActivity: {
+        type: 'TASK',
+        subject: `Próxima tarefa ${randomUUID()}`,
+        description: followupDescription,
+        dueAt: new Date(Date.now() + 172800000).toISOString(),
+      },
+    },
+    { 'x-request-id': requestId },
+  );
+  assert.equal(completed.status, 200);
+  assert.equal(completed.body.status, 'COMPLETED');
+  assert.equal(completed.body.version, 2);
+  const audit = await db.auditEvent.findFirst({
+    where: {
+      action: 'commercial.activity_completed',
+      entityId: activityId,
+      traceId: requestId,
+    },
+  });
+  assert.ok(audit);
+  const event = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `ACTIVITY_COMPLETED:${audit.id}` },
+  });
+  assert.ok(event);
+  const nextActivityId = event.payload.nextActivityId;
+  assert.ok(nextActivityId);
+  assert.equal(event.eventType, 'ACTIVITY_COMPLETED');
+  assert.equal(event.schemaVersion, 1);
+  assert.equal(event.aggregateType, 'Activity');
+  assert.equal(event.aggregateId, activityId);
+  assert.equal(event.producer, 'crm');
+  assert.equal(event.correlationId, requestId);
+  assert.equal(event.publishedAt, null);
+  assert.deepEqual(event.payload, {
+    activityId,
+    auditEventId: audit.id,
+    customerId: customer.body.id,
+    nextActivityId,
+  });
+  const nextActivity = await db.activity.findUnique({ where: { id: nextActivityId } });
+  assert.equal(nextActivity.previousActivityId, activityId);
+  assert.equal(JSON.stringify(event.payload).includes(resultNotes), false);
+  assert.equal(JSON.stringify(event.payload).includes(followupDescription), false);
+
+  const stale = await seller.call(`activities/${activityId}/complete`, 'POST', {
+    expectedVersion: 1,
+    resultCode: 'DONE',
+  });
+  assert.equal(stale.status, 409);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'ACTIVITY_COMPLETED', aggregateId: activityId },
+    }),
+    eventCountBefore + 1,
+  );
+});

@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { parseActivityCanceledEventV1, parseActivityCreatedEventV1 } from '../dist/index.js';
+import {
+  parseActivityCanceledEventV1,
+  parseActivityCompletedEventV1,
+  parseActivityCreatedEventV1,
+} from '../dist/index.js';
 
 function validEvent() {
   return {
@@ -102,6 +106,44 @@ test('ActivityCanceledEventV1 rejects unsupported type/version and non-minimal p
       parseActivityCanceledEventV1({
         ...validCanceledEvent(),
         payload: { ...validCanceledEvent().payload, cancellationReason: 'private reason' },
+      }),
+    /unsupported fields/,
+  );
+});
+
+test('ActivityCompletedEventV1 accepts IDs and an optional next activity ID', () => {
+  const event = {
+    ...validEvent(),
+    eventType: 'ACTIVITY_COMPLETED',
+  };
+  assert.deepEqual(parseActivityCompletedEventV1(event), event);
+  const chained = {
+    ...event,
+    payload: {
+      ...event.payload,
+      customerId: 'customer-1',
+      opportunityId: 'opportunity-1',
+      nextActivityId: 'next-activity-1',
+    },
+  };
+  assert.deepEqual(parseActivityCompletedEventV1(chained), chained);
+});
+
+test('ActivityCompletedEventV1 rejects unsupported type/version and result data', () => {
+  const event = { ...validEvent(), eventType: 'ACTIVITY_COMPLETED' };
+  assert.throws(
+    () => parseActivityCompletedEventV1({ ...event, eventType: 'ACTIVITY_CANCELED' }),
+    /eventType is unsupported/,
+  );
+  assert.throws(
+    () => parseActivityCompletedEventV1({ ...event, schemaVersion: 2 }),
+    /schemaVersion is unsupported/,
+  );
+  assert.throws(
+    () =>
+      parseActivityCompletedEventV1({
+        ...event,
+        payload: { ...event.payload, resultNotes: 'private result' },
       }),
     /unsupported fields/,
   );

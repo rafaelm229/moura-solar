@@ -130,6 +130,9 @@ verde.
 O [R1-25](r1-25-outbox-cancelamento-atividade.md) foi consolidado no PR #57
 (`b147ea8`), com CI #113 completa verde, para registrar `ACTIVITY_CANCELED` v1
 junto da auditoria, usando IDs mínimos e sem publicação ou consumidor.
+O [R1-26](r1-26-outbox-conclusao-atividade.md) está em implementação para
+registrar `ACTIVITY_COMPLETED` v1 e o ID opcional do follow-up, sem resultado ou
+texto de atividade e sem publicação/consumidor.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
