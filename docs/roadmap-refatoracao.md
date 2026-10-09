@@ -85,8 +85,8 @@ está em implementação para persistir `OPPORTUNITY_CREATED` com IDs mínimos n
 transação existente, sem dispatcher ou consumidor. R1-11 passou validação local,
 CI completa e foi consolidado no PR #36 (`0f0e6ce`). O [R1-12](r1-12-outbox-criacao-uc.md)
 foi validado localmente para persistir `UTILITY_UNIT_CREATED` com IDs mínimos
-nos dois caminhos existentes de criação de UC; CI remota ainda pendente, sem
-dispatcher ou consumidor.
+nos dois caminhos existentes de criação de UC, passou CI completa e foi
+consolidado no PR #37 (`8551df2`); permanece sem dispatcher ou consumidor.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
