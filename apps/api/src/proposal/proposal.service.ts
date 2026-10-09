@@ -18,7 +18,11 @@ import {
 import { createHash, randomUUID } from 'node:crypto';
 import { ConfigService } from '@nestjs/config';
 import { AuditService } from '../database/audit.service';
-import type { ProposalAcceptedEventV1, ProposalCreatedEventV1 } from '@moura-solar/contracts';
+import type {
+  ProposalAcceptedEventV1,
+  ProposalCreatedEventV1,
+  ProposalDeliveredEventV1,
+} from '@moura-solar/contracts';
 
 const proposalStatusLabels: Record<string, string> = {
   DRAFT: 'rascunho',
@@ -554,6 +558,7 @@ export class ProposalService {
     versionId: string,
     userId: string,
     dto: RecordProposalDeliveryDto,
+    correlationId: string,
   ) {
     const version = await this.prisma.proposalVersion.findFirst({
       where: { id: versionId, organizationId },
@@ -661,6 +666,39 @@ export class ProposalService {
         },
         tx,
       );
+
+      const event: ProposalDeliveredEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'PROPOSAL_DELIVERED',
+        schemaVersion: 1,
+        occurredAt: delivery.sentAt.toISOString(),
+        organizationId,
+        aggregateId: version.proposal.id,
+        producer: 'proposal',
+        correlationId,
+        payload: {
+          proposalId: version.proposal.id,
+          proposalVersionId: version.id,
+          deliveryId: delivery.id,
+          opportunityId: opp.id,
+        },
+      };
+
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Proposal',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: delivery.sentAt,
+          payload: event.payload,
+          dedupeKey: `PROPOSAL_DELIVERED:${delivery.id}`,
+        },
+      });
 
       return { delivery, version: updatedVersion };
     });

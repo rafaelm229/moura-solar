@@ -318,6 +318,56 @@ test('registro de envio (WHATSAPP) atualiza validade (10 dias), transita oportun
   const propList = await admin.call(`opportunities/${testOpportunityId}/proposals`);
   const versionId = propList.body[0].versions[0].id;
 
+  const deliveryCountBefore = await db.proposalDelivery.count({
+    where: { proposalVersionId: versionId },
+  });
+  const auditCountBefore = await db.auditEvent.count({ where: { action: 'PROPOSAL_DELIVERED' } });
+  const followUpCountBefore = await db.activity.count({
+    where: { opportunityId: testOpportunityId, type: 'FOLLOW_UP' },
+  });
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_proposal_delivery_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'PROPOSAL_DELIVERED' THEN
+        RAISE EXCEPTION 'forced proposal delivery outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_proposal_delivery_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_proposal_delivery_outbox_for_test()
+  `);
+  const failedDelivery = await admin.call(`proposal-versions/${versionId}/deliveries`, 'POST', {
+    channel: 'WHATSAPP',
+    recipient: '(31) 98765-4321',
+    notes: 'Esta tentativa deve ser revertida pelo teste.',
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_proposal_delivery_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(
+    `DROP FUNCTION "${schema}".reject_proposal_delivery_outbox_for_test()`,
+  );
+  assert.equal(failedDelivery.status, 500);
+  assert.equal(
+    await db.proposalDelivery.count({ where: { proposalVersionId: versionId } }),
+    deliveryCountBefore,
+  );
+  assert.equal((await db.proposalVersion.findUnique({ where: { id: versionId } })).status, 'READY');
+  assert.equal(
+    await db.auditEvent.count({ where: { action: 'PROPOSAL_DELIVERED' } }),
+    auditCountBefore,
+  );
+  assert.equal(
+    await db.activity.count({
+      where: { opportunityId: testOpportunityId, type: 'FOLLOW_UP' },
+    }),
+    followUpCountBefore,
+  );
+
   const deliveryRes = await admin.call(`proposal-versions/${versionId}/deliveries`, 'POST', {
     channel: 'WHATSAPP',
     recipient: '(31) 98765-4321',
@@ -328,6 +378,25 @@ test('registro de envio (WHATSAPP) atualiza validade (10 dias), transita oportun
   assert.equal(deliveryRes.body.delivery.channel, 'WHATSAPP');
   assert.equal(deliveryRes.body.version.status, 'SENT');
   assert.ok(deliveryRes.body.version.validUntil);
+
+  const deliveredEvent = await db.integrationOutbox.findFirst({
+    where: {
+      eventType: 'PROPOSAL_DELIVERED',
+      dedupeKey: `PROPOSAL_DELIVERED:${deliveryRes.body.delivery.id}`,
+    },
+  });
+  assert.ok(deliveredEvent, 'Registro de entrega e evento devem persistir juntos');
+  assert.equal(deliveredEvent.schemaVersion, 1);
+  assert.equal(deliveredEvent.aggregateType, 'Proposal');
+  assert.equal(deliveredEvent.aggregateId, propList.body[0].id);
+  assert.equal(deliveredEvent.correlationId, deliveryRes.headers.get('x-request-id'));
+  assert.equal(deliveredEvent.publishedAt, null);
+  assert.deepEqual(deliveredEvent.payload, {
+    proposalId: propList.body[0].id,
+    proposalVersionId: versionId,
+    deliveryId: deliveryRes.body.delivery.id,
+    opportunityId: testOpportunityId,
+  });
 
   // Check Opportunity Stage has advanced to PROPOSTA_APRESENTADA (Gate B)
   const oppRes = await admin.call(`opportunities/${testOpportunityId}`);

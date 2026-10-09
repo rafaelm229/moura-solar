@@ -9,6 +9,16 @@ export type ProposalCreatedEventV1 = IntegrationEvent<{
   schemaVersion: 1;
 };
 
+export type ProposalDeliveredEventV1 = IntegrationEvent<{
+  proposalId: string;
+  proposalVersionId: string;
+  deliveryId: string;
+  opportunityId: string;
+}> & {
+  eventType: 'PROPOSAL_DELIVERED';
+  schemaVersion: 1;
+};
+
 export type ProposalAcceptedEventV1 = IntegrationEvent<{
   acceptanceId: string;
   proposalVersionId: string;
@@ -50,6 +60,37 @@ export function parseProposalCreatedEventV1(value: unknown): ProposalCreatedEven
   }
 
   return event as ProposalCreatedEventV1;
+}
+
+/** Validates a minimal record of proposal delivery; it contains no recipient or channel data. */
+export function parseProposalDeliveredEventV1(value: unknown): ProposalDeliveredEventV1 {
+  const event = parseIntegrationEvent(value);
+
+  if (event.eventType !== 'PROPOSAL_DELIVERED') {
+    throw new TypeError('Proposal event eventType is unsupported');
+  }
+  if (event.schemaVersion !== 1) {
+    throw new TypeError('Proposal event schemaVersion is unsupported');
+  }
+
+  for (const field of ['proposalId', 'proposalVersionId', 'deliveryId', 'opportunityId'] as const) {
+    if (!hasIdentifier(event.payload[field])) {
+      throw new TypeError(`Proposal event payload ${field} is required`);
+    }
+  }
+  if (event.payload.proposalId !== event.aggregateId) {
+    throw new TypeError('Proposal event payload proposalId must match aggregateId');
+  }
+  if (
+    Object.keys(event.payload).some(
+      (field) =>
+        !['proposalId', 'proposalVersionId', 'deliveryId', 'opportunityId'].includes(field),
+    )
+  ) {
+    throw new TypeError('Proposal event payload contains unsupported fields');
+  }
+
+  return event as ProposalDeliveredEventV1;
 }
 
 /** Validates the versioned proposal-accepted contract; it does not publish or consume events. */

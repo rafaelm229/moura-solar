@@ -4,8 +4,8 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Validado localmente na branch `codex/r1-13-proposal-created`; CI
-remota pendente.
+**Estado:** Consolidado em `feat/proposal-visual-clarity` pelo PR #39
+(`85db90f`).
 
 **SPECs:** [SPEC-006](../specs/SPEC-006-propostas/spec.md),
 [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
@@ -46,6 +46,8 @@ O contrato de propostas passou nos testes do pacote (`@moura-solar/contracts`),
 a integração de proposta passou 5/5 com PostgreSQL/MinIO locais e `pnpm check`
 passou (formatação, lint, typecheck, 1.257 testes e build). Links Markdown locais
 e `git diff --check` passaram. A integração descartou somente o schema efêmero;
-os containers foram parados sem remover volumes. CI remota ainda pendente.
+os containers foram parados sem remover volumes. CI completa do PR #39 passou,
+incluindo geração de API, migrations, integração e E2E. Squash-merge em
+`85db90f`; sem deploy.
 R1 continua em andamento; este incremento não ativa publicação nem consumidor.
 A criação manual de contas de energia permanece vigente pela ADR-008.

@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { parseProposalAcceptedEventV1, parseProposalCreatedEventV1 } from '../dist/index.js';
+import {
+  parseProposalAcceptedEventV1,
+  parseProposalCreatedEventV1,
+  parseProposalDeliveredEventV1,
+} from '../dist/index.js';
 
 const validCreatedEvent = () => ({
   eventId: 'event-1',
@@ -52,6 +56,62 @@ describe('proposal created event v1 contract', () => {
         parseProposalCreatedEventV1({
           ...validCreatedEvent(),
           payload: { ...validCreatedEvent().payload, opportunityId: ' ' },
+        }),
+      /opportunityId is required/,
+    );
+  });
+});
+
+const validDeliveredEvent = () => ({
+  eventId: 'event-2',
+  eventType: 'PROPOSAL_DELIVERED',
+  schemaVersion: 1,
+  occurredAt: '2026-10-09T12:00:00.000Z',
+  organizationId: 'organization-1',
+  aggregateId: 'proposal-1',
+  producer: 'proposal',
+  correlationId: 'request-2',
+  payload: {
+    proposalId: 'proposal-1',
+    proposalVersionId: 'proposal-version-1',
+    deliveryId: 'delivery-1',
+    opportunityId: 'opportunity-1',
+  },
+});
+
+describe('proposal delivered event v1 contract', () => {
+  it('accepts minimal delivery identifiers without channel or recipient data', () => {
+    const event = validDeliveredEvent();
+    assert.equal(parseProposalDeliveredEventV1(event), event);
+  });
+
+  it('rejects unsupported type, version, aggregate mismatch, and extra fields', () => {
+    assert.throws(
+      () => parseProposalDeliveredEventV1({ ...validDeliveredEvent(), eventType: 'PROPOSAL_SENT' }),
+      /eventType is unsupported/,
+    );
+    assert.throws(
+      () => parseProposalDeliveredEventV1({ ...validDeliveredEvent(), schemaVersion: 2 }),
+      /schemaVersion is unsupported/,
+    );
+    assert.throws(
+      () => parseProposalDeliveredEventV1({ ...validDeliveredEvent(), aggregateId: 'other' }),
+      /must match aggregateId/,
+    );
+    const withRecipient = validDeliveredEvent();
+    withRecipient.payload.recipient = 'client@example.test';
+    assert.throws(() => parseProposalDeliveredEventV1(withRecipient), /unsupported fields/);
+  });
+
+  it('rejects missing and empty identifiers', () => {
+    const event = validDeliveredEvent();
+    delete event.payload.deliveryId;
+    assert.throws(() => parseProposalDeliveredEventV1(event), /deliveryId is required/);
+    assert.throws(
+      () =>
+        parseProposalDeliveredEventV1({
+          ...validDeliveredEvent(),
+          payload: { ...validDeliveredEvent().payload, opportunityId: ' ' },
         }),
       /opportunityId is required/,
     );
