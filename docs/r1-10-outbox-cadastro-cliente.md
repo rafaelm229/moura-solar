@@ -50,4 +50,6 @@ Validações locais: `@moura-solar/contracts` (4 arquivos de teste), integraçã
 CRM (9/9), `pnpm check` (format/lint/types/tests/build), links locais e
 `git diff --check` passaram. A integração usou PostgreSQL Compose e limpou apenas
 o schema efêmero; o container foi parado sem remover o volume. CI remota ainda
-será executada no PR deste incremento.
+passou em todas as etapas no commit `cc3b68a` do PR #35, incluindo migrations,
+integração e E2E. Esta nota registra a evidência daquele commit; alteração
+posterior na branch requer CI própria antes do merge.
