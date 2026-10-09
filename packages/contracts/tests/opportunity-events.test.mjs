@@ -5,6 +5,7 @@ import {
   parseOpportunityLostEventV1,
   parseOpportunityQualifiedEventV1,
   parseOpportunityReopenedEventV1,
+  parseOpportunityUpdatedEventV1,
 } from '../dist/index.js';
 
 function validEvent() {
@@ -268,4 +269,37 @@ test('OpportunityReopenedEventV1 rejects mismatches, missing identifiers, and ex
   const withJustification = validReopenedEvent();
   withJustification.payload.justification = 'Do not publish this text';
   assert.throws(() => parseOpportunityReopenedEventV1(withJustification), /unsupported fields/);
+});
+
+test('OpportunityUpdatedEventV1 accepts only opportunity, customer, and audit IDs', () => {
+  const event = {
+    ...validEvent(),
+    eventType: 'OPPORTUNITY_UPDATED',
+    payload: {
+      opportunityId: validEvent().aggregateId,
+      customerId: 'customer-1',
+      auditEventId: 'audit-1',
+    },
+  };
+  assert.deepEqual(parseOpportunityUpdatedEventV1(event), event);
+  assert.throws(
+    () => parseOpportunityUpdatedEventV1({ ...event, schemaVersion: 2 }),
+    /schemaVersion is unsupported/,
+  );
+  assert.throws(
+    () =>
+      parseOpportunityUpdatedEventV1({
+        ...event,
+        payload: { ...event.payload, title: 'Texto comercial' },
+      }),
+    /unsupported fields/,
+  );
+  assert.throws(
+    () =>
+      parseOpportunityUpdatedEventV1({
+        ...event,
+        payload: { ...event.payload, opportunityId: 'different-opportunity' },
+      }),
+    /must match aggregateId/,
+  );
 });

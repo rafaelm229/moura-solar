@@ -435,6 +435,130 @@ test('utility unit creation emits minimal correlated event atomically', async ()
   assert.equal(JSON.stringify(event.payload).includes('Distribuidora'), false);
 });
 
+test('opportunity updates emit a minimal correlated event atomically with their audit', async () => {
+  const customer = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: `Cliente oportunidade atualizada ${randomUUID()}`,
+  });
+  assert.equal(customer.status, 201);
+  const opportunity = await seller.call('opportunities', 'POST', {
+    customerId: customer.body.id,
+    title: 'Oportunidade inicial',
+    needSummary: 'Consumo residencial inicial',
+    firstActivity: {
+      type: 'TASK',
+      subject: 'Contato inicial',
+      dueAt: new Date().toISOString(),
+    },
+  });
+  assert.equal(opportunity.status, 201);
+  const opportunityId = opportunity.body.id;
+  const auditCount = await db.auditEvent.count({
+    where: { action: 'commercial.opportunity_updated', entityId: opportunityId },
+  });
+  const eventCount = await db.integrationOutbox.count({
+    where: { eventType: 'OPPORTUNITY_UPDATED', aggregateId: opportunityId },
+  });
+
+  const unauthenticated = await new Client().call(`opportunities/${opportunityId}`, 'PATCH', {
+    expectedVersion: 1,
+    title: 'Sem autenticação',
+  });
+  assert.equal(unauthenticated.status, 401);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'OPPORTUNITY_UPDATED', aggregateId: opportunityId },
+    }),
+    eventCount,
+  );
+
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_opportunity_updated_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'OPPORTUNITY_UPDATED' THEN
+        RAISE EXCEPTION 'forced opportunity update outbox failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_opportunity_updated_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_opportunity_updated_outbox_for_test()
+  `);
+  const failed = await seller.call(`opportunities/${opportunityId}`, 'PATCH', {
+    expectedVersion: 1,
+    title: 'Título que deve reverter',
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_opportunity_updated_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(
+    `DROP FUNCTION "${schema}".reject_opportunity_updated_outbox_for_test()`,
+  );
+  assert.equal(failed.status, 500);
+  const afterFailure = await db.opportunity.findUnique({ where: { id: opportunityId } });
+  assert.equal(afterFailure.version, 1);
+  assert.equal(afterFailure.title, 'Oportunidade inicial');
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'commercial.opportunity_updated', entityId: opportunityId },
+    }),
+    auditCount,
+  );
+
+  const title = `Oportunidade alterada ${randomUUID()}`;
+  const needSummary = 'Necessidade comercial privada';
+  const requestId = `r1-opportunity-updated-${randomUUID()}`;
+  const updated = await seller.call(
+    `opportunities/${opportunityId}`,
+    'PATCH',
+    { expectedVersion: 1, title, needSummary, estimatedConsumption: 875 },
+    { 'x-request-id': requestId },
+  );
+  assert.equal(updated.status, 200);
+  assert.equal(updated.body.version, 2);
+  const audit = await db.auditEvent.findFirst({
+    where: {
+      action: 'commercial.opportunity_updated',
+      entityId: opportunityId,
+      traceId: requestId,
+    },
+  });
+  assert.ok(audit);
+  const event = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `OPPORTUNITY_UPDATED:${audit.id}` },
+  });
+  assert.ok(event);
+  assert.equal(event.eventType, 'OPPORTUNITY_UPDATED');
+  assert.equal(event.aggregateType, 'Opportunity');
+  assert.equal(event.aggregateId, opportunityId);
+  assert.equal(event.correlationId, requestId);
+  assert.equal(event.publishedAt, null);
+  assert.deepEqual(event.payload, {
+    opportunityId,
+    customerId: customer.body.id,
+    auditEventId: audit.id,
+  });
+  const serializedPayload = JSON.stringify(event.payload);
+  assert.equal(serializedPayload.includes(title), false);
+  assert.equal(serializedPayload.includes(needSummary), false);
+  assert.equal(serializedPayload.includes('875'), false);
+
+  const stale = await seller.call(`opportunities/${opportunityId}`, 'PATCH', {
+    expectedVersion: 1,
+    priority: 'HOT',
+  });
+  assert.equal(stale.status, 409);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'OPPORTUNITY_UPDATED', aggregateId: opportunityId },
+    }),
+    eventCount + 1,
+  );
+});
+
 test('utility-unit updates emit a minimal correlated event atomically with their audit', async () => {
   const customer = await seller.call('customers', 'POST', {
     kind: 'PERSON',

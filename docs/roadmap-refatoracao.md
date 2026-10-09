@@ -119,6 +119,9 @@ conta ou atributos técnicos no evento.
 O [R1-22](r1-22-outbox-atualizacao-cliente.md) foi consolidado no PR #51
 (`03363d8`), com CI #107 completa verde, para registrar atualização do cliente
 com auditoria e apenas IDs, sem incluir nome, documento ou observações no evento.
+O [R1-23](r1-23-outbox-atualizacao-oportunidade.md) está em implementação para
+registrar atualização versionada de oportunidade com auditoria, sem publicar
+título, necessidade, consumo, prioridade ou outros valores comerciais.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
