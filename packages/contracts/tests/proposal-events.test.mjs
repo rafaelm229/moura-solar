@@ -5,6 +5,7 @@ import {
   parseProposalAcceptedEventV1,
   parseProposalCreatedEventV1,
   parseProposalDeliveredEventV1,
+  parseProposalVersionCreatedEventV1,
 } from '../dist/index.js';
 
 const validCreatedEvent = () => ({
@@ -114,6 +115,78 @@ describe('proposal delivered event v1 contract', () => {
           payload: { ...validDeliveredEvent().payload, opportunityId: ' ' },
         }),
       /opportunityId is required/,
+    );
+  });
+});
+
+const validVersionCreatedEvent = () => ({
+  eventId: 'event-3',
+  eventType: 'PROPOSAL_VERSION_CREATED',
+  schemaVersion: 1,
+  occurredAt: '2026-10-09T12:00:00.000Z',
+  organizationId: 'organization-1',
+  aggregateId: 'proposal-1',
+  producer: 'proposal',
+  correlationId: 'request-3',
+  payload: {
+    proposalId: 'proposal-1',
+    proposalVersionId: 'proposal-version-2',
+    basedOnVersionId: 'proposal-version-1',
+    opportunityId: 'opportunity-1',
+  },
+});
+
+describe('proposal version created event v1 contract', () => {
+  it('accepts minimal version lineage identifiers', () => {
+    const event = validVersionCreatedEvent();
+    assert.equal(parseProposalVersionCreatedEventV1(event), event);
+  });
+
+  it('rejects unsupported type, version, aggregate mismatch, and extra fields', () => {
+    assert.throws(
+      () =>
+        parseProposalVersionCreatedEventV1({
+          ...validVersionCreatedEvent(),
+          eventType: 'PROPOSAL_UPDATED',
+        }),
+      /eventType is unsupported/,
+    );
+    assert.throws(
+      () => parseProposalVersionCreatedEventV1({ ...validVersionCreatedEvent(), schemaVersion: 2 }),
+      /schemaVersion is unsupported/,
+    );
+    assert.throws(
+      () =>
+        parseProposalVersionCreatedEventV1({ ...validVersionCreatedEvent(), aggregateId: 'other' }),
+      /must match aggregateId/,
+    );
+    const withPrice = validVersionCreatedEvent();
+    withPrice.payload.price = 100;
+    assert.throws(() => parseProposalVersionCreatedEventV1(withPrice), /unsupported fields/);
+  });
+
+  it('rejects missing, empty, and identical version identifiers', () => {
+    const event = validVersionCreatedEvent();
+    delete event.payload.basedOnVersionId;
+    assert.throws(() => parseProposalVersionCreatedEventV1(event), /basedOnVersionId is required/);
+    assert.throws(
+      () =>
+        parseProposalVersionCreatedEventV1({
+          ...validVersionCreatedEvent(),
+          payload: { ...validVersionCreatedEvent().payload, proposalVersionId: ' ' },
+        }),
+      /proposalVersionId is required/,
+    );
+    assert.throws(
+      () =>
+        parseProposalVersionCreatedEventV1({
+          ...validVersionCreatedEvent(),
+          payload: {
+            ...validVersionCreatedEvent().payload,
+            basedOnVersionId: 'proposal-version-2',
+          },
+        }),
+      /versions must be distinct/,
     );
   });
 });

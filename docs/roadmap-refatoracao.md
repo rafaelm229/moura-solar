@@ -91,7 +91,11 @@ O [R1-13](r1-13-outbox-criacao-proposta.md) foi consolidado no PR #39
 (`85db90f`), com CI completa, para persistir `PROPOSAL_CREATED` atomicamente;
 o fato não afirma prontidão de PDF. O [R1-14](r1-14-outbox-entrega-proposta.md)
 foi validado localmente para persistir o registro manual de entrega, sem enviar
-mensagens ou ativar consumidor; CI remota pendente.
+mensagens ou ativar consumidor; CI completa passou e o PR #40 foi consolidado
+na branch `feat/proposal-visual-clarity` (`18c50d0`). O [R1-15](r1-15-outbox-nova-versao-proposta.md)
+está em implementação para persistir `PROPOSAL_VERSION_CREATED` atomicamente
+com nova versão, auditoria e linhagem, sem snapshots ou preço; PDF continua
+sendo gerado depois da transação.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 

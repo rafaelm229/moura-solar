@@ -19,6 +19,16 @@ export type ProposalDeliveredEventV1 = IntegrationEvent<{
   schemaVersion: 1;
 };
 
+export type ProposalVersionCreatedEventV1 = IntegrationEvent<{
+  proposalId: string;
+  proposalVersionId: string;
+  basedOnVersionId: string;
+  opportunityId: string;
+}> & {
+  eventType: 'PROPOSAL_VERSION_CREATED';
+  schemaVersion: 1;
+};
+
 export type ProposalAcceptedEventV1 = IntegrationEvent<{
   acceptanceId: string;
   proposalVersionId: string;
@@ -91,6 +101,45 @@ export function parseProposalDeliveredEventV1(value: unknown): ProposalDelivered
   }
 
   return event as ProposalDeliveredEventV1;
+}
+
+/** Validates a minimal record of a new proposal version; it contains no snapshots or pricing. */
+export function parseProposalVersionCreatedEventV1(value: unknown): ProposalVersionCreatedEventV1 {
+  const event = parseIntegrationEvent(value);
+
+  if (event.eventType !== 'PROPOSAL_VERSION_CREATED') {
+    throw new TypeError('Proposal event eventType is unsupported');
+  }
+  if (event.schemaVersion !== 1) {
+    throw new TypeError('Proposal event schemaVersion is unsupported');
+  }
+
+  for (const field of [
+    'proposalId',
+    'proposalVersionId',
+    'basedOnVersionId',
+    'opportunityId',
+  ] as const) {
+    if (!hasIdentifier(event.payload[field])) {
+      throw new TypeError(`Proposal event payload ${field} is required`);
+    }
+  }
+  if (event.payload.proposalId !== event.aggregateId) {
+    throw new TypeError('Proposal event payload proposalId must match aggregateId');
+  }
+  if (event.payload.proposalVersionId === event.payload.basedOnVersionId) {
+    throw new TypeError('Proposal event payload versions must be distinct');
+  }
+  if (
+    Object.keys(event.payload).some(
+      (field) =>
+        !['proposalId', 'proposalVersionId', 'basedOnVersionId', 'opportunityId'].includes(field),
+    )
+  ) {
+    throw new TypeError('Proposal event payload contains unsupported fields');
+  }
+
+  return event as ProposalVersionCreatedEventV1;
 }
 
 /** Validates the versioned proposal-accepted contract; it does not publish or consume events. */

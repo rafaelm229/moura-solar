@@ -149,6 +149,11 @@ export class ProposalController {
   @RequirePermission('proposals:create')
   @HttpCode(201)
   async createNextVersion(@Req() req: IdentityRequest, @Param('id', ParseUUIDPipe) id: string) {
-    return this.service.createNextVersion(req.actor.organizationId, id, req.actor.userId);
+    return this.service.createNextVersion(
+      req.actor.organizationId,
+      id,
+      req.actor.userId,
+      req.requestId ?? 'trace',
+    );
   }
 }

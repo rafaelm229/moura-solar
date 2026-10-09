@@ -22,6 +22,7 @@ import type {
   ProposalAcceptedEventV1,
   ProposalCreatedEventV1,
   ProposalDeliveredEventV1,
+  ProposalVersionCreatedEventV1,
 } from '@moura-solar/contracts';
 
 const proposalStatusLabels: Record<string, string> = {
@@ -922,7 +923,12 @@ export class ProposalService {
     return result;
   }
 
-  async createNextVersion(organizationId: string, versionId: string, userId: string) {
+  async createNextVersion(
+    organizationId: string,
+    versionId: string,
+    userId: string,
+    correlationId: string,
+  ) {
     const baseVersion = await this.prisma.proposalVersion.findFirst({
       where: { id: versionId, organizationId },
       include: { proposal: true },
@@ -975,6 +981,39 @@ export class ProposalService {
             },
             tx,
           );
+
+          const event: ProposalVersionCreatedEventV1 = {
+            eventId: randomUUID(),
+            eventType: 'PROPOSAL_VERSION_CREATED',
+            schemaVersion: 1,
+            occurredAt: created.createdAt.toISOString(),
+            organizationId,
+            aggregateId: baseVersion.proposalId,
+            producer: 'proposal',
+            correlationId,
+            payload: {
+              proposalId: baseVersion.proposalId,
+              proposalVersionId: created.id,
+              basedOnVersionId: baseVersion.id,
+              opportunityId: baseVersion.proposal.opportunityId,
+            },
+          };
+
+          await tx.integrationOutbox.create({
+            data: {
+              id: event.eventId,
+              organizationId: event.organizationId,
+              eventType: event.eventType,
+              schemaVersion: event.schemaVersion,
+              aggregateType: 'Proposal',
+              aggregateId: event.aggregateId,
+              producer: event.producer,
+              correlationId: event.correlationId,
+              occurredAt: created.createdAt,
+              payload: event.payload,
+              dedupeKey: `PROPOSAL_VERSION_CREATED:${created.id}`,
+            },
+          });
 
           return created;
         });
