@@ -47,6 +47,9 @@ transacional de primeira atividade já existem.
 - PR #63 foi consolidado em `ac139dc21cada0e9d39bdcd2a38fda42a430fde8`.
 - A atualização documental pós-merge será registrada em PR separado, sem
   alteração da implementação consolidada.
+- CI #120 do PR documental #64 não iniciou: o runner excedeu o limite de pulls
+  não autenticados do Docker Hub ao baixar `postgres:17-alpine`; a repetição
+  falhou do mesmo modo. O `pnpm check` local da atualização documental passou.
 
 ## Critérios de aceite
 

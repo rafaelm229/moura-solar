@@ -141,6 +141,8 @@ O [R1-28](r1-28-outbox-primeira-atividade-oportunidade.md) foi consolidado no
 PR #63 (`ac139dc`), com CI #119 completa verde, para emitir `ACTIVITY_CREATED`
 v1 também para a primeira atividade criada junto com a oportunidade;
 follow-ups de outros comandos continuam fora deste escopo.
+O [R1-29](r1-29-outbox-followup-qualificacao.md) está em implementação para
+emitir `ACTIVITY_CREATED` v1 para o follow-up opcional da qualificação.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 

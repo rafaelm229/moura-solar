@@ -50,9 +50,11 @@ Indisponibilidade do provedor tem retentativa/fallback explícito, sem dado inve
 
 A SPEC-014 continua governando intake durável, tentativas/candidatos, detecção
 de duplicidade, revisão humana, UC, confirmação transacional e fencing.
-R5 só ativa OCR após PoC, limites/custo, fornecedor e consumidor durável testados.
-ImportOutbox já presente não equivale a barramento genérico operacional.
-Não substituir confirmação humana por confiança presumida do modelo.
+O fluxo vigente mantém transcrição, revisão e confirmação manuais, conforme a
+[ADR-008](../../docs/adr/ADR-008-importacao-manual-sem-ocr.md). Reutilizar o
+dossiê e os mecanismos de intake e confirmação existentes; não preparar OCR,
+worker de extração, provedor ou automação para essa atividade. ImportOutbox já
+presente não equivale a barramento genérico operacional.
 
 ## Requisitos e aceite
 
@@ -64,8 +66,10 @@ Não substituir confirmação humana por confiança presumida do modelo.
 | LCP-04 | Mesma entrada/versão produz cálculo reproduzível; cenários da SPEC-005 preservados |
 | LCP-05 | Preço respeita alçada e snapshot; custo técnico não vira realizado automaticamente |
 | LCP-06 | Falha externa/campo ausente não confirma informação fictícia                       |
-| LCP-07 | OCR repetido/conflitante não aplica consumo duas vezes                             |
 | LCP-08 | UC/cliente/projeto mantêm escopo e autorização entre domínios                      |
+
+Requisitos de OCR e extração automática preservados na SPEC-014 são históricos
+e não fazem parte do aceite vigente de R5.
 
 ## Tarefas
 
@@ -74,7 +78,7 @@ Não substituir confirmação humana por confiança presumida do modelo.
 - [ ] Definir schemas/unidades/proveniência/validade e revisão.
 - [ ] Separar consumo, motor solar e preço com adaptadores.
 - [ ] Validar projetos-base, perdas e categorias técnicas aplicáveis.
-- [ ] Ativar extração somente quando gates da SPEC-014 estiverem satisfeitos.
+- [ ] Preservar entrada e transcrição manual de contas com o original no dossiê.
 
 Referências: [Roadmap](../../docs/roadmap-refatoracao.md),
 [Registro](../../docs/registro-features.md), [SPEC-005](../SPEC-005-dimensionamento-custos/spec.md).

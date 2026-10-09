@@ -1125,20 +1125,26 @@ test('opportunity creation is atomic with first activity; transition requires ex
   const qualificationAuditCount = await db.auditEvent.count({
     where: { action: 'commercial.opportunity_qualified', entityId: oppId },
   });
+  const qualifiedEventCountBefore = await db.integrationOutbox.count({
+    where: { eventType: 'OPPORTUNITY_QUALIFIED' },
+  });
+  const activityEventCountBeforeQualification = await db.integrationOutbox.count({
+    where: { eventType: 'ACTIVITY_CREATED' },
+  });
   await db.$executeRawUnsafe(`
-    CREATE FUNCTION "${schema}".reject_opportunity_qualified_outbox_for_test() RETURNS trigger AS $$
+    CREATE FUNCTION "${schema}".reject_qualification_followup_outbox_for_test() RETURNS trigger AS $$
     BEGIN
-      IF NEW.event_type = 'OPPORTUNITY_QUALIFIED' THEN
-        RAISE EXCEPTION 'forced opportunity qualification outbox failure';
+      IF NEW.event_type = 'ACTIVITY_CREATED' THEN
+        RAISE EXCEPTION 'forced qualification follow-up outbox failure';
       END IF;
       RETURN NEW;
     END;
     $$ LANGUAGE plpgsql
   `);
   await db.$executeRawUnsafe(`
-    CREATE TRIGGER reject_opportunity_qualified_outbox_for_test
+    CREATE TRIGGER reject_qualification_followup_outbox_for_test
     BEFORE INSERT ON "${schema}"."integration_outbox"
-    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_opportunity_qualified_outbox_for_test()
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_qualification_followup_outbox_for_test()
   `);
   const failedQualification = await seller.call(`opportunities/${oppId}/qualify`, 'POST', {
     expectedVersion: 2,
@@ -1150,10 +1156,10 @@ test('opportunity creation is atomic with first activity; transition requires ex
     },
   });
   await db.$executeRawUnsafe(
-    `DROP TRIGGER reject_opportunity_qualified_outbox_for_test ON "${schema}"."integration_outbox"`,
+    `DROP TRIGGER reject_qualification_followup_outbox_for_test ON "${schema}"."integration_outbox"`,
   );
   await db.$executeRawUnsafe(
-    `DROP FUNCTION "${schema}".reject_opportunity_qualified_outbox_for_test()`,
+    `DROP FUNCTION "${schema}".reject_qualification_followup_outbox_for_test()`,
   );
   assert.equal(failedQualification.status, 500);
   const afterFailedQualification = await db.opportunity.findUnique({ where: { id: oppId } });
@@ -1172,6 +1178,14 @@ test('opportunity creation is atomic with first activity; transition requires ex
       where: { action: 'commercial.opportunity_qualified', entityId: oppId },
     }),
     qualificationAuditCount,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'OPPORTUNITY_QUALIFIED' } }),
+    qualifiedEventCountBefore,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'ACTIVITY_CREATED' } }),
+    activityEventCountBeforeQualification,
   );
 
   // Qualify command moves state to QUALIFICADO and emits an event for its transition.
@@ -1213,6 +1227,34 @@ test('opportunity creation is atomic with first activity; transition requires ex
     customerId: cust.body.id,
     fromState: 'NOVO',
     toState: 'QUALIFICADO',
+  });
+  const qualificationAudit = await db.auditEvent.findFirst({
+    where: {
+      action: 'commercial.opportunity_qualified',
+      entityId: oppId,
+      traceId: qualificationRequestId,
+    },
+  });
+  assert.ok(qualificationAudit);
+  const followup = await db.activity.findFirst({
+    where: { opportunityId: oppId, subject: 'Realizar dimensionamento preliminar' },
+  });
+  assert.ok(followup);
+  const followupEvent = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `ACTIVITY_CREATED:${qualificationAudit.id}:${followup.id}` },
+  });
+  assert.ok(followupEvent);
+  assert.equal(followupEvent.eventType, 'ACTIVITY_CREATED');
+  assert.equal(followupEvent.schemaVersion, 1);
+  assert.equal(followupEvent.aggregateType, 'Activity');
+  assert.equal(followupEvent.aggregateId, followup.id);
+  assert.equal(followupEvent.correlationId, qualificationRequestId);
+  assert.equal(followupEvent.publishedAt, null);
+  assert.deepEqual(followupEvent.payload, {
+    activityId: followup.id,
+    auditEventId: qualificationAudit.id,
+    customerId: cust.body.id,
+    opportunityId: oppId,
   });
 
   // Verify activity completion requires resultCode
@@ -1412,6 +1454,63 @@ test('opportunity creation is atomic with first activity; transition requires ex
     fromState: 'PERDIDO',
     toState: 'NOVO',
   });
+});
+
+test('qualifying without a new follow-up does not emit another activity event', async () => {
+  const customer = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: `Cliente sem follow-up ${randomUUID()}`,
+    phone: '(31) 99999-1234',
+    email: `sem-followup-${randomUUID()}@moura.test`,
+  });
+  assert.equal(customer.status, 201);
+  const opportunity = await seller.call('opportunities', 'POST', {
+    customerId: customer.body.id,
+    title: `Oportunidade sem follow-up ${randomUUID()}`,
+    needSummary: 'Avaliar solução solar',
+    firstActivity: {
+      type: 'CALL',
+      subject: 'Contato já programado',
+      dueAt: new Date(Date.now() + 86400000).toISOString(),
+    },
+  });
+  assert.equal(opportunity.status, 201);
+  const opportunityId = opportunity.body.id;
+  const activityCountBefore = await db.activity.count({ where: { opportunityId } });
+  const activityEventCountBefore = await db.integrationOutbox.count({
+    where: { eventType: 'ACTIVITY_CREATED' },
+  });
+  const requestId = `r1-qualified-no-followup-${randomUUID()}`;
+  const qualified = await seller.call(
+    `opportunities/${opportunityId}/qualify`,
+    'POST',
+    {
+      expectedVersion: 1,
+      confirmedNeedSummary: 'Necessidade confirmada para análise',
+    },
+    { 'x-request-id': requestId },
+  );
+  assert.equal(qualified.status, 200);
+  assert.equal(qualified.body.state, 'QUALIFICADO');
+  assert.equal(await db.activity.count({ where: { opportunityId } }), activityCountBefore);
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'ACTIVITY_CREATED' } }),
+    activityEventCountBefore,
+  );
+  const audit = await db.auditEvent.findFirst({
+    where: {
+      action: 'commercial.opportunity_qualified',
+      entityId: opportunityId,
+      traceId: requestId,
+    },
+  });
+  assert.ok(audit);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'ACTIVITY_CREATED', dedupeKey: { contains: audit.id } },
+    }),
+    0,
+  );
 });
 
 test('archive customer is rejected when active opportunities exist', async () => {
