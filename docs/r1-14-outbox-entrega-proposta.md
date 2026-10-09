@@ -4,8 +4,8 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Validado localmente na branch `codex/r1-14-proposal-delivered`; CI
-remota pendente.
+**Estado:** Consolidado na branch `feat/proposal-visual-clarity` pelo PR #40
+(`18c50d0`); CI completa verde.
 
 **SPECs:** [SPEC-006](../specs/SPEC-006-propostas/spec.md),
 [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
@@ -47,7 +47,9 @@ Os testes do contrato `@moura-solar/contracts` passaram. A integração de propo
 passou 5/5 com PostgreSQL/MinIO locais, incluindo falha forçada da outbox; `pnpm
 check` passou (formatação, lint, typecheck, 1.257 testes e build). Links locais e
 `git diff --check` passaram. O schema efêmero foi removido pelo teste e os
-containers foram parados sem remover volumes. CI remota ainda pendente.
+containers foram parados sem remover volumes. CI completa do PR #40 passou,
+incluindo `pnpm check`, migrations, integração e E2E. Squash-merge em
+`18c50d0`; sem deploy.
 
 R1 continua em andamento. Importação de contas de energia permanece manual pela
 ADR-008; este incremento não inicia OCR nem automação de canais.

@@ -511,3 +511,70 @@ test('registro de aceite marca proposta como ACCEPTED, avança oportunidade para
     'Repetir o comando rejeitado não cria outro evento',
   );
 });
+
+test('criar nova versão persiste linhagem e evento outbox na mesma transação', async () => {
+  const proposal = await db.proposal.findFirst({ where: { opportunityId: testOpportunityId } });
+  const baseVersion = await db.proposalVersion.findFirst({
+    where: { proposalId: proposal.id, versionNumber: 1 },
+  });
+  const versionAuditCount = await db.auditEvent.count({
+    where: { action: 'PROPOSAL_VERSION_CREATED' },
+  });
+
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_proposal_version_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'PROPOSAL_VERSION_CREATED' THEN
+        RAISE EXCEPTION 'forced proposal version outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_proposal_version_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_proposal_version_outbox_for_test()
+  `);
+  const failedVersion = await admin.call(`proposal-versions/${baseVersion.id}/new-version`, 'POST');
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_proposal_version_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_proposal_version_outbox_for_test()`);
+  assert.equal(failedVersion.status, 500);
+  assert.equal(await db.proposalVersion.count({ where: { proposalId: proposal.id } }), 1);
+  assert.equal(
+    await db.auditEvent.count({ where: { action: 'PROPOSAL_VERSION_CREATED' } }),
+    versionAuditCount,
+  );
+
+  const newVersionRes = await admin.call(
+    `proposal-versions/${baseVersion.id}/new-version`,
+    'POST',
+    undefined,
+    { 'x-request-id': 'proposal-version-created-test-request' },
+  );
+  assert.equal(newVersionRes.status, 201);
+  const newVersion = newVersionRes.body.versions.find((candidate) => candidate.versionNumber === 2);
+  assert.ok(newVersion);
+  assert.equal(newVersion.status, 'READY');
+  assert.equal(newVersion.basedOnVersionId, baseVersion.id);
+  const versionEvent = await db.integrationOutbox.findFirst({
+    where: {
+      eventType: 'PROPOSAL_VERSION_CREATED',
+      dedupeKey: `PROPOSAL_VERSION_CREATED:${newVersion.id}`,
+    },
+  });
+  assert.ok(versionEvent, 'Nova versão e evento devem persistir juntos');
+  assert.equal(versionEvent.schemaVersion, 1);
+  assert.equal(versionEvent.aggregateType, 'Proposal');
+  assert.equal(versionEvent.aggregateId, proposal.id);
+  assert.equal(versionEvent.correlationId, 'proposal-version-created-test-request');
+  assert.equal(versionEvent.publishedAt, null);
+  assert.deepEqual(versionEvent.payload, {
+    proposalId: proposal.id,
+    proposalVersionId: newVersion.id,
+    basedOnVersionId: baseVersion.id,
+    opportunityId: testOpportunityId,
+  });
+});
