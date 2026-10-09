@@ -4,7 +4,9 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Em implementação na branch `codex/r1-27-activity-rescheduled`.
+**Estado:** Consolidado.
+
+**Implementação:** PR #61, merge squash `35d49dcd837e2628289c468c551be5426f436ed4`.
 
 **SPECs:** [SPEC-001](../specs/SPEC-001-jornada-cliente/spec.md),
 [SPEC-004](../specs/SPEC-004-clientes-oportunidades/spec.md),
@@ -20,7 +22,7 @@ já existem.
 
 - **Antes:** o comando reagenda atividade aberta, acrescenta notas opcionais,
   incrementa versão e registra auditoria, sem evento de integração.
-- **Depois:** `ACTIVITY_RESCHEDULED` v1 será persistido junto ao comando e à
+- **Depois:** `ACTIVITY_RESCHEDULED` v1 é persistido junto ao comando e à
   auditoria.
 - **Semântica:** não muda autorização, estado, versão, data/notas registradas nem
   resposta HTTP.
@@ -40,7 +42,11 @@ já existem.
 - `pnpm check`: passou; API 1.257/1.257 testes, 10 tarefas do workspace e builds
   concluídos sem falhas.
 - `git diff --check`, Prettier e verificação de links locais: passaram.
-- CI de branch ainda pendente; por isso o estado continua Em implementação.
+- CI #117 passou integralmente: `pnpm check`, geração da API, migrations,
+  integração e E2E.
+- PR #61 foi consolidado em `35d49dcd837e2628289c468c551be5426f436ed4`.
+- A atualização documental pós-merge será registrada em PR separado, sem
+  alteração da implementação consolidada.
 
 ## Critérios de aceite
 
