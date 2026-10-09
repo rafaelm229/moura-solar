@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import type {
   CustomerCreatedEventV1,
   OpportunityCreatedEventV1,
+  OpportunityQualifiedEventV1,
   UtilityUnitCreatedEventV1,
 } from '@moura-solar/contracts';
 import { Prisma } from '@prisma/client';
@@ -1105,7 +1106,7 @@ export class CommercialService {
         });
       }
 
-      await tx.opportunityTransition.create({
+      const transition = await tx.opportunityTransition.create({
         data: {
           opportunityId: opp.id,
           fromState: 'NOVO',
@@ -1117,6 +1118,41 @@ export class CommercialService {
       });
 
       await this.store.audit(tx, 'commercial.opportunity_qualified', actor, opportunityId, traceId);
+
+      const event: OpportunityQualifiedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'OPPORTUNITY_QUALIFIED',
+        schemaVersion: 1,
+        occurredAt: transition.createdAt.toISOString(),
+        organizationId: actor.organizationId,
+        aggregateId: opp.id,
+        producer: 'crm',
+        correlationId: traceId,
+        payload: {
+          opportunityId: opp.id,
+          transitionId: transition.id,
+          customerId: opp.customerId,
+          fromState: 'NOVO',
+          toState: 'QUALIFICADO',
+        },
+      };
+
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Opportunity',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: transition.createdAt,
+          payload: event.payload,
+          dedupeKey: `OPPORTUNITY_QUALIFIED:${transition.id}`,
+        },
+      });
+
       return updated;
     });
   }

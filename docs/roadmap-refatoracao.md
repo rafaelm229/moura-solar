@@ -93,9 +93,12 @@ o fato não afirma prontidão de PDF. O [R1-14](r1-14-outbox-entrega-proposta.md
 foi validado localmente para persistir o registro manual de entrega, sem enviar
 mensagens ou ativar consumidor; CI completa passou e o PR #40 foi consolidado
 na branch `feat/proposal-visual-clarity` (`18c50d0`). O [R1-15](r1-15-outbox-nova-versao-proposta.md)
-está em implementação para persistir `PROPOSAL_VERSION_CREATED` atomicamente
-com nova versão, auditoria e linhagem, sem snapshots ou preço; PDF continua
-sendo gerado depois da transação.
+foi consolidado no PR #41 (`5540b26`) para persistir `PROPOSAL_VERSION_CREATED`
+atomicamente com nova versão, auditoria e linhagem, sem snapshots ou preço; PDF
+continua sendo gerado depois da transação. O [R1-16](r1-16-outbox-qualificacao-oportunidade.md)
+está em implementação para registrar `OPPORTUNITY_QUALIFIED` junto da
+transição CRM já persistida; deduplicação usa o ID imutável da transição e os
+gates permanecem iguais.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 

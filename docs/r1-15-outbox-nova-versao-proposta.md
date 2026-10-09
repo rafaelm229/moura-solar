@@ -4,8 +4,8 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Implementado e validado localmente na branch
-`codex/r1-15-proposal-version-created`; CI remota pendente.
+**Estado:** Consolidado na branch `feat/proposal-visual-clarity` pelo PR #41
+(`5540b26`); CI completa verde.
 
 **SPECs:** [SPEC-006](../specs/SPEC-006-propostas/spec.md),
 [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
@@ -49,6 +49,8 @@ nova versão e a auditoria em transação local, antes de gerar seu PDF.
 `pnpm --filter @moura-solar/contracts test` passou (29/29); build da API passou;
 `tests/proposal.integration.mjs` passou 6/6 com PostgreSQL/MinIO locais,
 incluindo rollback forçado da outbox; `pnpm check` passou em formatação, lint,
-typecheck, 1.257 testes e build. Migrations não mudaram. CI remota pendente.
+typecheck, 1.257 testes e build. Migrations não mudaram. CI completa do PR #41
+passou, incluindo geração de API, migrations, integração e E2E. Squash-merge
+em `5540b26`; sem deploy.
 R1 continua em andamento. Esta entrega não ativa publicação nem consumidor; a
 importação de contas permanece manual conforme ADR-008.
