@@ -273,20 +273,26 @@ test('opportunity creation emits minimal correlated event atomically with its fi
   const auditCountBefore = await db.auditEvent.count({
     where: { action: 'commercial.opportunity_created' },
   });
+  const opportunityEventCountBefore = await db.integrationOutbox.count({
+    where: { eventType: 'OPPORTUNITY_CREATED' },
+  });
+  const activityEventCountBefore = await db.integrationOutbox.count({
+    where: { eventType: 'ACTIVITY_CREATED' },
+  });
   await db.$executeRawUnsafe(`
-    CREATE FUNCTION "${schema}".reject_opportunity_outbox_for_test() RETURNS trigger AS $$
+    CREATE FUNCTION "${schema}".reject_opportunity_activity_outbox_for_test() RETURNS trigger AS $$
     BEGIN
-      IF NEW.event_type = 'OPPORTUNITY_CREATED' THEN
-        RAISE EXCEPTION 'forced opportunity outbox insert failure';
+      IF NEW.event_type = 'ACTIVITY_CREATED' THEN
+        RAISE EXCEPTION 'forced opportunity first activity outbox insert failure';
       END IF;
       RETURN NEW;
     END;
     $$ LANGUAGE plpgsql
   `);
   await db.$executeRawUnsafe(`
-    CREATE TRIGGER reject_opportunity_outbox_for_test
+    CREATE TRIGGER reject_opportunity_activity_outbox_for_test
     BEFORE INSERT ON "${schema}"."integration_outbox"
-    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_opportunity_outbox_for_test()
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_opportunity_activity_outbox_for_test()
   `);
   const failed = await seller.call('opportunities', 'POST', {
     customerId: customer.body.id,
@@ -299,9 +305,11 @@ test('opportunity creation emits minimal correlated event atomically with its fi
     },
   });
   await db.$executeRawUnsafe(
-    `DROP TRIGGER reject_opportunity_outbox_for_test ON "${schema}"."integration_outbox"`,
+    `DROP TRIGGER reject_opportunity_activity_outbox_for_test ON "${schema}"."integration_outbox"`,
   );
-  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_opportunity_outbox_for_test()`);
+  await db.$executeRawUnsafe(
+    `DROP FUNCTION "${schema}".reject_opportunity_activity_outbox_for_test()`,
+  );
 
   assert.equal(failed.status, 500);
   assert.equal(await db.opportunity.count({ where: { title: failedTitle } }), 0);
@@ -313,6 +321,14 @@ test('opportunity creation emits minimal correlated event atomically with its fi
   assert.equal(
     await db.auditEvent.count({ where: { action: 'commercial.opportunity_created' } }),
     auditCountBefore,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'OPPORTUNITY_CREATED' } }),
+    opportunityEventCountBefore,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'ACTIVITY_CREATED' } }),
+    activityEventCountBefore,
   );
 
   const requestId = `r1-opportunity-${randomUUID()}`;
@@ -352,6 +368,34 @@ test('opportunity creation emits minimal correlated event atomically with its fi
   });
   assert.equal(JSON.stringify(event.payload).includes(title), false);
   assert.equal(JSON.stringify(event.payload).includes(activitySubject), false);
+
+  const firstActivity = await db.activity.findFirst({ where: { opportunityId: created.body.id } });
+  assert.ok(firstActivity);
+  const audit = await db.auditEvent.findFirst({
+    where: {
+      action: 'commercial.opportunity_created',
+      entityId: created.body.id,
+      traceId: requestId,
+    },
+  });
+  assert.ok(audit);
+  const activityEvent = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `ACTIVITY_CREATED:${audit.id}:${firstActivity.id}` },
+  });
+  assert.ok(activityEvent, 'A atividade inicial também deve gerar evento atômico');
+  assert.equal(activityEvent.eventType, 'ACTIVITY_CREATED');
+  assert.equal(activityEvent.schemaVersion, 1);
+  assert.equal(activityEvent.aggregateType, 'Activity');
+  assert.equal(activityEvent.aggregateId, firstActivity.id);
+  assert.equal(activityEvent.correlationId, requestId);
+  assert.equal(activityEvent.publishedAt, null);
+  assert.deepEqual(activityEvent.payload, {
+    activityId: firstActivity.id,
+    auditEventId: audit.id,
+    customerId: customer.body.id,
+    opportunityId: created.body.id,
+  });
+  assert.equal(JSON.stringify(activityEvent.payload).includes(activitySubject), false);
 });
 
 test('utility unit creation emits minimal correlated event atomically', async () => {
