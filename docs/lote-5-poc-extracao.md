@@ -4,7 +4,14 @@ Data de preparação: 04/10/2026. Escopo: SPEC-014/IMP-11.
 
 ## Estado
 
-O benchmark reproduzível está preparado. Azure Document Intelligence Layout foi escolhido pelo usuário para esta PoC. O [POC-01](decisao-poc-01-importacao-energia-2026-10-09.md) registra região exigida, corpus de 60 contas, minimização, teto experimental de US$ 25 e critérios de qualidade/benefício. Nenhuma conta foi processada, nenhum serviço externo foi contratado e nenhum gasto foi realizado. A execução permanece bloqueada até existirem:
+**Histórico:** a PoC foi encerrada antes da execução pela decisão vigente
+[ADR-008](adr/ADR-008-importacao-manual-sem-ocr.md). O [POC-01](decisao-poc-01-importacao-energia-2026-10-09.md)
+registra os parâmetros que haviam sido considerados; não executar seus comandos.
+Nenhuma conta foi processada, nenhum serviço externo foi contratado e nenhum
+gasto foi realizado. A extração de contas permanece fora do escopo atual.
+
+O benchmark e adapter foram preparados para avaliação offline e não fazem parte
+do fluxo ativo de importação.
 
 - export agregado que permita selecionar a distribuidora conforme POC-01;
 - corpus autorizado, minimizado e rotulado por duas pessoas, com reconciliação;
@@ -29,7 +36,10 @@ O relatório calcula cobertura, acerto exato e taxa de correção por campo, dis
 
 Valores são comparados após a normalização do adapter. Uma fronteira de runtime aceita somente campos do schema, limita quantidade/tamanho, valida página, mês, chave única e rejeita propriedades adicionais. Texto extraído permanece texto opaco mesmo quando contém instruções ou comandos. O benchmark não adivinha zeros, unidade, mês, classe ou titular e não descarta conta ilegível/falha. Confiança do fornecedor é opcional e preserva valor e escala originais; quando ausente, continua ausente e não é convertida em porcentagem universal.
 
-## Execução autorizada
+## Protocolo técnico histórico — não executar
+
+Os comandos abaixo descrevem o protocolo preparado antes da ADR-008. Eles não
+constituem autorização vigente para preparar corpus ou executar a PoC.
 
 Antes de habilitar credenciais, executar o preflight offline sobre os mesmos arquivos que serão enviados:
 
@@ -67,7 +77,7 @@ O custo produzido pelo adapter Azure é uma estimativa baseada no valor por pág
 
 ## Próxima evidência
 
-Após desbloquear os itens do POC-01, preparar o adapter experimental fora do runtime operacional, executar o corpus cego, anexar somente relatório agregado e exemplos anonimizados de falha, registrar exclusão dos temporários e recomendar `CONTINUE` ou `STOP`. A importação integrada do lote 6 não começa a partir de resultado inconclusivo.
+A proposta de execução foi supersedida pela ADR-008. Não preparar adapter, enviar corpus ou executar a PoC.
 
 ## Validação desta preparação
 

@@ -8,9 +8,20 @@
 
 Escopo e contratos funcionais aprovados em 05/10/2026. Decisões operacionais listadas no plano continuam bloqueios das liberações correspondentes.
 
+**Escopo vigente desde 09/10/2026:** a [ADR-008](../../docs/adr/ADR-008-importacao-manual-sem-ocr.md)
+mantém intake, revisão e confirmação manuais e retira a PoC/extração automática
+do roadmap atual. IMP-10 a IMP-12 e os desenhos de extração permanecem no
+histórico desta SPEC; não autorizam worker, OCR ou envio a provedor.
+
+Os requisitos IMP-01 a IMP-09 abaixo foram aprovados antes dessa decisão. No
+escopo vigente, “extrair” significa transcrever manualmente os dados do documento;
+os critérios de confirmação, conflito, autorização, idempotência, proveniência e
+preservação continuam aplicáveis. Requisitos de automação em IMP-01/02 não são
+parte do roadmap vigente.
+
 ## Objetivo e escopo
 
-Reduzir transcrição manual, preservando o original no dossiê e submetendo candidatos à revisão humana obrigatória na primeira versão. Extração nunca é aprovação. Reutilizar UtilityUnit/EnergyReading, consultas de consumo e snapshots existentes. Dependências: SPEC-002, SPEC-004, SPEC-005 e SPEC-013.
+No escopo vigente, preservar o original no dossiê e permitir que a pessoa transcreva, revise e confirme dados manualmente em UtilityUnit/EnergyReading, mantendo consultas de consumo e snapshots existentes. O objetivo histórico de reduzir transcrição por extração automática foi retirado pela ADR-008. Dependências: SPEC-002, SPEC-004, SPEC-005 e SPEC-013.
 
 | ID     | Requisito                                                                                               | Critério verificável                                                                                                |
 | ------ | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |

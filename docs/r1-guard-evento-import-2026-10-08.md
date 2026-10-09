@@ -11,9 +11,9 @@ o entrypoint continua sem consumidor ativo.
 [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
 [SPEC-019](../specs/SPEC-019-eventos-dados/spec.md); família F-34.
 
-**Dependências:** R1-03 (schemaVersion persistida), R1-04 (parser runtime v1),
-R1-05 (inventário) e domínio de piloto importação/OCR escolhido
-condicionalmente após os gates da PoC.
+**Dependências históricas:** R1-03 (schemaVersion persistida), R1-04 (parser
+runtime v1), R1-05 (inventário) e domínio de piloto importação/OCR que estava em
+avaliação na data deste incremento. A decisão posterior ADR-008 encerrou a PoC.
 
 ## Protocolo do incremento
 
@@ -54,6 +54,6 @@ condicionalmente após os gates da PoC.
 
 Esta guarda não define política de quarentena/replay, não cria inbox geral e não
 implementa loop de consumidor. Eventos excluídos pelo filtro ficam pendentes e
-não serão corrigidos nem reprocessados automaticamente. A execução OCR continua
-dependente da PoC, corpus autorizado, metas, fornecedor/modelo/região, custo/quota
-e privacidade descritos na SPEC-014 e em `docs/lote-5-poc-extracao.md`.
+não serão corrigidos nem reprocessados automaticamente. A execução OCR foi
+retirada do roadmap pela ADR-008; esta guarda permanece documentada como
+capacidade técnica inativa, sem autorizar um consumidor.

@@ -8,6 +8,11 @@
 
 Escopo e contratos funcionais aprovados em 05/10/2026. Decisões operacionais listadas no plano continuam bloqueios das liberações correspondentes.
 
+**Aplicação vigente:** a [ADR-008](../../docs/adr/ADR-008-importacao-manual-sem-ocr.md)
+retira worker, adapter e extração automática do roadmap. O modelo e os contratos
+experimentais descritos abaixo ficam preservados como histórico; o fluxo ativo
+continua manual e sem migração de banco nesta decisão.
+
 ## Entidades e invariantes
 
 EnergyReading já tem organizationId, utilityUnitId, referenceMonth, consumptionKwh, injectedKwh, billedAmount, source e unicidade `(utilityUnitId, referenceMonth)`. Não tem versão explícita; o serviço atual faz upsert. Isso não garante revisão concorrente. Evolução proposta adiciona version e proveniência, mantendo a mesma fonte operacional e endpoint de consulta.

@@ -70,8 +70,9 @@ para futura adaptação explícita.
 
 Um ID persistido não prova rastreamento de ponta a ponta, entrega a consumidores,
 inbox, replay ou saga. Eventos legados permanecem sem correlação de requisição;
-não inferir um ID a partir de timestamp ou auditoria. O worker segue inativo e
-OCR automático continua condicionado à PoC e às decisões operacionais.
+não inferir um ID a partir de timestamp ou auditoria. O worker segue inativo. A
+ADR-008 posterior encerrou a PoC e manteve a importação manual, sem plano vigente
+de OCR automático.
 
 Próximo recorte de R1: definir um fato e consumidor necessários, contrato de
 payload e política de versões, ADR de transporte, inbox idempotente e ensaios

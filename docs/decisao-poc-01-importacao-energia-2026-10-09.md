@@ -4,12 +4,13 @@
 
 **Fase:** PoC transversal da SPEC-014; dependência para R1/R5
 
-**Estado:** Em especificação. Decisões registradas; execução externa bloqueada
-até existir corpus autorizado e revisão de privacidade.
+**Estado do experimento:** encerrado sem execução, por decisão posterior em
+[ADR-008](adr/ADR-008-importacao-manual-sem-ocr.md). Este registro é histórico e
+não autoriza chamadas, contratação ou continuação da PoC.
 
-**Fornecedor escolhido:** Azure Document Intelligence para esta PoC, confirmado
-pelo usuário em 09/10/2026. A escolha não autoriza provisionamento pago nem envio
-de documentos.
+**Registro histórico:** Azure Document Intelligence foi escolhido pelo usuário
+em 09/10/2026. Essa escolha foi supersedida antes de provisionamento, envio ou
+gasto pela decisão de manter a importação manual.
 
 **Rastreabilidade:** [SPEC-014/IMP-11](../specs/SPEC-014-importacao-contas-energia/spec.md),
 [SPEC-019](../specs/SPEC-019-eventos-dados/spec.md), F-23 e F-34.
@@ -89,9 +90,11 @@ atual e revisão de privacidade aprovadas.
 - **Rollback:** reverter este registro e referências; sem efeito persistido ou
   chamada externa.
 
-## Bloqueio de execução
+## Gates pendentes na data do registro — encerrados sem execução
 
-O checkout não contém `poc-data/` nem corpus autorizado. Continuam necessários:
+Na data de preparação, o checkout não continha `poc-data/` nem corpus autorizado.
+Antes de reunir esses materiais, a decisão foi alterada pela ADR-008; eles não
+devem ser coletados para esta PoC. Os gates então identificados eram:
 
 - export agregado, sem dados pessoais, para identificar a distribuidora elegível;
 - 60 documentos e rótulos anonimizados conforme as decisões acima, com dupla
@@ -100,10 +103,9 @@ O checkout não contém `poc-data/` nem corpus autorizado. Continuam necessário
   atual e revisão de privacidade da conta/termos;
 - manifesto, política e plano offline com digests e resultado `READY`.
 
-Até esses itens existirem, não há preflight `READY`, chamada ao Azure, custo,
-worker, polling, OCR operacional ou alteração de dados. O contrato do consumidor,
-inbox, transporte e política de replay/quarentena permanecem separados e
-pendentes na [proposta ADR-007](adr/ADR-007-transporte-integracao-proposta.md).
+Não houve preflight `READY`, chamada ao Azure ou custo. Pela decisão vigente, não
+preparar worker, polling ou OCR. A proposta de transporte está preservada como
+histórico na [ADR-007](adr/ADR-007-transporte-integracao-proposta.md).
 
 ## Evidência externa consultada
 
