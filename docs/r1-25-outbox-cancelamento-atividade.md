@@ -4,7 +4,8 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Em implementação na branch `codex/r1-25-activity-canceled`.
+**Estado:** Consolidado no PR #57, merge commit `b147ea8`; CI #113 completa
+verde.
 
 **SPECs:** [SPEC-001](../specs/SPEC-001-jornada-cliente/spec.md),
 [SPEC-004](../specs/SPEC-004-clientes-oportunidades/spec.md),
@@ -53,4 +54,6 @@ importação e revisão de contas continuam manuais conforme ADR-008.
 1.257/1.257 testes unitários; a integração comercial com PostgreSQL e MinIO
 locais passou 17/17, incluindo 401, rollback forçado, correlação, payload
 mínimo e 409 por versão obsoleta. `pnpm check` passou por formatação, lint,
-typecheck, testes e builds. CI remota e consolidação permanecem pendentes.
+typecheck, testes e builds. CI #113 passou integralmente por `pnpm check`,
+geração da API e cliente sem diff, scanner de documentos, migrations, integração
+e E2E. O PR #57 foi consolidado em `b147ea8`.
