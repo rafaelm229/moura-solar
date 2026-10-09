@@ -1792,6 +1792,40 @@ export class CommercialService {
           dedupeKey: `ACTIVITY_COMPLETED:${audit.id}`,
         },
       });
+
+      if (nextActivityId) {
+        const nextActivityEvent: ActivityCreatedEventV1 = {
+          eventId: randomUUID(),
+          eventType: 'ACTIVITY_CREATED',
+          schemaVersion: 1,
+          occurredAt: audit.createdAt.toISOString(),
+          organizationId: actor.organizationId,
+          aggregateId: nextActivityId,
+          producer: 'crm',
+          correlationId: traceId,
+          payload: {
+            activityId: nextActivityId,
+            auditEventId: audit.id,
+            ...(activity.customerId ? { customerId: activity.customerId } : {}),
+            ...(activity.opportunityId ? { opportunityId: activity.opportunityId } : {}),
+          },
+        };
+        await tx.integrationOutbox.create({
+          data: {
+            id: nextActivityEvent.eventId,
+            organizationId: nextActivityEvent.organizationId,
+            eventType: nextActivityEvent.eventType,
+            schemaVersion: nextActivityEvent.schemaVersion,
+            aggregateType: 'Activity',
+            aggregateId: nextActivityEvent.aggregateId,
+            producer: nextActivityEvent.producer,
+            correlationId: nextActivityEvent.correlationId,
+            occurredAt: audit.createdAt,
+            payload: nextActivityEvent.payload,
+            dedupeKey: `ACTIVITY_CREATED:${audit.id}:${nextActivityId}`,
+          },
+        });
+      }
       return completed;
     });
   }

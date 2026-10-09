@@ -1939,6 +1939,9 @@ test('activity completion emits a minimal event with an optional follow-up ID at
   const auditCountBefore = await db.auditEvent.count({
     where: { action: 'commercial.activity_completed', entityId: activityId },
   });
+  const activityCreatedEventCountBefore = await db.integrationOutbox.count({
+    where: { eventType: 'ACTIVITY_CREATED' },
+  });
 
   const unauthenticated = await new Client().call(`activities/${activityId}/complete`, 'POST', {
     expectedVersion: 1,
@@ -2003,6 +2006,59 @@ test('activity completion emits a minimal event with an optional follow-up ID at
     eventCountBefore,
   );
 
+  const childFollowupSubject = `Follow-up event rollback ${randomUUID()}`;
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_completed_activity_created_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'ACTIVITY_CREATED' THEN
+        RAISE EXCEPTION 'forced completion follow-up activity outbox failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_completed_activity_created_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_completed_activity_created_outbox_for_test()
+  `);
+  const failedFollowupEvent = await seller.call(`activities/${activityId}/complete`, 'POST', {
+    expectedVersion: 1,
+    resultCode: 'DONE',
+    nextActivity: {
+      type: 'TASK',
+      subject: childFollowupSubject,
+      dueAt: new Date(Date.now() + 172800000).toISOString(),
+    },
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_completed_activity_created_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(
+    `DROP FUNCTION "${schema}".reject_completed_activity_created_outbox_for_test()`,
+  );
+  assert.equal(failedFollowupEvent.status, 500);
+  const afterFollowupEventFailure = await db.activity.findUnique({ where: { id: activityId } });
+  assert.equal(afterFollowupEventFailure.status, 'OPEN');
+  assert.equal(afterFollowupEventFailure.version, 1);
+  assert.equal(await db.activity.count({ where: { subject: childFollowupSubject } }), 0);
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'commercial.activity_completed', entityId: activityId },
+    }),
+    auditCountBefore,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'ACTIVITY_COMPLETED', aggregateId: activityId },
+    }),
+    eventCountBefore,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'ACTIVITY_CREATED' } }),
+    activityCreatedEventCountBefore,
+  );
+
   const requestId = `r1-activity-completed-${randomUUID()}`;
   const resultNotes = `Observação privada ${randomUUID()}`;
   const followupDescription = `Descrição follow-up privada ${randomUUID()}`;
@@ -2056,6 +2112,24 @@ test('activity completion emits a minimal event with an optional follow-up ID at
   assert.equal(nextActivity.previousActivityId, activityId);
   assert.equal(JSON.stringify(event.payload).includes(resultNotes), false);
   assert.equal(JSON.stringify(event.payload).includes(followupDescription), false);
+  const createdEvent = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `ACTIVITY_CREATED:${audit.id}:${nextActivityId}` },
+  });
+  assert.ok(createdEvent);
+  assert.equal(createdEvent.eventType, 'ACTIVITY_CREATED');
+  assert.equal(createdEvent.schemaVersion, 1);
+  assert.equal(createdEvent.aggregateType, 'Activity');
+  assert.equal(createdEvent.aggregateId, nextActivityId);
+  assert.equal(createdEvent.producer, 'crm');
+  assert.equal(createdEvent.correlationId, requestId);
+  assert.equal(createdEvent.publishedAt, null);
+  assert.deepEqual(createdEvent.payload, {
+    activityId: nextActivityId,
+    auditEventId: audit.id,
+    customerId: customer.body.id,
+  });
+  assert.equal(JSON.stringify(createdEvent.payload).includes(resultNotes), false);
+  assert.equal(JSON.stringify(createdEvent.payload).includes(followupDescription), false);
 
   const stale = await seller.call(`activities/${activityId}/complete`, 'POST', {
     expectedVersion: 1,
@@ -2067,6 +2141,34 @@ test('activity completion emits a minimal event with an optional follow-up ID at
       where: { eventType: 'ACTIVITY_COMPLETED', aggregateId: activityId },
     }),
     eventCountBefore + 1,
+  );
+});
+
+test('activity completion without a follow-up emits no extra activity-created event', async () => {
+  const customer = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: `Cliente sem próximo follow-up ${randomUUID()}`,
+  });
+  assert.equal(customer.status, 201);
+  const activity = await seller.call('activities', 'POST', {
+    customerId: customer.body.id,
+    type: 'CALL',
+    subject: 'Atividade concluída sem follow-up',
+    dueAt: new Date(Date.now() + 86400000).toISOString(),
+  });
+  assert.equal(activity.status, 201);
+  const activityCreatedEventCountBefore = await db.integrationOutbox.count({
+    where: { eventType: 'ACTIVITY_CREATED' },
+  });
+  const completed = await seller.call(`activities/${activity.body.id}/complete`, 'POST', {
+    expectedVersion: 1,
+    resultCode: 'DONE',
+  });
+  assert.equal(completed.status, 200);
+  assert.equal(completed.body.status, 'COMPLETED');
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'ACTIVITY_CREATED' } }),
+    activityCreatedEventCountBefore,
   );
 });
 
