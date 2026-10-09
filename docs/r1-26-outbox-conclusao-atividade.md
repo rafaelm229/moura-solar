@@ -4,7 +4,9 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Em implementação na branch `codex/r1-26-activity-completed`.
+**Estado:** Consolidado.
+
+**Implementação:** PR #59, merge squash `56b3074bd720e12b73318c5bd380adfd2fc45ebc`.
 
 **SPECs:** [SPEC-001](../specs/SPEC-001-jornada-cliente/spec.md),
 [SPEC-004](../specs/SPEC-004-clientes-oportunidades/spec.md),
@@ -20,7 +22,7 @@ opcional da próxima atividade já ocorrem na transação local.
 
 - **Antes:** o comando validava e concluía a atividade, criava opcionalmente um
   follow-up e gravava auditoria, mas não registrava evento de integração.
-- **Depois:** `ACTIVITY_COMPLETED` v1 será persistido junto ao comando e à auditoria.
+- **Depois:** `ACTIVITY_COMPLETED` v1 é persistido junto ao comando e à auditoria.
 - **Semântica:** conclusão aceita; não muda autorização, status, versão, resultado
   registrado nem resposta HTTP.
 - **Payload:** `activityId`, `auditEventId`, vínculos presentes `customerId` /
@@ -40,7 +42,11 @@ opcional da próxima atividade já ocorrem na transação local.
 - `pnpm check`: passou; API 1.257/1.257 testes, 10 tarefas do workspace e builds
   concluídos sem falhas.
 - `git diff --check` e verificação de links locais: passaram.
-- CI de branch ainda pendente; por isso o estado continua Em implementação.
+- CI #115 passou integralmente: `pnpm check`, geração da API, migrations,
+  integração e E2E.
+- PR #59 foi consolidado em `56b3074bd720e12b73318c5bd380adfd2fc45ebc`.
+- A atualização documental pós-merge é registrada em PR separado, sem alteração
+  da implementação consolidada.
 
 ## Critérios de aceite
 
