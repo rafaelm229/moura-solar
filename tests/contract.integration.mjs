@@ -282,6 +282,49 @@ test('3. Download do Contrato PDF institucional', async () => {
 test('4. Registro de envio do contrato formal (SPEC-007 Item 8)', async () => {
   const listRes = await admin.call(`opportunities/${testOpportunityId}/contracts`);
   const contractId = listRes.body[0].id;
+  const beforeActivityCount = await db.activity.count({
+    where: { opportunityId: testOpportunityId },
+  });
+  const beforeAuditCount = await db.auditEvent.count({
+    where: { action: 'CONTRACT_DELIVERED', entityId: contractId },
+  });
+  const beforeDeliveryCount = await db.contractDelivery.count({ where: { contractId } });
+
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_activity_created_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'ACTIVITY_CREATED' THEN
+        RAISE EXCEPTION 'forced activity outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_activity_created_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_activity_created_outbox_for_test()
+  `);
+  const failedDeliveryRes = await admin.call(`contracts/${contractId}/deliveries`, 'POST', {
+    channel: 'WHATSAPP',
+    recipient: '5581988887777',
+    notes: 'Falha injetada na outbox da atividade',
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_activity_created_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_activity_created_outbox_for_test()`);
+  assert.equal(failedDeliveryRes.status, 500);
+  assert.equal(await db.contractDelivery.count({ where: { contractId } }), beforeDeliveryCount);
+  assert.equal(
+    await db.activity.count({ where: { opportunityId: testOpportunityId } }),
+    beforeActivityCount,
+  );
+  assert.equal(
+    await db.auditEvent.count({ where: { action: 'CONTRACT_DELIVERED', entityId: contractId } }),
+    beforeAuditCount,
+  );
+  assert.equal((await db.contract.findUnique({ where: { id: contractId } })).state, 'READY');
 
   const deliveryRes = await admin.call(`contracts/${contractId}/deliveries`, 'POST', {
     channel: 'WHATSAPP',
@@ -292,6 +335,38 @@ test('4. Registro de envio do contrato formal (SPEC-007 Item 8)', async () => {
   assert.equal(deliveryRes.status, 201);
   assert.equal(deliveryRes.body.contract.state, 'SENT');
   assert.equal(deliveryRes.body.delivery.channel, 'WHATSAPP');
+  const followUp = await db.activity.findFirst({
+    where: {
+      opportunityId: testOpportunityId,
+      subject: { contains: 'Acompanhar Assinatura:' },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  assert.ok(followUp, 'Entrega deve criar follow-up para assinatura');
+  const deliveryAudit = await db.auditEvent.findFirst({
+    where: { action: 'CONTRACT_DELIVERED', entityId: contractId },
+    orderBy: { createdAt: 'desc' },
+  });
+  const activityEvent = await db.integrationOutbox.findFirst({
+    where: {
+      organizationId: followUp.organizationId,
+      dedupeKey: `ACTIVITY_CREATED:${deliveryAudit.id}:${followUp.id}`,
+    },
+  });
+  assert.ok(activityEvent, 'Atividade de follow-up deve emitir evento outbox');
+  assert.equal(activityEvent.eventType, 'ACTIVITY_CREATED');
+  assert.equal(activityEvent.schemaVersion, 1);
+  assert.equal(activityEvent.aggregateType, 'Activity');
+  assert.equal(activityEvent.aggregateId, followUp.id);
+  assert.equal(activityEvent.correlationId, deliveryRes.headers.get('x-request-id'));
+  assert.equal(activityEvent.publishedAt, null);
+  assert.deepEqual(activityEvent.payload, {
+    activityId: followUp.id,
+    auditEventId: deliveryAudit.id,
+    customerId: testCustomerId,
+    opportunityId: testOpportunityId,
+  });
+  assert.equal(activityEvent.occurredAt.toISOString(), deliveryAudit.createdAt.toISOString());
 });
 
 test('5. Upload de via assinada sem ativação prematura (SPEC-007 Item 4 e 9)', async () => {
