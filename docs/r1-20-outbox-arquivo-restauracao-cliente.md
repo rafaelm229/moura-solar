@@ -4,8 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Validado localmente na branch `codex/r1-20-customer-lifecycle-events`;
-CI e consolidação pendentes.
+**Estado:** Consolidado no PR #48, merge commit `d4f1d8e`; CI completa verde.
 
 **SPECs:** [SPEC-004](../specs/SPEC-004-clientes-oportunidades/spec.md),
 [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
@@ -55,6 +54,8 @@ Os testes de `@moura-solar/contracts` passaram (45/45); build da API passou;
 incluindo gate de oportunidades ativas, correlação e rollback de arquivo e
 restauração. `pnpm check` passou em formatação, lint, typecheck, 1.257 testes da
 API, 5 da web, 24 testes offline do harness histórico da PoC e build. Prettier,
-links locais e `git diff --check` passaram. Nenhuma migration. CI e consolidação
-pendentes; R1 permanece em andamento. A importação de contas continua manual
+links locais e `git diff --check` passaram. CI #104 concluiu com sucesso,
+incluindo `pnpm check`, geração de API, migrations, integrações e E2E. O PR #48
+foi consolidado na branch de feature em `d4f1d8e`. Nenhuma migration; R1
+permanece em andamento. A importação de contas continua manual
 conforme ADR-008, fora do escopo deste incremento.
