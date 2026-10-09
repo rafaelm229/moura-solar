@@ -38,10 +38,12 @@ export type { CustomerCreatedEventV1 } from './customer-events.js';
 export { parseCustomerCreatedEventV1 } from './customer-events.js';
 export type {
   OpportunityCreatedEventV1,
+  OpportunityLostEventV1,
   OpportunityQualifiedEventV1,
 } from './opportunity-events.js';
 export {
   parseOpportunityCreatedEventV1,
+  parseOpportunityLostEventV1,
   parseOpportunityQualifiedEventV1,
 } from './opportunity-events.js';
 export type { UtilityUnitCreatedEventV1 } from './utility-unit-events.js';

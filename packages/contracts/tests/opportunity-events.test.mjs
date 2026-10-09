@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { parseOpportunityCreatedEventV1, parseOpportunityQualifiedEventV1 } from '../dist/index.js';
+import {
+  parseOpportunityCreatedEventV1,
+  parseOpportunityLostEventV1,
+  parseOpportunityQualifiedEventV1,
+} from '../dist/index.js';
 
 function validEvent() {
   return {
@@ -131,4 +135,60 @@ test('OpportunityQualifiedEventV1 requires all transition identifiers', () => {
       new RegExp(`${field} is required`),
     );
   }
+});
+
+function validLostEvent() {
+  return {
+    eventId: 'lost-event-1',
+    eventType: 'OPPORTUNITY_LOST',
+    schemaVersion: 1,
+    occurredAt: '2026-10-09T12:00:00.000Z',
+    organizationId: 'organization-1',
+    aggregateId: 'opportunity-1',
+    producer: 'crm',
+    correlationId: 'request-loss-1',
+    payload: {
+      opportunityId: 'opportunity-1',
+      transitionId: 'transition-loss-1',
+      fromState: 'QUALIFICADO',
+      toState: 'PERDIDO',
+    },
+  };
+}
+
+test('OpportunityLostEventV1 accepts the minimal loss transition without reason or notes', () => {
+  const event = validLostEvent();
+  assert.deepEqual(parseOpportunityLostEventV1(event), event);
+});
+
+test('OpportunityLostEventV1 rejects unsupported type, version, and destination state', () => {
+  assert.throws(
+    () => parseOpportunityLostEventV1({ ...validLostEvent(), eventType: 'OPPORTUNITY_CLOSED' }),
+    /eventType is unsupported/,
+  );
+  assert.throws(
+    () => parseOpportunityLostEventV1({ ...validLostEvent(), schemaVersion: 2 }),
+    /schemaVersion is unsupported/,
+  );
+  assert.throws(
+    () =>
+      parseOpportunityLostEventV1({
+        ...validLostEvent(),
+        payload: { ...validLostEvent().payload, toState: 'QUALIFICADO' },
+      }),
+    /toState is unsupported/,
+  );
+});
+
+test('OpportunityLostEventV1 rejects mismatched aggregate, missing IDs, and extra reason text', () => {
+  assert.throws(
+    () => parseOpportunityLostEventV1({ ...validLostEvent(), aggregateId: 'other' }),
+    /must match aggregateId/,
+  );
+  const missingTransition = validLostEvent();
+  delete missingTransition.payload.transitionId;
+  assert.throws(() => parseOpportunityLostEventV1(missingTransition), /transitionId is required/);
+  const withReason = validLostEvent();
+  withReason.payload.lossReason = 'PII or commercial reason';
+  assert.throws(() => parseOpportunityLostEventV1(withReason), /unsupported fields/);
 });
