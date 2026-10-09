@@ -34,7 +34,12 @@ export class ProposalController {
   @HttpCode(201)
   @ApiBody({ type: CreateProposalDto })
   async createProposal(@Req() req: IdentityRequest, @Body() dto: CreateProposalDto) {
-    return this.service.createProposal(req.actor.organizationId, req.actor.userId, dto);
+    return this.service.createProposal(
+      req.actor.organizationId,
+      req.actor.userId,
+      dto,
+      req.requestId ?? 'trace',
+    );
   }
 
   @Get('proposals')

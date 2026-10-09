@@ -216,6 +216,39 @@ test('tentativa de criar proposta para dimensionamento NÃO aprovado é rejeitad
 });
 
 test('criação de proposta a partir de dimensionamento aprovado inicializa versão, congela snapshots e gera PDF READY', async () => {
+  const auditCountBefore = await db.auditEvent.count({ where: { action: 'PROPOSAL_CREATED' } });
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_proposal_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'PROPOSAL_CREATED' THEN
+        RAISE EXCEPTION 'forced proposal outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_proposal_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_proposal_outbox_for_test()
+  `);
+  const failedRes = await admin.call('proposals', 'POST', {
+    opportunityId: testOpportunityId,
+    designVersionId: approvedDesignVersionId,
+    validityDays: 10,
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_proposal_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_proposal_outbox_for_test()`);
+  assert.equal(failedRes.status, 500);
+  assert.equal(await db.proposal.count(), 0);
+  assert.equal(await db.proposalVersion.count(), 0);
+  assert.equal(
+    await db.auditEvent.count({ where: { action: 'PROPOSAL_CREATED' } }),
+    auditCountBefore,
+  );
+
   const res = await admin.call('proposals', 'POST', {
     opportunityId: testOpportunityId,
     designVersionId: approvedDesignVersionId,
@@ -238,6 +271,24 @@ test('criação de proposta a partir de dimensionamento aprovado inicializa vers
   assert.equal(version.documents[0].generationStatus, 'READY');
   assert.equal(version.documents[0].mimeType, 'application/pdf');
   assert.ok(version.documents[0].contentHash);
+
+  const proposal = await db.proposal.findUnique({ where: { id: res.body.id } });
+  const createdEvent = await db.integrationOutbox.findFirst({
+    where: { eventType: 'PROPOSAL_CREATED', dedupeKey: `PROPOSAL_CREATED:${res.body.id}` },
+  });
+  assert.ok(createdEvent, 'Proposta, versão e evento devem persistir juntos');
+  assert.equal(createdEvent.eventType, 'PROPOSAL_CREATED');
+  assert.equal(createdEvent.schemaVersion, 1);
+  assert.equal(createdEvent.aggregateType, 'Proposal');
+  assert.equal(createdEvent.aggregateId, res.body.id);
+  assert.equal(createdEvent.correlationId, res.headers.get('x-request-id'));
+  assert.equal(createdEvent.publishedAt, null);
+  assert.deepEqual(createdEvent.payload, {
+    proposalId: res.body.id,
+    proposalVersionId: version.id,
+    opportunityId: testOpportunityId,
+  });
+  assert.ok(proposal);
 });
 
 test('download de PDF retorna stream com Content-Type application/pdf e integridade ETag', async () => {
@@ -317,7 +368,9 @@ test('registro de aceite marca proposta como ACCEPTED, avança oportunidade para
   assert.equal(failedAcceptRes.status, 500);
   assert.equal(await db.proposalAcceptance.count({ where: { proposalVersionId: versionId } }), 0);
   assert.equal(
-    await db.integrationOutbox.count({ where: { aggregateId: propList.body[0].id } }),
+    await db.integrationOutbox.count({
+      where: { aggregateId: propList.body[0].id, eventType: 'PROPOSAL_ACCEPTED' },
+    }),
     0,
   );
   assert.equal((await db.proposalVersion.findUnique({ where: { id: versionId } })).status, 'SENT');
@@ -380,7 +433,10 @@ test('registro de aceite marca proposta como ACCEPTED, avança oportunidade para
   assert.equal(secondAcceptRes.status, 409);
   assert.equal(
     await db.integrationOutbox.count({
-      where: { dedupeKey: `PROPOSAL_ACCEPTED:${acceptRes.body.id}` },
+      where: {
+        eventType: 'PROPOSAL_ACCEPTED',
+        dedupeKey: `PROPOSAL_ACCEPTED:${acceptRes.body.id}`,
+      },
     }),
     1,
     'Repetir o comando rejeitado não cria outro evento',
