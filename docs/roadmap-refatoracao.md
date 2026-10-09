@@ -75,8 +75,12 @@ de versão/payload no claim do worker; CI #86 passou. Não ativa consumidor nem
 altera linhas legadas, portanto não exigiu deploy.
 O [R1-08](r1-08-contrato-aceite-proposta.md) foi validado no commit `df2b571`;
 define apenas o contrato de aceite de proposta. R1-09 adiciona a persistência
-transacional local desse fato e passou testes locais de migration, integração e
-`pnpm check`; continua sem consumidor, dispatcher ou transporte.
+transacional local desse fato, passou CI completo e foi consolidado na branch
+`feat/proposal-visual-clarity` pelo PR #34 (`295326c`); continua sem consumidor,
+dispatcher ou transporte. O [R1-10](r1-10-outbox-cadastro-cliente.md) está em
+implementação e foi validado localmente para versionar e persistir
+`CUSTOMER_CREATED` atomicamente com o cadastro, com payload mínimo e sem PII;
+CI remota do incremento ainda está pendente e nenhum consumidor será ativado.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 

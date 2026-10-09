@@ -192,6 +192,75 @@ test('duplicate prevention blocks identical taxId unless overridden', async () =
   assert.equal(c3.status, 201);
 });
 
+test('customer creation writes a minimal correlated outbox event atomically', async () => {
+  const requestId = `r1-customer-${randomUUID()}`;
+  const legalName = `Cliente R1 ${randomUUID()}`;
+  const created = await seller.call(
+    'customers',
+    'POST',
+    { kind: 'PERSON', legalName, taxId: '987.654.321-00' },
+    { 'x-request-id': requestId },
+  );
+  assert.equal(created.status, 201);
+
+  const event = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `CUSTOMER_CREATED:${created.body.id}` },
+  });
+  assert.ok(event, 'Cliente e evento outbox devem persistir juntos');
+  assert.equal(event.eventType, 'CUSTOMER_CREATED');
+  assert.equal(event.schemaVersion, 1);
+  assert.equal(event.aggregateType, 'Customer');
+  assert.equal(event.aggregateId, created.body.id);
+  assert.equal(event.producer, 'customer');
+  assert.equal(event.correlationId, requestId);
+  assert.equal(event.publishedAt, null);
+  assert.deepEqual(event.payload, { customerId: created.body.id });
+  assert.equal(JSON.stringify(event.payload).includes(legalName), false);
+  assert.equal(JSON.stringify(event.payload).includes('98765432100'), false);
+
+  const failedLegalName = `Cliente R1 rollback ${randomUUID()}`;
+  const eventCountBefore = await db.integrationOutbox.count({
+    where: { eventType: 'CUSTOMER_CREATED' },
+  });
+  const auditCountBefore = await db.auditEvent.count({
+    where: { action: 'commercial.customer_created' },
+  });
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_customer_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'CUSTOMER_CREATED' THEN
+        RAISE EXCEPTION 'forced customer outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_customer_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_customer_outbox_for_test()
+  `);
+  const failed = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: failedLegalName,
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_customer_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_customer_outbox_for_test()`);
+
+  assert.equal(failed.status, 500);
+  assert.equal(await db.customer.count({ where: { legalName: failedLegalName } }), 0);
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'CUSTOMER_CREATED' } }),
+    eventCountBefore,
+  );
+  assert.equal(
+    await db.auditEvent.count({ where: { action: 'commercial.customer_created' } }),
+    auditCountBefore,
+  );
+});
+
 test('optimistic concurrency prevents silent overwrite on customer updates', async () => {
   const created = await seller.call('customers', 'POST', {
     kind: 'COMPANY',
