@@ -4,7 +4,8 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Validado localmente na branch `codex/r1-12-utility-unit-created`.
+**Estado:** Consolidado em `feat/proposal-visual-clarity` pelo PR #37
+(`8551df2`).
 
 **SPECs:** [SPEC-004](../specs/SPEC-004-clientes-oportunidades/spec.md),
 [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
@@ -50,5 +51,6 @@ continuam pendentes em R1.
 Validações locais: `@moura-solar/contracts` (6 arquivos de teste), integração de
 CRM (11/11), `pnpm check` (format/lint/types/tests/build), links locais e
 `git diff --check` passaram. A integração usou PostgreSQL Compose e limpou apenas
-o schema efêmero; o container foi parado sem remover o volume. CI remota está
-pendente no PR deste incremento.
+o schema efêmero; o container foi parado sem remover o volume. CI completa do
+PR #37 passou, incluindo `pnpm check`, geração de API, migrations, integrações e
+E2E. Squash-merge em `8551df2`; sem deploy.
