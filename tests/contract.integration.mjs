@@ -412,6 +412,31 @@ test('6. Conferência com rejeição formal (SPEC-007 Item 10)', async () => {
     'Contrato deve voltar a READY para novo envio/upload',
   );
   assert.equal(rejectRes.body.review.decision, 'REJECTED');
+  const rejectAudit = await db.auditEvent.findFirst({
+    where: { action: 'CONTRACT_SIGNED_REJECTED', entityId: contractId },
+    orderBy: { createdAt: 'desc' },
+  });
+  const rejectActivity = await db.activity.findFirst({
+    where: {
+      opportunityId: testOpportunityId,
+      subject: { contains: 'Regularizar Assinatura do Contrato:' },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  const rejectEvent = await db.integrationOutbox.findFirst({
+    where: {
+      organizationId: rejectActivity.organizationId,
+      dedupeKey: `ACTIVITY_CREATED:${rejectAudit.id}:${rejectActivity.id}`,
+    },
+  });
+  assert.ok(rejectEvent, 'Rejeição deve emitir evento da atividade de regularização');
+  assert.equal(rejectEvent.correlationId, rejectRes.headers.get('x-request-id'));
+  assert.deepEqual(rejectEvent.payload, {
+    activityId: rejectActivity.id,
+    auditEventId: rejectAudit.id,
+    customerId: testCustomerId,
+    opportunityId: testOpportunityId,
+  });
 });
 
 test('7. Conferência integral e liberação do gate contratual (SPEC-007 Item 11)', async () => {
@@ -426,6 +451,57 @@ test('7. Conferência integral e liberação do gate contratual (SPEC-007 Item 1
     notes: 'Vias completas com todas as testemunhas',
   });
 
+  const beforeReviewCount = await db.signedContractReview.count({ where: { contractId } });
+  const beforeActivityCount = await db.activity.count({
+    where: { opportunityId: testOpportunityId },
+  });
+  const beforeAuditCount = await db.auditEvent.count({
+    where: { action: 'CONTRACT_VERIFIED_GATE_C', entityId: contractId },
+  });
+
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_review_activity_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'ACTIVITY_CREATED' THEN
+        RAISE EXCEPTION 'forced signed review activity outbox failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_review_activity_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_review_activity_outbox_for_test()
+  `);
+  const failedVerifyRes = await admin.call(`contracts/${contractId}/verify-signed`, 'POST', {
+    partiesMatch: true,
+    allPagesPresent: true,
+    versionMatches: true,
+    signaturesLegible: true,
+    decision: 'VERIFIED',
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_review_activity_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_review_activity_outbox_for_test()`);
+  assert.equal(failedVerifyRes.status, 500);
+  assert.equal(await db.signedContractReview.count({ where: { contractId } }), beforeReviewCount);
+  assert.equal(
+    await db.activity.count({ where: { opportunityId: testOpportunityId } }),
+    beforeActivityCount,
+  );
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'CONTRACT_VERIFIED_GATE_C', entityId: contractId },
+    }),
+    beforeAuditCount,
+  );
+  assert.equal(
+    (await db.contract.findUnique({ where: { id: contractId } })).state,
+    'SIGNED_UPLOADED',
+  );
+
   // Verify signed with all 4 criteria satisfied
   const verifyRes = await admin.call(`contracts/${contractId}/verify-signed`, 'POST', {
     partiesMatch: true,
@@ -438,6 +514,31 @@ test('7. Conferência integral e liberação do gate contratual (SPEC-007 Item 1
 
   assert.equal(verifyRes.status, 200);
   assert.equal(verifyRes.body.contract.state, 'ACTIVE');
+  const verifyAudit = await db.auditEvent.findFirst({
+    where: { action: 'CONTRACT_VERIFIED_GATE_C', entityId: contractId },
+    orderBy: { createdAt: 'desc' },
+  });
+  const engineeringActivity = await db.activity.findFirst({
+    where: {
+      opportunityId: testOpportunityId,
+      subject: { contains: 'Engenharia & Executivo: Oportunidade' },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  const verifyEvent = await db.integrationOutbox.findFirst({
+    where: {
+      organizationId: engineeringActivity.organizationId,
+      dedupeKey: `ACTIVITY_CREATED:${verifyAudit.id}:${engineeringActivity.id}`,
+    },
+  });
+  assert.ok(verifyEvent, 'Conferência aprovada deve emitir evento para a atividade técnica');
+  assert.equal(verifyEvent.correlationId, verifyRes.headers.get('x-request-id'));
+  assert.deepEqual(verifyEvent.payload, {
+    activityId: engineeringActivity.id,
+    auditEventId: verifyAudit.id,
+    customerId: testCustomerId,
+    opportunityId: testOpportunityId,
+  });
 
   // Verify Opportunity transitioned to VENDIDO after contract verification.
   const oppRes = await admin.call(`opportunities/${testOpportunityId}`);

@@ -53,6 +53,8 @@ follow-up e registra `CONTRACT_DELIVERED` na transação local.
 - CI #129 falhou em `Initialize containers`, antes do checkout e dos testes: o
   runner expirou ao baixar `postgres:17-alpine` do Docker Hub. Resultado de CI:
   **não validado**.
+- CI #130, repetida no PR documental #74, completou `pnpm check`, geração do
+  cliente, migrations, integração, E2E e limpeza dos containers com sucesso.
 - Consolidação: PR #73 em `feat/proposal-visual-clarity`, merge
   `33f7213a822e0687a5c8f138022897a65fece081`.
 
