@@ -4,8 +4,8 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Implementado em branch `codex/r1-24-activity-created`; CI remota e
-consolidação ainda pendentes.
+**Estado:** Consolidado no PR #55, merge commit `ca681e3`; CI #111 completa
+verde.
 
 **SPECs:** [SPEC-001](../specs/SPEC-001-jornada-cliente/spec.md),
 [SPEC-004](../specs/SPEC-004-clientes-oportunidades/spec.md),
@@ -56,5 +56,7 @@ passou 1.257/1.257 testes unitários; a integração comercial com PostgreSQL e
 MinIO locais passou 16/16, incluindo 401 sem sessão, rollback forçado,
 correlação, vínculo à auditoria e payload sem assunto/descrição. `pnpm check`
 passou por formatação, lint, typecheck, testes (API 1.257, contratos 51, web 5,
-harness histórico da PoC 24) e builds. CI remota, links finais e revisão do diff
-continuam pendentes; nenhum consumidor ou publicação foi ativado.
+harness histórico da PoC 24) e builds. A CI #111 passou integralmente por
+`pnpm check`, geração da API e cliente sem diff, scanner de documentos,
+migrations, integração e E2E. O PR #55 foi consolidado em `ca681e3`. Nenhum
+consumidor ou publicação foi ativado.
