@@ -62,8 +62,12 @@ O [R1-11](../../docs/r1-11-outbox-criacao-oportunidade.md) valida e persiste
 `OPPORTUNITY_CREATED` v1 na transação local que cria oportunidade e atividade
 inicial. O payload contém apenas identificadores e permanece não publicado.
 
+O [R1-12](../../docs/r1-12-outbox-criacao-uc.md) valida e persiste
+`UTILITY_UNIT_CREATED` v1 no caminho transacional comum à criação direta e à
+criação/vínculo de UC, usando IDs mínimos. O evento permanece não publicado.
+
 Eventos candidatos: customer.created, lead.created, opportunity.created,
-project.created, consumption.validated, proposal.generated, proposal.accepted,
+utility_unit.created, project.created, consumption.validated, proposal.generated, proposal.accepted,
 contract.signed, inventory.reserved, finance.receivable_created.
 São nomes propostos, não promessa de eventos já publicados. Mapear eventos PascalCase
 existentes, especificar semântica e versionar adaptação. Identificar assinatura
@@ -122,7 +126,8 @@ mostra freshness/atraso; usuários só veem organização e escopo autorizados.
 - [x] Inventariar audit events, ImportOutbox e projeções existentes ([R1-05](../../docs/r1-inventario-integracao-2026-10-08.md)); inventário limitado aos caminhos localizados, sem escolha de transporte/consumidor.
 - [x] Persistir `PROPOSAL_ACCEPTED` v1 na outbox local, atomicamente com aceite ([R1-09](../../docs/r1-09-outbox-aceite-proposta.md)); sem dispatcher/consumidor.
 - [x] Emitir `CUSTOMER_CREATED` v1 atomicamente com o cadastro, sem PII no evento ([R1-10](../../docs/r1-10-outbox-cadastro-cliente.md)); consolidado no PR #35, sem dispatcher/consumidor.
-- [x] Emitir `OPPORTUNITY_CREATED` v1 atomicamente com oportunidade/atividade inicial, sem texto comercial no evento ([R1-11](../../docs/r1-11-outbox-criacao-oportunidade.md)); validado localmente, sem dispatcher/consumidor.
+- [x] Emitir `OPPORTUNITY_CREATED` v1 atomicamente com oportunidade/atividade inicial, sem texto comercial no evento ([R1-11](../../docs/r1-11-outbox-criacao-oportunidade.md)); consolidado no PR #36, sem dispatcher/consumidor.
+- [x] Emitir `UTILITY_UNIT_CREATED` v1 atomicamente com criação/vínculo de UC, sem códigos de conta ou dados legíveis no evento ([R1-12](../../docs/r1-12-outbox-criacao-uc.md)); validado localmente, sem dispatcher/consumidor.
 - [ ] Definir e publicar contratos versionados dos demais fatos necessários em packages/contracts; R1-08 cobre somente `PROPOSAL_ACCEPTED`.
 - [ ] Definir transporte, outbox/inbox e retenção somente quando houver produtor e consumidor justificados para um fluxo vigente. A PoC OCR foi encerrada pela [ADR-008](../../docs/adr/ADR-008-importacao-manual-sem-ocr.md); a proposta de transporte [ADR-007](../../docs/adr/ADR-007-transporte-integracao-proposta.md) é histórica e não autoriza ativação.
 - [ ] Simular crash, duplicidade, atraso, replay e falha de consumidor.
