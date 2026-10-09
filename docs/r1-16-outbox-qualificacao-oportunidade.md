@@ -4,7 +4,8 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Em implementação na branch `codex/r1-16-opportunity-qualified`.
+**Estado:** Consolidado na branch `feat/proposal-visual-clarity` pelo PR #42
+(`6442fc7`); CI completa verde.
 
 **SPECs:** [SPEC-001](../specs/SPEC-001-jornada-cliente/spec.md),
 [SPEC-004](../specs/SPEC-004-clientes-oportunidades/spec.md),
@@ -54,5 +55,7 @@ Os testes de `@moura-solar/contracts` passaram (33/33); build da API passou;
 `tests/commercial.integration.mjs` passou 11/11 com PostgreSQL/MinIO locais,
 incluindo rollback da transação; `pnpm check` passou em formatação, lint,
 typecheck, 1.257 testes e build. Prettier, links locais e `git diff --check`
-passaram. Nenhuma migration. R1 continua em andamento. Nenhum gate CRM muda;
-importação de contas permanece manual conforme ADR-008.
+passaram. CI completa do PR #42 passou, incluindo geração de API, migrations,
+integração e E2E. Squash-merge em `6442fc7`; sem deploy. Nenhuma migration. R1
+continua em andamento. Nenhum gate CRM muda; importação de contas permanece
+manual conforme ADR-008.

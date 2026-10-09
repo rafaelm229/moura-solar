@@ -20,6 +20,16 @@ export type OpportunityQualifiedEventV1 = IntegrationEvent<{
   schemaVersion: 1;
 };
 
+export type OpportunityLostEventV1 = IntegrationEvent<{
+  opportunityId: string;
+  transitionId: string;
+  fromState: string;
+  toState: 'PERDIDO';
+}> & {
+  eventType: 'OPPORTUNITY_LOST';
+  schemaVersion: 1;
+};
+
 function hasIdentifier(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
@@ -89,4 +99,39 @@ export function parseOpportunityQualifiedEventV1(value: unknown): OpportunityQua
   }
 
   return event as OpportunityQualifiedEventV1;
+}
+
+/** Validates a minimal opportunity-loss transition without loss reason or notes. */
+export function parseOpportunityLostEventV1(value: unknown): OpportunityLostEventV1 {
+  const event = parseIntegrationEvent(value);
+
+  if (event.eventType !== 'OPPORTUNITY_LOST') {
+    throw new TypeError('Opportunity event eventType is unsupported');
+  }
+  if (event.schemaVersion !== 1) {
+    throw new TypeError('Opportunity event schemaVersion is unsupported');
+  }
+  for (const field of ['opportunityId', 'transitionId'] as const) {
+    if (!hasIdentifier(event.payload[field])) {
+      throw new TypeError(`Opportunity event payload ${field} is required`);
+    }
+  }
+  if (event.payload.opportunityId !== event.aggregateId) {
+    throw new TypeError('Opportunity event payload opportunityId must match aggregateId');
+  }
+  if (!hasIdentifier(event.payload.fromState)) {
+    throw new TypeError('Opportunity event payload fromState is required');
+  }
+  if (event.payload.toState !== 'PERDIDO') {
+    throw new TypeError('Opportunity event payload toState is unsupported');
+  }
+  if (
+    Object.keys(event.payload).some(
+      (field) => !['opportunityId', 'transitionId', 'fromState', 'toState'].includes(field),
+    )
+  ) {
+    throw new TypeError('Opportunity event payload contains unsupported fields');
+  }
+
+  return event as OpportunityLostEventV1;
 }

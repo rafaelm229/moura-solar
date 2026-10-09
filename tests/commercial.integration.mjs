@@ -845,14 +845,94 @@ test('opportunity creation is atomic with first activity; transition requires ex
   assert.equal(successComplete.status, 200);
   assert.equal(successComplete.body.status, 'COMPLETED');
 
-  // Lose opportunity requires lossReason and cancels open activities
-  const lose = await seller.call(`opportunities/${oppId}/lose`, 'POST', {
+  // Outbox failure must roll back the loss state, transition, activity cancellations and audit.
+  const transitionCountBeforeLoss = await db.opportunityTransition.count({
+    where: { opportunityId: oppId },
+  });
+  const activityCountBeforeLoss = await db.activity.count({
+    where: { opportunityId: oppId, status: 'OPEN' },
+  });
+  const lossAuditCount = await db.auditEvent.count({
+    where: { action: 'commercial.opportunity_lost', entityId: oppId },
+  });
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_opportunity_lost_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'OPPORTUNITY_LOST' THEN
+        RAISE EXCEPTION 'forced opportunity loss outbox failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_opportunity_lost_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_opportunity_lost_outbox_for_test()
+  `);
+  const failedLoss = await seller.call(`opportunities/${oppId}/lose`, 'POST', {
     expectedVersion: 3,
     lossReason: 'PRECO_ELEVADO',
-    lossNotes: 'Cliente optou por adiar a compra',
+    lossNotes: 'Falha esperada no outbox; não deve persistir.',
   });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_opportunity_lost_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_opportunity_lost_outbox_for_test()`);
+  assert.equal(failedLoss.status, 500);
+  const afterFailedLoss = await db.opportunity.findUnique({ where: { id: oppId } });
+  assert.equal(afterFailedLoss.state, 'QUALIFICADO');
+  assert.equal(afterFailedLoss.version, 3);
+  assert.equal(
+    await db.opportunityTransition.count({ where: { opportunityId: oppId } }),
+    transitionCountBeforeLoss,
+  );
+  assert.equal(
+    await db.activity.count({ where: { opportunityId: oppId, status: 'OPEN' } }),
+    activityCountBeforeLoss,
+  );
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'commercial.opportunity_lost', entityId: oppId },
+    }),
+    lossAuditCount,
+  );
+
+  // Loss requires a reason, cancels open activities, and emits only transition IDs/state.
+  const lossRequestId = `r1-opportunity-lost-${randomUUID()}`;
+  const lose = await seller.call(
+    `opportunities/${oppId}/lose`,
+    'POST',
+    {
+      expectedVersion: 3,
+      lossReason: 'PRECO_ELEVADO',
+      lossNotes: 'Cliente optou por adiar a compra',
+    },
+    { 'x-request-id': lossRequestId },
+  );
   assert.equal(lose.status, 200);
   assert.equal(lose.body.state, 'PERDIDO');
+  const lossTransition = await db.opportunityTransition.findFirst({
+    where: { opportunityId: oppId, command: 'lose' },
+  });
+  assert.ok(lossTransition);
+  const lossEvent = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `OPPORTUNITY_LOST:${lossTransition.id}` },
+  });
+  assert.ok(lossEvent, 'Perda, transição e evento outbox devem persistir juntos');
+  assert.equal(lossEvent.eventType, 'OPPORTUNITY_LOST');
+  assert.equal(lossEvent.schemaVersion, 1);
+  assert.equal(lossEvent.aggregateType, 'Opportunity');
+  assert.equal(lossEvent.aggregateId, oppId);
+  assert.equal(lossEvent.producer, 'crm');
+  assert.equal(lossEvent.correlationId, lossRequestId);
+  assert.equal(lossEvent.publishedAt, null);
+  assert.deepEqual(lossEvent.payload, {
+    opportunityId: oppId,
+    transitionId: lossTransition.id,
+    fromState: 'QUALIFICADO',
+    toState: 'PERDIDO',
+  });
 
   // Seller without opportunities:reopen receives 403
   const sellerReopen = await seller.call(`opportunities/${oppId}/reopen`, 'POST', {
