@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import type {
   ActivityCanceledEventV1,
+  ActivityCompletedEventV1,
   ActivityCreatedEventV1,
   CustomerArchivedEventV1,
   CustomerCreatedEventV1,
@@ -1651,8 +1652,9 @@ export class CommercialService {
         },
       });
 
+      let nextActivityId: string | undefined;
       if (dto.nextActivity) {
-        await tx.activity.create({
+        const nextActivity = await tx.activity.create({
           data: {
             organizationId: actor.organizationId,
             opportunityId: activity.opportunityId,
@@ -1667,9 +1669,48 @@ export class CommercialService {
             version: 1,
           },
         });
+        nextActivityId = nextActivity.id;
       }
 
-      await this.store.audit(tx, 'commercial.activity_completed', actor, activityId, traceId);
+      const audit = await this.store.audit(
+        tx,
+        'commercial.activity_completed',
+        actor,
+        activityId,
+        traceId,
+      );
+      const event: ActivityCompletedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'ACTIVITY_COMPLETED',
+        schemaVersion: 1,
+        occurredAt: audit.createdAt.toISOString(),
+        organizationId: actor.organizationId,
+        aggregateId: activityId,
+        producer: 'crm',
+        correlationId: traceId,
+        payload: {
+          activityId,
+          auditEventId: audit.id,
+          ...(activity.customerId ? { customerId: activity.customerId } : {}),
+          ...(activity.opportunityId ? { opportunityId: activity.opportunityId } : {}),
+          ...(nextActivityId ? { nextActivityId } : {}),
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Activity',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: audit.createdAt,
+          payload: event.payload,
+          dedupeKey: `ACTIVITY_COMPLETED:${audit.id}`,
+        },
+      });
       return completed;
     });
   }

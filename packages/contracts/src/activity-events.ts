@@ -20,6 +20,17 @@ export type ActivityCanceledEventV1 = IntegrationEvent<{
   schemaVersion: 1;
 };
 
+export type ActivityCompletedEventV1 = IntegrationEvent<{
+  activityId: string;
+  auditEventId: string;
+  customerId?: string;
+  opportunityId?: string;
+  nextActivityId?: string;
+}> & {
+  eventType: 'ACTIVITY_COMPLETED';
+  schemaVersion: 1;
+};
+
 function hasIdentifier(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
@@ -90,4 +101,41 @@ export function parseActivityCanceledEventV1(value: unknown): ActivityCanceledEv
   }
 
   return event as ActivityCanceledEventV1;
+}
+
+/** Validates activity completion without result code, notes, or activity text. */
+export function parseActivityCompletedEventV1(value: unknown): ActivityCompletedEventV1 {
+  const event = parseIntegrationEvent(value);
+
+  if (event.eventType !== 'ACTIVITY_COMPLETED') {
+    throw new TypeError('Activity event eventType is unsupported');
+  }
+  if (event.schemaVersion !== 1) {
+    throw new TypeError('Activity event schemaVersion is unsupported');
+  }
+  for (const field of ['activityId', 'auditEventId'] as const) {
+    if (!hasIdentifier(event.payload[field])) {
+      throw new TypeError(`Activity event payload ${field} is required`);
+    }
+  }
+  if (event.payload.activityId !== event.aggregateId) {
+    throw new TypeError('Activity event payload activityId must match aggregateId');
+  }
+  for (const field of ['customerId', 'opportunityId', 'nextActivityId'] as const) {
+    if (event.payload[field] !== undefined && !hasIdentifier(event.payload[field])) {
+      throw new TypeError(`Activity event payload ${field} must be nonempty`);
+    }
+  }
+  if (
+    Object.keys(event.payload).some(
+      (field) =>
+        !['activityId', 'auditEventId', 'customerId', 'opportunityId', 'nextActivityId'].includes(
+          field,
+        ),
+    )
+  ) {
+    throw new TypeError('Activity event payload contains unsupported fields');
+  }
+
+  return event as ActivityCompletedEventV1;
 }
