@@ -24,3 +24,5 @@ export type {
 export { parseEnergyBillImportEventV1 } from './energy-import-events.js';
 export type { ProposalAcceptedEventV1 } from './proposal-events.js';
 export { parseProposalAcceptedEventV1 } from './proposal-events.js';
+export type { CustomerCreatedEventV1 } from './customer-events.js';
+export { parseCustomerCreatedEventV1 } from './customer-events.js';

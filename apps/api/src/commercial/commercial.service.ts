@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+import type { CustomerCreatedEventV1 } from '@moura-solar/contracts';
 import { Prisma } from '@prisma/client';
 import { IdentityStore } from '../identity/identity.store';
 import { canAccess } from '../identity/identity.policy';
@@ -393,6 +395,34 @@ export class CommercialService {
       }
 
       await this.store.audit(tx, 'commercial.customer_created', actor, customer.id, traceId);
+
+      const event: CustomerCreatedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'CUSTOMER_CREATED',
+        schemaVersion: 1,
+        occurredAt: customer.createdAt.toISOString(),
+        organizationId: actor.organizationId,
+        aggregateId: customer.id,
+        producer: 'customer',
+        correlationId: traceId,
+        payload: { customerId: customer.id },
+      };
+
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Customer',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: customer.createdAt,
+          payload: event.payload,
+          dedupeKey: `CUSTOMER_CREATED:${customer.id}`,
+        },
+      });
       return customer;
     });
   }
