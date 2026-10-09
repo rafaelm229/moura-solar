@@ -53,12 +53,14 @@ export type {
   OpportunityLostEventV1,
   OpportunityQualifiedEventV1,
   OpportunityReopenedEventV1,
+  OpportunityUpdatedEventV1,
 } from './opportunity-events.js';
 export {
   parseOpportunityCreatedEventV1,
   parseOpportunityLostEventV1,
   parseOpportunityQualifiedEventV1,
   parseOpportunityReopenedEventV1,
+  parseOpportunityUpdatedEventV1,
 } from './opportunity-events.js';
 export type {
   UtilityUnitCreatedEventV1,

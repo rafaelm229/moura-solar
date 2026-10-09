@@ -9,6 +9,7 @@ import type {
   OpportunityLostEventV1,
   OpportunityQualifiedEventV1,
   OpportunityReopenedEventV1,
+  OpportunityUpdatedEventV1,
   UtilityUnitCreatedEventV1,
   UtilityUnitUpdatedEventV1,
 } from '@moura-solar/contracts';
@@ -1163,7 +1164,43 @@ export class CommercialService {
         },
       });
 
-      await this.store.audit(tx, 'commercial.opportunity_updated', actor, opportunityId, traceId);
+      const audit = await this.store.audit(
+        tx,
+        'commercial.opportunity_updated',
+        actor,
+        opportunityId,
+        traceId,
+      );
+      const event: OpportunityUpdatedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'OPPORTUNITY_UPDATED',
+        schemaVersion: 1,
+        occurredAt: audit.createdAt.toISOString(),
+        organizationId: actor.organizationId,
+        aggregateId: opportunityId,
+        producer: 'crm',
+        correlationId: traceId,
+        payload: {
+          opportunityId,
+          customerId: updated.customerId,
+          auditEventId: audit.id,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Opportunity',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: audit.createdAt,
+          payload: event.payload,
+          dedupeKey: `OPPORTUNITY_UPDATED:${audit.id}`,
+        },
+      });
       return updated;
     });
   }

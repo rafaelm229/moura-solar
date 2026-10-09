@@ -40,6 +40,15 @@ export type OpportunityReopenedEventV1 = IntegrationEvent<{
   schemaVersion: 1;
 };
 
+export type OpportunityUpdatedEventV1 = IntegrationEvent<{
+  opportunityId: string;
+  customerId: string;
+  auditEventId: string;
+}> & {
+  eventType: 'OPPORTUNITY_UPDATED';
+  schemaVersion: 1;
+};
+
 function hasIdentifier(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
@@ -179,4 +188,33 @@ export function parseOpportunityReopenedEventV1(value: unknown): OpportunityReop
   }
 
   return event as OpportunityReopenedEventV1;
+}
+
+/** Validates a minimal opportunity update without commercial text or values. */
+export function parseOpportunityUpdatedEventV1(value: unknown): OpportunityUpdatedEventV1 {
+  const event = parseIntegrationEvent(value);
+
+  if (event.eventType !== 'OPPORTUNITY_UPDATED') {
+    throw new TypeError('Opportunity event eventType is unsupported');
+  }
+  if (event.schemaVersion !== 1) {
+    throw new TypeError('Opportunity event schemaVersion is unsupported');
+  }
+  for (const field of ['opportunityId', 'customerId', 'auditEventId'] as const) {
+    if (!hasIdentifier(event.payload[field])) {
+      throw new TypeError(`Opportunity event payload ${field} is required`);
+    }
+  }
+  if (event.payload.opportunityId !== event.aggregateId) {
+    throw new TypeError('Opportunity event payload opportunityId must match aggregateId');
+  }
+  if (
+    Object.keys(event.payload).some(
+      (field) => !['opportunityId', 'customerId', 'auditEventId'].includes(field),
+    )
+  ) {
+    throw new TypeError('Opportunity event payload contains unsupported fields');
+  }
+
+  return event as OpportunityUpdatedEventV1;
 }
