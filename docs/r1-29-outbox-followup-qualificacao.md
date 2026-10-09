@@ -4,8 +4,9 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Em implementação na branch
-`codex/r1-29-qualification-followup-event`.
+**Estado:** Consolidado no PR #65 (`cad433e`). A CI #121 e sua repetição
+falharam na inicialização do PostgreSQL por limite de pulls não autenticados
+do Docker Hub; checkout e testes não foram executados na CI.
 
 **SPECs:** [SPEC-001](../specs/SPEC-001-jornada-cliente/spec.md),
 [SPEC-004](../specs/SPEC-004-clientes-oportunidades/spec.md),
@@ -41,7 +42,14 @@ auditoria e criação opcional de follow-up já existem.
 - `node --test --test-concurrency=1 tests/commercial.integration.mjs`: 20/20
   passaram no PostgreSQL/MinIO/ClamAV local; inclui follow-up, ausência de filho
   sem novo follow-up e rollback integral.
-- CI de branch ainda pendente; por isso o estado continua Em implementação.
+- `pnpm check`: passou localmente com os diretórios não rastreados do usuário
+  excluídos temporariamente da varredura de formatação; lint, typecheck, testes
+  unitários e build passaram.
+- A CI #121 falhou antes do checkout ao baixar `postgres:17-alpine` devido ao
+  limite de pulls não autenticados do Docker Hub. A repetição falhou pelo mesmo
+  motivo; nenhum teste foi executado na CI. Não há alegação de CI verde.
+- PR #65 foi consolidado em `cad433e` após a validação local e com a limitação de
+  CI registrada.
 
 ## Critérios de aceite
 
