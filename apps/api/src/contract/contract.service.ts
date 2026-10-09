@@ -6,11 +6,13 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { basename } from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../database/prisma.service';
 import { AuditService } from '../database/audit.service';
 import { StorageService } from '../proposal/storage.service';
 import { ContractGeneratorService, type ContractTemplateData } from './contract-generator.service';
 import { FinancialService } from '../financial/financial.service';
+import type { ActivityCreatedEventV1 } from '@moura-solar/contracts';
 import {
   CreateContractDto,
   UpdateContractDraftDto,
@@ -998,6 +1000,7 @@ export class ContractService {
     contractId: string,
     userId: string,
     dto: RecordContractDeliveryDto,
+    correlationId: string,
   ) {
     const contract = await this.getContract(organizationId, contractId);
 
@@ -1038,7 +1041,7 @@ export class ContractService {
       });
 
       // Follow-up activity for signing
-      await tx.activity.create({
+      const followUpActivity = await tx.activity.create({
         data: {
           organizationId,
           opportunityId: contract.opportunityId,
@@ -1052,7 +1055,7 @@ export class ContractService {
         },
       });
 
-      await this.audit.record(
+      const deliveryAudit = await this.audit.record(
         {
           organizationId,
           actorId: userId,
@@ -1061,6 +1064,38 @@ export class ContractService {
         },
         tx,
       );
+
+      const activityEvent: ActivityCreatedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'ACTIVITY_CREATED',
+        schemaVersion: 1,
+        occurredAt: deliveryAudit.createdAt.toISOString(),
+        organizationId,
+        aggregateId: followUpActivity.id,
+        producer: 'crm',
+        correlationId,
+        payload: {
+          activityId: followUpActivity.id,
+          auditEventId: deliveryAudit.id,
+          customerId: contract.opportunity.customer.id,
+          opportunityId: contract.opportunityId,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: activityEvent.eventId,
+          organizationId: activityEvent.organizationId,
+          eventType: activityEvent.eventType,
+          schemaVersion: activityEvent.schemaVersion,
+          aggregateType: 'Activity',
+          aggregateId: activityEvent.aggregateId,
+          producer: activityEvent.producer,
+          correlationId: activityEvent.correlationId,
+          occurredAt: deliveryAudit.createdAt,
+          payload: activityEvent.payload,
+          dedupeKey: `ACTIVITY_CREATED:${deliveryAudit.id}:${followUpActivity.id}`,
+        },
+      });
 
       return del;
     });

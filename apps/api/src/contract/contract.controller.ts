@@ -107,7 +107,13 @@ export class ContractController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: RecordContractDeliveryDto,
   ) {
-    return this.service.recordDelivery(req.actor.organizationId, id, req.actor.userId, dto);
+    return this.service.recordDelivery(
+      req.actor.organizationId,
+      id,
+      req.actor.userId,
+      dto,
+      req.requestId ?? 'trace',
+    );
   }
 
   @Post('contracts/:id/upload-signed')
