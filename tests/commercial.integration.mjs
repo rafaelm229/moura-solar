@@ -726,8 +726,32 @@ test('opportunity creation is atomic with first activity; transition requires ex
   assert.equal(directPatch.status, 200);
   assert.equal(directPatch.body.state, 'NOVO'); // State stays NOVO!
 
-  // Qualify command moves state to QUALIFICADO
-  const qualify = await seller.call(`opportunities/${oppId}/qualify`, 'POST', {
+  // The outbox failure must roll back the status, transition, activity and audit.
+  const transitionCountBefore = await db.opportunityTransition.count({
+    where: { opportunityId: oppId },
+  });
+  const activityCountBeforeQualification = await db.activity.count({
+    where: { opportunityId: oppId },
+  });
+  const qualificationAuditCount = await db.auditEvent.count({
+    where: { action: 'commercial.opportunity_qualified', entityId: oppId },
+  });
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_opportunity_qualified_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'OPPORTUNITY_QUALIFIED' THEN
+        RAISE EXCEPTION 'forced opportunity qualification outbox failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_opportunity_qualified_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_opportunity_qualified_outbox_for_test()
+  `);
+  const failedQualification = await seller.call(`opportunities/${oppId}/qualify`, 'POST', {
     expectedVersion: 2,
     confirmedNeedSummary: 'Necessidade confirmada: Sistema 5 kWp On-Grid',
     nextActivity: {
@@ -736,8 +760,71 @@ test('opportunity creation is atomic with first activity; transition requires ex
       dueAt: new Date(Date.now() + 172800000).toISOString(),
     },
   });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_opportunity_qualified_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(
+    `DROP FUNCTION "${schema}".reject_opportunity_qualified_outbox_for_test()`,
+  );
+  assert.equal(failedQualification.status, 500);
+  const afterFailedQualification = await db.opportunity.findUnique({ where: { id: oppId } });
+  assert.equal(afterFailedQualification.state, 'NOVO');
+  assert.equal(afterFailedQualification.version, 2);
+  assert.equal(
+    await db.opportunityTransition.count({ where: { opportunityId: oppId } }),
+    transitionCountBefore,
+  );
+  assert.equal(
+    await db.activity.count({ where: { opportunityId: oppId } }),
+    activityCountBeforeQualification,
+  );
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'commercial.opportunity_qualified', entityId: oppId },
+    }),
+    qualificationAuditCount,
+  );
+
+  // Qualify command moves state to QUALIFICADO and emits an event for its transition.
+  const qualificationRequestId = `r1-qualified-${randomUUID()}`;
+  const qualify = await seller.call(
+    `opportunities/${oppId}/qualify`,
+    'POST',
+    {
+      expectedVersion: 2,
+      confirmedNeedSummary: 'Necessidade confirmada: Sistema 5 kWp On-Grid',
+      nextActivity: {
+        type: 'TASK',
+        subject: 'Realizar dimensionamento preliminar',
+        dueAt: new Date(Date.now() + 172800000).toISOString(),
+      },
+    },
+    { 'x-request-id': qualificationRequestId },
+  );
   assert.equal(qualify.status, 200);
   assert.equal(qualify.body.state, 'QUALIFICADO');
+  const qualificationTransition = await db.opportunityTransition.findFirst({
+    where: { opportunityId: oppId, command: 'qualify' },
+  });
+  assert.ok(qualificationTransition);
+  const qualificationEvent = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `OPPORTUNITY_QUALIFIED:${qualificationTransition.id}` },
+  });
+  assert.ok(qualificationEvent, 'Transição qualificada e evento outbox devem persistir juntos');
+  assert.equal(qualificationEvent.eventType, 'OPPORTUNITY_QUALIFIED');
+  assert.equal(qualificationEvent.schemaVersion, 1);
+  assert.equal(qualificationEvent.aggregateType, 'Opportunity');
+  assert.equal(qualificationEvent.aggregateId, oppId);
+  assert.equal(qualificationEvent.producer, 'crm');
+  assert.equal(qualificationEvent.correlationId, qualificationRequestId);
+  assert.equal(qualificationEvent.publishedAt, null);
+  assert.deepEqual(qualificationEvent.payload, {
+    opportunityId: oppId,
+    transitionId: qualificationTransition.id,
+    customerId: cust.body.id,
+    fromState: 'NOVO',
+    toState: 'QUALIFICADO',
+  });
 
   // Verify activity completion requires resultCode
   const currentActivities = await seller.call(`activities?opportunityId=${oppId}`);

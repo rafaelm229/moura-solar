@@ -36,7 +36,13 @@ export {
 } from './proposal-events.js';
 export type { CustomerCreatedEventV1 } from './customer-events.js';
 export { parseCustomerCreatedEventV1 } from './customer-events.js';
-export type { OpportunityCreatedEventV1 } from './opportunity-events.js';
-export { parseOpportunityCreatedEventV1 } from './opportunity-events.js';
+export type {
+  OpportunityCreatedEventV1,
+  OpportunityQualifiedEventV1,
+} from './opportunity-events.js';
+export {
+  parseOpportunityCreatedEventV1,
+  parseOpportunityQualifiedEventV1,
+} from './opportunity-events.js';
 export type { UtilityUnitCreatedEventV1 } from './utility-unit-events.js';
 export { parseUtilityUnitCreatedEventV1 } from './utility-unit-events.js';

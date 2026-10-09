@@ -76,10 +76,16 @@ O [R1-14](../../docs/r1-14-outbox-entrega-proposta.md) registra
 efeitos de estado e a atividade de acompanhamento. O evento não envia mensagem
 nem confirma recebimento.
 
-O R1-15 propõe registrar `PROPOSAL_VERSION_CREATED` v1 junto da nova versão e
+O [R1-15](../../docs/r1-15-outbox-nova-versao-proposta.md) registra
+`PROPOSAL_VERSION_CREATED` v1 junto da nova versão e
 auditoria. O payload mínimo conserva `basedOnVersionId` e IDs do agregado; não
 carrega snapshots ou valores. A geração do PDF permanece posterior e não é
-prometida pelo evento.
+prometida pelo evento; foi consolidado no PR #41 com CI completa.
+
+O R1-16 registra `OPPORTUNITY_QUALIFIED` v1 junto da transição CRM existente,
+com o ID da transição como deduplicação. O evento declara a passagem de `NOVO`
+para `QUALIFICADO`, sem resumo comercial nem texto de atividade; implementação
+em andamento.
 
 Eventos candidatos: lead.created, project.created, consumption.validated,
 proposal.generated, contract.signed, inventory.reserved,
@@ -145,7 +151,8 @@ mostra freshness/atraso; usuários só veem organização e escopo autorizados.
 - [x] Emitir `UTILITY_UNIT_CREATED` v1 atomicamente com criação/vínculo de UC, sem códigos de conta ou dados legíveis no evento ([R1-12](../../docs/r1-12-outbox-criacao-uc.md)); consolidado no PR #37, sem dispatcher/consumidor.
 - [x] Emitir `PROPOSAL_CREATED` v1 atomicamente com proposta e versão inicial, sem snapshots ou valores comerciais no evento ([R1-13](../../docs/r1-13-outbox-criacao-proposta.md)); consolidado no PR #39, sem dispatcher/consumidor.
 - [x] Emitir `PROPOSAL_DELIVERED` v1 atomicamente com o registro manual de entrega, sem canal/destinatário ([R1-14](../../docs/r1-14-outbox-entrega-proposta.md)); consolidado no PR #40, CI completa verde, sem dispatcher/consumidor.
-- [ ] Emitir `PROPOSAL_VERSION_CREATED` v1 atomicamente com nova versão e auditoria, preservando linhagem por IDs sem snapshots/preço ([R1-15](../../docs/r1-15-outbox-nova-versao-proposta.md)); em implementação, sem dispatcher/consumidor.
+- [x] Emitir `PROPOSAL_VERSION_CREATED` v1 atomicamente com nova versão e auditoria, preservando linhagem por IDs sem snapshots/preço ([R1-15](../../docs/r1-15-outbox-nova-versao-proposta.md)); consolidado no PR #41, CI completa verde, sem dispatcher/consumidor.
+- [ ] Emitir `OPPORTUNITY_QUALIFIED` v1 atomicamente com a transição persistida, sem texto comercial ou de atividade ([R1-16](../../docs/r1-16-outbox-qualificacao-oportunidade.md)); em implementação, sem dispatcher/consumidor.
 - [ ] Definir e publicar contratos versionados dos demais fatos necessários em packages/contracts; R1-08 cobre somente `PROPOSAL_ACCEPTED`.
 - [ ] Definir transporte, outbox/inbox e retenção somente quando houver produtor e consumidor justificados para um fluxo vigente. A PoC OCR foi encerrada pela [ADR-008](../../docs/adr/ADR-008-importacao-manual-sem-ocr.md); a proposta de transporte [ADR-007](../../docs/adr/ADR-007-transporte-integracao-proposta.md) é histórica e não autoriza ativação.
 - [ ] Simular crash, duplicidade, atraso, replay e falha de consumidor.

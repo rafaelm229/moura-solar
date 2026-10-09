@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { parseOpportunityCreatedEventV1 } from '../dist/index.js';
+import { parseOpportunityCreatedEventV1, parseOpportunityQualifiedEventV1 } from '../dist/index.js';
 
 function validEvent() {
   return {
@@ -65,4 +65,70 @@ test('OpportunityCreatedEventV1 rejects inconsistent, missing, or non-minimal pa
       }),
     /unsupported fields/,
   );
+});
+
+function validQualifiedEvent() {
+  return {
+    eventId: 'qualified-event-1',
+    eventType: 'OPPORTUNITY_QUALIFIED',
+    schemaVersion: 1,
+    occurredAt: '2026-10-09T12:00:00.000Z',
+    organizationId: 'organization-1',
+    aggregateId: 'opportunity-1',
+    producer: 'crm',
+    correlationId: 'request-123',
+    payload: {
+      opportunityId: 'opportunity-1',
+      transitionId: 'transition-1',
+      customerId: 'customer-1',
+      fromState: 'NOVO',
+      toState: 'QUALIFICADO',
+    },
+  };
+}
+
+test('OpportunityQualifiedEventV1 accepts the versioned state transition', () => {
+  const event = validQualifiedEvent();
+  assert.deepEqual(parseOpportunityQualifiedEventV1(event), event);
+});
+
+test('OpportunityQualifiedEventV1 rejects unsupported type, version, and states', () => {
+  assert.throws(
+    () =>
+      parseOpportunityQualifiedEventV1({ ...validQualifiedEvent(), eventType: 'OPPORTUNITY_LOST' }),
+    /eventType is unsupported/,
+  );
+  assert.throws(
+    () => parseOpportunityQualifiedEventV1({ ...validQualifiedEvent(), schemaVersion: 2 }),
+    /schemaVersion is unsupported/,
+  );
+  assert.throws(
+    () =>
+      parseOpportunityQualifiedEventV1({
+        ...validQualifiedEvent(),
+        payload: { ...validQualifiedEvent().payload, toState: 'LOST' },
+      }),
+    /transition states are unsupported/,
+  );
+});
+
+test('OpportunityQualifiedEventV1 rejects aggregate mismatches and extra data', () => {
+  assert.throws(
+    () => parseOpportunityQualifiedEventV1({ ...validQualifiedEvent(), aggregateId: 'other' }),
+    /must match aggregateId/,
+  );
+  const withCommercialText = validQualifiedEvent();
+  withCommercialText.payload.needSummary = 'Sensitive commercial text';
+  assert.throws(() => parseOpportunityQualifiedEventV1(withCommercialText), /unsupported fields/);
+});
+
+test('OpportunityQualifiedEventV1 requires all transition identifiers', () => {
+  for (const field of ['opportunityId', 'transitionId', 'customerId']) {
+    const event = validQualifiedEvent();
+    delete event.payload[field];
+    assert.throws(
+      () => parseOpportunityQualifiedEventV1(event),
+      new RegExp(`${field} is required`),
+    );
+  }
 });
