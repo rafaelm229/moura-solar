@@ -8,6 +8,10 @@
 [ADR-008](adr/ADR-008-importacao-manual-sem-ocr.md). Este registro é histórico e
 não autoriza chamadas, contratação ou continuação da PoC.
 
+**Aplicação vigente:** o fluxo padrão é manual. Todos os parâmetros, gates,
+fornecedor e limites abaixo foram supersedidos e não devem ser executados ou
+tratados como backlog. Não reunir corpus nem provisionar serviço de leitura.
+
 **Registro histórico:** Azure Document Intelligence foi escolhido pelo usuário
 em 09/10/2026. Essa escolha foi supersedida antes de provisionamento, envio ou
 gasto pela decisão de manter a importação manual.
