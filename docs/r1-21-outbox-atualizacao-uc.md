@@ -4,7 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Em implementação na branch `codex/r1-21-utility-unit-updated`.
+**Estado:** Consolidado no PR #49, merge commit `bd3029d`; CI completa verde.
 
 **SPECs:** [SPEC-004](../specs/SPEC-004-clientes-oportunidades/spec.md),
 [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
@@ -45,6 +45,13 @@ persistidas na mesma transação local e o endpoint já exige `consumer_units:ma
 
 ## Evidência e limites
 
-Validação local, integração, CI e consolidação serão registradas após execução.
-Sem migration. Nenhum consumidor ou publicação é ativado. A importação e leitura
-de contas seguem manuais conforme ADR-008.
+`@moura-solar/contracts` passou 46/46 testes e a API compilou. A integração
+comercial passou 13/13 com PostgreSQL/MinIO locais, incluindo 401 sem sessão,
+rollback forçado da outbox, correlação, payload mínimo e 409 por versão obsoleta.
+`pnpm check` passou: Prettier, lint, typecheck, 1.257 testes da API, 46 testes
+de contratos, 5 web, 24 testes offline do harness histórico da PoC e build.
+Links locais, Prettier dos documentos afetados e `git diff --check` passaram.
+CI #105 concluiu com sucesso, incluindo geração de API, migrations, integração e
+E2E. O PR #49 foi consolidado na branch de feature em `bd3029d`. Nenhuma
+migration; nenhum consumidor ou publicação é ativado. A importação e leitura de
+contas seguem manuais conforme ADR-008.
