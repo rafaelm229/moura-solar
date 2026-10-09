@@ -19,9 +19,9 @@ não é chamado por processamento operacional. Não foi localizado inbox genéri
 nesta revisão.
 
 A pesquisa da PoC da SPEC-014 não enviou documentos nem executou benchmark. O
-[POC-01](../decisao-poc-01-importacao-energia-2026-10-09.md) escolhe Azure
-Document Intelligence Layout como único candidato, fixa escopo, teto experimental
-e critérios, mas não autoriza contratação ou envio. Ainda não existe corpus
+[POC-01](../decisao-poc-01-importacao-energia-2026-10-09.md) registra Azure
+Document Intelligence Layout como provedor escolhido para a PoC e fixa escopo,
+teto experimental e critérios, mas não autoriza contratação ou envio. Ainda não existe corpus
 operacional aprovado, cotação concreta, revisão de privacidade da conta ou
 política de execução liberada. O domínio de importação/OCR foi escolhido para o
 piloto futuro, condicionado à aprovação desses gates e de um consumidor durável;

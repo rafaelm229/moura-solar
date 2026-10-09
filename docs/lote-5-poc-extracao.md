@@ -4,7 +4,7 @@ Data de preparação: 04/10/2026. Escopo: SPEC-014/IMP-11.
 
 ## Estado
 
-O benchmark reproduzível está preparado. As decisões operacionais foram registradas em [POC-01](decisao-poc-01-importacao-energia-2026-10-09.md): candidato Azure Document Intelligence Layout, região exigida, corpus de 60 contas, minimização, teto de US$ 25 e critérios de qualidade/benefício. Nenhuma conta foi processada, nenhum serviço externo foi contratado e nenhum gasto foi realizado. A execução permanece bloqueada até existirem:
+O benchmark reproduzível está preparado. Azure Document Intelligence Layout foi escolhido pelo usuário para esta PoC. O [POC-01](decisao-poc-01-importacao-energia-2026-10-09.md) registra região exigida, corpus de 60 contas, minimização, teto experimental de US$ 25 e critérios de qualidade/benefício. Nenhuma conta foi processada, nenhum serviço externo foi contratado e nenhum gasto foi realizado. A execução permanece bloqueada até existirem:
 
 - export agregado que permita selecionar a distribuidora conforme POC-01;
 - corpus autorizado, minimizado e rotulado por duas pessoas, com reconciliação;

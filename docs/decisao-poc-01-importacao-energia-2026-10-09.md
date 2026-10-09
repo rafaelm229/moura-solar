@@ -7,6 +7,10 @@
 **Estado:** Em especificação. Decisões registradas; execução externa bloqueada
 até existir corpus autorizado e revisão de privacidade.
 
+**Fornecedor escolhido:** Azure Document Intelligence para esta PoC, confirmado
+pelo usuário em 09/10/2026. A escolha não autoriza provisionamento pago nem envio
+de documentos.
+
 **Rastreabilidade:** [SPEC-014/IMP-11](../specs/SPEC-014-importacao-contas-energia/spec.md),
 [SPEC-019](../specs/SPEC-019-eventos-dados/spec.md), F-23 e F-34.
 
@@ -18,7 +22,9 @@ atual e revisão de privacidade aprovadas.
 
 1. **Fornecedor/modelo:** testar somente Azure Document Intelligence v4.0,
    API `2024-11-30`, `prebuilt-layout`, com interpretação e normalização
-   determinísticas. Não usar Invoice, modelo customizado, treinamento nem GenAI.
+   determinísticas. Azure está escolhido para a PoC; a região e a chamada ainda
+   dependem dos gates abaixo. Não usar Invoice, modelo customizado, treinamento
+   nem GenAI.
    O modelo Layout retorna texto/estrutura; a documentação de suporte lista
    português, mas não comprova extração correta de contas brasileiras.
 2. **Região:** exigir `brazilsouth`. Antes de qualquer envio, confirmar no
@@ -75,8 +81,9 @@ atual e revisão de privacidade aprovadas.
 
 - **Antes:** havia ferramentas offline e candidatos pesquisados, sem fornecedor,
   modelo, região, tamanho de amostra, teto ou metas escolhidos.
-- **Depois:** há um candidato único e limites experimentais explícitos, sem
-  contratação, uso de documentos, mudança de contratos ou ativação de runtime.
+- **Depois:** Azure foi escolhido pelo usuário para a PoC e os limites
+  experimentais estão explícitos, sem contratação, uso de documentos, mudança de
+  contratos ou ativação de runtime.
 - **Contratos e migração:** nenhum contrato/API/OpenAPI/banco muda; nenhuma
   migration, configuração de deploy ou dado é criado.
 - **Rollback:** reverter este registro e referências; sem efeito persistido ou

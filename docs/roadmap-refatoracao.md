@@ -62,7 +62,7 @@ publicação e OCR continuam inativos. O
 no PR #28, sem deploy por não haver consumidor runtime. O domínio do piloto OCR
 foi escolhido condicionalmente após os gates da SPEC-014; transporte e política
 de inbox/quarentena permanecem pendentes. O [POC-01](decisao-poc-01-importacao-energia-2026-10-09.md)
-registra o Azure Layout como candidato único e fixa corpus, minimização, teto e
+registra Azure Layout como provedor escolhido para a PoC e fixa corpus, minimização, teto e
 critérios. Não há corpus autorizado, cotação vigente, revisão de privacidade ou
 execução; worker, OCR e chamadas externas continuam inativos.
 O [R1-05](r1-inventario-integracao-2026-10-08.md) registra o inventário factual
