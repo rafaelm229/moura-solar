@@ -17,8 +17,9 @@ oportunidade opcionais. Repetir a chave e o payload devolve o resultado original
 reutilizar a chave com outro payload retorna conflito. `GET /energy-imports/:id`
 exige `energy_imports:read` e revalida o contexto do cliente e documento.
 
-Nenhum fornecedor é chamado. As decisões sobre mapeamento de classe tarifária,
-fornecedor e limites de custo continuam pendentes e não são inferidas.
+Nenhum fornecedor é chamado por este lote. O POC-01 seleciona Azure Layout como
+candidato experimental sujeito a gates; provedor operacional, mapeamento de
+classe tarifária e cotação aplicável continuam pendentes e não são inferidos.
 
 ## Incremento 6A-2 — revisão manual e confirmação transacional
 

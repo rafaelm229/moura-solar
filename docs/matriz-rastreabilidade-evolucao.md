@@ -19,49 +19,49 @@ Todos os IDs abaixo são requisitos propostos com critérios normativos nas resp
 
 ## Requisito → módulo → contrato → tela → teste
 
-| Requisito | Módulo atual/novo   | Endpoint/entidade                                                                                      | Tela                           | Teste proposto               |
-| --------- | ------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------ | ---------------------------- |
-| UX-01     | M1–M10              | Tokens/CSS atuais; sem novo endpoint                                                                   | Três pilotos                   | T-UX-01                      |
-| UX-02     | M1–M10              | Icon proposto/ativos SVG; sem endpoint                                                                 | Ações e estados                | T-UX-01                      |
-| UX-03     | M1–M10              | Feedback e componentes propostos; contratos atuais                                                     | Listas, detalhes e formulários | T-UX-01                      |
-| UX-04     | M1–M10              | Mesmos endpoints autenticados em sete viewports                                                        | Web completa/OS                | T-UX-02                      |
-| UX-05     | M1–M10              | Landmarks, controles e estados; sem entidade nova                                                      | Shell, formulários, viewer     | T-UX-02                      |
-| UX-06     | M1–M10              | Workspace.destinations → catálogo de rotas proposto                                                    | Seis destinos e menu completo  | T-UX-03                      |
-| UX-07     | M1/M3/M6/M7/M10     | identity, catalog, financial/accounts, inventory/locations, automations/rules                          | Configurações/conta/Início     | T-UX-03                      |
-| UX-08     | M1–M10              | ContextDto.grants; prioridades propostas                                                               | Navegação mobile por perfil    | T-UX-03                      |
-| UX-09     | M1–M10              | Next app/page.tsx → rotas dinâmicas propostas                                                          | Deep links e retorno           | T-UX-04                      |
-| UX-10     | M1/transversal      | identity/me, refresh, logout; QueryClient e proteção dirty                                             | Login e formulários            | T-UX-04                      |
-| UX-11     | M2/M4/M5/M8         | Customer/Opportunity/WorkOrder; ProposalDocument/ContractDocument                                      | Pilotos e PDFs                 | T-UX-05, T-UX-07             |
-| UX-12     | M6/M10              | financial/cash-flow; automations/indicators e goals                                                    | Métricas/gráficos              | T-UX-06                      |
-| DOC-01    | M2/M8               | Customer/OperationalProject; GET customers/:id/documents proposto                                      | Cliente/Documentos             | T-DOC-01                     |
-| DOC-02    | M2/M8               | Links tipados com FKs; POST customers/:id/document-uploads proposto                                    | Contexto do upload             | T-DOC-01, T-DOC-02           |
-| DOC-03    | M4/M5               | ProposalDocument/ContractDocument; proposal-versions/:id/pdf e contract-documents/:id/content proposto | Histórico consolidado          | T-DOC-03                     |
-| DOC-04    | M4/M5 + dossiê      | StorageService/StoredObject proposto; complete proposto                                                | Progresso do envio             | T-DOC-04                     |
-| DOC-05    | M1/M2/M8            | Grants/contexto; versions/:versionId/content proposto                                                  | Preview/download/galeria       | T-DOC-02, T-DOC-07           |
-| DOC-06    | M1/M4/M5 + dossiê   | DocumentVersion/DocumentAccessEvent propostos; history/versions/archive                                | Histórico e substituição       | T-DOC-03, T-DOC-07, T-DOC-10 |
-| DOC-07    | Dossiê proposto     | StoredObject/scanner; complete e content propostos                                                     | Quarentena/erro                | T-DOC-05                     |
-| DOC-08    | Armazenamento       | Intenção, staging, promoção e reconciliador propostos                                                  | Estado persistido              | T-DOC-04, T-DOC-06, T-DOC-10 |
-| DOC-09    | Operação documental | Objetos/PostgreSQL, retentionPolicyVersion e tombstones propostos                                      | Histórico após restauração     | T-DOC-08                     |
-| DOC-10    | M2/M8               | DocumentWorkOrderLink proposto; upload/complete                                                        | Câmera/galeria/pendências      | T-DOC-07, T-DOC-09           |
-| DOC-11    | M5/M8               | verify-signed e work-orders/:id/state existentes                                                       | Conferência/conclusão          | T-DOC-09                     |
-| IMP-01    | M2/M3 + importador  | EnergyBillImport proposto; review/confirm novos, readings atual                                        | Revisão e manual               | T-IMP-01, T-IMP-08, T-IMP-11 |
-| IMP-02    | M2/M3               | UtilityUnit e ExtractionCandidate proposto                                                             | Campos com origem              | T-IMP-01                     |
-| IMP-03    | M2                  | Customer intacto; ImportReview proposto                                                                | Titular versus comprador       | T-IMP-02                     |
-| IMP-04    | M3                  | EnergyReading.consumptionKwh/injectedKwh/billedAmount; Survey.tariffPerKwh preservado                  | Histórico e tarifas            | T-IMP-03                     |
-| IMP-05    | M3 + dossiê         | StoredObject.hash; EnergyReading unique UC/mês; conflitos confirm                                      | Duplicidade/conflito           | T-IMP-04                     |
-| IMP-06    | M1/M2               | Customer/UtilityUnit/Opportunity; autorização review/confirm                                           | Seleção de UC                  | T-IMP-02, T-IMP-12           |
-| IMP-07    | M2/M3               | ImportApplication único proposto; POST energy-imports/:id/confirm                                      | Confirmação/recibo             | T-IMP-04, T-IMP-05, T-IMP-12 |
-| IMP-08    | M3                  | EnergyReading/Revision proposta; GET utility-units/:id/readings atual                                  | Consumo/proveniência           | T-IMP-03, T-IMP-06           |
-| IMP-09    | M3/M4/M5            | Query keys + snapshots ProposalVersion/ContractVersion preservados                                     | Consumo/jornada/PDF            | T-IMP-06                     |
-| IMP-10    | Worker proposto     | ExtractionAttempt/ImportOutbox; retry/cancel/status novos                                              | Fila/falha/cancelamento        | T-IMP-07, T-IMP-08, T-IMP-09 |
-| IMP-11    | Adapter proposto    | submit/poll/cancel/normalize; sem fornecedor fixo                                                      | Relatório PoC                  | T-IMP-10                     |
-| IMP-12    | Importador proposto | ExtractionCandidate: confidence/quality/validation; parser isolado                                     | Revisão de candidatos          | T-IMP-10, T-IMP-11           |
-| JOR-01    | M2/M5/M6/M8         | Opportunity/ProjectGate/OperationalProject; GET journey proposto                                       | Resumo e histórico             | T-JOR-01, T-JOR-07           |
-| JOR-02    | M6/M7/M8            | ProjectGate FINANCIAL, StockReservation, HomologationProcess                                           | Frentes paralelas              | T-JOR-01                     |
-| JOR-03    | M2–M10              | PATCH cadastro versus comandos qualify/accept/verify-signed/state                                      | Formulário e comando           | T-JOR-02                     |
-| JOR-04    | M1–M10              | Catálogo fechado nextActions proposto; permissões efetivas                                             | Próxima ação contextual        | T-JOR-03, T-JOR-07           |
-| JOR-05    | M2–M10              | sourceRevisions/observedAt; QueryClient e fontes atuais                                                | Jornada/dados desatualizados   | T-JOR-04, T-JOR-05           |
-| JOR-06    | M1–M10              | Endpoints atuais e inventário da SPEC-003                                                              | Jornada ponta a ponta          | T-JOR-06                     |
+| Requisito | Módulo atual/novo   | Endpoint/entidade                                                                                             | Tela                           | Teste proposto               |
+| --------- | ------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------ | ---------------------------- |
+| UX-01     | M1–M10              | Tokens/CSS atuais; sem novo endpoint                                                                          | Três pilotos                   | T-UX-01                      |
+| UX-02     | M1–M10              | Icon proposto/ativos SVG; sem endpoint                                                                        | Ações e estados                | T-UX-01                      |
+| UX-03     | M1–M10              | Feedback e componentes propostos; contratos atuais                                                            | Listas, detalhes e formulários | T-UX-01                      |
+| UX-04     | M1–M10              | Mesmos endpoints autenticados em sete viewports                                                               | Web completa/OS                | T-UX-02                      |
+| UX-05     | M1–M10              | Landmarks, controles e estados; sem entidade nova                                                             | Shell, formulários, viewer     | T-UX-02                      |
+| UX-06     | M1–M10              | Workspace.destinations → catálogo de rotas proposto                                                           | Seis destinos e menu completo  | T-UX-03                      |
+| UX-07     | M1/M3/M6/M7/M10     | identity, catalog, financial/accounts, inventory/locations, automations/rules                                 | Configurações/conta/Início     | T-UX-03                      |
+| UX-08     | M1–M10              | ContextDto.grants; prioridades propostas                                                                      | Navegação mobile por perfil    | T-UX-03                      |
+| UX-09     | M1–M10              | Next app/page.tsx → rotas dinâmicas propostas                                                                 | Deep links e retorno           | T-UX-04                      |
+| UX-10     | M1/transversal      | identity/me, refresh, logout; QueryClient e proteção dirty                                                    | Login e formulários            | T-UX-04                      |
+| UX-11     | M2/M4/M5/M8         | Customer/Opportunity/WorkOrder; ProposalDocument/ContractDocument                                             | Pilotos e PDFs                 | T-UX-05, T-UX-07             |
+| UX-12     | M6/M10              | financial/cash-flow; automations/indicators e goals                                                           | Métricas/gráficos              | T-UX-06                      |
+| DOC-01    | M2/M8               | Customer/OperationalProject; GET customers/:id/documents proposto                                             | Cliente/Documentos             | T-DOC-01                     |
+| DOC-02    | M2/M8               | Links tipados com FKs; POST customers/:id/document-uploads proposto                                           | Contexto do upload             | T-DOC-01, T-DOC-02           |
+| DOC-03    | M4/M5               | ProposalDocument/ContractDocument; proposal-versions/:id/pdf e contract-documents/:id/content proposto        | Histórico consolidado          | T-DOC-03                     |
+| DOC-04    | M4/M5 + dossiê      | StorageService/StoredObject proposto; complete proposto                                                       | Progresso do envio             | T-DOC-04                     |
+| DOC-05    | M1/M2/M8            | Grants/contexto; versions/:versionId/content proposto                                                         | Preview/download/galeria       | T-DOC-02, T-DOC-07           |
+| DOC-06    | M1/M4/M5 + dossiê   | DocumentVersion/DocumentAccessEvent propostos; history/versions/archive                                       | Histórico e substituição       | T-DOC-03, T-DOC-07, T-DOC-10 |
+| DOC-07    | Dossiê proposto     | StoredObject/scanner; complete e content propostos                                                            | Quarentena/erro                | T-DOC-05                     |
+| DOC-08    | Armazenamento       | Intenção, staging, promoção e reconciliador propostos                                                         | Estado persistido              | T-DOC-04, T-DOC-06, T-DOC-10 |
+| DOC-09    | Operação documental | Objetos/PostgreSQL, retentionPolicyVersion e tombstones propostos                                             | Histórico após restauração     | T-DOC-08                     |
+| DOC-10    | M2/M8               | DocumentWorkOrderLink proposto; upload/complete                                                               | Câmera/galeria/pendências      | T-DOC-07, T-DOC-09           |
+| DOC-11    | M5/M8               | verify-signed e work-orders/:id/state existentes                                                              | Conferência/conclusão          | T-DOC-09                     |
+| IMP-01    | M2/M3 + importador  | EnergyBillImport proposto; review/confirm novos, readings atual                                               | Revisão e manual               | T-IMP-01, T-IMP-08, T-IMP-11 |
+| IMP-02    | M2/M3               | UtilityUnit e ExtractionCandidate proposto                                                                    | Campos com origem              | T-IMP-01                     |
+| IMP-03    | M2                  | Customer intacto; ImportReview proposto                                                                       | Titular versus comprador       | T-IMP-02                     |
+| IMP-04    | M3                  | EnergyReading.consumptionKwh/injectedKwh/billedAmount; Survey.tariffPerKwh preservado                         | Histórico e tarifas            | T-IMP-03                     |
+| IMP-05    | M3 + dossiê         | StoredObject.hash; EnergyReading unique UC/mês; conflitos confirm                                             | Duplicidade/conflito           | T-IMP-04                     |
+| IMP-06    | M1/M2               | Customer/UtilityUnit/Opportunity; autorização review/confirm                                                  | Seleção de UC                  | T-IMP-02, T-IMP-12           |
+| IMP-07    | M2/M3               | ImportApplication único proposto; POST energy-imports/:id/confirm                                             | Confirmação/recibo             | T-IMP-04, T-IMP-05, T-IMP-12 |
+| IMP-08    | M3                  | EnergyReading/Revision proposta; GET utility-units/:id/readings atual                                         | Consumo/proveniência           | T-IMP-03, T-IMP-06           |
+| IMP-09    | M3/M4/M5            | Query keys + snapshots ProposalVersion/ContractVersion preservados                                            | Consumo/jornada/PDF            | T-IMP-06                     |
+| IMP-10    | Worker proposto     | ExtractionAttempt/ImportOutbox; retry/cancel/status novos                                                     | Fila/falha/cancelamento        | T-IMP-07, T-IMP-08, T-IMP-09 |
+| IMP-11    | Adapter proposto    | submit/poll/cancel/normalize; POC-01 seleciona Azure Layout apenas para avaliação, sem fornecedor operacional | Relatório PoC                  | T-IMP-10                     |
+| IMP-12    | Importador proposto | ExtractionCandidate: confidence/quality/validation; parser isolado                                            | Revisão de candidatos          | T-IMP-10, T-IMP-11           |
+| JOR-01    | M2/M5/M6/M8         | Opportunity/ProjectGate/OperationalProject; GET journey proposto                                              | Resumo e histórico             | T-JOR-01, T-JOR-07           |
+| JOR-02    | M6/M7/M8            | ProjectGate FINANCIAL, StockReservation, HomologationProcess                                                  | Frentes paralelas              | T-JOR-01                     |
+| JOR-03    | M2–M10              | PATCH cadastro versus comandos qualify/accept/verify-signed/state                                             | Formulário e comando           | T-JOR-02                     |
+| JOR-04    | M1–M10              | Catálogo fechado nextActions proposto; permissões efetivas                                                    | Próxima ação contextual        | T-JOR-03, T-JOR-07           |
+| JOR-05    | M2–M10              | sourceRevisions/observedAt; QueryClient e fontes atuais                                                       | Jornada/dados desatualizados   | T-JOR-04, T-JOR-05           |
+| JOR-06    | M1–M10              | Endpoints atuais e inventário da SPEC-003                                                                     | Jornada ponta a ponta          | T-JOR-06                     |
 
 ## Baseline existente e ampliação
 

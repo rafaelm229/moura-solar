@@ -18,11 +18,14 @@ que não há consumidores habilitados. O parser de payloads de importação v1 a
 não é chamado por processamento operacional. Não foi localizado inbox genérico
 nesta revisão.
 
-A pesquisa da PoC da SPEC-014 não enviou documentos nem executou benchmark. Não
-há fornecedor, corpus operacional, limite de custo/quota ou política de dados
-aprovados. O usuário escolheu o domínio de importação/OCR para o piloto futuro,
-condicionado à aprovação desses gates e de um consumidor durável; essa escolha
-não autoriza ativação agora.
+A pesquisa da PoC da SPEC-014 não enviou documentos nem executou benchmark. O
+[POC-01](../decisao-poc-01-importacao-energia-2026-10-09.md) escolhe Azure
+Document Intelligence Layout como único candidato, fixa escopo, teto experimental
+e critérios, mas não autoriza contratação ou envio. Ainda não existe corpus
+operacional aprovado, cotação concreta, revisão de privacidade da conta ou
+política de execução liberada. O domínio de importação/OCR foi escolhido para o
+piloto futuro, condicionado à aprovação desses gates e de um consumidor durável;
+essa escolha não autoriza ativação agora.
 
 ## Opções consideradas
 
@@ -46,9 +49,10 @@ Antes de implementação, responsáveis devem definir: (1) semântica do evento 
 efeito durável do consumidor com o dono da importação, (2) transporte e
 inbox/dedupe, (3) retenção e exclusão — o vínculo existente de `ImportOutbox` tem
 `onDelete: Cascade` — e (4) política de retry, quarentena, replay autorizado e
-reconciliação. Também devem cumprir os gates de corpus, privacidade, fornecedor,
-limites de custo/quota e critérios de qualidade definidos pela SPEC-014. Até
-essas decisões, worker, OCR e publicação permanecem desativados.
+reconciliação. Também devem cumprir os gates de corpus, privacidade, cotação/quota
+e critérios de qualidade definidos pela SPEC-014 e detalhados no POC-01. Até a
+aprovação do contrato de transporte/consumidor e a conclusão dos gates
+experimentais, worker, OCR e publicação permanecem desativados.
 
 Não assumir exactly-once global. A futura implementação deve provar efeito e
 inbox idempotentes em transação local, correlation/causation, retries limitados,
