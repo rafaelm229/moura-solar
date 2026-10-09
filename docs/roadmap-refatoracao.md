@@ -181,6 +181,11 @@ O [R1-36](r1-36-outbox-entrega-contrato.md) foi consolidado no PR #79, merge
 `0a246e8`, CI #135 completa verde: `CONTRACT_DELIVERED` registra a entrega
 manual junto da auditoria e da atividade, somente com IDs, sem canal ou
 destinatário. Não realiza envio externo. Sem migration ou consumidor.
+O [R1-37](r1-37-outbox-cancelamento-contrato.md) está implementado na branch
+`codex/r1-37-contract-canceled-event`: `CONTRACT_CANCELED` v1 é escrito com a
+auditoria na mesma transação, com IDs apenas e sem motivo. Testes, `pnpm check`,
+integração local (8/8), `pnpm check`, geração OpenAPI e links locais passaram;
+CI remota e consolidação ainda pendentes.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 

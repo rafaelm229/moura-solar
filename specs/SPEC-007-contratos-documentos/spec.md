@@ -160,6 +160,12 @@ conforme [R1-36](../../docs/r1-36-outbox-entrega-contrato.md), apenas com IDs e
 na mesma transação da entrega, auditoria e atividade de acompanhamento. O evento
 não representa envio por canal nem inclui destinatário.
 
+O cancelamento autorizado persiste `CONTRACT_CANCELED` v1 conforme
+[R1-37](../../docs/r1-37-outbox-cancelamento-contrato.md), na mesma transação
+local da mudança de estado e da auditoria. O evento contém somente IDs; motivo,
+observações e conteúdo contratual permanecem fora do payload. A gravação não
+altera permissões ou regras de cancelamento e não ativa consumidor.
+
 ## 9. Upload do assinado
 
 O usuário seleciona explicitamente:
@@ -298,6 +304,10 @@ contract_clauses:manage
 - `ContractCanceled`
 - `ContractTerminated`
 - `ProjectGatesReevaluationRequested`
+
+O evento versionado `CONTRACT_CANCELED` v1 representa apenas o cancelamento
+persistido pela pessoa autorizada; não transporta motivo e não implica envio,
+compensação financeira ou alteração automática de gates.
 
 ## 19. Casos de aceitação
 

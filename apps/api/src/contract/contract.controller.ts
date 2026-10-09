@@ -167,7 +167,13 @@ export class ContractController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: CancelContractDto,
   ) {
-    return this.service.cancelContract(req.actor.organizationId, id, req.actor.userId, dto);
+    return this.service.cancelContract(
+      req.actor.organizationId,
+      id,
+      req.actor.userId,
+      dto,
+      req.requestId ?? 'trace',
+    );
   }
 
   @Get('contracts/:id/docx')

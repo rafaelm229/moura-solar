@@ -12,7 +12,11 @@ import { AuditService } from '../database/audit.service';
 import { StorageService } from '../proposal/storage.service';
 import { ContractGeneratorService, type ContractTemplateData } from './contract-generator.service';
 import { FinancialService } from '../financial/financial.service';
-import type { ActivityCreatedEventV1, ContractDeliveredEventV1 } from '@moura-solar/contracts';
+import type {
+  ActivityCreatedEventV1,
+  ContractCanceledEventV1,
+  ContractDeliveredEventV1,
+} from '@moura-solar/contracts';
 import {
   CreateContractDto,
   UpdateContractDraftDto,
@@ -1497,6 +1501,7 @@ export class ContractService {
     contractId: string,
     userId: string,
     dto: CancelContractDto,
+    correlationId: string,
   ) {
     const contract = await this.getContract(organizationId, contractId);
     if (['CANCELED', 'TERMINATED'].includes(contract.state)) {
@@ -1512,7 +1517,7 @@ export class ContractService {
           notes: `${contract.notes ? `${contract.notes}\n` : ''}Cancelado: ${dto.reason}`,
         },
       });
-      await this.audit.record(
+      const cancellationAudit = await this.audit.record(
         {
           organizationId,
           actorId: userId,
@@ -1521,6 +1526,37 @@ export class ContractService {
         },
         tx,
       );
+
+      const event: ContractCanceledEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'CONTRACT_CANCELED',
+        schemaVersion: 1,
+        occurredAt: cancellationAudit.createdAt.toISOString(),
+        organizationId,
+        aggregateId: contract.id,
+        producer: 'contracts',
+        correlationId,
+        payload: {
+          contractId: contract.id,
+          auditEventId: cancellationAudit.id,
+          opportunityId: contract.opportunityId,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Contract',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: cancellationAudit.createdAt,
+          payload: event.payload,
+          dedupeKey: `CONTRACT_CANCELED:${cancellationAudit.id}`,
+        },
+      });
     });
     return this.getContract(organizationId, contractId);
   }

@@ -586,3 +586,98 @@ test('7. Conferência integral e liberação do gate contratual (SPEC-007 Item 1
   assert.ok(contractGate);
   assert.equal(contractGate.status, 'SATISFIED');
 });
+
+test('8. Cancelamento registra evento v1 atomicamente sem publicar motivo', async () => {
+  const listRes = await admin.call(`opportunities/${testOpportunityId}/contracts`);
+  assert.equal(listRes.status, 200);
+  const contractId = listRes.body[0].id;
+  const before = await db.contract.findUniqueOrThrow({ where: { id: contractId } });
+  const beforeAuditCount = await db.auditEvent.count({
+    where: { action: 'CONTRACT_CANCELED', entityId: contractId },
+  });
+  const beforeEventCount = await db.integrationOutbox.count({
+    where: { eventType: 'CONTRACT_CANCELED', aggregateId: contractId },
+  });
+
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_contract_canceled_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'CONTRACT_CANCELED' THEN
+        RAISE EXCEPTION 'forced contract cancellation outbox failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_contract_canceled_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_contract_canceled_outbox_for_test()
+  `);
+  let failedCancelRes;
+  try {
+    failedCancelRes = await admin.call(`contracts/${contractId}/cancel`, 'POST', {
+      reason: 'Motivo confidencial usado para validar rollback',
+    });
+  } finally {
+    await db.$executeRawUnsafe(
+      `DROP TRIGGER reject_contract_canceled_outbox_for_test ON "${schema}"."integration_outbox"`,
+    );
+    await db.$executeRawUnsafe(
+      `DROP FUNCTION "${schema}".reject_contract_canceled_outbox_for_test()`,
+    );
+  }
+  assert.equal(failedCancelRes.status, 500);
+  const afterFailure = await db.contract.findUniqueOrThrow({ where: { id: contractId } });
+  assert.equal(afterFailure.state, before.state);
+  assert.equal(afterFailure.notes, before.notes);
+  assert.equal(
+    await db.auditEvent.count({ where: { action: 'CONTRACT_CANCELED', entityId: contractId } }),
+    beforeAuditCount,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'CONTRACT_CANCELED', aggregateId: contractId },
+    }),
+    beforeEventCount,
+  );
+
+  const cancelRes = await admin.call(`contracts/${contractId}/cancel`, 'POST', {
+    reason: 'Cancelamento confirmado pela pessoa responsável',
+  });
+  assert.equal(cancelRes.status, 200);
+  assert.equal(cancelRes.body.state, 'CANCELED');
+  const cancellationAudit = await db.auditEvent.findFirstOrThrow({
+    where: { action: 'CONTRACT_CANCELED', entityId: contractId },
+    orderBy: { createdAt: 'desc' },
+  });
+  const event = await db.integrationOutbox.findFirstOrThrow({
+    where: {
+      organizationId: cancellationAudit.organizationId,
+      dedupeKey: `CONTRACT_CANCELED:${cancellationAudit.id}`,
+    },
+  });
+  assert.equal(event.eventType, 'CONTRACT_CANCELED');
+  assert.equal(event.schemaVersion, 1);
+  assert.equal(event.aggregateType, 'Contract');
+  assert.equal(event.aggregateId, contractId);
+  assert.equal(event.correlationId, cancelRes.headers.get('x-request-id'));
+  assert.equal(event.publishedAt, null);
+  assert.deepEqual(event.payload, {
+    contractId,
+    auditEventId: cancellationAudit.id,
+    opportunityId: testOpportunityId,
+  });
+  assert.equal(event.occurredAt.toISOString(), cancellationAudit.createdAt.toISOString());
+
+  const repeatedCancelRes = await admin.call(`contracts/${contractId}/cancel`, 'POST', {
+    reason: 'Repetição não deve criar novo fato',
+  });
+  assert.equal(repeatedCancelRes.status, 400);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'CONTRACT_CANCELED', aggregateId: contractId },
+    }),
+    beforeEventCount + 1,
+  );
+});
