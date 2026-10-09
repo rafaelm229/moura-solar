@@ -4,8 +4,9 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Em implementação na branch
-`codex/r1-30-completion-followup-event`.
+**Estado:** Consolidado no PR #67 (`c31ba5f`). A CI #123 e sua repetição
+falharam ao inicializar PostgreSQL por limite de pulls não autenticados do
+Docker Hub; checkout e testes não foram executados na CI.
 
 **SPECs:** [SPEC-001](../specs/SPEC-001-jornada-cliente/spec.md),
 [SPEC-004](../specs/SPEC-004-clientes-oportunidades/spec.md),
@@ -43,7 +44,10 @@ opcional do follow-up já ocorrem na transação local.
 - `pnpm check`: passou fora do sandbox. A primeira execução no sandbox bloqueou
   `spawnSync unzip` nos testes DOCX preexistentes (`EPERM`); repetição autorizada
   passou com os diretórios não rastreados do usuário excluídos temporariamente.
-- CI do branch ainda pendente; o estado permanece Em implementação.
+- CI #123 e a repetição falharam antes do checkout ao baixar
+  `postgres:17-alpine`, pelo limite de pulls não autenticados do Docker Hub.
+  Nenhum teste foi executado na CI; não há alegação de CI verde.
+- PR #67 foi consolidado em `c31ba5f` após as validações locais.
 
 ## Critérios de aceite
 

@@ -145,9 +145,11 @@ O [R1-29](r1-29-outbox-followup-qualificacao.md) foi consolidado no PR #65
 (`cad433e`) para emitir `ACTIVITY_CREATED` v1 para o follow-up opcional da
 qualificação. `pnpm check` e integração comercial passaram localmente; a CI #121
 e sua repetição não iniciaram os testes por rate limit do Docker Hub.
-O [R1-30](r1-30-outbox-followup-conclusao-atividade.md) está em implementação
-para emitir `ACTIVITY_CREATED` v1 também para follow-up criado na conclusão de
-uma atividade, reaproveitando a auditoria e transação locais.
+O [R1-30](r1-30-outbox-followup-conclusao-atividade.md) foi consolidado no PR
+#67 (`c31ba5f`) para emitir `ACTIVITY_CREATED` v1 para follow-up criado na
+conclusão de uma atividade. `pnpm check` e integração comercial passaram
+localmente; a CI #123 e sua repetição falharam antes dos testes por rate limit do
+Docker Hub.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
