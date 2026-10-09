@@ -155,6 +155,11 @@ Registrar envio exige:
 O sistema disponibiliza o mesmo arquivo enviado para visualização posterior. O
 estado `SENT` não poderá existir sem `ContractDelivery` associado.
 
+O registro manual de entrega persiste `CONTRACT_DELIVERED` v1 na outbox local
+conforme [R1-36](../../docs/r1-36-outbox-entrega-contrato.md), apenas com IDs e
+na mesma transação da entrega, auditoria e atividade de acompanhamento. O evento
+não representa envio por canal nem inclui destinatário.
+
 ## 9. Upload do assinado
 
 O usuário seleciona explicitamente:

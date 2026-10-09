@@ -12,7 +12,7 @@ import { AuditService } from '../database/audit.service';
 import { StorageService } from '../proposal/storage.service';
 import { ContractGeneratorService, type ContractTemplateData } from './contract-generator.service';
 import { FinancialService } from '../financial/financial.service';
-import type { ActivityCreatedEventV1 } from '@moura-solar/contracts';
+import type { ActivityCreatedEventV1, ContractDeliveredEventV1 } from '@moura-solar/contracts';
 import {
   CreateContractDto,
   UpdateContractDraftDto,
@@ -1094,6 +1094,38 @@ export class ContractService {
           occurredAt: deliveryAudit.createdAt,
           payload: activityEvent.payload,
           dedupeKey: `ACTIVITY_CREATED:${deliveryAudit.id}:${followUpActivity.id}`,
+        },
+      });
+
+      const contractEvent: ContractDeliveredEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'CONTRACT_DELIVERED',
+        schemaVersion: 1,
+        occurredAt: deliveryAudit.createdAt.toISOString(),
+        organizationId,
+        aggregateId: contract.id,
+        producer: 'contracts',
+        correlationId,
+        payload: {
+          contractId: contract.id,
+          deliveryId: del.id,
+          auditEventId: deliveryAudit.id,
+          opportunityId: contract.opportunityId,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: contractEvent.eventId,
+          organizationId: contractEvent.organizationId,
+          eventType: contractEvent.eventType,
+          schemaVersion: contractEvent.schemaVersion,
+          aggregateType: 'Contract',
+          aggregateId: contractEvent.aggregateId,
+          producer: contractEvent.producer,
+          correlationId: contractEvent.correlationId,
+          occurredAt: deliveryAudit.createdAt,
+          payload: contractEvent.payload,
+          dedupeKey: `CONTRACT_DELIVERED:${deliveryAudit.id}:${del.id}`,
         },
       });
 
