@@ -177,10 +177,10 @@ O [R1-35](r1-35-outbox-eventos-catalogo.md) foi consolidado no PR #77, merge
 `2680bff`, CI #133 completa verde: criação e atualização de CatalogItem registram
 IDs e versão no payload, sem valores ou projeções de preço/estoque. Nenhuma
 migration ou consumidor está no escopo.
-O [R1-36](r1-36-outbox-entrega-contrato.md) está em implementação para registrar
-`CONTRACT_DELIVERED` quando uma pessoa registra manualmente a entrega, junto da
-auditoria e da atividade. O evento contém somente IDs, sem canal ou destinatário;
-não realiza envio externo. Sem migration ou consumidor.
+O [R1-36](r1-36-outbox-entrega-contrato.md) foi consolidado no PR #79, merge
+`0a246e8`, CI #135 completa verde: `CONTRACT_DELIVERED` registra a entrega
+manual junto da auditoria e da atividade, somente com IDs, sem canal ou
+destinatário. Não realiza envio externo. Sem migration ou consumidor.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 

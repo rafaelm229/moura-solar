@@ -4,7 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Em implementação na branch `codex/r1-36-contract-delivery-event`.
+**Estado:** Consolidado no PR #79, merge `0a246e8`; CI #135 completa verde.
 
 **SPECs:** [SPEC-007](../specs/SPEC-007-contratos-documentos/spec.md),
 [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
@@ -46,7 +46,10 @@ atividade de acompanhamento já existem.
   incluindo rollback no PostgreSQL local quando `CONTRACT_DELIVERED` falha e
   persistência/correlação no registro manual bem-sucedido.
 - `pnpm check`: exit code 0 (formatação, lint, typecheck, testes e build).
-- CI remota ainda não executada; não declarado consolidado nem liberado.
+- CI #135: `pnpm check`, geração da API, migrations, integração completa e E2E
+  passaram.
+- Links locais, Prettier e `git diff --check`: sem erros.
+- Consolidado na branch `feat/proposal-visual-clarity`; não liberado em `main`.
 
 ## Rollback
 
