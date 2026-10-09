@@ -8,6 +8,10 @@
 
 Escopo e contratos funcionais aprovados em 05/10/2026. Decisões operacionais listadas no plano continuam bloqueios das liberações correspondentes.
 
+**Aplicação vigente:** conforme [ADR-008](../../docs/adr/ADR-008-importacao-manual-sem-ocr.md),
+os fluxos de entrada e revisão são manuais. Referências a candidatos de OCR e
+sinais de fornecedor neste documento descrevem o desenho histórico da SPEC.
+
 1. Na ficha do cliente ou consumo da oportunidade, escolher “Importar conta”. Mostrar cliente/comprador, UC existente ou “Criar UC ao confirmar”. Oportunidade é contexto opcional validado.
 2. Selecionar PDF/foto ou câmera; mostrar limites, orientação de legibilidade e original. Envio confirma persistência documental antes de iniciar extração. Upload aceito não significa dados aplicados.
 3. Mostrar fila/processamento com estado, tempo e opção de sair/retomar pela URL. Falha permite tentar conforme política ou cadastrar manualmente; o original continua no dossiê.

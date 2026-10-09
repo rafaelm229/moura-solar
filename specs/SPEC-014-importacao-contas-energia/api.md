@@ -8,6 +8,10 @@
 
 Escopo e contratos funcionais aprovados em 05/10/2026. Decisões operacionais listadas no plano continuam bloqueios das liberações correspondentes.
 
+**Aplicação vigente:** conforme [ADR-008](../../docs/adr/ADR-008-importacao-manual-sem-ocr.md),
+o uso atual mantém intake, revisão e confirmação manuais. Metadados/contratos de
+tentativas de extração são scaffolding histórico sem consumidor OCR ativo.
+
 Prefixo `/api/v1`. Autenticação M1; permissões propostas `energy_imports:create/read/review/confirm/cancel/retry`, combinadas com `consumer_units:manage`, leitura do cliente e permissão documental por contexto. Atualizar/vincular oportunidade exige também `opportunities:update`. A revisão não concede poder de confirmação. Tudo novo nesta tabela.
 
 | Método/caminho                               | Entrada                                                                                                            | Saída                                                                         |

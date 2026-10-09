@@ -296,6 +296,32 @@ test('registro de aceite marca proposta como ACCEPTED, avança oportunidade para
   const propList = await admin.call(`opportunities/${testOpportunityId}/proposals`);
   const versionId = propList.body[0].versions[0].id;
 
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_outbox_for_test() RETURNS trigger AS $$
+    BEGIN RAISE EXCEPTION 'forced outbox insert failure'; END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_outbox_for_test()
+  `);
+  const failedAcceptRes = await admin.call(`proposal-versions/${versionId}/accept`, 'POST', {
+    method: 'MESSAGE',
+    acceptedByName: 'Aceite com falha de persistência',
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_outbox_for_test()`);
+  assert.equal(failedAcceptRes.status, 500);
+  assert.equal(await db.proposalAcceptance.count({ where: { proposalVersionId: versionId } }), 0);
+  assert.equal(
+    await db.integrationOutbox.count({ where: { aggregateId: propList.body[0].id } }),
+    0,
+  );
+  assert.equal((await db.proposalVersion.findUnique({ where: { id: versionId } })).status, 'SENT');
+
   const acceptRes = await admin.call(`proposal-versions/${versionId}/accept`, 'POST', {
     method: 'MESSAGE',
     acceptedByName: 'Dr. Roberto Silva (Proprietário)',
@@ -304,6 +330,28 @@ test('registro de aceite marca proposta como ACCEPTED, avança oportunidade para
 
   assert.equal(acceptRes.status, 200);
   assert.equal(acceptRes.body.acceptedByName, 'Dr. Roberto Silva (Proprietário)');
+
+  const acceptance = await db.proposalAcceptance.findUnique({
+    where: { id: acceptRes.body.id },
+    select: { organizationId: true },
+  });
+  assert.ok(acceptance);
+  const acceptedEvent = await db.integrationOutbox.findFirst({
+    where: {
+      organizationId: acceptance.organizationId,
+      dedupeKey: `PROPOSAL_ACCEPTED:${acceptRes.body.id}`,
+    },
+  });
+  assert.ok(acceptedEvent, 'Aceite e evento outbox devem persistir juntos');
+  assert.equal(acceptedEvent.eventType, 'PROPOSAL_ACCEPTED');
+  assert.equal(acceptedEvent.schemaVersion, 1);
+  assert.equal(acceptedEvent.aggregateId, propList.body[0].id);
+  assert.equal(acceptedEvent.correlationId, acceptRes.headers.get('x-request-id'));
+  assert.deepEqual(acceptedEvent.payload, {
+    acceptanceId: acceptRes.body.id,
+    proposalVersionId: versionId,
+    opportunityId: testOpportunityId,
+  });
 
   // Verify Proposal details
   const updatedProp = await admin.call(`proposals/${propList.body[0].id}`);
@@ -330,4 +378,11 @@ test('registro de aceite marca proposta como ACCEPTED, avança oportunidade para
     acceptedByName: 'Outro Aceite',
   });
   assert.equal(secondAcceptRes.status, 409);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { dedupeKey: `PROPOSAL_ACCEPTED:${acceptRes.body.id}` },
+    }),
+    1,
+    'Repetir o comando rejeitado não cria outro evento',
+  );
 });

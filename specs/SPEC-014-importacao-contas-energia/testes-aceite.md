@@ -8,6 +8,10 @@
 
 Escopo e contratos funcionais aprovados em 05/10/2026. Decisões operacionais listadas no plano continuam bloqueios das liberações correspondentes.
 
+**Escopo vigente:** pela [ADR-008](../../docs/adr/ADR-008-importacao-manual-sem-ocr.md),
+os testes de worker/provedor/OCR não são requisitos do roadmap atual. Permanecem
+como critérios históricos; os fluxos manuais e suas regressões continuam válidos.
+
 Testes futuros. Reaproveitar tests/design.integration.mjs e tests/e2e/design.spec.ts como regressão de consumo/dimensionamento; não representam cobertura de OCR/importação hoje.
 
 | Teste    | Requisitos     | Cenário e resultado esperado                                                                                                                                    |

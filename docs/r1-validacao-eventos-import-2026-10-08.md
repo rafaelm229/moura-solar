@@ -73,8 +73,9 @@ este incremento não declara suporte a linha histórica.
 ## Limites e próximo recorte
 
 O parser não verifica o envelope completo, assinatura/autenticidade, autorização,
-ordenação, idempotência ou entrega. O próximo recorte de R1 precisa decidir um
-consumidor/piloto que não contorne os gates da PoC de OCR e registrar transporte,
-inbox e política de quarentena/replay antes de operar. Nenhum broker ou consumidor
-foi escolhido por antecipação; a existência do parser não autoriza publicação ou
-ativação do worker.
+ordenação, idempotência ou entrega. Este documento registra o estado em 08/10/2026;
+a decisão posterior ADR-008 encerrou a PoC de OCR e mantém a importação manual.
+Qualquer recorte futuro de R1 precisa justificar um consumidor para um fluxo
+vigente e registrar transporte, inbox e política de quarentena/replay antes de
+operar. Nenhum broker ou consumidor foi escolhido por antecipação; a existência
+do parser não autoriza publicação ou ativação do worker.

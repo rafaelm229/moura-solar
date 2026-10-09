@@ -59,19 +59,24 @@ implantada. O [R1-03 de versionamento](r1-versionamento-outbox-import-2026-10-08
 foi mesclado no PR #26 e liberado somente no Compose local; trabalhador,
 publicação e OCR continuam inativos. O
 [R1-04 de validação](r1-validacao-eventos-import-2026-10-08.md) foi consolidado
-no PR #28, sem deploy por não haver consumidor runtime. O domínio do piloto OCR
-foi escolhido condicionalmente após os gates da SPEC-014; transporte e política
-de inbox/quarentena permanecem pendentes.
+no PR #28, sem deploy por não haver consumidor runtime. A decisão vigente
+[ADR-008](adr/ADR-008-importacao-manual-sem-ocr.md) mantém a importação de contas
+no padrão manual e retira PoC/OCR do roadmap. O [POC-01](decisao-poc-01-importacao-energia-2026-10-09.md)
+fica como registro histórico; nenhuma conta foi enviada e nenhum serviço foi
+contratado. O worker e as chamadas externas permanecem inativos.
 O [R1-05](r1-inventario-integracao-2026-10-08.md) registra o inventário factual
 de auditoria, outbox de importação e projeções; não seleciona consumidor nem
 transporte.
-A [proposta ADR-007](adr/ADR-007-transporte-integracao-proposta.md) recomenda
-avaliar polling PostgreSQL para o piloto de importação/OCR, escolhido
-condicionalmente após os gates da SPEC-014; transporte e execução não estão
-aprovados.
+A [proposta histórica ADR-007](adr/ADR-007-transporte-integracao-proposta.md)
+preserva opções de transporte avaliadas para o piloto OCR que foi retirado do
+roadmap por ADR-008. Ela não seleciona um consumidor ativo.
 O [R1-07](r1-guard-evento-import-2026-10-08.md) consolidou no PR #32 a guarda
 de versão/payload no claim do worker; CI #86 passou. Não ativa consumidor nem
 altera linhas legadas, portanto não exigiu deploy.
+O [R1-08](r1-08-contrato-aceite-proposta.md) foi validado no commit `df2b571`;
+define apenas o contrato de aceite de proposta. R1-09 adiciona a persistência
+transacional local desse fato e passou testes locais de migration, integração e
+`pnpm check`; continua sem consumidor, dispatcher ou transporte.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
@@ -102,10 +107,10 @@ distribuída antes de existir um consumidor demonstrável.
 
 - **Material/rotas:** continuidade visual desde R0; rotas reais e deep links por
   incremento, sem perder sessões/cache, navbar mobile, formulários ou capacidade.
-- **Documentos:** verificar políticas/backup/legado no R0; usar o dossiê existente
-  nas fases necessárias; extração assíncrona somente após gates da SPEC-014.
-- **OCR:** avaliar corpus, custo e fornecedor; intake/revisão podem funcionar
-  manualmente. Consumidor, fila de falhas e confirmação humana são entregas distintas.
+- **Documentos:** verificar políticas/backup/legado no R0 e reaproveitar o dossiê
+  existente nas fases necessárias.
+- **Contas de energia:** upload, transcrição, revisão e confirmação manuais pela
+  SPEC-014; PoC, OCR e extração automática estão fora do roadmap vigente (ADR-008).
 - **Sincronização:** revalidação após mutações e testes com dois dispositivos;
   SSE/WebSocket só após definir necessidade, escopo, reconexão e autorização.
 - **Operação:** CI, builds, Compose, backups/restauração, migrações, logs/métricas e
@@ -131,11 +136,13 @@ O [relatório de baseline R0](r0-baseline-2026-10-08.md) preserva o estado e as
 pendências observados naquela revisão; o PR #22 e seu CI não consolidaram a
 `main` nem dispensam revisão formal do baseline. A seção original que dizia que
 R1 não havia começado é histórica: R1-01 foi autorizado depois e a sequência
-atual está registrada acima. O piloto seguinte é importação/OCR após os gates da
-SPEC-014. R1-07 protege claims v1, mas ainda faltam contrato/efeito durável,
+atual está registrada acima. A importação de contas segue manual por decisão
+ADR-008; não há piloto OCR planejado. R1-07 protege claims v1, mas ainda faltam contrato/efeito durável,
 transporte, inbox/retenção, retry/quarentena/replay e evidência de crash. O
-inventário R1-05 e a proposta ADR-007 não habilitam consumidor. Esta proposta de
-transporte não foi aprovada e não altera os gates do R1.
+inventário R1-05 e a proposta histórica ADR-007 não habilitam consumidor. A
+decisão ADR-008 deixa sem escopo o consumidor de OCR; os demais gates do R1
+continuam independentes. R1-09 não aprova despacho; inbox, retries, replay,
+retenção final e reconciliação seguem pendentes.
 
 ## Adiados, sem implementação nesta fase
 

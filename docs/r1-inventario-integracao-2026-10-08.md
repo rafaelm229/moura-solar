@@ -89,6 +89,6 @@ de crash, duplicidade, atraso e compensação. R1 permanece **Em implementação
 
 Nenhuma tecnologia de broker foi escolhida. Redis/BullMQ não é promovido a
 barramento geral. Não se ativam worker, OCR, integração de dados ou camada
-analítica por este documento. O próximo passo técnico depende de uma decisão
-explícita sobre consumidor/piloto compatível com a PoC e as decisões operacionais
-de OCR; até lá, manter o estado em especificação.
+analítica por este documento. Este registro antecede a ADR-008, que encerrou a PoC
+de OCR. Um próximo passo técnico de R1 depende de decisão explícita sobre um
+consumidor útil a um fluxo vigente; até lá, manter o estado em especificação.

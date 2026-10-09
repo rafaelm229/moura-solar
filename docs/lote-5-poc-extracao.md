@@ -4,15 +4,21 @@ Data de preparação: 04/10/2026. Escopo: SPEC-014/IMP-11.
 
 ## Estado
 
-O benchmark reproduzível está preparado, mas nenhuma conta foi processada e nenhum serviço externo foi contratado. A execução permanece bloqueada até produto, engenharia e privacidade fornecerem:
+**Histórico:** a PoC foi encerrada antes da execução pela decisão vigente
+[ADR-008](adr/ADR-008-importacao-manual-sem-ocr.md). O [POC-01](decisao-poc-01-importacao-energia-2026-10-09.md)
+registra os parâmetros que haviam sido considerados; não executar seus comandos.
+Nenhuma conta foi processada, nenhum serviço externo foi contratado e nenhum
+gasto foi realizado. A extração de contas permanece fora do escopo atual.
 
-- distribuidoras e formatos prioritários;
-- corpus autorizado, minimizado e rotulado por duas pessoas;
-- metas por campo definidas antes do teste;
-- moeda e teto de gasto aprovado;
-- conta/região/modelo dos candidatos e decisão sobre retenção temporária.
+O benchmark e adapter foram preparados para avaliação offline e não fazem parte
+do fluxo ativo de importação.
 
-Esses valores não são inferidos pelo código. O comando recusa corpus sem autorização e revisão de privacidade explícitas. Dados e resultados reais ficam em `poc-data/`, ignorado pelo Git, e o relatório agregado não contém valores extraídos.
+- export agregado que permita selecionar a distribuidora conforme POC-01;
+- corpus autorizado, minimizado e rotulado por duas pessoas, com reconciliação;
+- cotação vigente do SKU/modelo em Brazil South e revisão de privacidade dos termos da conta;
+- manifesto, política e plano de execução que passem no preflight offline.
+
+As decisões do POC-01 não equivalem a autorização para contratar ou enviar documentos. O comando recusa corpus sem autorização e revisão de privacidade explícitas. Dados e resultados reais ficam em `poc-data/`, ignorado pelo Git, e o relatório agregado não contém valores extraídos.
 
 ## Contrato do experimento
 
@@ -26,11 +32,14 @@ Adapters implementam `estimateUsage`, `submit`, `poll`, `cancel` e `normalize`, 
 
 O executor confere o SHA-256 e o limite de 20 MiB antes de transmitir cada documento. A execução é serial e consulta a estimativa por página antes de cada envio; quando a próxima operação ultrapassaria o teto aprovado, ela e as restantes seguem para revisão manual sem chamada externa. Um envio aceito que expira, uma falha de rede durante o envio ou uma resposta cujo custo não pode ser confirmado produz `UNKNOWN`, tenta excluir o resultado remoto e interrompe novos envios. Isso evita repetir uma operação possivelmente cobrada. Erros locais anteriores ao envio permanecem `FAILED`.
 
-O relatório calcula cobertura, acerto exato e taxa de correção por campo, distribuidora, formato e qualidade; cobertura de meses históricos por ocorrência esperada; ausências e candidatos inesperados; p50/p95; páginas, custo total e custo por sucesso; taxa de fallback manual e erros críticos. Qualquer distribuidora com menos de 20 documentos resulta em `INCONCLUSIVE`. Metas não atingidas, erro crítico ou custo acima do teto resulta em `STOP` quando a amostra mínima foi atendida.
+O relatório calcula cobertura, acerto exato e taxa de correção por campo, distribuidora, formato e qualidade; cobertura de meses históricos por ocorrência esperada; ausências e candidatos inesperados; p50/p95; páginas, custo total e custo por sucesso; taxa de fallback manual e erros críticos. O POC-01 fixa 60 documentos de uma distribuidora, 20 por formato. A regra histórica do harness que exige ao menos 20 documentos por distribuidora continua válida, mas não substitui esse desenho. Metas não atingidas, erro crítico ou custo acima do teto resulta em `STOP` quando a amostra mínima foi atendida; campos com menos de 30 ocorrências esperadas têm resultado inconclusivo conforme POC-01.
 
 Valores são comparados após a normalização do adapter. Uma fronteira de runtime aceita somente campos do schema, limita quantidade/tamanho, valida página, mês, chave única e rejeita propriedades adicionais. Texto extraído permanece texto opaco mesmo quando contém instruções ou comandos. O benchmark não adivinha zeros, unidade, mês, classe ou titular e não descarta conta ilegível/falha. Confiança do fornecedor é opcional e preserva valor e escala originais; quando ausente, continua ausente e não é convertida em porcentagem universal.
 
-## Execução autorizada
+## Protocolo técnico histórico — não executar
+
+Os comandos abaixo descrevem o protocolo preparado antes da ADR-008. Eles não
+constituem autorização vigente para preparar corpus ou executar a PoC.
 
 Antes de habilitar credenciais, executar o preflight offline sobre os mesmos arquivos que serão enviados:
 
@@ -68,7 +77,7 @@ O custo produzido pelo adapter Azure é uma estimativa baseada no valor por pág
 
 ## Próxima evidência
 
-Após receber as decisões, criar adapters experimentais fora do runtime operacional, executar o corpus cego, anexar somente relatório agregado e exemplos anonimizados de falha, registrar exclusão dos temporários e recomendar `CONTINUE` ou `STOP`. A importação integrada do lote 6 não começa a partir de resultado inconclusivo.
+A proposta de execução foi supersedida pela ADR-008. Não preparar adapter, enviar corpus ou executar a PoC.
 
 ## Validação desta preparação
 

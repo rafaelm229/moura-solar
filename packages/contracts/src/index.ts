@@ -22,3 +22,5 @@ export type {
   EnergyBillImportQueuedEventV1,
 } from './energy-import-events.js';
 export { parseEnergyBillImportEventV1 } from './energy-import-events.js';
+export type { ProposalAcceptedEventV1 } from './proposal-events.js';
+export { parseProposalAcceptedEventV1 } from './proposal-events.js';

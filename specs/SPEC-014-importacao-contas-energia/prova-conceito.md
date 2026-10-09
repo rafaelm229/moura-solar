@@ -6,7 +6,11 @@
 
 **Data:** 02/10/2026
 
-Escopo e contratos funcionais aprovados em 05/10/2026. Decisões operacionais listadas no plano continuam bloqueios das liberações correspondentes.
+**Histórico, não executar:** a proposta foi encerrada sem envio de contas ou
+chamada a provedor pela [ADR-008](../../docs/adr/ADR-008-importacao-manual-sem-ocr.md).
+O registro [POC-01](../../docs/decisao-poc-01-importacao-energia-2026-10-09.md)
+preserva a decisão intermediária por Azure e os limites pesquisados, agora
+supersedidos. A operação vigente continua manual.
 
 Requisito IMP-11. Pesquisa documental realizada em 02/10/2026; nenhuma conta foi enviada, nenhum serviço contratado e nenhum benchmark executado.
 
@@ -21,9 +25,13 @@ Requisito IMP-11. Pesquisa documental realizada em 02/10/2026; nenhuma conta foi
 | Azure — privacidade         | [Dados e segurança](https://learn.microsoft.com/pt-br/azure/foundry/responsible-ai/document-intelligence/data-privacy-security): armazenamento temporário criptografado e exclusão de entrada/resultado 24 horas após análise; exclusão antecipada por Delete Analyze Result | Verificar região, cópias de treinamento e política interna separadamente; não usar retenção do fornecedor como retenção do dossiê          |
 | Azure — custo               | [Pricing oficial](https://azure.microsoft.com/en-us/pricing/details/document-intelligence/): cobrança por modelo/páginas; tabela consultada devolve valores dinâmicos `$-`                                                                                                   | Cotar região/moeda/modelo na calculadora antes da execução; não inventar valor numérico                                                    |
 
-Adequação a contas brasileiras é hipótese a medir. Modelos de invoice não devem ser considerados especializados em energia sem evidência. Nenhum fornecedor é escolhido aqui.
+Adequação a contas brasileiras era hipótese de pesquisa; nenhum fornecedor foi usado. A escolha intermediária por Azure foi encerrada antes de qualquer chamada pela ADR-008.
 
 ## Desenho do experimento proposto
+
+### Decisão operacional histórica — supersedida
+
+O desenho abaixo registra proposta aprovada em 05/10/2026 e as decisões operacionais intermediárias de POC-01. A ADR-008 supersede ambas para o roadmap vigente: não há execução, envio de contas ou provedor de OCR ativo. O fluxo atual mantém o cadastro manual.
 
 Produto confirma distribuidoras atendidas; não inferir pela opção padrão Neoenergia da UI. Amostra inicial proposta: pelo menos 20 contas por distribuidora, distribuídas entre PDF digital, escaneado e foto (boa/ruim/rotacionada), residenciais, rurais, comerciais e demais classes atendidas, microgeração/injeção, histórico parcial, código com zeros e titular diferente. Dimensionar amostra conforme variedade real; é piloto, não garantia estatística universal.
 

@@ -1,5 +1,10 @@
 # Lote 6 — Importação assistida de contas de energia
 
+**Operação vigente:** intake, transcrição e revisão manuais pela
+[ADR-008](adr/ADR-008-importacao-manual-sem-ocr.md). Os incrementos documentados
+abaixo registram implementação e scaffolding históricos; nenhum consumidor OCR
+está ativo e as funções de candidato não iniciam extração.
+
 ## Incremento 6A-1 — intake durável
 
 Data: 05/10/2026. Escopo e contratos da SPEC-014 aprovados para implementação.
@@ -17,8 +22,9 @@ oportunidade opcionais. Repetir a chave e o payload devolve o resultado original
 reutilizar a chave com outro payload retorna conflito. `GET /energy-imports/:id`
 exige `energy_imports:read` e revalida o contexto do cliente e documento.
 
-Nenhum fornecedor é chamado. As decisões sobre mapeamento de classe tarifária,
-fornecedor e limites de custo continuam pendentes e não são inferidas.
+Nenhum fornecedor foi chamado por este lote. A ADR-008 mantém a entrada manual e
+encerra a PoC de OCR antes de qualquer execução. Mapeamento de classe tarifária
+continua sem inferência automática.
 
 ## Incremento 6A-2 — revisão manual e confirmação transacional
 
@@ -105,8 +111,8 @@ segue desativado e nenhum adapter é invocado.
 OpenAPI permaneceu coerente e foi regenerado para expor apenas metadados seguros
 das tentativas.
 
-As decisões operacionais de mapeamento de classe tarifária, fornecedor/região
-OCR e limites de custo/quota continuam pendentes e não são inferidas nesta fatia.
+O fluxo manual permanece vigente pela ADR-008; fornecedor/região OCR e limites
+de custo/quota deixaram de ser dependências do roadmap atual.
 
 ## Incremento 6A-6 — persistência e bloqueio de resultados tardios
 
@@ -196,7 +202,8 @@ URL com os campos da nova UC e meses preenchidos.
 
 Validação: build da API aprovado; integração do importador 7/7, incluindo
 persistência nula antes da confirmação e criação/vínculo/leitura após confirmação.
-O OCR permanece desligado e nenhuma decisão de fornecedor ou custo foi tomada.
+Conforme ADR-008, OCR permanece fora do escopo vigente e a importação continua
+manual.
 
 ## Incremento 6A-7 — deduplicação por hash do original
 

@@ -2,8 +2,9 @@
 
 **Data:** 08/10/2026
 
-**Status:** Proposta de transporte pendente; domínio do piloto escolhido
-condicionalmente pelo usuário em 08/10/2026
+**Status:** Proposta histórica, supersedida para o piloto OCR pela
+[ADR-008](ADR-008-importacao-manual-sem-ocr.md). Transporte permanece sem decisão
+e sem consumidor ativo.
 
 **Fase:** R1 — integração gradual
 
@@ -18,11 +19,11 @@ que não há consumidores habilitados. O parser de payloads de importação v1 a
 não é chamado por processamento operacional. Não foi localizado inbox genérico
 nesta revisão.
 
-A pesquisa da PoC da SPEC-014 não enviou documentos nem executou benchmark. Não
-há fornecedor, corpus operacional, limite de custo/quota ou política de dados
-aprovados. O usuário escolheu o domínio de importação/OCR para o piloto futuro,
-condicionado à aprovação desses gates e de um consumidor durável; essa escolha
-não autoriza ativação agora.
+A pesquisa da PoC da SPEC-014 não enviou documentos nem executou benchmark. O
+[POC-01](../decisao-poc-01-importacao-energia-2026-10-09.md) preserva a avaliação
+intermediária de Azure. A ADR-008 encerrou essa PoC antes da execução e mantém a
+importação manual. As opções de transporte abaixo são históricas e não configuram
+decisão de consumidor ou autorização de operação.
 
 ## Opções consideradas
 
@@ -32,7 +33,7 @@ não autoriza ativação agora.
 | Redis/BullMQ como transporte geral     | Runtime de jobs já existe no repositório                                   | Não fornece por si só a semântica durável/outbox-inbox requerida; promover agora criaria uma escolha de barramento antes do piloto     |
 | Broker externo/gerenciado              | Pode servir cargas distribuídas com mais consumidores                      | Custo, operação, segurança, residência de dados e necessidade ainda não avaliados; prematuro sem volume/consumidor demonstrado         |
 
-## Decisão proposta — não aprovada
+## Proposta histórica — supersedida pela ADR-008
 
 O domínio do **primeiro** piloto foi escolhido: consumidor durável da importação
 de contas de energia, com OCR somente após os gates da SPEC-014. O evento exato,
@@ -46,9 +47,10 @@ Antes de implementação, responsáveis devem definir: (1) semântica do evento 
 efeito durável do consumidor com o dono da importação, (2) transporte e
 inbox/dedupe, (3) retenção e exclusão — o vínculo existente de `ImportOutbox` tem
 `onDelete: Cascade` — e (4) política de retry, quarentena, replay autorizado e
-reconciliação. Também devem cumprir os gates de corpus, privacidade, fornecedor,
-limites de custo/quota e critérios de qualidade definidos pela SPEC-014. Até
-essas decisões, worker, OCR e publicação permanecem desativados.
+reconciliação. Também devem cumprir os gates de corpus, privacidade, cotação/quota
+e critérios de qualidade definidos pela SPEC-014 e detalhados no POC-01. Até a
+aprovação do contrato de transporte/consumidor e a conclusão dos gates
+experimentais, worker, OCR e publicação permanecem desativados.
 
 Não assumir exactly-once global. A futura implementação deve provar efeito e
 inbox idempotentes em transação local, correlation/causation, retries limitados,
@@ -77,10 +79,8 @@ carga/latência/falha, custo total e plano de migração sem perda ou duplicidad
   antes do commit conforme AGENTS.md.
 - **Rollback:** reverter o ADR e suas referências; sem efeito runtime.
 
-## Aprovação requerida
+## Registro histórico de aprovação requerida
 
-Este arquivo **não** registra decisão final de transporte. A intenção de pilotar
-importação/OCR após os gates foi escolhida, mas o contrato do consumidor e os
-requisitos operacionais continuam pendentes. Aprovar ou alterar a recomendação
-PostgreSQL antes do incremento de transporte. Nenhuma operação automática fica
-autorizada pelo status deste ADR.
+Na data original, este arquivo **não** registrava decisão final de transporte.
+A ADR-008 retirou o consumidor de OCR do roadmap. Esta proposta não deve ser
+usada para iniciar polling, worker ou operação automática.
