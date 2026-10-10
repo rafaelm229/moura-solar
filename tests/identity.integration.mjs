@@ -189,6 +189,43 @@ test('login correlation links the request log and audit without credentials', as
   assert.equal(logLine.includes(email), false);
   assert.equal(logLine.includes(password), false);
 });
+test('failed login correlation links the request log and audit without credentials', async () => {
+  const requestId = 'r1-identity-correlation-login-failed-001';
+  const email = 'r1-failed-login@example.test';
+  const failedPassword = 'r1-failed-login-password-sentinel';
+  const response = await fetch(`${base}/identity/login`, {
+    method: 'POST',
+    headers: {
+      origin: env.WEB_ORIGIN,
+      'x-requested-with': 'MouraSolar',
+      'content-type': 'application/json',
+      'idempotency-key': randomUUID(),
+      'x-request-id': requestId,
+    },
+    body: JSON.stringify({ email, password: failedPassword }),
+  });
+  assert.equal(response.status, 401);
+  assert.equal(response.headers.get('x-request-id'), requestId);
+  await response.json();
+
+  const audit = await db.auditEvent.findFirst({
+    where: { action: 'identity.login_failed', traceId: requestId },
+  });
+  assert.ok(audit);
+
+  let logLine;
+  for (let attempt = 0; attempt < 100 && !logLine; attempt++) {
+    logLine = requestLogs.split('\n').find((line) => line.includes(`"traceId":"${requestId}"`));
+    if (!logLine) await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  assert.ok(logLine, 'expected the failed request completion log to carry its correlation ID');
+  const entry = JSON.parse(logLine);
+  assert.equal(entry.method, 'POST');
+  assert.equal(entry.status, 401);
+  assert.equal(entry.traceId, audit.traceId);
+  assert.equal(logLine.includes(email), false);
+  assert.equal(logLine.includes(failedPassword), false);
+});
 test('CSRF rejects cross-origin commands', async () => {
   assert.equal(
     (await admin.call('logout', 'POST', undefined, undefined, { origin: 'https://evil.example' }))
