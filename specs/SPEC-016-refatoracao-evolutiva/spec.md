@@ -99,6 +99,7 @@ de integridade do modelo de referência/eventos equivalente.
 
 - [ ] R0: inventário/CI/Compose/migrations/integração/E2E e divergências Git.
 - [ ] R1: contratos, outbox/inbox, fachada, logs e piloto de workflow.
+- [x] R1-48: verificar por integração o limite, whitelist e fallback do `x-request-id` da API ([relatório](../../docs/r1-48-validacao-correlacao-http.md)); sem alteração de contrato ou runtime; validação local passou, CI pendente.
 - [ ] R2: identidade com coexistência e rollback.
 - [ ] R3: customer/CRM e decisão de ciclo/mapeamento de Project.
 - [ ] R4–R9: extrair por domínio seguindo roadmap e testes existentes.

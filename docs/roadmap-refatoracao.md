@@ -233,6 +233,10 @@ eventos manuais `QUEUED` e `APPLIED` contra campos extras, preservando o formato
 legado válido; testes de contrato locais passaram. PR #100 consolidado em
 `f002335`, CI run `38021146046` verde. O incremento não ativa worker ou
 consumidor.
+O [R1-48](r1-48-validacao-correlacao-http.md) acrescenta integração para a
+whitelist e o limite de 100 caracteres do `x-request-id`, mantendo cabeçalho
+válido e substituindo valores inválidos por UUID. A suíte de identidade local
+passou 16/16; runtime e contrato não mudaram, e a CI está pendente.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 

@@ -79,6 +79,26 @@ after(async () => {
   await db.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);
   await db.$disconnect();
 });
+test('request correlation accepts bounded safe IDs and replaces malformed or oversized values', async () => {
+  const safeRequestId = 'r1-correlation_test-001';
+  const safeResponse = await fetch(`${base}/health/ready`, {
+    headers: { 'x-request-id': safeRequestId },
+  });
+  assert.equal(safeResponse.status, 200);
+  assert.equal(safeResponse.headers.get('x-request-id'), safeRequestId);
+
+  for (const unsafeRequestId of ['r1 correlation test', 'x'.repeat(101)]) {
+    const response = await fetch(`${base}/health/ready`, {
+      headers: { 'x-request-id': unsafeRequestId },
+    });
+    assert.equal(response.status, 200);
+    assert.match(
+      response.headers.get('x-request-id') ?? '',
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    );
+    assert.notEqual(response.headers.get('x-request-id'), unsafeRequestId);
+  }
+});
 test('bootstrap requires secret, initializes seven approved roles once', async () => {
   const input = {
     name: 'Admin Teste',
