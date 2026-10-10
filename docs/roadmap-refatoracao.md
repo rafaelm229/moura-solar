@@ -202,9 +202,10 @@ O [R1-41](r1-41-outbox-contrato-criado.md) foi consolidado no PR #89, merge
 `40d7ea242ce6e7ee9486d816009ec0d747c945f5`, CI run `38012077654` verde. Registra
 `CONTRACT_CREATED` e a atividade de assinatura na transação local existente;
 mantém snapshots, valores, documentos, efeitos financeiros e gates sem alteração.
-O [R1-42](r1-42-outbox-revisao-aprovacao-contrato.md) está validado localmente:
-registra solicitação de revisão e aprovação manual sem notas, efeitos financeiros
-ou mudança do gate contratual. O CI aguarda a publicação da branch e do PR.
+O [R1-42](r1-42-outbox-revisao-aprovacao-contrato.md) foi consolidado no PR #91,
+merge `1eefd1eef9cf1ff3f19885c89fd927679976aea4`, CI run `38013650317` verde.
+Registra solicitação de revisão e aprovação manual sem notas, efeitos financeiros
+ou mudança do gate contratual.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 

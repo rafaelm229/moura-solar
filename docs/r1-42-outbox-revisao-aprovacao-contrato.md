@@ -4,7 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Validado localmente na branch `codex/r1-42-outbox-contract-review`; CI pendente.
+**Estado:** Consolidado no PR #91, merge `1eefd1eef9cf1ff3f19885c89fd927679976aea4`.
 
 **SPECs:** [SPEC-007](../specs/SPEC-007-contratos-documentos/spec.md),
 [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
@@ -46,4 +46,5 @@ gravações de auditoria/outbox, sem alterar endpoints e estados existentes.
 - `node --test --test-concurrency=1 --test-reporter=spec tests/contract.integration.mjs` — 9/9 cenários passaram com PostgreSQL e armazenamento locais.
 - `pnpm check` — passou (formatação, lint, typecheck, 1.360 testes unitários e builds).
 - `git diff --check` — passou.
-- CI ainda não executada; aguarda publicação da branch e PR.
+- CI run `38013650317` — passou: check, geração de API, migrações, integrações completas e E2E.
+- PR #91 foi consolidado em `feat/proposal-visual-clarity` pelo merge `1eefd1eef9cf1ff3f19885c89fd927679976aea4`.

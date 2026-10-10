@@ -77,8 +77,9 @@ GENERATION_FAILED
 - `CANCELED/TERMINATED`: exigem motivo e autoridade adequada.
 
 R1-42 registra os comandos existentes de solicitação de revisão (`PENDING_REVIEW`)
-e aprovação (`READY`) em eventos distintos. As notas permanecem privadas e as
-transições não liberam o gate contratual.
+e aprovação (`READY`) em eventos distintos. Foi consolidado no PR #91 (CI run
+`38013650317` verde). As notas permanecem privadas e as transições não liberam o
+gate contratual.
 
 Upload não ativa o contrato automaticamente. Um arquivo errado, incompleto ou de
 outra versão precisa poder ser rejeitado sem apagar a evidência recebida.
