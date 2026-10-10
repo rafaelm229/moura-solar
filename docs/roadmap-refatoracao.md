@@ -285,6 +285,10 @@ o payload do envelope, testando ausência e valores não objeto. A alteração �
 somente de teste; CI completa passou no run `38069720776` e o PR #122 foi
 consolidado em `ca716cd`.
 
+O [R1-59](r1-59-stable-payload-assertion.md) remove a busca probabilística de
+`875` no JSON de evento e verifica diretamente a ausência de
+`estimatedConsumption`, preservando as outras asserções. CI completa pendente.
+
 | Marco | Entrega                                                                                            | Dependências                               | Evidência de saída                                                                                                |
 | ----- | -------------------------------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
 | R0    | Inventário, estabilização, mapa de branches, baseline e plano de consolidação                      | Estado atual e SPEC-000                    | check, migrations, integrações, E2E existentes, build/Compose, restauração e reconciliação; commits identificados |
