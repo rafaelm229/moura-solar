@@ -189,10 +189,10 @@ O [R1-38](r1-38-outbox-registro-aditivo-contrato.md) foi consolidado no PR #83,
 merge `1d4373c`, CI #139 verde: `CONTRACT_AMENDMENT_RECORDED` v1 acompanha
 somente o registro manual e a auditoria, sem detalhes do aditivo. Isso não
 significa documento de aditivo implementado.
-O [R1-39](r1-39-outbox-conferencia-assinado.md) está validado localmente para
-registrar na outbox a decisão humana da conferência assinada, sem checklist,
-observação ou motivo de rejeição. Testes locais e `pnpm check` passaram; CI ainda
-pendente. Não altera gates nem o efeito financeiro posterior.
+O [R1-39](r1-39-outbox-conferencia-assinado.md) foi consolidado no PR #85,
+merge `0dcf7eb`, CI #141 verde: `CONTRACT_SIGNED_REVIEWED` v1 registra apenas
+IDs e a decisão humana `VERIFIED`/`REJECTED`, sem checklist ou motivo. Não altera
+gates nem o efeito financeiro posterior.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
