@@ -238,6 +238,9 @@ whitelist e o limite de 100 caracteres do `x-request-id`, mantendo cabeçalho
 válido e substituindo valores inválidos por UUID. A suíte de identidade local
 passou 16/16; PR #102 consolidado em `08a55e9`, CI run `38022529871` verde.
 Runtime e contrato não mudaram.
+O [R1-49](r1-49-correlacao-sem-segredos-nos-logs.md) verifica que o log da
+requisição mantém a correlação e não inclui `Authorization`, cookie ou cabeçalho
+privado enviado no pedido. A suíte local de identidade passou 17/17; CI pendente.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
