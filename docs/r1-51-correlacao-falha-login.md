@@ -4,7 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Implementado em branch `codex/r1-next-inventory`; CI pendente.
+**Estado:** Consolidado no PR #108, merge `dc3f7bc43f902297029bcdc71b07a1bc9c7d37e8`.
 
 **SPEC:** [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md), REF-09.
 
@@ -34,7 +34,8 @@ request ID e a API já escreve log de conclusão correlacionado.
 - Prettier nos arquivos afetados, links locais e `git diff --check` — passaram.
 - `pnpm check` local foi interrompido por `prettier --check .` nos artefatos
   locais não rastreados `.vscode/mcp.json` e `moura-solar-specs-roadmap/`; esses
-  caminhos foram preservados sem edição. CI completo — pendente.
+  caminhos foram preservados sem edição. CI run `38058068458` passou com
+  `pnpm check`, migrations, integração e E2E.
 - CI — pendente.
 
 ## Limites

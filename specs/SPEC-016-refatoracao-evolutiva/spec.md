@@ -102,7 +102,7 @@ de integridade do modelo de referência/eventos equivalente.
 - [x] R1-48: verificar por integração o limite, whitelist e fallback do `x-request-id` da API ([relatório](../../docs/r1-48-validacao-correlacao-http.md)); sem alteração de contrato ou runtime; PR #102 consolidado em `08a55e9`, CI run `38022529871` verde.
 - [x] R1-49: verificar que logs da API preservam traceId e omitem `Authorization`, cookie e cabeçalho privado enviado na requisição ([relatório](../../docs/r1-49-correlacao-sem-segredos-nos-logs.md)); sem alteração de contrato ou runtime; PR #104 consolidado em `8c86b56`, CI run `38023737212` verde.
 - [x] R1-50: ligar por teste o `x-request-id` do login ao `AuditEvent.traceId` e ao log de conclusão, sem email/senha ([relatório](../../docs/r1-50-rastreio-auditoria-log.md)); sem alteração de contrato ou runtime; teste local 18/18, PR #106 consolidado em `8694c64`, CI run `38025120816` verde.
-- [ ] R1-51: verificar a correlação de falha de login entre `x-request-id`, `AuditEvent.traceId` e log HTTP sem credenciais ([relatório](../../docs/r1-51-correlacao-falha-login.md)); sem alteração de runtime/contrato; teste direcionado e CI pendentes.
+- [x] R1-51: verificar a correlação de falha de login entre `x-request-id`, `AuditEvent.traceId` e log HTTP sem credenciais ([relatório](../../docs/r1-51-correlacao-falha-login.md)); sem alteração de runtime/contrato; teste local 19/19, PR #108 consolidado em `dc3f7bc`, CI run `38058068458` verde.
 - [ ] R2: identidade com coexistência e rollback.
 - [ ] R3: customer/CRM e decisão de ciclo/mapeamento de Project.
 - [ ] R4–R9: extrair por domínio seguindo roadmap e testes existentes.
