@@ -264,6 +264,10 @@ O [R1-55](r1-55-required-correlation-contract.md) exige `correlationId` do tipo
 string e obrigatório nos contratos que usam o envelope compartilhado; os eventos
 legados de importação permanecem sem esse campo. CI completa passou (run
 `38064576360`); PR #116 consolidado em `917e08a`.
+O [R1-56](r1-56-required-envelope-fields.md) cobre a ausência e valores em branco
+em todos os campos textuais obrigatórios do parser do envelope compartilhado,
+sem alterar o comportamento runtime. Teste direcionado e pacote passaram; CI
+completa ainda pendente.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
