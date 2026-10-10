@@ -4,7 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Implementado em branch `codex/r1-47-event-payload-audit`; CI pendente.
+**Estado:** Consolidado no PR #100, merge `f002335`; CI run `38021146046` verde.
 
 **SPEC:** [SPEC-019](../specs/SPEC-019-eventos-dados/spec.md), EVT-01.
 
@@ -36,8 +36,11 @@ importação no formato legado, sem consumidor justificado.
 
 - `pnpm --filter @moura-solar/contracts test` — passou (9 arquivos de teste).
 - Prettier, `git diff --check` e links locais — passaram.
-- `pnpm check` — passou quando executado fora do sandbox.
-- CI da branch — pendente.
+- `pnpm check` — passou quando executado fora do sandbox; no sandbox, dois testes
+  DOCX existentes falharam ao chamar `unzip` (`EPERM`).
+- CI do PR #100 — passou no run `38021146046` (`pnpm check`, migrações,
+  integração e E2E); PR consolidado por squash em
+  `f002335e2099e7bc77eb1b4f71303a87533d0f63`.
 
 ## Limites
 
