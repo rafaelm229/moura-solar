@@ -22,6 +22,23 @@ describe('integration event envelope', () => {
     assert.equal(parseIntegrationEvent(envelope), envelope);
   });
 
+  it('requires every textual envelope field to be present and nonempty', () => {
+    for (const field of [
+      'eventId',
+      'eventType',
+      'occurredAt',
+      'organizationId',
+      'aggregateId',
+      'producer',
+      'correlationId',
+    ]) {
+      const missing = { ...envelope };
+      delete missing[field];
+      assert.throws(() => parseIntegrationEvent(missing), new RegExp(field));
+      assert.throws(() => parseIntegrationEvent({ ...envelope, [field]: '  ' }), new RegExp(field));
+    }
+  });
+
   it('rejects absent correlation, invalid versions and timestamps', () => {
     assert.throws(() => parseIntegrationEvent({ ...envelope, correlationId: '' }), /correlationId/);
     assert.throws(() => parseIntegrationEvent({ ...envelope, schemaVersion: 0 }), /schemaVersion/);
