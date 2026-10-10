@@ -75,6 +75,8 @@ describe('integration event envelope', () => {
   });
 
   it('rejects a payload that is not an object', () => {
-    assert.throws(() => parseIntegrationEvent({ ...envelope, payload: [] }), /payload/);
+    for (const payload of [undefined, null, [], 'payload', 42, false]) {
+      assert.throws(() => parseIntegrationEvent({ ...envelope, payload }), /payload/);
+    }
   });
 });
