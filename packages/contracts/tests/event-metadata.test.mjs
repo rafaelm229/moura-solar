@@ -71,7 +71,18 @@ function contractMetadataByEventType() {
       if (ts.isTypeAliasDeclaration(node) && node.name.text.endsWith('EventV1')) {
         const contractType = checker.getTypeAtLocation(node.name);
         const properties = checker.getPropertiesOfType(contractType);
-        const hasCorrelationId = properties.some((property) => property.name === 'correlationId');
+        const correlationIdProperty = properties.find(
+          (property) => property.name === 'correlationId',
+        );
+        const hasCorrelationId = Boolean(correlationIdProperty);
+        const correlationIdType = correlationIdProperty
+          ? checker.getTypeOfSymbolAtLocation(correlationIdProperty, node)
+          : undefined;
+        const correlationIdRequiredString = Boolean(
+          correlationIdProperty &&
+          !(correlationIdProperty.flags & ts.SymbolFlags.Optional) &&
+          correlationIdType.flags === ts.TypeFlags.String,
+        );
         const schemaVersionProperty = properties.find(
           (property) => property.name === 'schemaVersion',
         );
@@ -84,9 +95,17 @@ function contractMetadataByEventType() {
         for (const eventType of eventTypeLiterals(node.type)) {
           const existing = metadataByEventType.get(eventType);
           if (existing !== undefined) {
-            assert.deepEqual(existing, { hasCorrelationId, schemaVersion }, eventType);
+            assert.deepEqual(
+              existing,
+              { hasCorrelationId, correlationIdRequiredString, schemaVersion },
+              eventType,
+            );
           }
-          metadataByEventType.set(eventType, { hasCorrelationId, schemaVersion });
+          metadataByEventType.set(eventType, {
+            hasCorrelationId,
+            correlationIdRequiredString,
+            schemaVersion,
+          });
         }
       }
       ts.forEachChild(node, visit);
@@ -164,5 +183,19 @@ test('every v1 event contract pins schemaVersion to literal 1', () => {
   assert.ok(metadataByEventType.size > 0);
   for (const [eventType, contract] of metadataByEventType) {
     assert.equal(contract.schemaVersion, 1, `${eventType} contract must pin schemaVersion to 1`);
+  }
+});
+
+test('shared-envelope event contracts require a string correlationId', () => {
+  const sharedEnvelopeContracts = [...metadataByEventType].filter(
+    ([, contract]) => contract.hasCorrelationId,
+  );
+  assert.ok(sharedEnvelopeContracts.length > 0);
+  for (const [eventType, contract] of sharedEnvelopeContracts) {
+    assert.equal(
+      contract.correlationIdRequiredString,
+      true,
+      `${eventType} contract must require correlationId as a string`,
+    );
   }
 });
