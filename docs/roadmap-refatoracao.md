@@ -252,6 +252,9 @@ O [R1-52](r1-52-paridade-produtores-contratos-eventos.md) converte a auditoria
 manual R1-44 em teste AST de regressão entre produtores, tipos, parsers e
 reexports, sem lista paralela nem consumidor. O pacote passou build e 10/10
 arquivos de teste; PR #110 consolidado em `5b84aa9`, CI run `38059702872` verde.
+O [R1-53](r1-53-metadados-versao-correlacao-eventos.md) verifica por AST a
+versão e correlação dos objetos de evento, inferindo a exceção legada pela forma
+do contrato. Teste direcionado passou; CI completo está pendente.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
