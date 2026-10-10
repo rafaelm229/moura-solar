@@ -4,6 +4,7 @@ import {
   parseContractAmendmentRecordedEventV1,
   parseContractCanceledEventV1,
   parseContractDeliveredEventV1,
+  parseContractSignedReviewedEventV1,
 } from '../dist/index.js';
 
 const delivered = {
@@ -108,6 +109,48 @@ test('CONTRACT_AMENDMENT_RECORDED v1 rejects unsupported types, versions, mismat
     parseContractAmendmentRecordedEventV1({
       ...amendmentRecorded,
       payload: { ...amendmentRecorded.payload, reason: 'termo confidencial' },
+    }),
+  );
+});
+
+const signedReviewed = {
+  ...delivered,
+  eventType: 'CONTRACT_SIGNED_REVIEWED',
+  payload: {
+    contractId: 'contract-1',
+    reviewId: 'review-1',
+    auditEventId: 'audit-review-1',
+    opportunityId: 'opportunity-1',
+    decision: 'VERIFIED',
+  },
+};
+
+test('CONTRACT_SIGNED_REVIEWED v1 accepts a minimal human decision', () => {
+  assert.deepEqual(parseContractSignedReviewedEventV1(signedReviewed), signedReviewed);
+  assert.equal(
+    parseContractSignedReviewedEventV1({
+      ...signedReviewed,
+      payload: { ...signedReviewed.payload, decision: 'REJECTED' },
+    }).payload.decision,
+    'REJECTED',
+  );
+});
+
+test('CONTRACT_SIGNED_REVIEWED v1 rejects unsupported decisions and review details', () => {
+  assert.throws(() =>
+    parseContractSignedReviewedEventV1({ ...signedReviewed, eventType: 'CONTRACT_VERIFIED' }),
+  );
+  assert.throws(() => parseContractSignedReviewedEventV1({ ...signedReviewed, schemaVersion: 2 }));
+  assert.throws(() =>
+    parseContractSignedReviewedEventV1({
+      ...signedReviewed,
+      payload: { ...signedReviewed.payload, decision: 'PENDING' },
+    }),
+  );
+  assert.throws(() =>
+    parseContractSignedReviewedEventV1({
+      ...signedReviewed,
+      payload: { ...signedReviewed.payload, rejectionReason: 'informação confidencial' },
     }),
   );
 });

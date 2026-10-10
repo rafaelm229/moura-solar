@@ -472,6 +472,21 @@ test('6. Conferência com rejeição formal (SPEC-007 Item 10)', async () => {
     customerId: testCustomerId,
     opportunityId: testOpportunityId,
   });
+  const rejectedReviewEvent = await db.integrationOutbox.findFirstOrThrow({
+    where: {
+      organizationId: rejectRes.body.review.organizationId,
+      dedupeKey: `CONTRACT_SIGNED_REVIEWED:${rejectAudit.id}:${rejectRes.body.review.id}`,
+    },
+  });
+  assert.equal(rejectedReviewEvent.eventType, 'CONTRACT_SIGNED_REVIEWED');
+  assert.equal(rejectedReviewEvent.correlationId, rejectRes.headers.get('x-request-id'));
+  assert.deepEqual(rejectedReviewEvent.payload, {
+    contractId,
+    reviewId: rejectRes.body.review.id,
+    auditEventId: rejectAudit.id,
+    opportunityId: testOpportunityId,
+    decision: 'REJECTED',
+  });
 });
 
 test('7. Conferência integral e liberação do gate contratual (SPEC-007 Item 11)', async () => {
@@ -493,21 +508,24 @@ test('7. Conferência integral e liberação do gate contratual (SPEC-007 Item 1
   const beforeAuditCount = await db.auditEvent.count({
     where: { action: 'CONTRACT_VERIFIED_GATE_C', entityId: contractId },
   });
+  const beforeReviewEventCount = await db.integrationOutbox.count({
+    where: { eventType: 'CONTRACT_SIGNED_REVIEWED', aggregateId: contractId },
+  });
 
   await db.$executeRawUnsafe(`
-    CREATE FUNCTION "${schema}".reject_review_activity_outbox_for_test() RETURNS trigger AS $$
+    CREATE FUNCTION "${schema}".reject_signed_review_outbox_for_test() RETURNS trigger AS $$
     BEGIN
-      IF NEW.event_type = 'ACTIVITY_CREATED' THEN
-        RAISE EXCEPTION 'forced signed review activity outbox failure';
+      IF NEW.event_type = 'CONTRACT_SIGNED_REVIEWED' THEN
+        RAISE EXCEPTION 'forced signed contract review outbox failure';
       END IF;
       RETURN NEW;
     END;
     $$ LANGUAGE plpgsql
   `);
   await db.$executeRawUnsafe(`
-    CREATE TRIGGER reject_review_activity_outbox_for_test
+    CREATE TRIGGER reject_signed_review_outbox_for_test
     BEFORE INSERT ON "${schema}"."integration_outbox"
-    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_review_activity_outbox_for_test()
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_signed_review_outbox_for_test()
   `);
   const failedVerifyRes = await admin.call(`contracts/${contractId}/verify-signed`, 'POST', {
     partiesMatch: true,
@@ -517,9 +535,9 @@ test('7. Conferência integral e liberação do gate contratual (SPEC-007 Item 1
     decision: 'VERIFIED',
   });
   await db.$executeRawUnsafe(
-    `DROP TRIGGER reject_review_activity_outbox_for_test ON "${schema}"."integration_outbox"`,
+    `DROP TRIGGER reject_signed_review_outbox_for_test ON "${schema}"."integration_outbox"`,
   );
-  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_review_activity_outbox_for_test()`);
+  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_signed_review_outbox_for_test()`);
   assert.equal(failedVerifyRes.status, 500);
   assert.equal(await db.signedContractReview.count({ where: { contractId } }), beforeReviewCount);
   assert.equal(
@@ -535,6 +553,12 @@ test('7. Conferência integral e liberação do gate contratual (SPEC-007 Item 1
   assert.equal(
     (await db.contract.findUnique({ where: { id: contractId } })).state,
     'SIGNED_UPLOADED',
+  );
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'CONTRACT_SIGNED_REVIEWED', aggregateId: contractId },
+    }),
+    beforeReviewEventCount,
   );
 
   // Verify signed with all 4 criteria satisfied
@@ -573,6 +597,22 @@ test('7. Conferência integral e liberação do gate contratual (SPEC-007 Item 1
     auditEventId: verifyAudit.id,
     customerId: testCustomerId,
     opportunityId: testOpportunityId,
+  });
+  const verifiedReview = verifyRes.body.review;
+  const verifiedReviewEvent = await db.integrationOutbox.findFirstOrThrow({
+    where: {
+      organizationId: verifiedReview.organizationId,
+      dedupeKey: `CONTRACT_SIGNED_REVIEWED:${verifyAudit.id}:${verifiedReview.id}`,
+    },
+  });
+  assert.equal(verifiedReviewEvent.eventType, 'CONTRACT_SIGNED_REVIEWED');
+  assert.equal(verifiedReviewEvent.correlationId, verifyRes.headers.get('x-request-id'));
+  assert.deepEqual(verifiedReviewEvent.payload, {
+    contractId,
+    reviewId: verifiedReview.id,
+    auditEventId: verifyAudit.id,
+    opportunityId: testOpportunityId,
+    decision: 'VERIFIED',
   });
 
   // Verify Opportunity transitioned to VENDIDO after contract verification.

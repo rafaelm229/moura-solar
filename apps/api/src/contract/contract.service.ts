@@ -17,6 +17,7 @@ import type {
   ContractAmendmentRecordedEventV1,
   ContractCanceledEventV1,
   ContractDeliveredEventV1,
+  ContractSignedReviewedEventV1,
 } from '@moura-solar/contracts';
 import {
   CreateContractDto,
@@ -1443,6 +1444,39 @@ export class ContractService {
           occurredAt: reviewAudit.createdAt,
           payload: activityEvent.payload,
           dedupeKey: `ACTIVITY_CREATED:${reviewAudit.id}:${reviewActivityId}`,
+        },
+      });
+
+      const reviewEvent: ContractSignedReviewedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'CONTRACT_SIGNED_REVIEWED',
+        schemaVersion: 1,
+        occurredAt: reviewAudit.createdAt.toISOString(),
+        organizationId,
+        aggregateId: contract.id,
+        producer: 'contracts',
+        correlationId,
+        payload: {
+          contractId: contract.id,
+          reviewId: review.id,
+          auditEventId: reviewAudit.id,
+          opportunityId: contract.opportunityId,
+          decision: dto.decision,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: reviewEvent.eventId,
+          organizationId: reviewEvent.organizationId,
+          eventType: reviewEvent.eventType,
+          schemaVersion: reviewEvent.schemaVersion,
+          aggregateType: 'Contract',
+          aggregateId: reviewEvent.aggregateId,
+          producer: reviewEvent.producer,
+          correlationId: reviewEvent.correlationId,
+          occurredAt: reviewAudit.createdAt,
+          payload: reviewEvent.payload,
+          dedupeKey: `CONTRACT_SIGNED_REVIEWED:${reviewAudit.id}:${review.id}`,
         },
       });
 
