@@ -101,6 +101,11 @@ Ao criar o contrato, o sistema copia snapshots de:
 - garantias aprovadas;
 - versão de cláusulas e template.
 
+R1-41 registra `CONTRACT_CREATED` v1 e a atividade de assinatura na outbox na
+mesma transação local da criação. Os eventos contêm somente IDs; snapshots,
+preço e conteúdo documental permanecem fora do payload. A atividade não libera
+o gate `CONTRACT`.
+
 ## 6. Campos editáveis
 
 ### Sem nova aprovação, conforme permissão

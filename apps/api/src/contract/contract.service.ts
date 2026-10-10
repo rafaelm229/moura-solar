@@ -16,6 +16,7 @@ import type {
   ActivityCreatedEventV1,
   ContractAmendmentRecordedEventV1,
   ContractCanceledEventV1,
+  ContractCreatedEventV1,
   ContractDeliveredEventV1,
   ContractSignedReviewedEventV1,
   ContractSignedUploadedEventV1,
@@ -102,7 +103,12 @@ export class ContractService {
     };
   }
 
-  async createContract(organizationId: string, userId: string, dto: CreateContractDto) {
+  async createContract(
+    organizationId: string,
+    userId: string,
+    dto: CreateContractDto,
+    correlationId: string,
+  ) {
     const opp = await this.prisma.opportunity.findFirst({
       where: { id: dto.opportunityId, organizationId },
       include: {
@@ -625,7 +631,7 @@ export class ContractService {
           }
 
           // Create activity for contract review & signature collection
-          await tx.activity.create({
+          const contractActivity = await tx.activity.create({
             data: {
               organizationId,
               opportunityId: opp.id,
@@ -639,7 +645,7 @@ export class ContractService {
             },
           });
 
-          await this.audit.record(
+          const creationAudit = await this.audit.record(
             {
               organizationId,
               actorId: userId,
@@ -648,6 +654,71 @@ export class ContractService {
             },
             tx,
           );
+
+          const activityEvent: ActivityCreatedEventV1 = {
+            eventId: randomUUID(),
+            eventType: 'ACTIVITY_CREATED',
+            schemaVersion: 1,
+            occurredAt: creationAudit.createdAt.toISOString(),
+            organizationId,
+            aggregateId: contractActivity.id,
+            producer: 'crm',
+            correlationId,
+            payload: {
+              activityId: contractActivity.id,
+              auditEventId: creationAudit.id,
+              customerId: opp.customerId,
+              opportunityId: opp.id,
+            },
+          };
+          await tx.integrationOutbox.create({
+            data: {
+              id: activityEvent.eventId,
+              organizationId: activityEvent.organizationId,
+              eventType: activityEvent.eventType,
+              schemaVersion: activityEvent.schemaVersion,
+              aggregateType: 'Activity',
+              aggregateId: activityEvent.aggregateId,
+              producer: activityEvent.producer,
+              correlationId: activityEvent.correlationId,
+              occurredAt: creationAudit.createdAt,
+              payload: activityEvent.payload,
+              dedupeKey: `ACTIVITY_CREATED:${creationAudit.id}:${contractActivity.id}`,
+            },
+          });
+
+          const contractCreatedEvent: ContractCreatedEventV1 = {
+            eventId: randomUUID(),
+            eventType: 'CONTRACT_CREATED',
+            schemaVersion: 1,
+            occurredAt: creationAudit.createdAt.toISOString(),
+            organizationId,
+            aggregateId: createdContract.id,
+            producer: 'contracts',
+            correlationId,
+            payload: {
+              contractId: createdContract.id,
+              contractVersionId: createdVersion.id,
+              acceptedProposalVersionId: acceptedProposalVersion.id,
+              auditEventId: creationAudit.id,
+              opportunityId: opp.id,
+            },
+          };
+          await tx.integrationOutbox.create({
+            data: {
+              id: contractCreatedEvent.eventId,
+              organizationId: contractCreatedEvent.organizationId,
+              eventType: contractCreatedEvent.eventType,
+              schemaVersion: contractCreatedEvent.schemaVersion,
+              aggregateType: 'Contract',
+              aggregateId: contractCreatedEvent.aggregateId,
+              producer: contractCreatedEvent.producer,
+              correlationId: contractCreatedEvent.correlationId,
+              occurredAt: creationAudit.createdAt,
+              payload: contractCreatedEvent.payload,
+              dedupeKey: `CONTRACT_CREATED:${creationAudit.id}:${createdContract.id}`,
+            },
+          });
 
           return createdContract;
         });

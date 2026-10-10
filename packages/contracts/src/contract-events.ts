@@ -1,5 +1,16 @@
 import { parseIntegrationEvent, type IntegrationEvent } from './integration-event.js';
 
+export type ContractCreatedEventV1 = IntegrationEvent<{
+  contractId: string;
+  contractVersionId: string;
+  acceptedProposalVersionId: string;
+  auditEventId: string;
+  opportunityId: string;
+}> & {
+  eventType: 'CONTRACT_CREATED';
+  schemaVersion: 1;
+};
+
 export type ContractDeliveredEventV1 = IntegrationEvent<{
   contractId: string;
   deliveryId: string;
@@ -49,6 +60,48 @@ export type ContractSignedUploadedEventV1 = IntegrationEvent<{
   eventType: 'CONTRACT_SIGNED_UPLOADED';
   schemaVersion: 1;
 };
+
+/** Validates a contract creation fact without snapshots or commercial details. */
+export function parseContractCreatedEventV1(value: unknown): ContractCreatedEventV1 {
+  const event = parseIntegrationEvent(value);
+
+  if (event.eventType !== 'CONTRACT_CREATED') {
+    throw new TypeError('Contract event eventType is unsupported');
+  }
+  if (event.schemaVersion !== 1) {
+    throw new TypeError('Contract event schemaVersion is unsupported');
+  }
+  for (const field of [
+    'contractId',
+    'contractVersionId',
+    'acceptedProposalVersionId',
+    'auditEventId',
+    'opportunityId',
+  ] as const) {
+    if (typeof event.payload[field] !== 'string' || !event.payload[field].trim()) {
+      throw new TypeError(`Contract event payload ${field} is required`);
+    }
+  }
+  if (event.payload.contractId !== event.aggregateId) {
+    throw new TypeError('Contract event payload contractId must match aggregateId');
+  }
+  if (
+    Object.keys(event.payload).some(
+      (field) =>
+        ![
+          'contractId',
+          'contractVersionId',
+          'acceptedProposalVersionId',
+          'auditEventId',
+          'opportunityId',
+        ].includes(field),
+    )
+  ) {
+    throw new TypeError('Contract event payload contains unsupported fields');
+  }
+
+  return event as ContractCreatedEventV1;
+}
 
 /** Validates a manually recorded contract delivery without channel or recipient data. */
 export function parseContractDeliveredEventV1(value: unknown): ContractDeliveredEventV1 {
