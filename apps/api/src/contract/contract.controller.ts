@@ -88,7 +88,13 @@ export class ContractController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: RequestContractReviewDto,
   ) {
-    return this.service.requestReview(req.actor.organizationId, id, req.actor.userId, dto);
+    return this.service.requestReview(
+      req.actor.organizationId,
+      id,
+      req.actor.userId,
+      dto,
+      req.requestId ?? 'trace',
+    );
   }
 
   @Post('contracts/:id/approve')
@@ -100,7 +106,13 @@ export class ContractController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ApproveContractDto,
   ) {
-    return this.service.approveContract(req.actor.organizationId, id, req.actor.userId, dto);
+    return this.service.approveContract(
+      req.actor.organizationId,
+      id,
+      req.actor.userId,
+      dto,
+      req.requestId ?? 'trace',
+    );
   }
 
   @Post('contracts/:id/deliveries')

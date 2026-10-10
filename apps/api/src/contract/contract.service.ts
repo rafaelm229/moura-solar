@@ -16,8 +16,10 @@ import type {
   ActivityCreatedEventV1,
   ContractAmendmentRecordedEventV1,
   ContractCanceledEventV1,
+  ContractApprovedEventV1,
   ContractCreatedEventV1,
   ContractDeliveredEventV1,
+  ContractReviewRequestedEventV1,
   ContractSignedReviewedEventV1,
   ContractSignedUploadedEventV1,
 } from '@moura-solar/contracts';
@@ -1040,16 +1042,60 @@ export class ContractService {
     id: string,
     userId: string,
     dto: RequestContractReviewDto,
+    correlationId: string,
   ) {
     const contract = await this.getContract(organizationId, id);
-    await this.prisma.contract.update({
-      where: { id: contract.id },
-      data: {
-        state: 'PENDING_REVIEW',
-        notes: dto.notes
-          ? `${contract.notes ? `${contract.notes}\n` : ''}Revisão solicitada: ${dto.notes}`
-          : contract.notes,
-      },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.contract.update({
+        where: { id: contract.id },
+        data: {
+          state: 'PENDING_REVIEW',
+          notes: dto.notes
+            ? `${contract.notes ? `${contract.notes}\n` : ''}Revisão solicitada: ${dto.notes}`
+            : contract.notes,
+        },
+      });
+
+      const reviewAudit = await this.audit.record(
+        {
+          organizationId,
+          actorId: userId,
+          action: 'CONTRACT_REVIEW_REQUESTED',
+          entityId: contract.id,
+          traceId: correlationId,
+        },
+        tx,
+      );
+      const event: ContractReviewRequestedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'CONTRACT_REVIEW_REQUESTED',
+        schemaVersion: 1,
+        occurredAt: reviewAudit.createdAt.toISOString(),
+        organizationId,
+        aggregateId: contract.id,
+        producer: 'contracts',
+        correlationId,
+        payload: {
+          contractId: contract.id,
+          auditEventId: reviewAudit.id,
+          opportunityId: contract.opportunityId,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Contract',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: reviewAudit.createdAt,
+          payload: event.payload,
+          dedupeKey: `CONTRACT_REVIEW_REQUESTED:${reviewAudit.id}:${contract.id}`,
+        },
+      });
     });
     return this.getContract(organizationId, id);
   }
@@ -1059,16 +1105,60 @@ export class ContractService {
     id: string,
     userId: string,
     dto: ApproveContractDto,
+    correlationId: string,
   ) {
     const contract = await this.getContract(organizationId, id);
-    await this.prisma.contract.update({
-      where: { id: contract.id },
-      data: {
-        state: 'READY',
-        notes: dto.notes
-          ? `${contract.notes ? `${contract.notes}\n` : ''}Aprovado: ${dto.notes}`
-          : contract.notes,
-      },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.contract.update({
+        where: { id: contract.id },
+        data: {
+          state: 'READY',
+          notes: dto.notes
+            ? `${contract.notes ? `${contract.notes}\n` : ''}Aprovado: ${dto.notes}`
+            : contract.notes,
+        },
+      });
+
+      const approvalAudit = await this.audit.record(
+        {
+          organizationId,
+          actorId: userId,
+          action: 'CONTRACT_APPROVED',
+          entityId: contract.id,
+          traceId: correlationId,
+        },
+        tx,
+      );
+      const event: ContractApprovedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'CONTRACT_APPROVED',
+        schemaVersion: 1,
+        occurredAt: approvalAudit.createdAt.toISOString(),
+        organizationId,
+        aggregateId: contract.id,
+        producer: 'contracts',
+        correlationId,
+        payload: {
+          contractId: contract.id,
+          auditEventId: approvalAudit.id,
+          opportunityId: contract.opportunityId,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Contract',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: approvalAudit.createdAt,
+          payload: event.payload,
+          dedupeKey: `CONTRACT_APPROVED:${approvalAudit.id}:${contract.id}`,
+        },
+      });
     });
     return this.getContract(organizationId, id);
   }

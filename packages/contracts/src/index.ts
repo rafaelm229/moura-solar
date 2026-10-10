@@ -67,17 +67,21 @@ export {
 } from './catalog-events.js';
 export type {
   ContractAmendmentRecordedEventV1,
+  ContractApprovedEventV1,
   ContractCanceledEventV1,
   ContractCreatedEventV1,
   ContractDeliveredEventV1,
+  ContractReviewRequestedEventV1,
   ContractSignedReviewedEventV1,
   ContractSignedUploadedEventV1,
 } from './contract-events.js';
 export {
   parseContractAmendmentRecordedEventV1,
+  parseContractApprovedEventV1,
   parseContractCanceledEventV1,
   parseContractCreatedEventV1,
   parseContractDeliveredEventV1,
+  parseContractReviewRequestedEventV1,
   parseContractSignedReviewedEventV1,
   parseContractSignedUploadedEventV1,
 } from './contract-events.js';

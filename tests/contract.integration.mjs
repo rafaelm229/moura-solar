@@ -317,6 +317,100 @@ test('1. Geração de minuta contratual a partir de proposta aceita (SPEC-007 It
     }),
     2,
   );
+
+  const reviewRequestId = `contract-review-request-${randomUUID()}`;
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_contract_review_event_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'CONTRACT_REVIEW_REQUESTED' THEN
+        RAISE EXCEPTION 'forced contract review outbox failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_contract_review_event_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_contract_review_event_for_test()
+  `);
+  const failedReviewRequest = await admin.call(`contracts/${res.body.id}/request-review`, 'POST', {
+    notes: 'Esta observação não deve ser persistida',
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_contract_review_event_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_contract_review_event_for_test()`);
+  assert.equal(failedReviewRequest.status, 500);
+  const afterReviewFailure = await db.contract.findUnique({ where: { id: res.body.id } });
+  assert.equal(afterReviewFailure.state, 'READY');
+  assert.equal(afterReviewFailure.notes, res.body.notes);
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'CONTRACT_REVIEW_REQUESTED', entityId: res.body.id },
+    }),
+    0,
+  );
+
+  const reviewRequestRes = await admin.call(
+    `contracts/${res.body.id}/request-review`,
+    'POST',
+    { notes: 'Observação privada para revisão jurídica' },
+    { 'x-request-id': reviewRequestId },
+  );
+  assert.equal(reviewRequestRes.status, 200);
+  assert.equal(reviewRequestRes.body.state, 'PENDING_REVIEW');
+  const reviewAudit = await db.auditEvent.findFirstOrThrow({
+    where: {
+      action: 'CONTRACT_REVIEW_REQUESTED',
+      entityId: res.body.id,
+      traceId: reviewRequestId,
+    },
+  });
+  const reviewEvent = await db.integrationOutbox.findFirstOrThrow({
+    where: { dedupeKey: `CONTRACT_REVIEW_REQUESTED:${reviewAudit.id}:${res.body.id}` },
+  });
+  assert.equal(reviewEvent.correlationId, reviewRequestId);
+  assert.equal(reviewEvent.aggregateType, 'Contract');
+  assert.equal(reviewEvent.aggregateId, res.body.id);
+  assert.deepEqual(reviewEvent.payload, {
+    contractId: res.body.id,
+    auditEventId: reviewAudit.id,
+    opportunityId: testOpportunityId,
+  });
+
+  const approvalRequestId = `contract-approval-${randomUUID()}`;
+  const approvalRes = await admin.call(
+    `contracts/${res.body.id}/approve`,
+    'POST',
+    { notes: 'Aprovação manual de revisão' },
+    { 'x-request-id': approvalRequestId },
+  );
+  assert.equal(approvalRes.status, 200);
+  assert.equal(approvalRes.body.state, 'READY');
+  assert.equal(approvalRes.body.versions[0].documents.length, 2);
+  assert.equal(
+    approvalRes.body.projectGates.find((gate) => gate.gateType === 'CONTRACT').status,
+    'PENDING',
+  );
+  const approvalAudit = await db.auditEvent.findFirstOrThrow({
+    where: {
+      action: 'CONTRACT_APPROVED',
+      entityId: res.body.id,
+      traceId: approvalRequestId,
+    },
+  });
+  const approvalEvent = await db.integrationOutbox.findFirstOrThrow({
+    where: { dedupeKey: `CONTRACT_APPROVED:${approvalAudit.id}:${res.body.id}` },
+  });
+  assert.equal(approvalEvent.correlationId, approvalRequestId);
+  assert.equal(approvalEvent.aggregateType, 'Contract');
+  assert.equal(approvalEvent.aggregateId, res.body.id);
+  assert.deepEqual(approvalEvent.payload, {
+    contractId: res.body.id,
+    auditEventId: approvalAudit.id,
+    opportunityId: testOpportunityId,
+  });
 });
 
 test('2. Download da Minuta DOCX com placeholders preenchidos', async () => {
