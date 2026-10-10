@@ -4,7 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Implementado na branch `codex/r1-60-strict-calendar-timestamp`.
+**Estado:** Consolidado no PR #126, commit `d10578c`.
 
 **SPECs:** [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
 [SPEC-019](../specs/SPEC-019-eventos-dados/spec.md); família F-34.
@@ -37,13 +37,14 @@ Este incremento corrige a aceitação de dias impossíveis no timestamp.
 - `pnpm lint`, `pnpm typecheck` e `pnpm build`: passaram.
 - `pnpm test`: 1.255 testes passaram e 2 testes preexistentes de DOCX falharam
   porque o sandbox bloqueou `spawnSync unzip` com `EPERM`; os testes do parser e
-  do pacote de contratos passaram. CI completa ainda é necessária para validar
-  os testes DOCX no ambiente de integração.
+  do pacote de contratos passaram. CI completa confirmou os testes DOCX no
+  ambiente de integração.
 - `pnpm check`: bloqueado antes de lint/typecheck/test/build porque a verificação
   global encontrou formatação pendente em 7 arquivos preexistentes e não
   rastreados do usuário (`.vscode/mcp.json` e `moura-solar-specs-roadmap/`).
   Esses arquivos foram preservados sem alterações.
-- CI completa e consolidação: pendentes.
+- CI completa passou no run `38073001087`, incluindo `pnpm check`, migrations,
+  integrações e E2E. PR #126 consolidado em `d10578c`.
 
 ## Limites
 
