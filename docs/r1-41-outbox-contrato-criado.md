@@ -4,8 +4,8 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Validado localmente na branch `codex/r1-41-outbox-contract-created`;
-CI e consolidação pendentes.
+**Estado:** Consolidado no PR #89, merge `40d7ea242ce6e7ee9486d816009ec0d747c945f5`;
+CI run `38012077654` verde.
 
 **SPECs:** [SPEC-007](../specs/SPEC-007-contratos-documentos/spec.md),
 [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
@@ -51,4 +51,6 @@ Rollback remove somente o novo parser, tipo e emissões dos dois eventos.
 - `node --test --test-concurrency=1 tests/contract.integration.mjs`: passou
   (9 cenários; evento de contrato/atividade, correlação, PDFs, gate e replay).
 - `pnpm check`: passou (format, lint, typecheck, testes e build).
-- CI e consolidação: pendentes.
+- CI run `38012077654`: `check` verde, incluindo `pnpm check`, migrations,
+  integrações e E2E.
+- Consolidação: PR #89 mesclado no commit `40d7ea242ce6e7ee9486d816009ec0d747c945f5`.
