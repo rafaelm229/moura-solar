@@ -40,6 +40,11 @@ No escopo vigente, preservar o original no dossiê e permitir que a pessoa trans
 
 Fora: autoaprovação, contratação de fornecedor, mudança de cálculo de economia, faturamento/compensação tarifária automática, completar histórico por inferência, atualizar contratos/propostas emitidos, escolher comprador pelo titular ou trocar propriedade de UC.
 
+**Evidência transacional:** o [R1-46](../../docs/r1-46-rollback-confirmacao-importacao.md)
+injeta falha no insert do evento de confirmação e verifica que a operação manual
+reverte integralmente, conforme IMP-07. A falha é exclusiva do teste; não cria
+trigger ou regra no banco de aplicação.
+
 ## Complementos
 
 - [Modelo de dados](modelo-dados.md).

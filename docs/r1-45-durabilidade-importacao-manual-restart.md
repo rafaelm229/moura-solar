@@ -4,7 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Validado localmente na branch `codex/r1-45-manual-import-restart`; CI pendente.
+**Estado:** Consolidado no PR #97, merge `398421f37fa5a6e10cb7a319c0b289be001ffa6b`.
 
 **SPECs:** [SPEC-014](../specs/SPEC-014-importacao-contas-energia/spec.md),
 [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
@@ -55,7 +55,8 @@ R1-43 como precedente de restart para `IntegrationOutbox`.
 - `pnpm test:integration` — passou com 125/125 cenários.
 - `pnpm check` — passou: formatação, lint, typecheck, testes e build.
 - Links locais, Prettier dos documentos e `git diff --check` — passaram.
-- CI do PR ainda pendente nesta branch.
+- CI run `38018885259` — passou: check, geração de API, migrations, integrações
+  completas e E2E.
 
 ## Limites
 
