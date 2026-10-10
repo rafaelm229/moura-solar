@@ -227,7 +227,7 @@ O [R1-46](r1-46-rollback-confirmacao-importacao.md) injeta falha no insert do
 evento manual `APPLIED` e comprova que a confirmação não deixa leituras, recibo,
 auditoria ou transição parcial; depois remove a falha e permite a confirmação
 normal. O teste local passou 8/8 cenários, a integração completa 125/125 e
-`pnpm check`; CI do PR está pendente.
+`pnpm check`; PR #98 consolidado em `8a06bab`, CI run `38019743039` verde.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 

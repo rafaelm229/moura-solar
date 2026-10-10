@@ -4,7 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Validado localmente na branch `codex/r1-46-manual-import-atomicity`; CI pendente.
+**Estado:** Consolidado no PR #98, merge `8a06bab`; CI run `38019743039` verde.
 
 **SPECs:** [SPEC-014](../specs/SPEC-014-importacao-contas-energia/spec.md),
 requisito IMP-07; [SPEC-019](../specs/SPEC-019-eventos-dados/spec.md), critério
@@ -50,7 +50,8 @@ durabilidade da confirmação aplicada após reinício.
 - `pnpm test:integration` — passou com 125/125 cenários.
 - `pnpm check` — passou: formatação, lint, typecheck, testes e build.
 - Formatação dos documentos, links locais e `git diff --check` — passaram.
-- CI do PR ainda pendente nesta branch.
+- CI do PR #98 — passou no run `38019743039` (incluiu `pnpm check`, migrações,
+  integração e E2E); PR consolidado por squash em `8a06bab1c7fa8100b53a2a46076c630cd4184e90`.
 
 ## Limites
 
