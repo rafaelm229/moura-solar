@@ -4,8 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Validado localmente na branch `codex/r1-39-contract-signed-review-event`;
-CI e consolidação pendentes.
+**Estado:** Consolidado no PR #85, merge `0dcf7eb`, CI #141 verde.
 
 **SPECs:** [SPEC-007](../specs/SPEC-007-contratos-documentos/spec.md),
 [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
@@ -47,7 +46,9 @@ auditoria e evento da atividade já existentes.
 - `node --test --test-concurrency=1 tests/contract.integration.mjs`: passou
   (9 cenários; aprovado, rejeitado e rollback atômico).
 - `pnpm check`: passou (format, lint, typecheck, testes e build).
-- CI e consolidação: pendentes.
+- CI #141: todas as etapas passaram (`pnpm check`, geração da API, migrations,
+  integração e E2E).
+- Consolidação: PR #85, merge `0dcf7eb`.
 
 ## Rollback
 
