@@ -256,6 +256,10 @@ O [R1-53](r1-53-metadados-versao-correlacao-eventos.md) verifica por AST a
 versão e correlação dos objetos de evento, inferindo a exceção legada pela forma
 do contrato. CI completa passou (run `38061362980`); PR #112 consolidado em
 `d52254a`.
+O [R1-54](r1-54-literal-schema-version-contracts.md) protege o literal
+`schemaVersion: 1` nas declarações TypeScript dos contratos v1, complementando
+o teste dos produtores sem alterar runtime. Teste direcionado e pacote passaram;
+CI completa ainda pendente.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
