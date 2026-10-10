@@ -228,6 +228,10 @@ evento manual `APPLIED` e comprova que a confirmação não deixa leituras, reci
 auditoria ou transição parcial; depois remove a falha e permite a confirmação
 normal. O teste local passou 8/8 cenários, a integração completa 125/125 e
 `pnpm check`; PR #98 consolidado em `8a06bab`, CI run `38019743039` verde.
+O [R1-47](r1-47-contrato-minimo-eventos-importacao.md) fecha os parsers dos
+eventos manuais `QUEUED` e `APPLIED` contra campos extras, preservando o formato
+legado válido; testes de contrato locais passaram. O incremento não ativa worker
+ou consumidor e aguarda CI.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 

@@ -77,4 +77,30 @@ describe('energy bill import event v1 contracts', () => {
       /payload must be an object/,
     );
   });
+
+  it('rejects fields outside the minimal manual-import contract', () => {
+    assert.throws(
+      () =>
+        parseEnergyBillImportEventV1({
+          eventType: 'ENERGY_BILL_IMPORT_QUEUED',
+          schemaVersion: 1,
+          payload: {
+            importId: 'import-1',
+            documentVersionId: 'document-version-1',
+            customerName: 'Should not be propagated',
+          },
+        }),
+      /payload contains unsupported fields/,
+    );
+    assert.throws(
+      () =>
+        parseEnergyBillImportEventV1({
+          eventType: 'ENERGY_BILL_IMPORT_APPLIED',
+          schemaVersion: 1,
+          payload: { importId: 'import-1', reviewId: 'review-1' },
+          accountNumber: 'Should not be propagated',
+        }),
+      /event contains unsupported fields/,
+    );
+  });
 });
