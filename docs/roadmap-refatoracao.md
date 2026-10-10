@@ -210,6 +210,12 @@ O [R1-43](r1-43-durabilidade-outbox-restart.md) foi consolidado no PR #93,
 merge `833132b45e0ae4732aec96ceac3b4d8d65cb96c5`, CI run `38015253401` verde.
 Demonstra que eventos confirmados persistem após encerramento abrupto e restart
 da API; não introduz publicação, consumidor ou mudança de contrato.
+O [R1-44](r1-44-auditoria-contratos-eventos.md) auditou localmente 32/32 nomes
+de eventos dos produtores contra tipos de payload v1 e parsers. Trinta usam o
+envelope compartilhado; os dois eventos de importação mantêm o formato legado e
+continuam sem adaptação, coerente com a decisão de importação manual e a ausência
+de consumidor justificado. A família F-34 continua em implementação por causa
+dos requisitos independentes de inbox, publicação e processamento durável.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
