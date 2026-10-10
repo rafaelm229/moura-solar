@@ -4,7 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Implementado na branch `codex/r1-56-envelope-required-fields`.
+**Estado:** Consolidado no PR #118, merge `ca6c842`.
 
 **SPECs:** [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
 [SPEC-019](../specs/SPEC-019-eventos-dados/spec.md); família F-34.
@@ -32,10 +32,16 @@ incremento cobre o parser runtime do envelope compartilhado.
 - `node --test packages/contracts/tests/integration-event.test.mjs` — passou.
 - `pnpm --filter @moura-solar/contracts test` — build TypeScript e 11/11 arquivos
   de teste passaram.
-- CI completa, migrations, integração e E2E — pendentes.
+- CI completa — passou no run `38066193240` após rerun; `pnpm check`, geração da
+  API, migrations, integração e E2E passaram.
+- A primeira tentativa falhou em `tests/commercial.integration.mjs:591`: a
+  asserção `serializedPayload.includes('875')` também examina o UUID aleatório
+  de `auditEventId`. A integração passou no rerun sem alteração desse teste; a
+  asserção probabilística existente permanece uma pendência independente.
 
 ## Limites
 
 O incremento protege validação já existente sem modificar seu comportamento. Não
 ativa transporte, worker, broker ou consumidor. A importação de contas continua
-manual conforme ADR-008.
+manual conforme ADR-008. Nenhuma migration foi necessária; a CI executou a suíte
+de migrations existente, sem alegar que houve mudança de banco.
