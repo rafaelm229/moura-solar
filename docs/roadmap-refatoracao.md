@@ -262,8 +262,8 @@ o teste dos produtores sem alterar runtime. CI completa passou (run
 `38063156490`); PR #114 consolidado em `d811194`.
 O [R1-55](r1-55-required-correlation-contract.md) exige `correlationId` do tipo
 string e obrigatório nos contratos que usam o envelope compartilhado; os eventos
-legados de importação permanecem sem esse campo. Teste direcionado e pacote
-passaram; CI completa ainda pendente.
+legados de importação permanecem sem esse campo. CI completa passou (run
+`38064576360`); PR #116 consolidado em `917e08a`.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
