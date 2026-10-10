@@ -230,8 +230,9 @@ normal. O teste local passou 8/8 cenários, a integração completa 125/125 e
 `pnpm check`; PR #98 consolidado em `8a06bab`, CI run `38019743039` verde.
 O [R1-47](r1-47-contrato-minimo-eventos-importacao.md) fecha os parsers dos
 eventos manuais `QUEUED` e `APPLIED` contra campos extras, preservando o formato
-legado válido; testes de contrato locais passaram. O incremento não ativa worker
-ou consumidor e aguarda CI.
+legado válido; testes de contrato locais passaram. PR #100 consolidado em
+`f002335`, CI run `38021146046` verde. O incremento não ativa worker ou
+consumidor.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
