@@ -282,7 +282,8 @@ consolidado em `4820783`.
 
 O [R1-58](r1-58-payload-object-boundaries.md) completa a cobertura de tipo para
 o payload do envelope, testando ausência e valores não objeto. A alteração é
-somente de teste; CI completa pendente.
+somente de teste; CI completa passou no run `38069720776` e o PR #122 foi
+consolidado em `ca716cd`.
 
 | Marco | Entrega                                                                                            | Dependências                               | Evidência de saída                                                                                                |
 | ----- | -------------------------------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
