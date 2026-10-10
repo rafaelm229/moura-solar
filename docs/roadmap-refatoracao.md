@@ -287,7 +287,8 @@ consolidado em `ca716cd`.
 
 O [R1-59](r1-59-stable-payload-assertion.md) remove a busca probabilística de
 `875` no JSON de evento e verifica diretamente a ausência de
-`estimatedConsumption`, preservando as outras asserções. CI completa pendente.
+`estimatedConsumption`, preservando as outras asserções. CI completa passou no
+run `38071336282` e o PR #124 foi consolidado em `e4abfd5`.
 
 | Marco | Entrega                                                                                            | Dependências                               | Evidência de saída                                                                                                |
 | ----- | -------------------------------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |

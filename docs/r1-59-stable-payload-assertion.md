@@ -4,7 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Implementado na branch `codex/r1-59-stable-payload-assertion`.
+**Estado:** Consolidado no PR #124, merge `e4abfd5`.
 
 **SPECs:** [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
 [SPEC-019](../specs/SPEC-019-eventos-dados/spec.md); família F-34.
@@ -35,7 +35,8 @@ inclui um UUID aleatório de auditoria.
 - `pnpm test:integration` foi tentado, mas os 13 arquivos de integração
   encerraram antes dos casos. O teste espera PostgreSQL local na porta 5433; o
   acesso ao Docker foi negado neste ambiente e `pg_isready` não está instalado.
-- CI completa — pendente.
+- CI completa — passou no run `38071336282`, incluindo check, geração da API,
+  migrations, integração e E2E.
 
 ## Limites
 
