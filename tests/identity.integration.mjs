@@ -25,6 +25,7 @@ const env = {
 };
 const db = new PrismaClient({ datasources: { db: { url: url.toString() } } });
 let server;
+let requestLogs = '';
 const base = 'http://localhost:3319/api/v1';
 const password = 'Integration-password-2026';
 class Client {
@@ -57,7 +58,10 @@ let sellerId;
 before(async () => {
   const migration = spawnSync('pnpm', ['db:deploy'], { env, encoding: 'utf8' });
   assert.equal(migration.status, 0, migration.stdout + migration.stderr);
-  server = spawn('node', ['apps/api/dist/main.js'], { env, stdio: ['ignore', 'ignore', 'pipe'] });
+  server = spawn('node', ['apps/api/dist/main.js'], { env, stdio: ['ignore', 'pipe', 'pipe'] });
+  server.stdout.on('data', (chunk) => {
+    requestLogs += chunk;
+  });
   let errors = '';
   server.stderr.on('data', (chunk) => {
     errors += chunk;
@@ -97,6 +101,37 @@ test('request correlation accepts bounded safe IDs and replaces malformed or ove
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
     );
     assert.notEqual(response.headers.get('x-request-id'), unsafeRequestId);
+  }
+});
+test('request logs retain correlation but omit authorization, cookies and private headers', async () => {
+  const requestId = 'r1-log-correlation-safe-001';
+  const authorization = 'Bearer authorization-secret-sentinel';
+  const cookie = 'ms_access=cookie-secret-sentinel';
+  const privateHeader = 'private-header-sentinel';
+  const response = await fetch(`${base}/health/ready`, {
+    headers: {
+      'x-request-id': requestId,
+      authorization,
+      cookie,
+      'x-private-probe': privateHeader,
+    },
+  });
+  assert.equal(response.status, 200);
+  await response.arrayBuffer();
+
+  let logLine;
+  for (let attempt = 0; attempt < 100 && !logLine; attempt++) {
+    logLine = requestLogs.split('\n').find((line) => line.includes(`"traceId":"${requestId}"`));
+    if (!logLine) await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  assert.ok(logLine, 'expected the request completion log to carry its correlation ID');
+  const entry = JSON.parse(logLine);
+  assert.equal(entry.traceId, requestId);
+  assert.equal(entry.method, 'GET');
+  assert.equal(entry.status, 200);
+  assert.ok(Number.isFinite(entry.durationMs));
+  for (const value of [authorization, cookie, privateHeader]) {
+    assert.equal(logLine.includes(value), false);
   }
 });
 test('bootstrap requires secret, initializes seven approved roles once', async () => {
