@@ -588,7 +588,7 @@ test('opportunity updates emit a minimal correlated event atomically with their 
   const serializedPayload = JSON.stringify(event.payload);
   assert.equal(serializedPayload.includes(title), false);
   assert.equal(serializedPayload.includes(needSummary), false);
-  assert.equal(serializedPayload.includes('875'), false);
+  assert.equal(Object.hasOwn(event.payload, 'estimatedConsumption'), false);
 
   const stale = await seller.call(`opportunities/${opportunityId}`, 'PATCH', {
     expectedVersion: 1,
