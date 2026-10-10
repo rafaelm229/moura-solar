@@ -11,6 +11,22 @@ export type ContractCreatedEventV1 = IntegrationEvent<{
   schemaVersion: 1;
 };
 
+type ContractReviewStatePayload = {
+  contractId: string;
+  auditEventId: string;
+  opportunityId: string;
+};
+
+export type ContractReviewRequestedEventV1 = IntegrationEvent<ContractReviewStatePayload> & {
+  eventType: 'CONTRACT_REVIEW_REQUESTED';
+  schemaVersion: 1;
+};
+
+export type ContractApprovedEventV1 = IntegrationEvent<ContractReviewStatePayload> & {
+  eventType: 'CONTRACT_APPROVED';
+  schemaVersion: 1;
+};
+
 export type ContractDeliveredEventV1 = IntegrationEvent<{
   contractId: string;
   deliveryId: string;
@@ -60,6 +76,50 @@ export type ContractSignedUploadedEventV1 = IntegrationEvent<{
   eventType: 'CONTRACT_SIGNED_UPLOADED';
   schemaVersion: 1;
 };
+
+function parseContractReviewStateEventV1(
+  value: unknown,
+  expectedType: 'CONTRACT_REVIEW_REQUESTED' | 'CONTRACT_APPROVED',
+): IntegrationEvent<ContractReviewStatePayload> {
+  const event = parseIntegrationEvent(value);
+
+  if (event.eventType !== expectedType) {
+    throw new TypeError('Contract event eventType is unsupported');
+  }
+  if (event.schemaVersion !== 1) {
+    throw new TypeError('Contract event schemaVersion is unsupported');
+  }
+  for (const field of ['contractId', 'auditEventId', 'opportunityId'] as const) {
+    if (typeof event.payload[field] !== 'string' || !event.payload[field].trim()) {
+      throw new TypeError(`Contract event payload ${field} is required`);
+    }
+  }
+  if (event.payload.contractId !== event.aggregateId) {
+    throw new TypeError('Contract event payload contractId must match aggregateId');
+  }
+  if (
+    Object.keys(event.payload).some(
+      (field) => !['contractId', 'auditEventId', 'opportunityId'].includes(field),
+    )
+  ) {
+    throw new TypeError('Contract event payload contains unsupported fields');
+  }
+
+  return event as IntegrationEvent<ContractReviewStatePayload>;
+}
+
+export function parseContractReviewRequestedEventV1(
+  value: unknown,
+): ContractReviewRequestedEventV1 {
+  return parseContractReviewStateEventV1(
+    value,
+    'CONTRACT_REVIEW_REQUESTED',
+  ) as ContractReviewRequestedEventV1;
+}
+
+export function parseContractApprovedEventV1(value: unknown): ContractApprovedEventV1 {
+  return parseContractReviewStateEventV1(value, 'CONTRACT_APPROVED') as ContractApprovedEventV1;
+}
 
 /** Validates a contract creation fact without snapshots or commercial details. */
 export function parseContractCreatedEventV1(value: unknown): ContractCreatedEventV1 {

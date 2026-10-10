@@ -2,9 +2,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   parseContractAmendmentRecordedEventV1,
+  parseContractApprovedEventV1,
   parseContractCanceledEventV1,
   parseContractCreatedEventV1,
   parseContractDeliveredEventV1,
+  parseContractReviewRequestedEventV1,
   parseContractSignedReviewedEventV1,
   parseContractSignedUploadedEventV1,
 } from '../dist/index.js';
@@ -55,6 +57,50 @@ test('CONTRACT_CREATED v1 rejects unsupported types, versions, mismatches and de
     parseContractCreatedEventV1({
       ...created,
       payload: { ...created.payload, commercialSnapshot: { total: 50000 } },
+    }),
+  );
+});
+
+const reviewRequested = {
+  ...delivered,
+  eventType: 'CONTRACT_REVIEW_REQUESTED',
+  payload: {
+    contractId: 'contract-1',
+    auditEventId: 'audit-review-1',
+    opportunityId: 'opportunity-1',
+  },
+};
+
+const approved = {
+  ...reviewRequested,
+  eventType: 'CONTRACT_APPROVED',
+  payload: {
+    contractId: 'contract-1',
+    auditEventId: 'audit-approved-1',
+    opportunityId: 'opportunity-1',
+  },
+};
+
+test('contract review-request and approval v1 events accept only correlated IDs', () => {
+  assert.deepEqual(parseContractReviewRequestedEventV1(reviewRequested), reviewRequested);
+  assert.deepEqual(parseContractApprovedEventV1(approved), approved);
+});
+
+test('contract review-request and approval v1 events reject mismatches and private notes', () => {
+  assert.throws(() =>
+    parseContractReviewRequestedEventV1({ ...reviewRequested, eventType: 'CONTRACT_APPROVED' }),
+  );
+  assert.throws(() => parseContractApprovedEventV1({ ...approved, schemaVersion: 2 }));
+  assert.throws(() =>
+    parseContractReviewRequestedEventV1({
+      ...reviewRequested,
+      payload: { ...reviewRequested.payload, contractId: 'other' },
+    }),
+  );
+  assert.throws(() =>
+    parseContractApprovedEventV1({
+      ...approved,
+      payload: { ...approved.payload, notes: 'observação privada' },
     }),
   );
 });
