@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   parseContractAmendmentRecordedEventV1,
   parseContractCanceledEventV1,
+  parseContractCreatedEventV1,
   parseContractDeliveredEventV1,
   parseContractSignedReviewedEventV1,
   parseContractSignedUploadedEventV1,
@@ -24,6 +25,39 @@ const delivered = {
     opportunityId: 'opportunity-1',
   },
 };
+
+const created = {
+  ...delivered,
+  eventType: 'CONTRACT_CREATED',
+  payload: {
+    contractId: 'contract-1',
+    contractVersionId: 'contract-version-1',
+    acceptedProposalVersionId: 'proposal-version-1',
+    auditEventId: 'audit-created-1',
+    opportunityId: 'opportunity-1',
+  },
+};
+
+test('CONTRACT_CREATED v1 accepts IDs without snapshots or commercial fields', () => {
+  assert.deepEqual(parseContractCreatedEventV1(created), created);
+});
+
+test('CONTRACT_CREATED v1 rejects unsupported types, versions, mismatches and details', () => {
+  assert.throws(() => parseContractCreatedEventV1({ ...created, eventType: 'CONTRACT_ISSUED' }));
+  assert.throws(() => parseContractCreatedEventV1({ ...created, schemaVersion: 2 }));
+  assert.throws(() =>
+    parseContractCreatedEventV1({
+      ...created,
+      payload: { ...created.payload, contractId: 'other' },
+    }),
+  );
+  assert.throws(() =>
+    parseContractCreatedEventV1({
+      ...created,
+      payload: { ...created.payload, commercialSnapshot: { total: 50000 } },
+    }),
+  );
+});
 
 test('CONTRACT_DELIVERED v1 accepts IDs from the manual delivery record', () => {
   assert.deepEqual(parseContractDeliveredEventV1(delivered), delivered);

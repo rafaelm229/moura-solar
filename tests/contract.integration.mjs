@@ -251,6 +251,72 @@ test('1. Geração de minuta contratual a partir de proposta aceita (SPEC-007 It
   const contractGate = res.body.projectGates.find((g) => g.gateType === 'CONTRACT');
   assert.ok(contractGate);
   assert.equal(contractGate.status, 'PENDING');
+
+  const creationAudit = await db.auditEvent.findFirstOrThrow({
+    where: { action: 'CONTRACT_CREATED', entityId: res.body.id },
+  });
+  const contractActivity = await db.activity.findFirstOrThrow({
+    where: {
+      opportunityId: testOpportunityId,
+      subject: { contains: 'Assinatura de Contrato:' },
+    },
+  });
+  const activityEvent = await db.integrationOutbox.findFirstOrThrow({
+    where: {
+      organizationId: creationAudit.organizationId,
+      dedupeKey: `ACTIVITY_CREATED:${creationAudit.id}:${contractActivity.id}`,
+    },
+  });
+  assert.equal(activityEvent.correlationId, res.headers.get('x-request-id'));
+  assert.deepEqual(activityEvent.payload, {
+    activityId: contractActivity.id,
+    auditEventId: creationAudit.id,
+    customerId: testCustomerId,
+    opportunityId: testOpportunityId,
+  });
+
+  const contractEvent = await db.integrationOutbox.findFirstOrThrow({
+    where: {
+      organizationId: creationAudit.organizationId,
+      dedupeKey: `CONTRACT_CREATED:${creationAudit.id}:${res.body.id}`,
+    },
+  });
+  assert.equal(contractEvent.eventType, 'CONTRACT_CREATED');
+  assert.equal(contractEvent.schemaVersion, 1);
+  assert.equal(contractEvent.aggregateType, 'Contract');
+  assert.equal(contractEvent.aggregateId, res.body.id);
+  assert.equal(contractEvent.correlationId, res.headers.get('x-request-id'));
+  assert.equal(contractEvent.publishedAt, null);
+  assert.deepEqual(contractEvent.payload, {
+    contractId: res.body.id,
+    contractVersionId: activeVersion.id,
+    acceptedProposalVersionId,
+    auditEventId: creationAudit.id,
+    opportunityId: testOpportunityId,
+  });
+
+  const replayRes = await admin.call('contracts', 'POST', {
+    opportunityId: testOpportunityId,
+    acceptedProposalVersionId,
+    signingCity: 'Recife',
+    notes: 'Condição especial com seguro de instalação por 12 meses',
+  });
+  assert.equal(replayRes.status, 201);
+  assert.equal(replayRes.body.id, res.body.id);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: {
+        organizationId: creationAudit.organizationId,
+        dedupeKey: {
+          in: [
+            `ACTIVITY_CREATED:${creationAudit.id}:${contractActivity.id}`,
+            `CONTRACT_CREATED:${creationAudit.id}:${res.body.id}`,
+          ],
+        },
+      },
+    }),
+    2,
+  );
 });
 
 test('2. Download da Minuta DOCX com placeholders preenchidos', async () => {

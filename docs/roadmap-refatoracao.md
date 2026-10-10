@@ -198,6 +198,10 @@ O [R1-40](r1-40-outbox-upload-assinado.md) foi consolidado no PR #87, merge
 o upload manual do contrato e sua atividade de conferência; não lê o conteúdo
 nem libera o gate. A gravação no armazenamento externo antecede a transação
 local e continua sem compensação distribuída.
+O [R1-41](r1-41-outbox-contrato-criado.md) foi validado localmente para registrar
+`CONTRACT_CREATED` e a atividade de assinatura na transação local existente;
+mantém snapshots, valores, documentos, efeitos financeiros e gates sem alteração.
+CI pendente.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 

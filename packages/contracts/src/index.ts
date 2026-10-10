@@ -68,6 +68,7 @@ export {
 export type {
   ContractAmendmentRecordedEventV1,
   ContractCanceledEventV1,
+  ContractCreatedEventV1,
   ContractDeliveredEventV1,
   ContractSignedReviewedEventV1,
   ContractSignedUploadedEventV1,
@@ -75,6 +76,7 @@ export type {
 export {
   parseContractAmendmentRecordedEventV1,
   parseContractCanceledEventV1,
+  parseContractCreatedEventV1,
   parseContractDeliveredEventV1,
   parseContractSignedReviewedEventV1,
   parseContractSignedUploadedEventV1,

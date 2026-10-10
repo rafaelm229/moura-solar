@@ -38,7 +38,12 @@ export class ContractController {
   @HttpCode(201)
   @ApiBody({ type: CreateContractDto })
   async createContract(@Req() req: IdentityRequest, @Body() dto: CreateContractDto) {
-    return this.service.createContract(req.actor.organizationId, req.actor.userId, dto);
+    return this.service.createContract(
+      req.actor.organizationId,
+      req.actor.userId,
+      dto,
+      req.requestId ?? 'trace',
+    );
   }
 
   @Get('contracts')
