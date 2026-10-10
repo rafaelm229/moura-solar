@@ -44,11 +44,21 @@ describe('integration event envelope', () => {
     for (const schemaVersion of [0, 1.5, Number.MAX_SAFE_INTEGER + 1, '1', null]) {
       assert.throws(() => parseIntegrationEvent({ ...envelope, schemaVersion }), /schemaVersion/);
     }
-    for (const occurredAt of ['yesterday', '2026-02-30T12:30:00Z', '2025-02-29T12:30:00Z']) {
+    for (const occurredAt of [
+      'yesterday',
+      '2026-02-30T12:30:00Z',
+      '2025-02-29T12:30:00Z',
+      '2026-10-08T24:00:01Z',
+      '2026-10-08T24:01:00Z',
+      '2026-10-08T24:00:00.001Z',
+      '2026-10-08T24:00:00+24:00',
+    ]) {
       assert.throws(() => parseIntegrationEvent({ ...envelope, occurredAt }), /occurredAt/);
     }
     const leapDay = { ...envelope, occurredAt: '2024-02-29T12:30:00Z' };
     assert.equal(parseIntegrationEvent(leapDay), leapDay);
+    const endOfDay = { ...envelope, occurredAt: '2024-02-29T24:00:00.000-03:00' };
+    assert.equal(parseIntegrationEvent(endOfDay), endOfDay);
   });
 
   it('validates optional metadata only when supplied', () => {
