@@ -105,7 +105,7 @@ de integridade do modelo de referência/eventos equivalente.
 - [x] R1-51: verificar a correlação de falha de login entre `x-request-id`, `AuditEvent.traceId` e log HTTP sem credenciais ([relatório](../../docs/r1-51-correlacao-falha-login.md)); sem alteração de runtime/contrato; teste local 19/19, PR #108 consolidado em `dc3f7bc`, CI run `38058068458` verde.
 - [x] R1-52: automatizar a paridade AST entre eventos produzidos pela API, tipos v1, parsers exportados e reexports ([relatório](../../docs/r1-52-paridade-produtores-contratos-eventos.md)); nenhum contrato de runtime muda; pacote passou build e 10/10 arquivos de teste; PR #110 consolidado em `5b84aa9`, CI run `38059702872` verde.
 - [x] R1-53: garantir por AST `schemaVersion: 1` e correlação coerente com cada tipo v1, mantendo os eventos legados de importação documentados ([relatório](../../docs/r1-53-metadados-versao-correlacao-eventos.md)); sem alteração de contratos/runtime; PR #112 consolidado em `d52254a`, CI run `38061362980` verde.
-- [ ] R1-54: garantir por checker TypeScript que cada contrato `*EventV1` fixa `schemaVersion` no literal `1` ([relatório](../../docs/r1-54-literal-schema-version-contracts.md)); sem mudança de contrato ou runtime; teste direcionado e pacote passaram, CI completa pendente.
+- [x] R1-54: garantir por checker TypeScript que cada contrato `*EventV1` fixa `schemaVersion` no literal `1` ([relatório](../../docs/r1-54-literal-schema-version-contracts.md)); sem mudança de contrato ou runtime; PR #114 consolidado em `d811194`, CI run `38063156490` verde.
 - [ ] R2: identidade com coexistência e rollback.
 - [ ] R3: customer/CRM e decisão de ciclo/mapeamento de Project.
 - [ ] R4–R9: extrair por domínio seguindo roadmap e testes existentes.

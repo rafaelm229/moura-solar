@@ -4,7 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Implementado na branch `codex/r1-54-contract-version`.
+**Estado:** Consolidado no PR #114 em `d811194`; CI run `38063156490` verde.
 
 **SPECs:** [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
 [SPEC-019](../specs/SPEC-019-eventos-dados/spec.md); família F-34.
@@ -33,7 +33,8 @@ TypeScript de cada contrato v1.
 - `node --test packages/contracts/tests/event-metadata.test.mjs` — passou.
 - `pnpm --filter @moura-solar/contracts test` — build TypeScript e 11/11 arquivos
   de teste passaram.
-- CI completa, migrações, integração e E2E — pendentes.
+- CI completa passou: `pnpm check`, geração da API, migrations, integração e E2E
+  (run `38063156490`).
 
 ## Limites
 
