@@ -4,8 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Validado localmente na branch `codex/r1-38-contract-amendment-event`;
-`pnpm check` e integração PostgreSQL passaram. CI e consolidação pendentes.
+**Estado:** Consolidado no PR #83, merge `1d4373c`, CI #139 verde.
 
 **SPECs:** [SPEC-007](../specs/SPEC-007-contratos-documentos/spec.md),
 [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
@@ -48,7 +47,9 @@ auditoria existentes.
 - `node --test --test-concurrency=1 tests/contract.integration.mjs`: passou
   (9 cenários, incluindo rollback atômico).
 - `pnpm check`: passou (format, lint, typecheck, testes e build).
-- CI e consolidação: pendentes.
+- CI #139: todas as etapas passaram (`pnpm check`, geração da API, migrations,
+  integração e E2E).
+- Consolidação: PR #83, merge `1d4373c`.
 
 ## Rollback
 
