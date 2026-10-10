@@ -51,5 +51,6 @@ trigger ou regra no banco de aplicação.
 - [API](api.md).
 - [Fluxos UX](fluxos-ux.md).
 - [Testes de aceite](testes-aceite.md).
-- [Prova de conceito e fontes oficiais](prova-conceito.md).
-- [ADR de processamento](../../docs/adr/ADR-004-importacao-assistida-duravel.md).
+- [Pesquisa histórica da PoC e fontes consultadas](prova-conceito.md); não executar
+  conforme ADR-008.
+- [Proposta histórica de processamento, supersedida pela ADR-008](../../docs/adr/ADR-004-importacao-assistida-duravel.md).
