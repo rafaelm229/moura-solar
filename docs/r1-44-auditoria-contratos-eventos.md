@@ -4,7 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Validado localmente na branch `codex/r1-44-event-contract-audit`; CI pendente.
+**Estado:** Consolidado no PR #95, merge `5e4ebf7db3d2deeccdf448b43ec2ee11c15c3d25`.
 
 **SPECs:** [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
 [SPEC-019](../specs/SPEC-019-eventos-dados/spec.md); família F-34.
@@ -76,7 +76,10 @@ O conjunto coberto é:
 - `pnpm --filter @moura-solar/contracts test` — build passou; 9 arquivos de
   teste de contrato passaram.
 - `pnpm check` — passou.
-- CI do incremento ainda pendente; aguardará PR.
+- CI run `38017170066` — passou: check, geração de API, migrations, integrações
+  completas e E2E.
+- PR #95 foi consolidado em `feat/proposal-visual-clarity` pelo merge
+  `5e4ebf7db3d2deeccdf448b43ec2ee11c15c3d25`.
 - `git diff --check`, formatação e links locais — passaram.
 - Rollback reverte este relatório e suas referências; não há mudança de runtime,
   contrato publicado, banco ou dados.
