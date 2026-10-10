@@ -108,7 +108,7 @@ de integridade do modelo de referência/eventos equivalente.
 - [x] R1-54: garantir por checker TypeScript que cada contrato `*EventV1` fixa `schemaVersion` no literal `1` ([relatório](../../docs/r1-54-literal-schema-version-contracts.md)); sem mudança de contrato ou runtime; PR #114 consolidado em `d811194`, CI run `38063156490` verde.
 - [x] R1-55: garantir que `correlationId` seja obrigatório e `string` nos contratos `*EventV1` que usam o envelope compartilhado ([relatório](../../docs/r1-55-required-correlation-contract.md)); importação legada preservada; sem mudança de contrato/runtime; PR #116 consolidado em `917e08a`, CI run `38064576360` verde.
 - [x] R1-56: cobrir ausência e valores em branco para cada campo textual obrigatório do parser do envelope compartilhado ([relatório](../../docs/r1-56-required-envelope-fields.md)); sem mudança de comportamento; PR #118 consolidado em `ca6c842`, CI run `38066193240` verde após rerun.
-- [ ] R1-57: cobrir forma do objeto e limites de `schemaVersion`, `aggregateVersion` e `causationId`, incluindo ausência válida dos campos opcionais ([relatório](../../docs/r1-57-envelope-optional-metadata.md)); apenas testes, sem mudança de comportamento; CI completa pendente.
+- [x] R1-57: cobrir forma do objeto e limites de `schemaVersion`, `aggregateVersion` e `causationId`, incluindo ausência válida dos campos opcionais ([relatório](../../docs/r1-57-envelope-optional-metadata.md)); apenas testes, sem mudança de comportamento; PR #120 consolidado em `4820783`, CI run `38068246864` verde.
 - [ ] R2: identidade com coexistência e rollback.
 - [ ] R3: customer/CRM e decisão de ciclo/mapeamento de Project.
 - [ ] R4–R9: extrair por domínio seguindo roadmap e testes existentes.

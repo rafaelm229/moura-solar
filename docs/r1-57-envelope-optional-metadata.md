@@ -4,7 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Implementado na branch `codex/r1-57-envelope-optional-fields`.
+**Estado:** Consolidado no PR #120, merge `4820783`.
 
 **SPECs:** [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
 [SPEC-019](../specs/SPEC-019-eventos-dados/spec.md); família F-34.
@@ -37,10 +37,13 @@ os limites já implementados para o envelope completo e seus metadados opcionais
 - Prettier dos arquivos afetados, links locais e `git diff --check` — passaram.
 - `pnpm check` local parou no Prettier por sete arquivos não rastreados
   preexistentes em `.vscode/` e `moura-solar-specs-roadmap/`; permanecem intactos.
-- CI completa — pendente.
+- CI completa — passou no run `38068246864`, incluindo check, geração da API,
+  migrations, integração e E2E.
 
 ## Limites
 
 Este incremento protege o parser já existente sem mudar seu comportamento. Não
 altera transporte, contratos de domínio, banco, worker, broker ou consumidor. A
-importação de contas continua manual conforme [ADR-008](adr/ADR-008-importacao-manual-sem-ocr.md).
+importação de contas continua manual conforme
+[ADR-008](adr/ADR-008-importacao-manual-sem-ocr.md). A CI executou a suíte de
+migrations existente, sem alteração de banco neste incremento.

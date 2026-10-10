@@ -277,7 +277,8 @@ não significa aceite técnico de cada contrato, política ou migração.
 O [R1-57](r1-57-envelope-optional-metadata.md) cobre formatos não objeto,
 metadados opcionais inválidos e ausência permitida dos campos opcionais do
 envelope compartilhado. O incremento adiciona apenas testes, sem alterar parser
-ou contratos; CI completa pendente.
+ou contratos; CI completa passou no run `38068246864` e o PR #120 foi
+consolidado em `4820783`.
 
 | Marco | Entrega                                                                                            | Dependências                               | Evidência de saída                                                                                                |
 | ----- | -------------------------------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
