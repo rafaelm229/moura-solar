@@ -248,6 +248,10 @@ email ou senha na linha. A suíte local passou 18/18; PR #106 consolidado em
 `8694c64`, CI run `38025120816` verde. O R1-51 estende a evidência ao caminho
 de credenciais inválidas, sem mudança de runtime, contratos ou autorização. A
 suíte passou 19/19; PR #108 consolidado em `dc3f7bc`, CI run `38058068458` verde.
+O [R1-52](r1-52-paridade-produtores-contratos-eventos.md) converte a auditoria
+manual R1-44 em teste AST de regressão entre produtores, tipos, parsers e
+reexports, sem lista paralela nem consumidor; validação local e CI estão em
+andamento.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
