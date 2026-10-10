@@ -31,6 +31,11 @@ function hasIdentifier(value: unknown): value is string {
 export function parseEnergyBillImportEventV1(value: unknown): EnergyBillImportEventV1 {
   if (!isRecord(value)) throw new TypeError('Energy bill import event must be an object');
   if (
+    Object.keys(value).some((field) => !['eventType', 'schemaVersion', 'payload'].includes(field))
+  ) {
+    throw new TypeError('Energy bill import event contains unsupported fields');
+  }
+  if (
     value.eventType !== 'ENERGY_BILL_IMPORT_QUEUED' &&
     value.eventType !== 'ENERGY_BILL_IMPORT_APPLIED'
   ) {
@@ -47,6 +52,9 @@ export function parseEnergyBillImportEventV1(value: unknown): EnergyBillImportEv
     value.eventType === 'ENERGY_BILL_IMPORT_QUEUED'
       ? ['importId', 'documentVersionId']
       : ['importId', 'reviewId'];
+  if (Object.keys(value.payload).some((field) => !requiredIdentifiers.includes(field))) {
+    throw new TypeError('Energy bill import event payload contains unsupported fields');
+  }
   for (const field of requiredIdentifiers) {
     if (!hasIdentifier(value.payload[field])) {
       throw new TypeError(`Energy bill import event payload ${field} is required`);
