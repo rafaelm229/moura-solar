@@ -81,6 +81,13 @@ async function start() {
   throw new Error('API test server did not become ready');
 }
 
+async function restartApiAbruptly() {
+  const apiExit = new Promise((resolve) => server.once('exit', resolve));
+  server.kill('SIGKILL');
+  await apiExit;
+  await start();
+}
+
 async function createReadyDocument(ownerCustomerId, persistenceState, verified, suffix) {
   const sha256 = suffix.padEnd(64, '0');
   const object = await db.storedObject.create({
@@ -508,7 +515,10 @@ test('manual review is immutable and confirmation atomically applies versions wi
     `customers/${customerId}/energy-imports`,
     'POST',
     { documentVersionId: applicationVersionId, utilityUnitId },
-    { 'idempotency-key': 'energy-import-review-intake-key' },
+    {
+      'idempotency-key': 'energy-import-review-intake-key',
+      'x-request-id': 'r1-import-manual-intake-001',
+    },
   );
   assert.equal(created.status, 201, JSON.stringify(created.body));
 
@@ -755,6 +765,11 @@ test('manual review is immutable and confirmation atomically applies versions wi
   });
   assert.equal(appliedEvent.correlationId, 'r1-import-confirm-001');
   assert.equal(appliedEvent.schemaVersion, 1);
+  const queuedEvent = await db.importOutbox.findFirstOrThrow({
+    where: { importId: created.body.id, eventType: 'ENERGY_BILL_IMPORT_QUEUED' },
+  });
+  assert.equal(queuedEvent.correlationId, 'r1-import-manual-intake-001');
+  assert.equal(queuedEvent.schemaVersion, 1);
   assert.equal(
     await db.documentUtilityUnitLink.count({
       where: { utilityUnitId, document: { versions: { some: { id: applicationVersionId } } } },
@@ -766,6 +781,62 @@ test('manual review is immutable and confirmation atomically applies versions wi
   assert.equal(status.body.status, 'APPLIED');
   assert.equal(status.body.latestReview.revision, 2);
   assert.deepEqual(status.body.applicationReceipt, receipt.body);
+
+  const importEventsBeforeRestart = await db.importOutbox.findMany({
+    where: { importId: created.body.id },
+    orderBy: { eventType: 'asc' },
+  });
+  const confirmationAudit = await db.auditEvent.findFirstOrThrow({
+    where: { action: 'ENERGY_BILL_IMPORT_APPLIED', entityId: created.body.id },
+  });
+  assert.equal(confirmationAudit.traceId, 'r1-import-confirm-001');
+
+  await restartApiAbruptly();
+  assert.equal((await admin.call('identity/me')).status, 200);
+  const recoveredStatus = await admin.call(`energy-imports/${created.body.id}`);
+  assert.equal(recoveredStatus.status, 200);
+  assert.equal(recoveredStatus.body.status, 'APPLIED');
+  assert.equal(recoveredStatus.body.version, status.body.version);
+  assert.deepEqual(recoveredStatus.body.applicationReceipt, receipt.body);
+
+  const importEventsAfterRestart = await db.importOutbox.findMany({
+    where: { importId: created.body.id },
+    orderBy: { eventType: 'asc' },
+  });
+  assert.deepEqual(
+    importEventsAfterRestart.map((event) => ({
+      id: event.id,
+      eventType: event.eventType,
+      status: event.status,
+      correlationId: event.correlationId,
+      payload: event.payload,
+    })),
+    importEventsBeforeRestart.map((event) => ({
+      id: event.id,
+      eventType: event.eventType,
+      status: event.status,
+      correlationId: event.correlationId,
+      payload: event.payload,
+    })),
+  );
+  assert.equal(importEventsAfterRestart.length, 2);
+  assert.equal(
+    await db.energyReading.count({
+      where: {
+        utilityUnitId,
+        referenceMonth: { in: ['2026-05', '2026-08'] },
+        status: 'ACTIVE',
+        sourceImportId: created.body.id,
+      },
+    }),
+    2,
+  );
+  assert.equal(
+    await db.auditEvent.count({
+      where: { id: confirmationAudit.id, traceId: 'r1-import-confirm-001' },
+    }),
+    1,
+  );
 });
 
 test('a new utility unit and its first reading are created atomically on import confirmation', async () => {
