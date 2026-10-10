@@ -53,7 +53,7 @@ function eventTypeLiterals(typeNode) {
   return values;
 }
 
-function contractCorrelationByEventType() {
+function contractMetadataByEventType() {
   const config = ts.readConfigFile(contractConfig, ts.sys.readFile);
   assert.equal(config.error, undefined, 'contracts TypeScript config should load');
   const parsed = ts.parseJsonConfigFileContent(
@@ -63,27 +63,37 @@ function contractCorrelationByEventType() {
   );
   const program = ts.createProgram(parsed.fileNames, parsed.options);
   const checker = program.getTypeChecker();
-  const correlationByEventType = new Map();
+  const metadataByEventType = new Map();
 
   for (const file of program.getSourceFiles()) {
     if (!file.fileName.startsWith(contractSource)) continue;
     function visit(node) {
       if (ts.isTypeAliasDeclaration(node) && node.name.text.endsWith('EventV1')) {
         const contractType = checker.getTypeAtLocation(node.name);
-        const hasCorrelationId = checker
-          .getPropertiesOfType(contractType)
-          .some((property) => property.name === 'correlationId');
+        const properties = checker.getPropertiesOfType(contractType);
+        const hasCorrelationId = properties.some((property) => property.name === 'correlationId');
+        const schemaVersionProperty = properties.find(
+          (property) => property.name === 'schemaVersion',
+        );
+        assert.ok(schemaVersionProperty, `${node.name.text} must declare schemaVersion`);
+        const schemaVersionType = checker.getTypeOfSymbolAtLocation(schemaVersionProperty, node);
+        const schemaVersion =
+          schemaVersionType.flags & ts.TypeFlags.NumberLiteral
+            ? schemaVersionType.value
+            : undefined;
         for (const eventType of eventTypeLiterals(node.type)) {
-          const existing = correlationByEventType.get(eventType);
-          if (existing !== undefined) assert.equal(existing, hasCorrelationId, eventType);
-          correlationByEventType.set(eventType, hasCorrelationId);
+          const existing = metadataByEventType.get(eventType);
+          if (existing !== undefined) {
+            assert.deepEqual(existing, { hasCorrelationId, schemaVersion }, eventType);
+          }
+          metadataByEventType.set(eventType, { hasCorrelationId, schemaVersion });
         }
       }
       ts.forEachChild(node, visit);
     }
     visit(file);
   }
-  return correlationByEventType;
+  return metadataByEventType;
 }
 
 function producerEventObjects() {
@@ -117,7 +127,7 @@ function producerEventObjects() {
   return producers;
 }
 
-const correlationByEventType = contractCorrelationByEventType();
+const metadataByEventType = contractMetadataByEventType();
 const producers = producerEventObjects();
 
 test('API event producers set schema version 1', () => {
@@ -139,13 +149,20 @@ test('API event producers set schema version 1', () => {
 test('producer correlation matches the versioned event contract shape', () => {
   for (const producer of producers) {
     assert.ok(
-      correlationByEventType.has(producer.eventType),
+      metadataByEventType.has(producer.eventType),
       `${producer.eventType} has no versioned contract type`,
     );
     assert.equal(
       Boolean(producer.correlationId),
-      correlationByEventType.get(producer.eventType),
+      metadataByEventType.get(producer.eventType).hasCorrelationId,
       `${producer.eventType} correlation metadata must match its contract`,
     );
+  }
+});
+
+test('every v1 event contract pins schemaVersion to literal 1', () => {
+  assert.ok(metadataByEventType.size > 0);
+  for (const [eventType, contract] of metadataByEventType) {
+    assert.equal(contract.schemaVersion, 1, `${eventType} contract must pin schemaVersion to 1`);
   }
 });
