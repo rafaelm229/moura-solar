@@ -236,7 +236,8 @@ consumidor.
 O [R1-48](r1-48-validacao-correlacao-http.md) acrescenta integração para a
 whitelist e o limite de 100 caracteres do `x-request-id`, mantendo cabeçalho
 válido e substituindo valores inválidos por UUID. A suíte de identidade local
-passou 16/16; runtime e contrato não mudaram, e a CI está pendente.
+passou 16/16; PR #102 consolidado em `08a55e9`, CI run `38022529871` verde.
+Runtime e contrato não mudaram.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 

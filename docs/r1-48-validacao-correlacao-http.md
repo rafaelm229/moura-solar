@@ -4,7 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Implementado em branch `codex/r1-48-request-correlation-validation`; CI pendente.
+**Estado:** Consolidado no PR #102, merge `08a55e9`; CI run `38022529871` verde.
 
 **SPEC:** [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md), REF-09.
 
@@ -35,7 +35,9 @@ durabilidade de eventos correlacionados no restart da API.
 - `node --test --test-concurrency=1 tests/identity.integration.mjs` — passou,
   16/16 cenários, incluindo validação de correlação e restart.
 - Prettier, links locais, `git diff --check` e `pnpm check` — passaram.
-- CI — pendente.
+- CI do PR #102 — passou no run `38022529871` (`pnpm check`, migrations,
+  integração e E2E); PR consolidado por squash em
+  `08a55e94841b2f68235d9caf988d9da0497fcceb`.
 
 ## Limites
 
