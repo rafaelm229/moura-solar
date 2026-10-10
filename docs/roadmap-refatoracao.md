@@ -274,6 +274,11 @@ E2E passaram no rerun, sem alterar essa asserção independente.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
+O [R1-57](r1-57-envelope-optional-metadata.md) cobre formatos não objeto,
+metadados opcionais inválidos e ausência permitida dos campos opcionais do
+envelope compartilhado. O incremento adiciona apenas testes, sem alterar parser
+ou contratos; CI completa pendente.
+
 | Marco | Entrega                                                                                            | Dependências                               | Evidência de saída                                                                                                |
 | ----- | -------------------------------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
 | R0    | Inventário, estabilização, mapa de branches, baseline e plano de consolidação                      | Estado atual e SPEC-000                    | check, migrations, integrações, E2E existentes, build/Compose, restauração e reconciliação; commits identificados |

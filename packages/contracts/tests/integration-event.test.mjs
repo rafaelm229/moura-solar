@@ -39,17 +39,39 @@ describe('integration event envelope', () => {
     }
   });
 
-  it('rejects absent correlation, invalid versions and timestamps', () => {
+  it('rejects empty correlation, invalid versions and timestamps', () => {
     assert.throws(() => parseIntegrationEvent({ ...envelope, correlationId: '' }), /correlationId/);
-    assert.throws(() => parseIntegrationEvent({ ...envelope, schemaVersion: 0 }), /schemaVersion/);
-    assert.throws(
-      () => parseIntegrationEvent({ ...envelope, aggregateVersion: -1 }),
-      /aggregateVersion/,
-    );
+    for (const schemaVersion of [0, 1.5, Number.MAX_SAFE_INTEGER + 1, '1', null]) {
+      assert.throws(() => parseIntegrationEvent({ ...envelope, schemaVersion }), /schemaVersion/);
+    }
     assert.throws(
       () => parseIntegrationEvent({ ...envelope, occurredAt: 'yesterday' }),
       /occurredAt/,
     );
+  });
+
+  it('validates optional metadata only when supplied', () => {
+    const minimal = { ...envelope };
+    delete minimal.aggregateVersion;
+    delete minimal.causationId;
+    assert.equal(parseIntegrationEvent(minimal), minimal);
+
+    for (const aggregateVersion of [0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1, '2', null]) {
+      assert.throws(
+        () => parseIntegrationEvent({ ...envelope, aggregateVersion }),
+        /aggregateVersion/,
+      );
+    }
+
+    for (const causationId of ['', '  ', 42, null]) {
+      assert.throws(() => parseIntegrationEvent({ ...envelope, causationId }), /causationId/);
+    }
+  });
+
+  it('rejects values that are not event objects', () => {
+    for (const value of [undefined, null, [], 'event', 42]) {
+      assert.throws(() => parseIntegrationEvent(value), /must be an object/);
+    }
   });
 
   it('rejects a payload that is not an object', () => {
