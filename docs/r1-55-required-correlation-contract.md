@@ -4,7 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Implementado na branch `codex/r1-55-correlation-type`.
+**Estado:** Consolidado no PR #116 em `917e08a`; CI run `38064576360` verde.
 
 **SPECs:** [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
 [SPEC-019](../specs/SPEC-019-eventos-dados/spec.md); família F-34.
@@ -35,7 +35,8 @@ fixa a versão literal v1.
 - `node --test packages/contracts/tests/event-metadata.test.mjs` — passou.
 - `pnpm --filter @moura-solar/contracts test` — build TypeScript e 11/11 arquivos
   de teste passaram.
-- CI completa, migrations, integração e E2E — pendentes.
+- CI completa passou: `pnpm check`, geração da API, migrations, integração e E2E
+  (run `38064576360`).
 
 ## Limites
 
