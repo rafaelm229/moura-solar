@@ -290,6 +290,11 @@ O [R1-59](r1-59-stable-payload-assertion.md) remove a busca probabilística de
 `estimatedConsumption`, preservando as outras asserções. CI completa passou no
 run `38071336282` e o PR #124 foi consolidado em `e4abfd5`.
 
+O [R1-60](r1-60-strict-calendar-timestamp.md) rejeita datas impossíveis no
+timestamp do envelope, preservando formatos válidos e dias bissextos. O parser
+e seus testes mudam; nenhuma migration ou integração de fornecedor é necessária.
+CI completa pendente.
+
 | Marco | Entrega                                                                                            | Dependências                               | Evidência de saída                                                                                                |
 | ----- | -------------------------------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
 | R0    | Inventário, estabilização, mapa de branches, baseline e plano de consolidação                      | Estado atual e SPEC-000                    | check, migrations, integrações, E2E existentes, build/Compose, restauração e reconciliação; commits identificados |

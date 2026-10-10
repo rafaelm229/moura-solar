@@ -27,6 +27,17 @@ function isPositiveInteger(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
 }
 
+function hasValidCalendarDate(value: string): boolean {
+  const year = Number(value.slice(0, 4));
+  const month = Number(value.slice(5, 7));
+  const day = Number(value.slice(8, 10));
+  const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const daysByMonth = [31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  const daysInMonth = daysByMonth[month - 1];
+
+  return daysInMonth !== undefined && day >= 1 && day <= daysInMonth;
+}
+
 /** Checks the shared envelope only. Consumers must validate eventType, version and payload. */
 export function parseIntegrationEvent(value: unknown): IntegrationEvent {
   if (!isRecord(value)) throw new TypeError('Integration event must be an object');
@@ -55,6 +66,7 @@ export function parseIntegrationEvent(value: unknown): IntegrationEvent {
     !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(
       value.occurredAt,
     ) ||
+    !hasValidCalendarDate(value.occurredAt) ||
     Number.isNaN(Date.parse(value.occurredAt))
   ) {
     throw new TypeError('Integration event occurredAt must be an ISO 8601 timestamp');
