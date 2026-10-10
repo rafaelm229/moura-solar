@@ -163,6 +163,32 @@ test('bootstrap requires secret, initializes seven approved roles once', async (
   assert.equal(roles.length, 7);
   assert.equal(await db.auditEvent.count({ where: { action: 'identity.bootstrap' } }), 1);
 });
+test('login correlation links the request log and audit without credentials', async () => {
+  const requestId = 'r1-identity-correlation-login-001';
+  const email = 'admin@example.test';
+  const result = await admin.call('login', 'POST', { email, password }, randomUUID(), {
+    'x-request-id': requestId,
+  });
+  assert.equal(result.status, 201);
+
+  const audit = await db.auditEvent.findFirst({
+    where: { action: 'identity.login', traceId: requestId },
+  });
+  assert.ok(audit);
+
+  let logLine;
+  for (let attempt = 0; attempt < 100 && !logLine; attempt++) {
+    logLine = requestLogs.split('\n').find((line) => line.includes(`"traceId":"${requestId}"`));
+    if (!logLine) await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  assert.ok(logLine, 'expected the request completion log to carry its correlation ID');
+  const entry = JSON.parse(logLine);
+  assert.equal(entry.method, 'POST');
+  assert.equal(entry.status, 201);
+  assert.equal(entry.traceId, audit.traceId);
+  assert.equal(logLine.includes(email), false);
+  assert.equal(logLine.includes(password), false);
+});
 test('CSRF rejects cross-origin commands', async () => {
   assert.equal(
     (await admin.call('logout', 'POST', undefined, undefined, { origin: 'https://evil.example' }))
