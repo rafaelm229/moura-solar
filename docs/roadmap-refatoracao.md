@@ -210,6 +210,10 @@ O [R1-43](r1-43-durabilidade-outbox-restart.md) foi consolidado no PR #93,
 merge `833132b45e0ae4732aec96ceac3b4d8d65cb96c5`, CI run `38015253401` verde.
 Demonstra que eventos confirmados persistem após encerramento abrupto e restart
 da API; não introduz publicação, consumidor ou mudança de contrato.
+O [R1-44](r1-44-auditoria-contratos-eventos.md) validou localmente a cobertura dos
+contratos atuais: 32/32 tipos dos produtores têm contrato v1 e parser. A família
+F-34 continua em implementação por causa dos requisitos independentes de inbox,
+publicação e processamento durável.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
