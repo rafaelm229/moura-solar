@@ -38,6 +38,16 @@ function hasValidCalendarDate(value: string): boolean {
   return daysInMonth !== undefined && day >= 1 && day <= daysInMonth;
 }
 
+function isValidEndOfDayTimestamp(value: string): boolean {
+  const match = value.match(/^(\d{4}-\d{2}-\d{2})T24:00:00(?:\.(0+))?(Z|[+-]\d{2}:\d{2})$/);
+  if (!match || !hasValidCalendarDate(value)) return false;
+
+  const [, date, , timeZone] = match;
+  const midnight = Date.parse(`${date}T00:00:00${timeZone}`);
+
+  return Number.isFinite(midnight) && Number.isFinite(midnight + 24 * 60 * 60 * 1000);
+}
+
 /** Checks the shared envelope only. Consumers must validate eventType, version and payload. */
 export function parseIntegrationEvent(value: unknown): IntegrationEvent {
   if (!isRecord(value)) throw new TypeError('Integration event must be an object');
@@ -67,7 +77,7 @@ export function parseIntegrationEvent(value: unknown): IntegrationEvent {
       value.occurredAt,
     ) ||
     !hasValidCalendarDate(value.occurredAt) ||
-    Number.isNaN(Date.parse(value.occurredAt))
+    (Number.isNaN(Date.parse(value.occurredAt)) && !isValidEndOfDayTimestamp(value.occurredAt))
   ) {
     throw new TypeError('Integration event occurredAt must be an ISO 8601 timestamp');
   }
