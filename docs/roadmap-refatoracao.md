@@ -293,7 +293,8 @@ run `38071336282` e o PR #124 foi consolidado em `e4abfd5`.
 O [R1-60](r1-60-strict-calendar-timestamp.md) rejeita datas impossíveis no
 timestamp do envelope, preservando formatos válidos e dias bissextos. O parser
 e seus testes mudam; nenhuma migration ou integração de fornecedor é necessária.
-CI completa pendente.
+CI completa passou no run `38073001087` e o PR #126 foi consolidado em
+`d10578c`.
 
 | Marco | Entrega                                                                                            | Dependências                               | Evidência de saída                                                                                                |
 | ----- | -------------------------------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
