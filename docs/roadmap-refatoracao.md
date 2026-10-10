@@ -254,7 +254,8 @@ reexports, sem lista paralela nem consumidor. O pacote passou build e 10/10
 arquivos de teste; PR #110 consolidado em `5b84aa9`, CI run `38059702872` verde.
 O [R1-53](r1-53-metadados-versao-correlacao-eventos.md) verifica por AST a
 versão e correlação dos objetos de evento, inferindo a exceção legada pela forma
-do contrato. Teste direcionado passou; CI completo está pendente.
+do contrato. CI completa passou (run `38061362980`); PR #112 consolidado em
+`d52254a`.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
