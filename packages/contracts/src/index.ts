@@ -70,12 +70,14 @@ export type {
   ContractCanceledEventV1,
   ContractDeliveredEventV1,
   ContractSignedReviewedEventV1,
+  ContractSignedUploadedEventV1,
 } from './contract-events.js';
 export {
   parseContractAmendmentRecordedEventV1,
   parseContractCanceledEventV1,
   parseContractDeliveredEventV1,
   parseContractSignedReviewedEventV1,
+  parseContractSignedUploadedEventV1,
 } from './contract-events.js';
 export type {
   OpportunityCreatedEventV1,

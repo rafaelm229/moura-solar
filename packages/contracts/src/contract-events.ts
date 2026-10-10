@@ -39,6 +39,17 @@ export type ContractSignedReviewedEventV1 = IntegrationEvent<{
   schemaVersion: 1;
 };
 
+export type ContractSignedUploadedEventV1 = IntegrationEvent<{
+  contractId: string;
+  documentId: string;
+  contractVersionId: string;
+  auditEventId: string;
+  opportunityId: string;
+}> & {
+  eventType: 'CONTRACT_SIGNED_UPLOADED';
+  schemaVersion: 1;
+};
+
 /** Validates a manually recorded contract delivery without channel or recipient data. */
 export function parseContractDeliveredEventV1(value: unknown): ContractDeliveredEventV1 {
   const event = parseIntegrationEvent(value);
@@ -162,4 +173,46 @@ export function parseContractSignedReviewedEventV1(value: unknown): ContractSign
   }
 
   return event as ContractSignedReviewedEventV1;
+}
+
+/** Validates a signed-contract upload using IDs only, without file metadata or contents. */
+export function parseContractSignedUploadedEventV1(value: unknown): ContractSignedUploadedEventV1 {
+  const event = parseIntegrationEvent(value);
+
+  if (event.eventType !== 'CONTRACT_SIGNED_UPLOADED') {
+    throw new TypeError('Contract event eventType is unsupported');
+  }
+  if (event.schemaVersion !== 1) {
+    throw new TypeError('Contract event schemaVersion is unsupported');
+  }
+  for (const field of [
+    'contractId',
+    'documentId',
+    'contractVersionId',
+    'auditEventId',
+    'opportunityId',
+  ] as const) {
+    if (typeof event.payload[field] !== 'string' || !event.payload[field].trim()) {
+      throw new TypeError(`Contract event payload ${field} is required`);
+    }
+  }
+  if (event.payload.contractId !== event.aggregateId) {
+    throw new TypeError('Contract event payload contractId must match aggregateId');
+  }
+  if (
+    Object.keys(event.payload).some(
+      (field) =>
+        ![
+          'contractId',
+          'documentId',
+          'contractVersionId',
+          'auditEventId',
+          'opportunityId',
+        ].includes(field),
+    )
+  ) {
+    throw new TypeError('Contract event payload contains unsupported fields');
+  }
+
+  return event as ContractSignedUploadedEventV1;
 }

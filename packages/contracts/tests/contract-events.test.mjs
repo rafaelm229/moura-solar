@@ -5,6 +5,7 @@ import {
   parseContractCanceledEventV1,
   parseContractDeliveredEventV1,
   parseContractSignedReviewedEventV1,
+  parseContractSignedUploadedEventV1,
 } from '../dist/index.js';
 
 const delivered = {
@@ -151,6 +152,41 @@ test('CONTRACT_SIGNED_REVIEWED v1 rejects unsupported decisions and review detai
     parseContractSignedReviewedEventV1({
       ...signedReviewed,
       payload: { ...signedReviewed.payload, rejectionReason: 'informação confidencial' },
+    }),
+  );
+});
+
+const signedUploaded = {
+  ...delivered,
+  eventType: 'CONTRACT_SIGNED_UPLOADED',
+  payload: {
+    contractId: 'contract-1',
+    documentId: 'document-1',
+    contractVersionId: 'version-1',
+    auditEventId: 'audit-upload-1',
+    opportunityId: 'opportunity-1',
+  },
+};
+
+test('CONTRACT_SIGNED_UPLOADED v1 accepts only document and aggregate IDs', () => {
+  assert.deepEqual(parseContractSignedUploadedEventV1(signedUploaded), signedUploaded);
+});
+
+test('CONTRACT_SIGNED_UPLOADED v1 rejects unsupported types, versions, mismatches and metadata', () => {
+  assert.throws(() =>
+    parseContractSignedUploadedEventV1({ ...signedUploaded, eventType: 'CONTRACT_SIGNED' }),
+  );
+  assert.throws(() => parseContractSignedUploadedEventV1({ ...signedUploaded, schemaVersion: 2 }));
+  assert.throws(() =>
+    parseContractSignedUploadedEventV1({
+      ...signedUploaded,
+      payload: { ...signedUploaded.payload, contractId: 'other' },
+    }),
+  );
+  assert.throws(() =>
+    parseContractSignedUploadedEventV1({
+      ...signedUploaded,
+      payload: { ...signedUploaded.payload, fileName: 'customer.pdf' },
     }),
   );
 });
