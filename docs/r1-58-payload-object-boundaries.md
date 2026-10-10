@@ -4,7 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Implementado na branch `codex/r1-58-payload-object`.
+**Estado:** Consolidado no PR #122, merge `ca716cd`.
 
 **SPECs:** [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
 [SPEC-019](../specs/SPEC-019-eventos-dados/spec.md); família F-34.
@@ -33,11 +33,13 @@ incremento cobre os tipos de entrada inválidos do payload no parser atual.
 - Prettier dos arquivos afetados, links locais e `git diff --check` — passaram.
 - `pnpm check` local parou no Prettier por sete arquivos não rastreados
   preexistentes em `.vscode/` e `moura-solar-specs-roadmap/`; permanecem intactos.
-- CI completa — pendente.
+- CI completa — passou no run `38069720776`, incluindo check, geração da API,
+  migrations, integração e E2E.
 
 ## Limites
 
 Este incremento protege o parser já existente sem mudar seu comportamento. Não
 altera transporte, contratos de domínio, banco, worker, broker ou consumidor. A
 importação de contas continua manual conforme
-[ADR-008](adr/ADR-008-importacao-manual-sem-ocr.md).
+[ADR-008](adr/ADR-008-importacao-manual-sem-ocr.md). A CI executou a suíte de
+migrations existente, sem alteração de banco neste incremento.
