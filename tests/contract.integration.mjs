@@ -411,6 +411,52 @@ test('1. Geração de minuta contratual a partir de proposta aceita (SPEC-007 It
     auditEventId: approvalAudit.id,
     opportunityId: testOpportunityId,
   });
+
+  const apiExit = new Promise((resolve) => server.once('exit', resolve));
+  server.kill('SIGKILL');
+  await apiExit;
+  server = spawn('node', ['apps/api/dist/main.js'], { env, stdio: 'ignore' });
+  let apiReady = false;
+  for (let attempt = 0; attempt < 100; attempt++) {
+    try {
+      const ready = await fetch(`${base}/health/ready`);
+      if (ready.ok) {
+        apiReady = true;
+        break;
+      }
+    } catch {}
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  assert.equal(apiReady, true, 'API deve ficar pronta após reinício abrupto');
+  assert.equal((await admin.call('identity/me')).status, 200);
+
+  const persistedReviewEvent = await db.integrationOutbox.findUniqueOrThrow({
+    where: { id: reviewEvent.id },
+  });
+  const persistedApprovalEvent = await db.integrationOutbox.findUniqueOrThrow({
+    where: { id: approvalEvent.id },
+  });
+  assert.equal(persistedReviewEvent.correlationId, reviewRequestId);
+  assert.deepEqual(persistedReviewEvent.payload, reviewEvent.payload);
+  assert.equal(persistedReviewEvent.publishedAt, null);
+  assert.equal(persistedApprovalEvent.correlationId, approvalRequestId);
+  assert.deepEqual(persistedApprovalEvent.payload, approvalEvent.payload);
+  assert.equal(persistedApprovalEvent.publishedAt, null);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: {
+        aggregateId: res.body.id,
+        eventType: { in: ['CONTRACT_REVIEW_REQUESTED', 'CONTRACT_APPROVED'] },
+      },
+    }),
+    2,
+  );
+  assert.equal(
+    await db.auditEvent.count({
+      where: { id: { in: [reviewAudit.id, approvalAudit.id] }, entityId: res.body.id },
+    }),
+    2,
+  );
 });
 
 test('2. Download da Minuta DOCX com placeholders preenchidos', async () => {
