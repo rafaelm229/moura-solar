@@ -280,6 +280,10 @@ envelope compartilhado. O incremento adiciona apenas testes, sem alterar parser
 ou contratos; CI completa passou no run `38068246864` e o PR #120 foi
 consolidado em `4820783`.
 
+O [R1-58](r1-58-payload-object-boundaries.md) completa a cobertura de tipo para
+o payload do envelope, testando ausência e valores não objeto. A alteração é
+somente de teste; CI completa pendente.
+
 | Marco | Entrega                                                                                            | Dependências                               | Evidência de saída                                                                                                |
 | ----- | -------------------------------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
 | R0    | Inventário, estabilização, mapa de branches, baseline e plano de consolidação                      | Estado atual e SPEC-000                    | check, migrations, integrações, E2E existentes, build/Compose, restauração e reconciliação; commits identificados |
