@@ -18,8 +18,8 @@ contrato) e R1-43 (durabilidade após reinício).
   existentes além de `PROPOSAL_ACCEPTED`, embora os incrementos R1-10 a R1-42
   já tivessem acrescentado contratos por domínio.
 - **Depois (R1-44):** comparação do checkout confirma que cada nome de evento
-  literal encontrado nos produtores da API possui tipo v1 e caminho de parser
-  exportado por `packages/contracts`.
+  literal encontrado nos produtores da API tem definição de payload v1 e
+  cobertura de parser exportada por `packages/contracts`.
 - **Contratos, API e banco:** nenhum arquivo de runtime, assinatura, payload,
   migration ou dado foi alterado. Os contratos já publicados permanecem fonte
   canônica; este relatório só registra o resultado da auditoria.
@@ -30,10 +30,15 @@ contrato) e R1-43 (durabilidade após reinício).
 
 Uma varredura dos literais `eventType` em `apps/api/src/**/*.ts` e
 `packages/contracts/src/*.ts` encontrou **32 tipos em cada lado**, com igualdade
-exata dos conjuntos: nenhum produtor sem contrato e nenhum tipo de contrato sem
-produtor atual. O pacote declara e exporta 31 parsers: um parser cobre os dois
-tipos `ENERGY_BILL_IMPORT_*` como união; os demais 30 tipos têm parser próprio.
-Todos os 32 nomes têm cobertura de parser exportada.
+exata dos conjuntos: nenhum produtor sem tipo/parser de payload e nenhum tipo
+sem produtor atual. O pacote declara e exporta 31 parsers: um parser cobre os
+dois tipos `ENERGY_BILL_IMPORT_*` como união; os demais 30 tipos têm parser
+próprio. Desses 30, 30 usam o envelope compartilhado. Os dois eventos de
+importação mantêm o formato legado de payload v1: a correlação vive na coluna
+`ImportOutbox.correlationId`, não no objeto validado pelo parser. Eles ainda não
+foram adaptados ao envelope compartilhado R1-01, conforme limite já registrado
+na SPEC-019. O inventário comprova cobertura de nomes/payloads, não adaptação
+completa de todos os contratos.
 
 O conjunto coberto é:
 
@@ -60,6 +65,8 @@ O conjunto coberto é:
 - Conjuntos de nomes dos produtores atuais e dos contratos têm igualdade exata.
 - Cada nome atual possui definição de payload v1 e cobertura de parser exportada
   (individual ou pelo parser de união da importação manual).
+- A exceção de envelope dos dois eventos `ENERGY_BILL_IMPORT_*` fica explícita;
+  não se altera seu contrato legado sem caso de consumo justificado.
 - SPEC-019 distingue cobertura dos fatos existentes de eventos candidatos futuros.
 - Nenhum consumidor ou transporte é criado para completar a matriz.
 
