@@ -18,6 +18,7 @@ import type {
   ContractCanceledEventV1,
   ContractDeliveredEventV1,
   ContractSignedReviewedEventV1,
+  ContractSignedUploadedEventV1,
 } from '@moura-solar/contracts';
 import {
   CreateContractDto,
@@ -1146,6 +1147,7 @@ export class ContractService {
     contractId: string,
     userId: string,
     dto: UploadSignedContractDto,
+    correlationId: string,
   ) {
     const contract = await this.getContract(organizationId, contractId);
     if (['CANCELED', 'TERMINATED', 'ACTIVE'].includes(contract.state)) {
@@ -1213,7 +1215,7 @@ export class ContractService {
       });
 
       // Create activity for conference
-      await tx.activity.create({
+      const conferenceActivity = await tx.activity.create({
         data: {
           organizationId,
           opportunityId: contract.opportunityId,
@@ -1227,7 +1229,7 @@ export class ContractService {
         },
       });
 
-      await this.audit.record(
+      const uploadAudit = await this.audit.record(
         {
           organizationId,
           actorId: userId,
@@ -1236,6 +1238,71 @@ export class ContractService {
         },
         tx,
       );
+
+      const activityEvent: ActivityCreatedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'ACTIVITY_CREATED',
+        schemaVersion: 1,
+        occurredAt: uploadAudit.createdAt.toISOString(),
+        organizationId,
+        aggregateId: conferenceActivity.id,
+        producer: 'crm',
+        correlationId,
+        payload: {
+          activityId: conferenceActivity.id,
+          auditEventId: uploadAudit.id,
+          customerId: contract.opportunity.customer.id,
+          opportunityId: contract.opportunityId,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: activityEvent.eventId,
+          organizationId: activityEvent.organizationId,
+          eventType: activityEvent.eventType,
+          schemaVersion: activityEvent.schemaVersion,
+          aggregateType: 'Activity',
+          aggregateId: activityEvent.aggregateId,
+          producer: activityEvent.producer,
+          correlationId: activityEvent.correlationId,
+          occurredAt: uploadAudit.createdAt,
+          payload: activityEvent.payload,
+          dedupeKey: `ACTIVITY_CREATED:${uploadAudit.id}:${conferenceActivity.id}`,
+        },
+      });
+
+      const uploadEvent: ContractSignedUploadedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'CONTRACT_SIGNED_UPLOADED',
+        schemaVersion: 1,
+        occurredAt: uploadAudit.createdAt.toISOString(),
+        organizationId,
+        aggregateId: contract.id,
+        producer: 'contracts',
+        correlationId,
+        payload: {
+          contractId: contract.id,
+          documentId: document.id,
+          contractVersionId: activeVersion.id,
+          auditEventId: uploadAudit.id,
+          opportunityId: contract.opportunityId,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: uploadEvent.eventId,
+          organizationId: uploadEvent.organizationId,
+          eventType: uploadEvent.eventType,
+          schemaVersion: uploadEvent.schemaVersion,
+          aggregateType: 'Contract',
+          aggregateId: uploadEvent.aggregateId,
+          producer: uploadEvent.producer,
+          correlationId: uploadEvent.correlationId,
+          occurredAt: uploadAudit.createdAt,
+          payload: uploadEvent.payload,
+          dedupeKey: `CONTRACT_SIGNED_UPLOADED:${uploadAudit.id}:${document.id}`,
+        },
+      });
 
       return document;
     });

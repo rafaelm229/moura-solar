@@ -418,6 +418,51 @@ test('5. Upload de via assinada sem ativação prematura (SPEC-007 Item 4 e 9)',
   assert.equal(uploadRes.status, 201);
   assert.equal(uploadRes.body.contract.state, 'SIGNED_UPLOADED');
 
+  const uploadAudit = await db.auditEvent.findFirstOrThrow({
+    where: { action: 'CONTRACT_SIGNED_UPLOADED', entityId: contractId },
+    orderBy: { createdAt: 'desc' },
+  });
+  const conferenceActivity = await db.activity.findFirstOrThrow({
+    where: {
+      opportunityId: testOpportunityId,
+      subject: { contains: 'Conferência de Assinatura:' },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  const activityEvent = await db.integrationOutbox.findFirstOrThrow({
+    where: {
+      organizationId: uploadAudit.organizationId,
+      dedupeKey: `ACTIVITY_CREATED:${uploadAudit.id}:${conferenceActivity.id}`,
+    },
+  });
+  assert.equal(activityEvent.correlationId, uploadRes.headers.get('x-request-id'));
+  assert.deepEqual(activityEvent.payload, {
+    activityId: conferenceActivity.id,
+    auditEventId: uploadAudit.id,
+    customerId: testCustomerId,
+    opportunityId: testOpportunityId,
+  });
+
+  const uploadEvent = await db.integrationOutbox.findFirstOrThrow({
+    where: {
+      organizationId: uploadAudit.organizationId,
+      dedupeKey: `CONTRACT_SIGNED_UPLOADED:${uploadAudit.id}:${uploadRes.body.document.id}`,
+    },
+  });
+  assert.equal(uploadEvent.eventType, 'CONTRACT_SIGNED_UPLOADED');
+  assert.equal(uploadEvent.schemaVersion, 1);
+  assert.equal(uploadEvent.aggregateType, 'Contract');
+  assert.equal(uploadEvent.aggregateId, contractId);
+  assert.equal(uploadEvent.correlationId, uploadRes.headers.get('x-request-id'));
+  assert.equal(uploadEvent.publishedAt, null);
+  assert.deepEqual(uploadEvent.payload, {
+    contractId,
+    documentId: uploadRes.body.document.id,
+    contractVersionId: uploadRes.body.document.contractVersionId,
+    auditEventId: uploadAudit.id,
+    opportunityId: testOpportunityId,
+  });
+
   // Verify the contract gate has NOT been satisfied yet (SPEC-007 Item 4 & 9)
   const oppCheck = await admin.call(`opportunities/${testOpportunityId}`);
   assert.notEqual(

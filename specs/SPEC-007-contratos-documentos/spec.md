@@ -187,6 +187,10 @@ Validações técnicas mínimas:
 
 O sistema não presumirá autenticidade jurídica apenas pelo upload.
 
+R1-40 registra `CONTRACT_SIGNED_UPLOADED` v1 e a atividade de conferência na
+outbox junto à persistência local do upload. O fato contém somente IDs; não
+analisa o arquivo nem libera o gate contratual.
+
 ## 10. Conferência do assinado
 
 Usuário autorizado compara o arquivo com a versão enviada e decide:

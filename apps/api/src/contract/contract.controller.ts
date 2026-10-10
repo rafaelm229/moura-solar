@@ -125,7 +125,13 @@ export class ContractController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UploadSignedContractDto,
   ) {
-    return this.service.uploadSignedContract(req.actor.organizationId, id, req.actor.userId, dto);
+    return this.service.uploadSignedContract(
+      req.actor.organizationId,
+      id,
+      req.actor.userId,
+      dto,
+      req.requestId ?? 'trace',
+    );
   }
 
   @Post('contracts/:id/verify-signed')
