@@ -4,8 +4,8 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Validado localmente na branch `codex/r1-40-contract-signed-upload-event`;
-CI e consolidação pendentes.
+**Estado:** Consolidado no PR #87, merge `dacf0f67da94de33df816f03dfbfc244055d2df5`;
+CI run `38010236121` verde.
 
 **SPECs:** [SPEC-007](../specs/SPEC-007-contratos-documentos/spec.md),
 [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
@@ -48,7 +48,9 @@ CI e consolidação pendentes.
 - `node --test --test-concurrency=1 tests/contract.integration.mjs`: passou
   (9 cenários; upload, atividade, correlação e gate não liberado).
 - `pnpm check`: passou (format, lint, typecheck, testes e build).
-- CI e consolidação: pendentes.
+- CI run `38010236121`: `check` verde, incluindo `pnpm check`, migrations,
+  integrações e E2E.
+- Consolidação: PR #87 mesclado no commit `dacf0f67da94de33df816f03dfbfc244055d2df5`.
 
 ## Rollback
 

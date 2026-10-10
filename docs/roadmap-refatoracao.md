@@ -193,11 +193,11 @@ O [R1-39](r1-39-outbox-conferencia-assinado.md) foi consolidado no PR #85,
 merge `0dcf7eb`, CI #141 verde: `CONTRACT_SIGNED_REVIEWED` v1 registra apenas
 IDs e a decisão humana `VERIFIED`/`REJECTED`, sem checklist ou motivo. Não altera
 gates nem o efeito financeiro posterior.
-O [R1-40](r1-40-outbox-upload-assinado.md) está validado localmente para
-registrar o upload manual do contrato e sua atividade de conferência; não lê o
-conteúdo nem libera o gate. Testes locais e `pnpm check` passaram; CI pendente.
-A gravação no armazenamento externo antecede a transação local e continua sem
-compensação distribuída.
+O [R1-40](r1-40-outbox-upload-assinado.md) foi consolidado no PR #87, merge
+`dacf0f67da94de33df816f03dfbfc244055d2df5`, CI run `38010236121` verde. Registra
+o upload manual do contrato e sua atividade de conferência; não lê o conteúdo
+nem libera o gate. A gravação no armazenamento externo antecede a transação
+local e continua sem compensação distribuída.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
