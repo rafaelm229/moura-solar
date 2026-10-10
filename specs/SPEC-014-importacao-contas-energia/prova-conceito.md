@@ -1,6 +1,6 @@
 # Prova de conceito de extração — SPEC-014
 
-**Status:** Aprovada para implementação em 05/10/2026
+**Status:** Histórica — proposta encerrada pela ADR-008; não executar
 
 **Versão:** 0.1.0
 
