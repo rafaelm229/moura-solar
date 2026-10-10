@@ -218,6 +218,11 @@ importação mantêm o formato legado e continuam sem adaptação, coerente com 
 decisão de importação manual e a ausência de consumidor justificado. A família
 F-34 continua em implementação por causa dos requisitos independentes de inbox,
 publicação e processamento durável.
+O [R1-45](r1-45-durabilidade-importacao-manual-restart.md) adiciona prova de
+restart abrupto para a confirmação manual em `ImportOutbox`, cobrindo a outbox
+legada sem mudar seu contrato ou ativar worker/consumidor. O teste local passou
+8/8 cenários, a integração completa passou 125/125 e `pnpm check` passou; CI do
+PR permanece pendente.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
