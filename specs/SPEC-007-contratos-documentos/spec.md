@@ -197,6 +197,10 @@ Usuário autorizado compara o arquivo com a versão enviada e decide:
 
 A decisão registra responsável, instante, checklist e observação.
 
+`CONTRACT_SIGNED_REVIEWED` v1 de R1-39 torna correlacionável o resultado humano
+`VERIFIED` ou `REJECTED`. O fato não inclui checklist, observações ou motivo de
+rejeição e não substitui os gates descritos a seguir.
+
 ## 11. Ativação e gates
 
 Contrato conferido não significa automaticamente instalação liberada.
