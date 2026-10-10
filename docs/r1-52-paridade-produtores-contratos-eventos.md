@@ -4,7 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Implementado em branch `codex/r1-52-contract-parity`; CI pendente.
+**Estado:** Consolidado no PR #110, merge `5b84aa9c061b99ccd7a811fa5a27660270fbbf3c`.
 
 **SPECs:** [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
 [SPEC-019](../specs/SPEC-019-eventos-dados/spec.md); família F-34.
@@ -38,7 +38,8 @@ auditoria manual; `packages/contracts` já depende de TypeScript para validaçã
 - Prettier nos arquivos afetados, links locais e `git diff --check` — passaram.
 - `pnpm check` local parou em `prettier --check .` por artefatos não rastreados
   em `.vscode/mcp.json` e `moura-solar-specs-roadmap/`; esses caminhos foram
-  preservados sem edição. CI completo — pendente.
+  preservados sem edição.
+- CI run `38059702872` — verde (`pnpm check`, migrations, integração e E2E).
 
 ## Limites
 
