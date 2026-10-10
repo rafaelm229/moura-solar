@@ -244,7 +244,9 @@ privado enviado no pedido. A suíte local de identidade passou 17/17; PR #104
 consolidado em `8c86b56`, CI run `38023737212` verde.
 O [R1-50](r1-50-rastreio-auditoria-log.md) liga, num login real de integração,
 o mesmo request ID da resposta HTTP ao `AuditEvent.traceId` e ao log da API, sem
-email ou senha na linha. A suíte local passou 18/18; CI pendente.
+email ou senha na linha. A suíte local passou 18/18; PR #106 consolidado em
+`8694c64`, CI run `38025120816` verde. O R1-51 estende a evidência ao caminho
+de credenciais inválidas, sem mudança de runtime, contratos ou autorização.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 

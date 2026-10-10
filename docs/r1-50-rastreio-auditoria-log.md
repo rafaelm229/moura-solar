@@ -4,7 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Implementado em branch `codex/r1-50-audit-log-correlation`; CI pendente.
+**Estado:** Consolidado no PR #106, merge `8694c648df164809e698c30ac4b97273f41e03dd`.
 
 **SPEC:** [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md), REF-09.
 
@@ -31,7 +31,7 @@ credenciais; endpoint de login já propaga o request ID para auditoria.
 - `node --test --test-concurrency=1 tests/identity.integration.mjs` — passou,
   18/18 cenários.
 - Prettier, links locais, `git diff --check` e `pnpm check` — passaram.
-- CI — pendente.
+- CI run `38025120816` — verde (`pnpm check`, migrations, integração e E2E).
 
 ## Limites
 
