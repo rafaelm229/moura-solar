@@ -221,8 +221,13 @@ publicação e processamento durável.
 O [R1-45](r1-45-durabilidade-importacao-manual-restart.md) adiciona prova de
 restart abrupto para a confirmação manual em `ImportOutbox`, cobrindo a outbox
 legada sem mudar seu contrato ou ativar worker/consumidor. O teste local passou
-8/8 cenários, a integração completa passou 125/125 e `pnpm check` passou; CI do
-PR permanece pendente.
+8/8 cenários, a integração completa passou 125/125 e `pnpm check` passou; foi
+consolidado no PR #97, merge `398421f`, CI run `38018885259` verde.
+O [R1-46](r1-46-rollback-confirmacao-importacao.md) injeta falha no insert do
+evento manual `APPLIED` e comprova que a confirmação não deixa leituras, recibo,
+auditoria ou transição parcial; depois remove a falha e permite a confirmação
+normal. O teste local passou 8/8 cenários, a integração completa 125/125 e
+`pnpm check`; CI do PR está pendente.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 

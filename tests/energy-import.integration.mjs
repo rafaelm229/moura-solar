@@ -705,6 +705,62 @@ test('manual review is immutable and confirmation atomically applies versions wi
     'idempotency-key': 'energy-import-final-confirm-key',
     'x-request-id': 'r1-import-confirm-001',
   };
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_applied_import_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'ENERGY_BILL_IMPORT_APPLIED' THEN
+        RAISE EXCEPTION 'forced import confirmation outbox failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_applied_import_outbox_for_test
+    BEFORE INSERT ON "${schema}"."import_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_applied_import_outbox_for_test()
+  `);
+  let failedConfirmation;
+  try {
+    failedConfirmation = await admin.call(
+      `energy-imports/${created.body.id}/confirm`,
+      'POST',
+      confirmInput,
+      {
+        'idempotency-key': 'energy-import-confirm-outbox-failure-key',
+        'x-request-id': 'r1-import-confirm-failed-001',
+      },
+    );
+  } finally {
+    await db.$executeRawUnsafe(
+      `DROP TRIGGER reject_applied_import_outbox_for_test ON "${schema}"."import_outbox"`,
+    );
+    await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_applied_import_outbox_for_test()`);
+  }
+  assert.equal(failedConfirmation.status, 500);
+  const stateAfterOutboxFailure = await db.energyBillImport.findUniqueOrThrow({
+    where: { id: created.body.id },
+  });
+  assert.equal(stateAfterOutboxFailure.status, 'REVIEW_REQUIRED');
+  assert.equal(stateAfterOutboxFailure.version, revised.body.version);
+  assert.equal(await db.importApplication.count({ where: { importId: created.body.id } }), 0);
+  assert.equal(await db.energyReading.count({ where: { sourceImportId: created.body.id } }), 0);
+  assert.equal(
+    await db.energyReadingRevision.count({ where: { sourceImportId: created.body.id } }),
+    0,
+  );
+  assert.equal(
+    await db.energyImportTransition.count({ where: { importId: created.body.id, version: 4 } }),
+    0,
+  );
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'ENERGY_BILL_IMPORT_APPLIED', entityId: created.body.id },
+    }),
+    0,
+  );
+  assert.equal(await db.importOutbox.count({ where: { importId: created.body.id } }), 1);
+
   const receipt = await admin.call(
     `energy-imports/${created.body.id}/confirm`,
     'POST',
