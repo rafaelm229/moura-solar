@@ -4,7 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Implementado em branch `codex/r1-49-request-log-redaction-test`; CI pendente.
+**Estado:** Consolidado no PR #104, merge `8c86b56`; CI run `38023737212` verde.
 
 **SPEC:** [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md), REF-09.
 
@@ -31,7 +31,9 @@ de logging existente registra campos selecionados da requisição.
 - `node --test --test-concurrency=1 tests/identity.integration.mjs` — passou,
   17/17 cenários.
 - Prettier, links locais, `git diff --check` e `pnpm check` — passaram.
-- CI — pendente.
+- CI do PR #104 — passou no run `38023737212` (`pnpm check`, migrações,
+  integração e E2E); PR consolidado por squash em
+  `8c86b5640eabff7173e085965ba1c7e63dbe18a5`.
 
 ## Limites
 
