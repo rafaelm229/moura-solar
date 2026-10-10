@@ -110,7 +110,7 @@ de integridade do modelo de referência/eventos equivalente.
 - [x] R1-56: cobrir ausência e valores em branco para cada campo textual obrigatório do parser do envelope compartilhado ([relatório](../../docs/r1-56-required-envelope-fields.md)); sem mudança de comportamento; PR #118 consolidado em `ca6c842`, CI run `38066193240` verde após rerun.
 - [x] R1-57: cobrir forma do objeto e limites de `schemaVersion`, `aggregateVersion` e `causationId`, incluindo ausência válida dos campos opcionais ([relatório](../../docs/r1-57-envelope-optional-metadata.md)); apenas testes, sem mudança de comportamento; PR #120 consolidado em `4820783`, CI run `38068246864` verde.
 - [x] R1-58: cobrir ausência e tipos não objeto em `payload` ([relatório](../../docs/r1-58-payload-object-boundaries.md)); apenas testes, sem mudança de comportamento; PR #122 consolidado em `ca716cd`, CI run `38069720776` verde.
-- [ ] R1-59: substituir busca probabilística de `875` por asserção direta de ausência de `estimatedConsumption` no evento de oportunidade ([relatório](../../docs/r1-59-stable-payload-assertion.md)); somente teste, sem mudança de comportamento; CI completa pendente.
+- [x] R1-59: substituir busca probabilística de `875` por asserção direta de ausência de `estimatedConsumption` no evento de oportunidade ([relatório](../../docs/r1-59-stable-payload-assertion.md)); somente teste, sem mudança de comportamento; PR #124 consolidado em `e4abfd5`, CI run `38071336282` verde.
 - [ ] R2: identidade com coexistência e rollback.
 - [ ] R3: customer/CRM e decisão de ciclo/mapeamento de Project.
 - [ ] R4–R9: extrair por domínio seguindo roadmap e testes existentes.
