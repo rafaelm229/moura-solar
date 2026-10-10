@@ -4,7 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Implementado em branch `codex/r1-53-event-metadata`; CI pendente.
+**Estado:** Consolidado no PR #112 em `d52254a`; CI run `38061362980` verde.
 
 **SPECs:** [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
 [SPEC-019](../specs/SPEC-019-eventos-dados/spec.md); família F-34.
@@ -40,7 +40,8 @@ reexports; contratos v1 definem a forma de correlação.
 - Prettier nos arquivos afetados, links locais e `git diff --check` — passaram.
 - `pnpm check` local parou em `prettier --check .` por artefatos não rastreados
   em `.vscode/mcp.json` e `moura-solar-specs-roadmap/`; foram preservados sem
-  edição. CI completo — pendente.
+  edição. CI completa passou: `pnpm check`, geração da API, migrations,
+  integração e E2E (run `38061362980`).
 
 ## Limites
 
