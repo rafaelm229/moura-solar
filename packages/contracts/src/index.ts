@@ -65,8 +65,16 @@ export {
   parseCatalogItemCreatedEventV1,
   parseCatalogItemUpdatedEventV1,
 } from './catalog-events.js';
-export type { ContractCanceledEventV1, ContractDeliveredEventV1 } from './contract-events.js';
-export { parseContractCanceledEventV1, parseContractDeliveredEventV1 } from './contract-events.js';
+export type {
+  ContractAmendmentRecordedEventV1,
+  ContractCanceledEventV1,
+  ContractDeliveredEventV1,
+} from './contract-events.js';
+export {
+  parseContractAmendmentRecordedEventV1,
+  parseContractCanceledEventV1,
+  parseContractDeliveredEventV1,
+} from './contract-events.js';
 export type {
   OpportunityCreatedEventV1,
   OpportunityLostEventV1,
