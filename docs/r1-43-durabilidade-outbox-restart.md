@@ -4,7 +4,7 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Validado localmente na branch `codex/r1-43-outbox-restart-durability`; CI pendente.
+**Estado:** Consolidado no PR #93, merge `833132b45e0ae4732aec96ceac3b4d8d65cb96c5`.
 
 **SPECs:** [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
 [SPEC-019](../specs/SPEC-019-eventos-dados/spec.md), critério EVT-01; família F-34.
@@ -43,7 +43,10 @@ atomicamente com estado e auditoria.
 - A integração inclui `SIGKILL`, aguarda readiness, confirma que a sessão é
   reutilizável e verifica IDs, payloads, correlação, auditorias e ausência de
   publicação/duplicação após o restart.
-- CI ainda não executada; aguarda PR.
+- CI run `38015253401` — passou: check, geração de API, migrações, integração
+  completa e E2E.
+- PR #93 foi consolidado em `feat/proposal-visual-clarity` pelo merge
+  `833132b45e0ae4732aec96ceac3b4d8d65cb96c5`.
 - Rollback remove o teste de restart e esta referência documental; não há
   alteração de runtime, contrato, banco ou dados a reverter.
 

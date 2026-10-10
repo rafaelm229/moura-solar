@@ -206,10 +206,10 @@ O [R1-42](r1-42-outbox-revisao-aprovacao-contrato.md) foi consolidado no PR #91,
 merge `1eefd1eef9cf1ff3f19885c89fd927679976aea4`, CI run `38013650317` verde.
 Registra solicitação de revisão e aprovação manual sem notas, efeitos financeiros
 ou mudança do gate contratual.
-O [R1-43](r1-43-durabilidade-outbox-restart.md) está validado localmente para
-demonstrar que os eventos confirmados persistem após encerramento abrupto e
-restart da API; o CI aguarda PR. Não introduz publicação, consumidor ou mudança
-de contrato.
+O [R1-43](r1-43-durabilidade-outbox-restart.md) foi consolidado no PR #93,
+merge `833132b45e0ae4732aec96ceac3b4d8d65cb96c5`, CI run `38015253401` verde.
+Demonstra que eventos confirmados persistem após encerramento abrupto e restart
+da API; não introduz publicação, consumidor ou mudança de contrato.
 O marco R1 como um todo permanece **Em implementação** e R2–R13 **Planejados**. Direção aprovada
 não significa aceite técnico de cada contrato, política ou migração.
 
