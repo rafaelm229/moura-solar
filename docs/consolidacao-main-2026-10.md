@@ -2,7 +2,9 @@
 
 **Data:** 22/10/2026
 
-**Estado:** candidata em validação, sem deploy.
+**Estado:** consolidação de código acompanhada no
+[PR #130](https://github.com/rafaelm229/moura-solar/pull/130); sem deploy.
+O estado atual e os checks do SHA final são consultados nesse PR.
 
 **Branch:** `codex/consolidacao-main-2026-10`.
 
@@ -26,7 +28,8 @@ compilados do código oficial, respectivamente nas releases
 `RELEASE.2025-10-15T17-29-55Z` e `RELEASE.2025-08-13T08-35-41Z`.
 ClamAV, volumes, nomes dos serviços e configurações existentes são preservados.
 
-A CI passa a construir e iniciar o mesmo Compose completo, com verificação de
+A web ganha healthcheck para que `docker compose up --wait` aguarde sua
+prontidão, além da API. A CI passa a construir e iniciar o mesmo Compose completo, com verificação de
 prontidão da API e resposta da web antes dos testes reais de armazenamento.
 O Dockerfile inclui também o manifesto do pacote histórico `energy-import-poc`
 na instalação do workspace; esse pacote não ativa OCR ou serviço externo.
@@ -49,8 +52,13 @@ transporte, OCR, alteração de gates ou expansão de domínio nesta consolidaç
 - `pnpm install --frozen-lockfile` e `pnpm db:generate`: passaram na cópia isolada.
 - `pnpm check`: passou antes do merge local e após as correções operacionais.
 - Node local: 24.19.0; CI: Node 22 e PostgreSQL 17.
-- Build/Compose, upgrade populado, migrations, integração e E2E completos:
-  aguardam a CI da candidata; não declarar esses gates aprovados antes do run.
+- Gates remotos obrigatórios: build/Compose, upgrade populado, migrations,
+  integração e E2E completos. Os resultados vinculados ao SHA final estão no
+  [PR #130](https://github.com/rafaelm229/moura-solar/pull/130).
+- O [primeiro run](https://github.com/rafaelm229/moura-solar/actions/runs/39852958507)
+  comprovou build das aplicações/MinIO/mc, criação de buckets, ClamAV saudável,
+  migrations do Compose e prontidão da API. Parou no primeiro acesso à web,
+  recém-iniciada. O healthcheck da web foi adicionado para eliminar essa corrida.
 - Docker local não acessível à sessão sem senha administrativa. Não foram
   alteradas permissões do socket, grupos, banco ou volumes do usuário.
 
