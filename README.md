@@ -30,6 +30,12 @@ docker compose logs -f api web migrate postgres
 Os volumes persistem entre reconstruções. Não use `docker compose down -v` sem
 pretender apagar os dados locais.
 
+O Compose compila o MinIO Community e o cliente `mc` a partir de versões fixas
+do código oficial em `infra/minio/Dockerfile`, sem depender das imagens antigas
+do Quay. A primeira compilação exige internet e pode levar alguns minutos.
+A CI usa o mesmo Compose, incluindo ClamAV, buckets e build das aplicações.
+Essa configuração é destinada ao desenvolvimento local.
+
 Após subir o ambiente, configure os segredos e crie o administrador com
 `pnpm identity:bootstrap`. Consulte [Operação do M1](docs/m1-operacao.md) para
 primeiro acesso, convites, recuperação e testes. A documentação OpenAPI está em

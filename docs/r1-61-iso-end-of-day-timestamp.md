@@ -4,7 +4,8 @@
 
 **Fase:** R1 — fundação de integração
 
-**Estado:** Em implementação na branch `codex/r1-61-timestamp-offset-boundaries`.
+**Estado:** Consolidado em `feat/proposal-visual-clarity` pelo PR #129, merge
+`57e6579eb56746bcda18e7f9110a3673ab3d3f08`, em 22/10/2026.
 
 **SPECs:** [SPEC-016](../specs/SPEC-016-refatoracao-evolutiva/spec.md) e
 [SPEC-019](../specs/SPEC-019-eventos-dados/spec.md); família F-34.
@@ -35,7 +36,10 @@
 - `pnpm check`: bloqueado antes dos demais gates porque o Prettier global aponta
   7 arquivos preexistentes e não rastreados do usuário em `.vscode/` e
   `moura-solar-specs-roadmap/`; esses arquivos foram preservados sem alterações.
-- Links locais, CI completa e consolidação: pendentes.
+- CI completa aprovada no [run 38074838184](https://github.com/rafaelm229/moura-solar/actions/runs/38074838184): check, OpenAPI, migrations, integração e E2E.
+- PR #129 consolidado em 22/10/2026. A candidata limpa de promoção passou em
+  `pnpm check`; a execução histórica bloqueada acima permanece como registro.
+- Testes de contratos reexecutados em cópia isolada do SHA `6f4abfd`: 85/85 passaram.
 
 ## Limites
 

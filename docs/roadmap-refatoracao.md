@@ -298,7 +298,13 @@ CI completa passou no run `38073001087` e o PR #126 foi consolidado em
 
 O [R1-61](r1-61-iso-end-of-day-timestamp.md) cobre a representação ISO de fim
 do dia `24:00:00`, sem permitir minutos, segundos ou frações não zero nessa
-forma. Parser e testes em andamento; sem mudança de payload ou migration.
+forma. Consolidado no PR #129 em `57e6579`, com CI completa aprovada no run
+`38074838184`; sem mudança de payload ou migration.
+
+A promoção para `main` é acompanhada em
+[Consolidação de outubro](consolidacao-main-2026-10.md). O inventário das branches
+e a justificativa da ordem estão na
+[análise de consolidação](analise-consolidacao-branches-2026-10-22.md).
 
 | Marco | Entrega                                                                                            | Dependências                               | Evidência de saída                                                                                                |
 | ----- | -------------------------------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
