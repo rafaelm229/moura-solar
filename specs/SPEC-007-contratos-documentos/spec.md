@@ -76,6 +76,11 @@ GENERATION_FAILED
 - `AMENDED`: existe aditivo ativo relacionado.
 - `CANCELED/TERMINATED`: exigem motivo e autoridade adequada.
 
+R1-42 registra os comandos existentes de solicitação de revisão (`PENDING_REVIEW`)
+e aprovação (`READY`) em eventos distintos. Foi consolidado no PR #91 (CI run
+`38013650317` verde). As notas permanecem privadas e as transições não liberam o
+gate contratual.
+
 Upload não ativa o contrato automaticamente. Um arquivo errado, incompleto ou de
 outra versão precisa poder ser rejeitado sem apagar a evidência recebida.
 
@@ -100,6 +105,11 @@ Ao criar o contrato, o sistema copia snapshots de:
 - prazos e responsabilidades;
 - garantias aprovadas;
 - versão de cláusulas e template.
+
+R1-41 registra `CONTRACT_CREATED` v1 e a atividade de assinatura na outbox na
+mesma transação local da criação. Os eventos contêm somente IDs; snapshots,
+preço e conteúdo documental permanecem fora do payload. A atividade não libera
+o gate `CONTRACT`.
 
 ## 6. Campos editáveis
 
@@ -155,6 +165,17 @@ Registrar envio exige:
 O sistema disponibiliza o mesmo arquivo enviado para visualização posterior. O
 estado `SENT` não poderá existir sem `ContractDelivery` associado.
 
+O registro manual de entrega persiste `CONTRACT_DELIVERED` v1 na outbox local
+conforme [R1-36](../../docs/r1-36-outbox-entrega-contrato.md), apenas com IDs e
+na mesma transação da entrega, auditoria e atividade de acompanhamento. O evento
+não representa envio por canal nem inclui destinatário.
+
+O cancelamento autorizado persiste `CONTRACT_CANCELED` v1 conforme
+[R1-37](../../docs/r1-37-outbox-cancelamento-contrato.md), na mesma transação
+local da mudança de estado e da auditoria. O evento contém somente IDs; motivo,
+observações e conteúdo contratual permanecem fora do payload. A gravação não
+altera permissões ou regras de cancelamento e não ativa consumidor.
+
 ## 9. Upload do assinado
 
 O usuário seleciona explicitamente:
@@ -176,6 +197,10 @@ Validações técnicas mínimas:
 
 O sistema não presumirá autenticidade jurídica apenas pelo upload.
 
+R1-40 registra `CONTRACT_SIGNED_UPLOADED` v1 e a atividade de conferência na
+outbox junto à persistência local do upload. O fato contém somente IDs; não
+analisa o arquivo nem libera o gate contratual.
+
 ## 10. Conferência do assinado
 
 Usuário autorizado compara o arquivo com a versão enviada e decide:
@@ -185,6 +210,10 @@ Usuário autorizado compara o arquivo com a versão enviada e decide:
 - `Solicitar correção`: cria atividade e mantém histórico.
 
 A decisão registra responsável, instante, checklist e observação.
+
+`CONTRACT_SIGNED_REVIEWED` v1 de R1-39 torna correlacionável o resultado humano
+`VERIFIED` ou `REJECTED`. O fato não inclui checklist, observações ou motivo de
+rejeição e não substitui os gates descritos a seguir.
 
 ## 11. Ativação e gates
 
@@ -208,6 +237,11 @@ marcar manualmente os outros gates.
 - Não reescreve o contrato original.
 - Pode exigir nova aprovação comercial, técnica, financeira e jurídica.
 - Ao ativar, atualiza somente os dados operacionais explicitamente definidos.
+
+O `CONTRACT_AMENDMENT_RECORDED` v1 de R1-38 acompanha apenas a operação atual
+de registro manual e sua auditoria. Ele não comprova versão-base, alterações
+estruturadas, aprovação ou documento próprio de aditivo; esses requisitos
+continuam pendentes nesta SPEC.
 
 ## 13. Cancelamento e término
 
@@ -293,6 +327,10 @@ contract_clauses:manage
 - `ContractCanceled`
 - `ContractTerminated`
 - `ProjectGatesReevaluationRequested`
+
+O evento versionado `CONTRACT_CANCELED` v1 representa apenas o cancelamento
+persistido pela pessoa autorizada; não transporta motivo e não implica envio,
+compensação financeira ou alteração automática de gates.
 
 ## 19. Casos de aceitação
 

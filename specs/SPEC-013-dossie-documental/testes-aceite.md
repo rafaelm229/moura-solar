@@ -26,3 +26,7 @@ Cenários futuros, não executados nesta entrega. Integração com PostgreSQL e 
 Reaproveitar cenários existentes em tests/proposal.integration.mjs, tests/contract.integration.mjs e tests/engineering.integration.mjs para domínio, ampliando autorização negativa e armazenamento real. Cobertura atual não prova os contratos novos.
 
 Complemento de T-DOC-05/T-DOC-10: guardar a URL pré-assinada, enviar arquivo A, completar e reenviar B pela mesma URL durante o scanner e depois de READY. A versão deve servir exclusivamente os bytes A verificados, ou permanecer indisponível até nova verificação; nunca publicar B sem scanner/hash próprios. Repetir em S3 versionado e MinIO/configuração sem versionamento, incluindo queda entre promoção e commit.
+
+## Implementação e evidência do lote 4
+
+O contrato compatível implementado, diferenças em relação à proposta, operação e evidências estão em [Revisão e validação do lote 4](../../docs/lote-4-revisao-e-validacao.md). As descrições propostas acima permanecem referência de evolução; não declaram todas as capacidades produtivas liberadas.

@@ -445,7 +445,10 @@ export class ContractGeneratorService {
           .font('Helvetica')
           .fontSize(7.5)
           .fillColor(C_MUTED)
-          .text(`Emissão: ${data.signingDate}`, badgeX, curY + 20, { width: badgeW, align: 'center' });
+          .text(`Emissão: ${data.signingDate}`, badgeX, curY + 20, {
+            width: badgeW,
+            align: 'center',
+          });
 
         curY += 46;
 
@@ -486,11 +489,11 @@ export class ContractGeneratorService {
       // Preambulo text
       const preambulo =
         'Pelo presente instrumento particular, as partes a seguir qualificadas celebram este Contrato de Fornecimento e Instalação de Sistema Fotovoltaico, que se regerá pelas disposições do Código Civil Brasileiro, Código de Defesa do Consumidor, Lei nº 14.300/2022, Resolução Normativa ANEEL nº 1.000/2021 e pelas cláusulas e condições seguintes:';
-      doc
-        .font('Helvetica')
-        .fontSize(8)
-        .fillColor(C_BODY)
-        .text(preambulo, MARGIN_LEFT, curY, { width: CONTENT_WIDTH, align: 'justify', lineGap: 2.5 });
+      doc.font('Helvetica').fontSize(8).fillColor(C_BODY).text(preambulo, MARGIN_LEFT, curY, {
+        width: CONTENT_WIDTH,
+        align: 'justify',
+        lineGap: 2.5,
+      });
       curY += doc.heightOfString(preambulo, { width: CONTENT_WIDTH, lineGap: 2.5 }) + 10;
 
       // --- IDENTIFICAÇÃO DAS PARTES (Cards) ---
@@ -526,20 +529,13 @@ export class ContractGeneratorService {
           .text('CONTRATADA (FORNECEDORA & INSTALADORA)', MARGIN_LEFT + 8, curY + 4);
 
         let ty = curY + 20;
-        const renderField = (
-          x: number,
-          y: number,
-          label: string,
-          val: string,
-        ): number => {
+        const renderField = (x: number, y: number, label: string, val: string): number => {
           doc.font('Helvetica-Bold').fontSize(7.2).fillColor(C_DARK).text(label, x, y);
           const labelW = doc.widthOfString(label) + 4;
           const valW = boxW - 16 - labelW;
           doc.font('Helvetica').fontSize(7.2);
           const textH = doc.heightOfString(val, { width: valW });
-          doc
-            .fillColor(C_BODY)
-            .text(val, x + labelW, y, { width: valW, lineGap: 1 });
+          doc.fillColor(C_BODY).text(val, x + labelW, y, { width: valW, lineGap: 1 });
           return Math.max(12, Math.round(textH) + 3);
         };
 
@@ -552,7 +548,12 @@ export class ContractGeneratorService {
           'Representante:',
           `${data.company.representative} (CPF ${data.company.representativeCpf})`,
         );
-        renderField(MARGIN_LEFT + 8, ty, 'Contato:', `${data.company.phone} | ${data.company.email}`);
+        renderField(
+          MARGIN_LEFT + 8,
+          ty,
+          'Contato:',
+          `${data.company.phone} | ${data.company.email}`,
+        );
 
         // Card Contratante
         const rightX = MARGIN_LEFT + boxW + 10;
@@ -624,7 +625,11 @@ export class ContractGeneratorService {
         });
         ensureSpace(textHeight + 8);
 
-        doc.font('Helvetica-Bold').fontSize(8).fillColor(C_DARK).text(number, MARGIN_LEFT + 4, curY, { width: 20 });
+        doc
+          .font('Helvetica-Bold')
+          .fontSize(8)
+          .fillColor(C_DARK)
+          .text(number, MARGIN_LEFT + 4, curY, { width: 20 });
 
         doc
           .font('Helvetica')
@@ -1048,14 +1053,37 @@ export class ContractGeneratorService {
 
       const colW = CONTENT_WIDTH / 4;
       const drawStat = (label: string, val: string, x: number, y: number) => {
-        doc.font('Helvetica').fontSize(7).fillColor(C_MUTED).text(label, x + 8, y + 6);
-        doc.font('Helvetica-Bold').fontSize(9).fillColor(C_GREEN).text(val, x + 8, y + 20);
+        doc
+          .font('Helvetica')
+          .fontSize(7)
+          .fillColor(C_MUTED)
+          .text(label, x + 8, y + 6);
+        doc
+          .font('Helvetica-Bold')
+          .fontSize(9)
+          .fillColor(C_GREEN)
+          .text(val, x + 8, y + 20);
       };
 
       drawStat('POTÊNCIA TOTAL CC', data.project.systemPowerKwp, MARGIN_LEFT, curY);
-      drawStat('GERAÇÃO ESTIMADA MENSAL', data.project.estimatedMonthlyGenerationKwh, MARGIN_LEFT + colW, curY);
-      drawStat('GERAÇÃO ESTIMADA ANUAL', data.project.estimatedAnnualGenerationKwh, MARGIN_LEFT + colW * 2, curY);
-      drawStat('ÁREA DE TELHADO ESTIMADA', data.project.estimatedAreaM2, MARGIN_LEFT + colW * 3, curY);
+      drawStat(
+        'GERAÇÃO ESTIMADA MENSAL',
+        data.project.estimatedMonthlyGenerationKwh,
+        MARGIN_LEFT + colW,
+        curY,
+      );
+      drawStat(
+        'GERAÇÃO ESTIMADA ANUAL',
+        data.project.estimatedAnnualGenerationKwh,
+        MARGIN_LEFT + colW * 2,
+        curY,
+      );
+      drawStat(
+        'ÁREA DE TELHADO ESTIMADA',
+        data.project.estimatedAreaM2,
+        MARGIN_LEFT + colW * 3,
+        curY,
+      );
 
       curY += 54;
 
@@ -1131,9 +1159,15 @@ export class ContractGeneratorService {
       curY += 14;
 
       const scopeItems = [
-        { title: 'Vistoria técnica presencial de viabilidade no imóvel', inc: data.scope.siteSurvey },
+        {
+          title: 'Vistoria técnica presencial de viabilidade no imóvel',
+          inc: data.scope.siteSurvey,
+        },
         { title: 'Elaboração de projeto executivo e diagramas unifilares', inc: data.scope.design },
-        { title: 'Emissão e recolhimento de ART (Anotação de Responsabilidade Técnica)', inc: data.scope.art },
+        {
+          title: 'Emissão e recolhimento de ART (Anotação de Responsabilidade Técnica)',
+          inc: data.scope.art,
+        },
         {
           title: `Protocolo e acompanhamento do parecer de acesso perante ${data.utility.company}`,
           inc: data.scope.homologation,
@@ -1142,9 +1176,18 @@ export class ContractGeneratorService {
           title: 'Montagem mecânica, estruturas em alumínio e cabeamento CC/CA',
           inc: data.scope.installation,
         },
-        { title: 'Configuração do aplicativo de monitoramento solar Wi-Fi', inc: data.scope.monitoring },
-        { title: 'Treinamento operacional e entrega de manuais técnicos ao cliente', inc: data.scope.training },
-        { title: 'Emissão de relatório técnico de entrega e comissionamento', inc: data.scope.deliveryReport },
+        {
+          title: 'Configuração do aplicativo de monitoramento solar Wi-Fi',
+          inc: data.scope.monitoring,
+        },
+        {
+          title: 'Treinamento operacional e entrega de manuais técnicos ao cliente',
+          inc: data.scope.training,
+        },
+        {
+          title: 'Emissão de relatório técnico de entrega e comissionamento',
+          inc: data.scope.deliveryReport,
+        },
       ];
 
       const scopeBoxW = (CONTENT_WIDTH - 10) / 2;

@@ -10,7 +10,12 @@
     "test": "node --test",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
+  "dependencies": {
+    "@moura-solar/contracts": "workspace:*",
+    "@prisma/client": "^6.16.2"
+  },
   "devDependencies": {
+    "@moura-solar/database": "workspace:*",
     "@moura-solar/typescript-config": "workspace:*",
     "@types/node": "^24.5.2",
     "tsx": "^4.20.5",

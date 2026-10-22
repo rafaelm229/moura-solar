@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   HttpCode,
   Param,
   ParseUUIDPipe,
@@ -15,11 +16,16 @@ import {
   ApiBody,
   ApiCookieAuth,
   ApiCreatedResponse,
+  ApiHeader,
   ApiOkResponse,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { RequirePermission, type IdentityRequest } from '../identity/identity.guard';
+import {
+  RequirePermission,
+  RequirePermissions,
+  type IdentityRequest,
+} from '../identity/identity.guard';
 import { CommercialService } from './commercial.service';
 import {
   ActivityViewDto,
@@ -28,6 +34,7 @@ import {
   AddressViewDto,
   CompleteActivityDto,
   CreateActivityDto,
+  CreateAndLinkUtilityUnitDto,
   CreateCustomerDto,
   CreateOpportunityDto,
   CreateUtilityUnitDto,
@@ -207,6 +214,25 @@ export class CommercialController {
     @Body() dto: CreateUtilityUnitDto,
   ) {
     return this.service.createUtilityUnit(req.actor, customerId, dto, req.requestId ?? 'trace');
+  }
+
+  @Post('opportunities/:opportunityId/utility-unit')
+  @RequirePermissions('consumer_units:manage', 'opportunities:update')
+  @ApiHeader({ name: 'idempotency-key', required: true })
+  @ApiCreatedResponse({ type: UtilityUnitViewDto })
+  async createAndLinkUtilityUnit(
+    @Req() req: IdentityRequest,
+    @Param('opportunityId', ParseUUIDPipe) opportunityId: string,
+    @Body() dto: CreateAndLinkUtilityUnitDto,
+    @Headers('idempotency-key') idempotencyKey: string,
+  ) {
+    return this.service.createAndLinkUtilityUnit(
+      req.actor,
+      opportunityId,
+      dto,
+      idempotencyKey,
+      req.requestId ?? 'trace',
+    );
   }
 
   @Patch('utility-units/:utilityUnitId')

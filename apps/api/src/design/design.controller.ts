@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   HttpCode,
   Param,
   ParseUUIDPipe,
@@ -12,13 +13,21 @@ import {
   Query,
   Req,
 } from '@nestjs/common';
-import { ApiBody, ApiCookieAuth, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiCookieAuth,
+  ApiHeader,
+  ApiOkResponse,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { RequirePermission, type IdentityRequest } from '../identity/identity.guard';
 import { DesignService } from './design.service';
 import {
   ApproveDesignVersionDto,
   CatalogItemViewDto,
   ConsumptionSummaryViewDto,
+  CorrectEnergyReadingDto,
   CreateCatalogItemDto,
   CreateDesignDto,
   CreateDesignVersionDto,
@@ -56,26 +65,59 @@ export class DesignController {
 
   @Post('utility-units/:id/readings')
   @RequirePermission('consumer_units:manage')
+  @ApiHeader({ name: 'idempotency-key', required: true })
   @HttpCode(200)
   @ApiBody({ type: CreateEnergyReadingDto })
   @ApiOkResponse({ type: EnergyReadingViewDto })
-  async createOrUpdateReading(
+  async createEnergyReading(
     @Req() req: IdentityRequest,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: CreateEnergyReadingDto,
+    @Headers('idempotency-key') idempotencyKey: string,
   ): Promise<EnergyReadingViewDto> {
-    return this.service.createOrUpdateReading(req.actor, id, dto, req.requestId);
+    return this.service.createReading(req.actor, id, dto, idempotencyKey, req.requestId ?? 'trace');
+  }
+
+  @Post('utility-units/:id/readings/:readingId/corrections')
+  @RequirePermission('consumer_units:manage')
+  @ApiHeader({ name: 'idempotency-key', required: true })
+  @HttpCode(200)
+  @ApiBody({ type: CorrectEnergyReadingDto })
+  @ApiOkResponse({ type: EnergyReadingViewDto })
+  async correctReading(
+    @Req() req: IdentityRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('readingId', ParseUUIDPipe) readingId: string,
+    @Body() dto: CorrectEnergyReadingDto,
+    @Headers('idempotency-key') idempotencyKey: string,
+  ): Promise<EnergyReadingViewDto> {
+    return this.service.correctReading(
+      req.actor,
+      id,
+      readingId,
+      dto,
+      idempotencyKey,
+      req.requestId ?? 'trace',
+    );
   }
 
   @Delete('utility-units/:id/readings/:readingId')
   @RequirePermission('consumer_units:manage')
+  @ApiHeader({ name: 'idempotency-key', required: true })
   @HttpCode(200)
   async deleteReading(
     @Req() req: IdentityRequest,
     @Param('id', ParseUUIDPipe) id: string,
     @Param('readingId', ParseUUIDPipe) readingId: string,
+    @Headers('idempotency-key') idempotencyKey: string,
   ): Promise<{ success: boolean }> {
-    return this.service.deleteReading(req.actor, id, readingId, req.requestId);
+    return this.service.deleteReading(
+      req.actor,
+      id,
+      readingId,
+      idempotencyKey,
+      req.requestId ?? 'trace',
+    );
   }
 
   // ---------------------------------------------------------------------------

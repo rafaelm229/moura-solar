@@ -1,26 +1,36 @@
 # Modelo de dados — SPEC-014
 
-**Status:** Proposta para revisão
+**Status:** Aprovada para implementação em 05/10/2026
 
 **Versão:** 0.1.0
 
 **Data:** 02/10/2026
 
-Escopo aprovado; contratos detalhados e aparência final sujeitos à revisão humana.
+Escopo e contratos funcionais aprovados em 05/10/2026. Decisões operacionais listadas no plano continuam bloqueios das liberações correspondentes.
+
+**Aplicação vigente:** a [ADR-008](../../docs/adr/ADR-008-importacao-manual-sem-ocr.md)
+retira worker, adapter e extração automática do roadmap. O modelo e os contratos
+experimentais descritos abaixo ficam preservados como histórico; o fluxo ativo
+continua manual e sem migração de banco nesta decisão.
 
 ## Entidades e invariantes
 
 EnergyReading já tem organizationId, utilityUnitId, referenceMonth, consumptionKwh, injectedKwh, billedAmount, source e unicidade `(utilityUnitId, referenceMonth)`. Não tem versão explícita; o serviço atual faz upsert. Isso não garante revisão concorrente. Evolução proposta adiciona version e proveniência, mantendo a mesma fonte operacional e endpoint de consulta.
 
-| Entidade proposta     | Conteúdo                                                                                                                                                                                  |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| EnergyBillImport      | organização, customerId FK, utilityUnitId FK opcional, opportunityId FK opcional, documentVersionId FK, estado, version, actor, createdAt, cancellationRequestedAt, appliedAt             |
-| ExtractionAttempt     | importId FK, attemptNumber único, adapter/model/version, operationId externo, lease/heartbeat, início/fim, páginas, latência, custo estimado/real e moeda, erro seguro, próxima tentativa |
-| ExtractionCandidate   | attemptId FK, campo, valor bruto/normalizado, unidade, página/região, providerConfidence opcional e escala original, qualitySignals e systemValidation separados                          |
-| ImportReview          | importId FK, revisão imutável, autor/data, decisões por campo/mês, valor anterior, valor confirmado, justificativa, versões de base e digest                                              |
-| EnergyReadingRevision | readingId FK, version, valores anteriores/novos, revisão/import/documentVersion FKs opcionais, autor/origem; append-only, também para mudanças manuais futuras                            |
-| ImportApplication     | importId único, revisão FK, payloadHash, recibo, IDs/versões aplicados, idempotencyKey, committedAt                                                                                       |
-| ImportOutbox          | evento e chave únicos, payload mínimo, estado/lease/tentativas; gravado junto à mudança que publica                                                                                       |
+| Entidade proposta     | Conteúdo                                                                                                                                                                                       |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| EnergyBillImport      | organização, customerId FK, utilityUnitId FK opcional, opportunityId FK opcional, documentVersionId FK, estado, version, actor, createdAt, cancellationRequestedAt, appliedAt                  |
+| ExtractionAttempt     | importId FK, attemptNumber único, adapter/model/version, operationId externo, lease/heartbeat, início/fim, páginas, latência, custo estimado/real e moeda, erro seguro, próxima tentativa      |
+| ExtractionCandidate   | attemptId FK, campo, valor bruto/normalizado, unidade, página/região, providerConfidence opcional e escala original, qualitySignals e systemValidation separados                               |
+| ImportReview          | importId FK, revisão imutável, autor/data, decisões por campo/mês, IDs de ExtractionCandidate usados como evidência, valor anterior, valor confirmado, justificativa, versões de base e digest |
+| EnergyReadingRevision | readingId FK, version, valores anteriores/novos, revisão/import/documentVersion FKs opcionais, autor/origem; append-only, também para mudanças manuais futuras                                 |
+| ImportApplication     | importId único, revisão FK, payloadHash, recibo, IDs/versões aplicados, idempotencyKey, committedAt                                                                                            |
+| ImportOutbox          | evento e chave únicos, versão/correlação opcionais, payload mínimo, estado/lease/tentativas; gravado junto à mudança que publica                                                               |
+
+Os eventos `ENERGY_BILL_IMPORT_QUEUED` e `ENERGY_BILL_IMPORT_APPLIED` novos usam
+schema version 1 com payloads mínimos tipados em `packages/contracts`. Linhas
+anteriores sem `schema_version` permanecem legadas e sem backfill; versão declarada
+não ativa publicação ou consumidor.
 
 Candidatos e revisão são evidência, não uma série de consumo paralela usada em cálculo. Endpoints manuais e importador devem usar o mesmo caso de uso transacional de leituras com versão. Não encadear N chamadas HTTP de upsert. EnergyReading conserva unicidade; valor faturado e injetado nulos não são zero.
 

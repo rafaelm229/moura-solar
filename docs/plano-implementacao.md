@@ -2,7 +2,10 @@
 
 ## Status
 
-Pronto para execução após aprovação.
+Plano histórico M0–M11. Para a evolução vigente, seguir o
+[roadmap de refatoração](roadmap-refatoracao.md) e o
+[registro de features](registro-features.md). Estados históricos não comprovam
+consolidação em main nem liberação produtiva.
 
 ## Estratégia
 
@@ -170,4 +173,17 @@ duplicadas ou arquivos monolíticos não serão copiados.
 
 ## Evolução posterior à base M1–M10
 
-A proposta de UX, dossiê e importação segue o [plano incremental específico](plano-evolucao-ux-documentos-contas.md), com [rastreabilidade](matriz-rastreabilidade-evolucao.md). Os lotes 0–7 não renumeram os marcos M0–M11 nem declaram implementadas as SPEC-013 a SPEC-015. Aguardar revisão documental e visual antes da implementação.
+A proposta de UX, dossiê e importação segue o
+[plano incremental específico](plano-evolucao-ux-documentos-contas.md), com
+[rastreabilidade](matriz-rastreabilidade-evolucao.md). Os lotes 0–7 não renumeram
+os marcos M0–M11. Na redação original, as SPEC-013 a SPEC-015 ainda eram propostas
+e aguardavam revisão antes da implementação; o estado atual de cada capacidade
+deve ser conferido no R0.
+
+## Continuidade em 07/10/2026
+
+A política de reaproveitamento da “versão anterior” acima refere-se ao protótipo
+anterior à plataforma M0–M10. A plataforma atual será refatorada e preservada.
+M11 permanece posterior à web operacional. A evolução UX/documentos/contas deve
+ser reconciliada com R0–R13, sem executar novamente lotes já comprovados e sem
+usar a palavra “Concluído” como evidência de produção.

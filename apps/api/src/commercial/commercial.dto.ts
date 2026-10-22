@@ -153,6 +153,10 @@ export class CreateUtilityUnitDto {
   @ApiPropertyOptional() @IsOptional() @IsUUID() addressId?: string;
 }
 
+export class CreateAndLinkUtilityUnitDto extends CreateUtilityUnitDto {
+  @ApiProperty({ minimum: 1 }) @IsInt() @Min(1) expectedVersion!: number;
+}
+
 export class UpdateUtilityUnitDto {
   @ApiProperty() @IsInt() @Min(1) expectedVersion!: number;
   @ApiPropertyOptional() @IsOptional() @IsString() distributorName?: string;

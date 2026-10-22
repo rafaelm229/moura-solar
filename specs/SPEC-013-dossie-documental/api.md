@@ -39,3 +39,7 @@ URLs de upload expiram (proposta: 10 minutos), só permitem chave/tamanho/tipo d
 ## URL temporária e integridade
 
 A URL de upload só escreve em staging; não concede sobrescrita da chave final. Complete fixa os bytes, verifica e escaneia o snapshot e promove para objeto final privado não gravável pelo cliente, conforme modelo. Reutilizar URL ainda válida durante/depois da verificação não pode alterar a versão publicada. Resposta de complete identifica intenção/versão, sem divulgar chave final como destino gravável.
+
+## Implementação e evidência do lote 4
+
+O contrato compatível implementado, diferenças em relação à proposta, operação e evidências estão em [Revisão e validação do lote 4](../../docs/lote-4-revisao-e-validacao.md). As descrições propostas acima permanecem referência de evolução; não declaram todas as capacidades produtivas liberadas.

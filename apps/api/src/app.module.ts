@@ -14,6 +14,8 @@ import { InventoryModule } from './inventory/inventory.module';
 import { EngineeringModule } from './engineering/engineering.module';
 import { AfterSalesModule } from './after-sales/after-sales.module';
 import { AutomationsModule } from './automations/automations.module';
+import { DossierModule } from './dossier/dossier.module';
+import { EnergyImportModule } from './energy-import/energy-import.module';
 
 @Module({
   imports: [
@@ -34,6 +36,8 @@ import { AutomationsModule } from './automations/automations.module';
     EngineeringModule,
     AfterSalesModule,
     AutomationsModule,
+    DossierModule,
+    EnergyImportModule,
   ],
 })
 export class AppModule {}

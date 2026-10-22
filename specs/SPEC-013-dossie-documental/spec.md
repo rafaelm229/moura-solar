@@ -37,3 +37,7 @@ Fora: assinatura eletrônica, reconhecimento jurídico automático, OCR obrigat�
 - [Fluxos UX](fluxos-ux.md).
 - [Testes de aceite](testes-aceite.md).
 - [ADR de armazenamento e integração](../../docs/adr/ADR-003-dossie-e-persistencia-documental.md).
+
+## Implementação e evidência do lote 4
+
+O contrato compatível implementado, diferenças em relação à proposta, operação e evidências estão em [Revisão e validação do lote 4](../../docs/lote-4-revisao-e-validacao.md). As descrições propostas acima permanecem referência de evolução; não declaram todas as capacidades produtivas liberadas.

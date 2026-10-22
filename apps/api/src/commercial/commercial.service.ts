@@ -1,12 +1,32 @@
 import { Injectable } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+import type {
+  ActivityCanceledEventV1,
+  ActivityCompletedEventV1,
+  ActivityCreatedEventV1,
+  ActivityRescheduledEventV1,
+  CustomerArchivedEventV1,
+  CustomerCreatedEventV1,
+  CustomerRestoredEventV1,
+  CustomerUpdatedEventV1,
+  OpportunityCreatedEventV1,
+  OpportunityLostEventV1,
+  OpportunityQualifiedEventV1,
+  OpportunityReopenedEventV1,
+  OpportunityUpdatedEventV1,
+  UtilityUnitCreatedEventV1,
+  UtilityUnitUpdatedEventV1,
+} from '@moura-solar/contracts';
 import { Prisma } from '@prisma/client';
 import { IdentityStore } from '../identity/identity.store';
+import { canAccess } from '../identity/identity.policy';
 import { fail } from '../identity/security';
 import type { ContextDto } from '../identity/identity.dto';
 import type {
   AddAddressDto,
   AddContactDto,
   CompleteActivityDto,
+  CreateAndLinkUtilityUnitDto,
   CreateActivityDto,
   CreateCustomerDto,
   CreateOpportunityDto,
@@ -33,6 +53,123 @@ function normalizeEmail(value?: string | null): string {
 @Injectable()
 export class CommercialService {
   constructor(private readonly store: IdentityStore) {}
+
+  private async createUtilityUnitInTransaction(
+    tx: Prisma.TransactionClient,
+    actor: ContextDto,
+    customerId: string,
+    dto: CreateUtilityUnitDto,
+    traceId: string,
+  ) {
+    const customer = await tx.customer.findFirst({
+      where: { id: customerId, organizationId: actor.organizationId },
+    });
+    if (!customer) fail('CUSTOMER_NOT_FOUND', 'Cliente não encontrado.', 404);
+
+    if (dto.addressId) {
+      const address = await tx.address.findFirst({ where: { id: dto.addressId, customerId } });
+      if (!address) fail('ADDRESS_NOT_FOUND', 'Endereço não encontrado para este cliente.', 404);
+    }
+
+    const extCode = dto.externalCode?.trim();
+    if (extCode) {
+      const existing = await tx.utilityUnit.findFirst({
+        where: {
+          organizationId: actor.organizationId,
+          distributorName: dto.distributorName.trim(),
+          externalCode: extCode,
+          status: 'ACTIVE',
+        },
+      });
+      if (existing) {
+        fail(
+          'UTILITY_UNIT_ALREADY_EXISTS',
+          `Unidade consumidora com código ${extCode} já cadastrada para esta concessionária.`,
+          409,
+        );
+      }
+    }
+
+    const unit = await tx.utilityUnit.create({
+      data: {
+        organizationId: actor.organizationId,
+        customerId,
+        addressId: dto.addressId || null,
+        distributorName: dto.distributorName.trim(),
+        externalCode: extCode || null,
+        consumerClass: dto.consumerClass || 'RESIDENTIAL',
+        tariffMode: dto.tariffMode || 'CONVENTIONAL',
+        connectionType: dto.connectionType || 'BIPHASIC',
+        voltage: dto.voltage || '220V',
+        status: 'ACTIVE',
+        version: 1,
+      },
+    });
+
+    await this.store.audit(tx, 'commercial.utility_unit_created', actor, unit.id, traceId);
+
+    const event: UtilityUnitCreatedEventV1 = {
+      eventId: randomUUID(),
+      eventType: 'UTILITY_UNIT_CREATED',
+      schemaVersion: 1,
+      occurredAt: unit.createdAt.toISOString(),
+      organizationId: actor.organizationId,
+      aggregateId: unit.id,
+      producer: 'crm',
+      correlationId: traceId,
+      payload: {
+        utilityUnitId: unit.id,
+        customerId: unit.customerId,
+        ...(unit.addressId ? { addressId: unit.addressId } : {}),
+      },
+    };
+
+    await tx.integrationOutbox.create({
+      data: {
+        id: event.eventId,
+        organizationId: event.organizationId,
+        eventType: event.eventType,
+        schemaVersion: event.schemaVersion,
+        aggregateType: 'UtilityUnit',
+        aggregateId: event.aggregateId,
+        producer: event.producer,
+        correlationId: event.correlationId,
+        occurredAt: unit.createdAt,
+        payload: event.payload,
+        dedupeKey: `UTILITY_UNIT_CREATED:${unit.id}`,
+      },
+    });
+    return unit;
+  }
+
+  private async assertCanCreateAndLinkUtilityUnit(
+    tx: Prisma.TransactionClient,
+    actor: ContextDto,
+    opportunity: { id: string; organizationId: string; ownerUserId: string },
+  ) {
+    const owner = await tx.membership.findFirst({
+      where: {
+        organizationId: actor.organizationId,
+        userId: opportunity.ownerUserId,
+        status: 'active',
+      },
+      select: { id: true, teams: { select: { teamId: true } } },
+    });
+    const resource = {
+      organizationId: opportunity.organizationId,
+      ownerId: owner?.id,
+      teamIds: owner?.teams.map(({ teamId }) => teamId),
+    };
+    for (const permission of ['consumer_units:manage', 'opportunities:update']) {
+      if (!canAccess(actor, permission, resource)) {
+        fail(
+          'ACCESS_DENIED',
+          'Você não tem permissão neste contexto para criar e vincular a UC.',
+          403,
+        );
+      }
+    }
+  }
 
   // ---------------------------------------------------------------------------
   // DUPLICATE DETECTION
@@ -306,6 +443,34 @@ export class CommercialService {
       }
 
       await this.store.audit(tx, 'commercial.customer_created', actor, customer.id, traceId);
+
+      const event: CustomerCreatedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'CUSTOMER_CREATED',
+        schemaVersion: 1,
+        occurredAt: customer.createdAt.toISOString(),
+        organizationId: actor.organizationId,
+        aggregateId: customer.id,
+        producer: 'customer',
+        correlationId: traceId,
+        payload: { customerId: customer.id },
+      };
+
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Customer',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: customer.createdAt,
+          payload: event.payload,
+          dedupeKey: `CUSTOMER_CREATED:${customer.id}`,
+        },
+      });
       return customer;
     });
   }
@@ -341,7 +506,39 @@ export class CommercialService {
         },
       });
 
-      await this.store.audit(tx, 'commercial.customer_updated', actor, customerId, traceId);
+      const audit = await this.store.audit(
+        tx,
+        'commercial.customer_updated',
+        actor,
+        customerId,
+        traceId,
+      );
+      const event: CustomerUpdatedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'CUSTOMER_UPDATED',
+        schemaVersion: 1,
+        occurredAt: audit.createdAt.toISOString(),
+        organizationId: actor.organizationId,
+        aggregateId: customerId,
+        producer: 'crm',
+        correlationId: traceId,
+        payload: { customerId, auditEventId: audit.id },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Customer',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: audit.createdAt,
+          payload: event.payload,
+          dedupeKey: `CUSTOMER_UPDATED:${audit.id}`,
+        },
+      });
       return updated;
     });
   }
@@ -383,7 +580,39 @@ export class CommercialService {
         },
       });
 
-      await this.store.audit(tx, 'commercial.customer_archived', actor, customerId, traceId);
+      const audit = await this.store.audit(
+        tx,
+        'commercial.customer_archived',
+        actor,
+        customerId,
+        traceId,
+      );
+      const event: CustomerArchivedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'CUSTOMER_ARCHIVED',
+        schemaVersion: 1,
+        occurredAt: audit.createdAt.toISOString(),
+        organizationId: actor.organizationId,
+        aggregateId: customerId,
+        producer: 'crm',
+        correlationId: traceId,
+        payload: { customerId, auditEventId: audit.id },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Customer',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: audit.createdAt,
+          payload: event.payload,
+          dedupeKey: `CUSTOMER_ARCHIVED:${audit.id}`,
+        },
+      });
       return updated;
     });
   }
@@ -412,7 +641,39 @@ export class CommercialService {
         },
       });
 
-      await this.store.audit(tx, 'commercial.customer_restored', actor, customerId, traceId);
+      const audit = await this.store.audit(
+        tx,
+        'commercial.customer_restored',
+        actor,
+        customerId,
+        traceId,
+      );
+      const event: CustomerRestoredEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'CUSTOMER_RESTORED',
+        schemaVersion: 1,
+        occurredAt: audit.createdAt.toISOString(),
+        organizationId: actor.organizationId,
+        aggregateId: customerId,
+        producer: 'crm',
+        correlationId: traceId,
+        payload: { customerId, auditEventId: audit.id },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Customer',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: audit.createdAt,
+          payload: event.payload,
+          dedupeKey: `CUSTOMER_RESTORED:${audit.id}`,
+        },
+      });
       return updated;
     });
   }
@@ -515,50 +776,87 @@ export class CommercialService {
     dto: CreateUtilityUnitDto,
     traceId: string,
   ) {
-    const customer = await this.store.db.customer.findFirst({
-      where: { id: customerId, organizationId: actor.organizationId },
-    });
-    if (!customer) fail('CUSTOMER_NOT_FOUND', 'Cliente não encontrado.', 404);
+    return this.store.transaction((tx) =>
+      this.createUtilityUnitInTransaction(tx, actor, customerId, dto, traceId),
+    );
+  }
 
-    const extCode = dto.externalCode?.trim();
-    if (extCode) {
-      const existing = await this.store.db.utilityUnit.findFirst({
-        where: {
-          organizationId: actor.organizationId,
-          distributorName: dto.distributorName.trim(),
-          externalCode: extCode,
-          status: 'ACTIVE',
-        },
+  async createAndLinkUtilityUnit(
+    actor: ContextDto,
+    opportunityId: string,
+    dto: CreateAndLinkUtilityUnitDto,
+    idempotencyKey: string,
+    traceId: string,
+  ) {
+    const checkContext = async (tx: Prisma.TransactionClient) => {
+      const opportunity = await tx.opportunity.findFirst({
+        where: { id: opportunityId, organizationId: actor.organizationId },
       });
-      if (existing) {
-        fail(
-          'UTILITY_UNIT_ALREADY_EXISTS',
-          `Unidade consumidora com código ${extCode} já cadastrada para esta concessionária.`,
-          409,
+      if (!opportunity) fail('OPPORTUNITY_NOT_FOUND', 'Oportunidade não encontrada.', 404);
+      await this.assertCanCreateAndLinkUtilityUnit(tx, actor, opportunity);
+      return opportunity;
+    };
+
+    await this.store.transaction(checkContext);
+    return this.store.command(
+      actor,
+      idempotencyKey,
+      { opportunityId, ...dto },
+      'consumer_units:manage',
+      async (tx) => {
+        const opportunity = await tx.opportunity.findFirst({
+          where: { id: opportunityId, organizationId: actor.organizationId },
+        });
+        if (!opportunity) fail('OPPORTUNITY_NOT_FOUND', 'Oportunidade não encontrada.', 404);
+        await this.assertCanCreateAndLinkUtilityUnit(tx, actor, opportunity);
+        if (opportunity.version !== dto.expectedVersion) {
+          fail('CONCURRENT_MODIFICATION', 'A oportunidade foi alterada por outro usuário.', 409);
+        }
+
+        const unit = await this.createUtilityUnitInTransaction(
+          tx,
+          actor,
+          opportunity.customerId,
+          dto,
+          traceId,
         );
-      }
-    }
+        const updated = await tx.opportunity.updateMany({
+          where: {
+            id: opportunity.id,
+            organizationId: actor.organizationId,
+            version: dto.expectedVersion,
+          },
+          data: { utilityUnitId: unit.id, version: { increment: 1 } },
+        });
+        if (!updated.count) {
+          fail('CONCURRENT_MODIFICATION', 'A oportunidade foi alterada por outro usuário.', 409);
+        }
 
-    return this.store.transaction(async (tx) => {
-      const unit = await tx.utilityUnit.create({
-        data: {
-          organizationId: actor.organizationId,
-          customerId,
-          addressId: dto.addressId || null,
-          distributorName: dto.distributorName.trim(),
-          externalCode: extCode || null,
-          consumerClass: dto.consumerClass || 'RESIDENTIAL',
-          tariffMode: dto.tariffMode || 'CONVENTIONAL',
-          connectionType: dto.connectionType || 'BIPHASIC',
-          voltage: dto.voltage || '220V',
-          status: 'ACTIVE',
-          version: 1,
-        },
-      });
-
-      await this.store.audit(tx, 'commercial.utility_unit_created', actor, unit.id, traceId);
-      return unit;
-    });
+        await this.store.audit(
+          tx,
+          'commercial.opportunity_updated',
+          actor,
+          opportunity.id,
+          traceId,
+        );
+        return {
+          id: unit.id,
+          organizationId: unit.organizationId,
+          customerId: unit.customerId,
+          distributorName: unit.distributorName,
+          externalCode: unit.externalCode,
+          consumerClass: unit.consumerClass,
+          tariffMode: unit.tariffMode,
+          connectionType: unit.connectionType,
+          voltage: unit.voltage,
+          addressId: unit.addressId,
+          version: unit.version,
+          createdAt: unit.createdAt.toISOString(),
+          updatedAt: unit.updatedAt.toISOString(),
+        };
+      },
+      false,
+    );
   }
 
   async updateUtilityUnit(
@@ -593,7 +891,43 @@ export class CommercialService {
         },
       });
 
-      await this.store.audit(tx, 'commercial.utility_unit_updated', actor, utilityUnitId, traceId);
+      const audit = await this.store.audit(
+        tx,
+        'commercial.utility_unit_updated',
+        actor,
+        utilityUnitId,
+        traceId,
+      );
+      const event: UtilityUnitUpdatedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'UTILITY_UNIT_UPDATED',
+        schemaVersion: 1,
+        occurredAt: audit.createdAt.toISOString(),
+        organizationId: actor.organizationId,
+        aggregateId: utilityUnitId,
+        producer: 'crm',
+        correlationId: traceId,
+        payload: {
+          utilityUnitId,
+          customerId: updated.customerId,
+          auditEventId: audit.id,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'UtilityUnit',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: audit.createdAt,
+          payload: event.payload,
+          dedupeKey: `UTILITY_UNIT_UPDATED:${audit.id}`,
+        },
+      });
       return updated;
     });
   }
@@ -675,21 +1009,23 @@ export class CommercialService {
   }
 
   async createOpportunity(actor: ContextDto, dto: CreateOpportunityDto, traceId: string) {
-    // Validate customer belongs to organization
-    const customer = await this.store.db.customer.findFirst({
-      where: { id: dto.customerId, organizationId: actor.organizationId },
-    });
-    if (!customer) fail('CUSTOMER_NOT_FOUND', 'Cliente não encontrado.', 404);
-
-    // Validate utility unit if provided
-    if (dto.utilityUnitId) {
-      const unit = await this.store.db.utilityUnit.findFirst({
-        where: { id: dto.utilityUnitId, organizationId: actor.organizationId },
-      });
-      if (!unit) fail('UTILITY_UNIT_NOT_FOUND', 'Unidade consumidora não encontrada.', 404);
-    }
-
     return this.store.transaction(async (tx) => {
+      const customer = await tx.customer.findFirst({
+        where: { id: dto.customerId, organizationId: actor.organizationId },
+      });
+      if (!customer) fail('CUSTOMER_NOT_FOUND', 'Cliente não encontrado.', 404);
+
+      if (dto.utilityUnitId) {
+        const unit = await tx.utilityUnit.findFirst({
+          where: {
+            id: dto.utilityUnitId,
+            organizationId: actor.organizationId,
+            customerId: dto.customerId,
+          },
+        });
+        if (!unit) fail('UTILITY_UNIT_NOT_FOUND', 'Unidade consumidora não encontrada.', 404);
+      }
+
       // Generate human-readable sequential code: OPT-0001, OPT-0002...
       const count = await tx.opportunity.count({
         where: { organizationId: actor.organizationId },
@@ -720,7 +1056,7 @@ export class CommercialService {
       });
 
       // FV1.3 rule: Oportunidade e primeira atividade criadas na mesma transação
-      await tx.activity.create({
+      const firstActivity = await tx.activity.create({
         data: {
           organizationId: actor.organizationId,
           opportunityId: opp.id,
@@ -747,7 +1083,77 @@ export class CommercialService {
         },
       });
 
-      await this.store.audit(tx, 'commercial.opportunity_created', actor, opp.id, traceId);
+      const audit = await this.store.audit(
+        tx,
+        'commercial.opportunity_created',
+        actor,
+        opp.id,
+        traceId,
+      );
+
+      const event: OpportunityCreatedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'OPPORTUNITY_CREATED',
+        schemaVersion: 1,
+        occurredAt: opp.createdAt.toISOString(),
+        organizationId: actor.organizationId,
+        aggregateId: opp.id,
+        producer: 'crm',
+        correlationId: traceId,
+        payload: {
+          opportunityId: opp.id,
+          customerId: opp.customerId,
+          ...(opp.utilityUnitId ? { utilityUnitId: opp.utilityUnitId } : {}),
+        },
+      };
+
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Opportunity',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: opp.createdAt,
+          payload: event.payload,
+          dedupeKey: `OPPORTUNITY_CREATED:${opp.id}`,
+        },
+      });
+
+      const activityEvent: ActivityCreatedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'ACTIVITY_CREATED',
+        schemaVersion: 1,
+        occurredAt: audit.createdAt.toISOString(),
+        organizationId: actor.organizationId,
+        aggregateId: firstActivity.id,
+        producer: 'crm',
+        correlationId: traceId,
+        payload: {
+          activityId: firstActivity.id,
+          auditEventId: audit.id,
+          customerId: opp.customerId,
+          opportunityId: opp.id,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: activityEvent.eventId,
+          organizationId: activityEvent.organizationId,
+          eventType: activityEvent.eventType,
+          schemaVersion: activityEvent.schemaVersion,
+          aggregateType: 'Activity',
+          aggregateId: activityEvent.aggregateId,
+          producer: activityEvent.producer,
+          correlationId: activityEvent.correlationId,
+          occurredAt: audit.createdAt,
+          payload: activityEvent.payload,
+          dedupeKey: `ACTIVITY_CREATED:${audit.id}:${firstActivity.id}`,
+        },
+      });
       return opp;
     });
   }
@@ -765,6 +1171,17 @@ export class CommercialService {
       if (!opp) fail('OPPORTUNITY_NOT_FOUND', 'Oportunidade não encontrada.', 404);
       if (opp.version !== dto.expectedVersion) {
         fail('CONCURRENT_MODIFICATION', 'A oportunidade foi alterada por outro usuário.', 409);
+      }
+
+      if (dto.utilityUnitId) {
+        const unit = await tx.utilityUnit.findFirst({
+          where: {
+            id: dto.utilityUnitId,
+            organizationId: actor.organizationId,
+            customerId: opp.customerId,
+          },
+        });
+        if (!unit) fail('UTILITY_UNIT_NOT_FOUND', 'Unidade consumidora não encontrada.', 404);
       }
 
       const updated = await tx.opportunity.update({
@@ -789,7 +1206,43 @@ export class CommercialService {
         },
       });
 
-      await this.store.audit(tx, 'commercial.opportunity_updated', actor, opportunityId, traceId);
+      const audit = await this.store.audit(
+        tx,
+        'commercial.opportunity_updated',
+        actor,
+        opportunityId,
+        traceId,
+      );
+      const event: OpportunityUpdatedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'OPPORTUNITY_UPDATED',
+        schemaVersion: 1,
+        occurredAt: audit.createdAt.toISOString(),
+        organizationId: actor.organizationId,
+        aggregateId: opportunityId,
+        producer: 'crm',
+        correlationId: traceId,
+        payload: {
+          opportunityId,
+          customerId: updated.customerId,
+          auditEventId: audit.id,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Opportunity',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: audit.createdAt,
+          payload: event.payload,
+          dedupeKey: `OPPORTUNITY_UPDATED:${audit.id}`,
+        },
+      });
       return updated;
     });
   }
@@ -853,8 +1306,9 @@ export class CommercialService {
         },
       });
 
+      let nextActivityId: string | undefined;
       if (dto.nextActivity) {
-        await tx.activity.create({
+        const nextActivity = await tx.activity.create({
           data: {
             organizationId: actor.organizationId,
             opportunityId: opp.id,
@@ -868,9 +1322,10 @@ export class CommercialService {
             version: 1,
           },
         });
+        nextActivityId = nextActivity.id;
       }
 
-      await tx.opportunityTransition.create({
+      const transition = await tx.opportunityTransition.create({
         data: {
           opportunityId: opp.id,
           fromState: 'NOVO',
@@ -881,7 +1336,82 @@ export class CommercialService {
         },
       });
 
-      await this.store.audit(tx, 'commercial.opportunity_qualified', actor, opportunityId, traceId);
+      const audit = await this.store.audit(
+        tx,
+        'commercial.opportunity_qualified',
+        actor,
+        opportunityId,
+        traceId,
+      );
+
+      const event: OpportunityQualifiedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'OPPORTUNITY_QUALIFIED',
+        schemaVersion: 1,
+        occurredAt: transition.createdAt.toISOString(),
+        organizationId: actor.organizationId,
+        aggregateId: opp.id,
+        producer: 'crm',
+        correlationId: traceId,
+        payload: {
+          opportunityId: opp.id,
+          transitionId: transition.id,
+          customerId: opp.customerId,
+          fromState: 'NOVO',
+          toState: 'QUALIFICADO',
+        },
+      };
+
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Opportunity',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: transition.createdAt,
+          payload: event.payload,
+          dedupeKey: `OPPORTUNITY_QUALIFIED:${transition.id}`,
+        },
+      });
+
+      if (nextActivityId) {
+        const activityEvent: ActivityCreatedEventV1 = {
+          eventId: randomUUID(),
+          eventType: 'ACTIVITY_CREATED',
+          schemaVersion: 1,
+          occurredAt: audit.createdAt.toISOString(),
+          organizationId: actor.organizationId,
+          aggregateId: nextActivityId,
+          producer: 'crm',
+          correlationId: traceId,
+          payload: {
+            activityId: nextActivityId,
+            auditEventId: audit.id,
+            customerId: opp.customerId,
+            opportunityId: opp.id,
+          },
+        };
+        await tx.integrationOutbox.create({
+          data: {
+            id: activityEvent.eventId,
+            organizationId: activityEvent.organizationId,
+            eventType: activityEvent.eventType,
+            schemaVersion: activityEvent.schemaVersion,
+            aggregateType: 'Activity',
+            aggregateId: activityEvent.aggregateId,
+            producer: activityEvent.producer,
+            correlationId: activityEvent.correlationId,
+            occurredAt: audit.createdAt,
+            payload: activityEvent.payload,
+            dedupeKey: `ACTIVITY_CREATED:${audit.id}:${nextActivityId}`,
+          },
+        });
+      }
+
       return updated;
     });
   }
@@ -926,7 +1456,7 @@ export class CommercialService {
         data: { status: 'CANCELED' },
       });
 
-      await tx.opportunityTransition.create({
+      const transition = await tx.opportunityTransition.create({
         data: {
           opportunityId,
           fromState: previousState,
@@ -938,6 +1468,40 @@ export class CommercialService {
       });
 
       await this.store.audit(tx, 'commercial.opportunity_lost', actor, opportunityId, traceId);
+
+      const event: OpportunityLostEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'OPPORTUNITY_LOST',
+        schemaVersion: 1,
+        occurredAt: transition.createdAt.toISOString(),
+        organizationId: actor.organizationId,
+        aggregateId: opportunityId,
+        producer: 'crm',
+        correlationId: traceId,
+        payload: {
+          opportunityId,
+          transitionId: transition.id,
+          fromState: previousState,
+          toState: 'PERDIDO',
+        },
+      };
+
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Opportunity',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: transition.createdAt,
+          payload: event.payload,
+          dedupeKey: `OPPORTUNITY_LOST:${transition.id}`,
+        },
+      });
+
       return updated;
     });
   }
@@ -980,7 +1544,7 @@ export class CommercialService {
         },
       });
 
-      await tx.opportunityTransition.create({
+      const transition = await tx.opportunityTransition.create({
         data: {
           opportunityId,
           fromState: previousState,
@@ -992,6 +1556,40 @@ export class CommercialService {
       });
 
       await this.store.audit(tx, 'commercial.opportunity_reopened', actor, opportunityId, traceId);
+
+      const event: OpportunityReopenedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'OPPORTUNITY_REOPENED',
+        schemaVersion: 1,
+        occurredAt: transition.createdAt.toISOString(),
+        organizationId: actor.organizationId,
+        aggregateId: opportunityId,
+        producer: 'crm',
+        correlationId: traceId,
+        payload: {
+          opportunityId,
+          transitionId: transition.id,
+          fromState: previousState as 'PERDIDO' | 'CANCELADO',
+          toState: 'NOVO',
+        },
+      };
+
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Opportunity',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: transition.createdAt,
+          payload: event.payload,
+          dedupeKey: `OPPORTUNITY_REOPENED:${transition.id}`,
+        },
+      });
+
       return updated;
     });
   }
@@ -1060,7 +1658,44 @@ export class CommercialService {
         },
       });
 
-      await this.store.audit(tx, 'commercial.activity_created', actor, activity.id, traceId);
+      const audit = await this.store.audit(
+        tx,
+        'commercial.activity_created',
+        actor,
+        activity.id,
+        traceId,
+      );
+      const event: ActivityCreatedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'ACTIVITY_CREATED',
+        schemaVersion: 1,
+        occurredAt: audit.createdAt.toISOString(),
+        organizationId: actor.organizationId,
+        aggregateId: activity.id,
+        producer: 'crm',
+        correlationId: traceId,
+        payload: {
+          activityId: activity.id,
+          auditEventId: audit.id,
+          ...(activity.customerId ? { customerId: activity.customerId } : {}),
+          ...(activity.opportunityId ? { opportunityId: activity.opportunityId } : {}),
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Activity',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: audit.createdAt,
+          payload: event.payload,
+          dedupeKey: `ACTIVITY_CREATED:${audit.id}`,
+        },
+      });
       return activity;
     });
   }
@@ -1098,8 +1733,9 @@ export class CommercialService {
         },
       });
 
+      let nextActivityId: string | undefined;
       if (dto.nextActivity) {
-        await tx.activity.create({
+        const nextActivity = await tx.activity.create({
           data: {
             organizationId: actor.organizationId,
             opportunityId: activity.opportunityId,
@@ -1114,9 +1750,82 @@ export class CommercialService {
             version: 1,
           },
         });
+        nextActivityId = nextActivity.id;
       }
 
-      await this.store.audit(tx, 'commercial.activity_completed', actor, activityId, traceId);
+      const audit = await this.store.audit(
+        tx,
+        'commercial.activity_completed',
+        actor,
+        activityId,
+        traceId,
+      );
+      const event: ActivityCompletedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'ACTIVITY_COMPLETED',
+        schemaVersion: 1,
+        occurredAt: audit.createdAt.toISOString(),
+        organizationId: actor.organizationId,
+        aggregateId: activityId,
+        producer: 'crm',
+        correlationId: traceId,
+        payload: {
+          activityId,
+          auditEventId: audit.id,
+          ...(activity.customerId ? { customerId: activity.customerId } : {}),
+          ...(activity.opportunityId ? { opportunityId: activity.opportunityId } : {}),
+          ...(nextActivityId ? { nextActivityId } : {}),
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Activity',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: audit.createdAt,
+          payload: event.payload,
+          dedupeKey: `ACTIVITY_COMPLETED:${audit.id}`,
+        },
+      });
+
+      if (nextActivityId) {
+        const nextActivityEvent: ActivityCreatedEventV1 = {
+          eventId: randomUUID(),
+          eventType: 'ACTIVITY_CREATED',
+          schemaVersion: 1,
+          occurredAt: audit.createdAt.toISOString(),
+          organizationId: actor.organizationId,
+          aggregateId: nextActivityId,
+          producer: 'crm',
+          correlationId: traceId,
+          payload: {
+            activityId: nextActivityId,
+            auditEventId: audit.id,
+            ...(activity.customerId ? { customerId: activity.customerId } : {}),
+            ...(activity.opportunityId ? { opportunityId: activity.opportunityId } : {}),
+          },
+        };
+        await tx.integrationOutbox.create({
+          data: {
+            id: nextActivityEvent.eventId,
+            organizationId: nextActivityEvent.organizationId,
+            eventType: nextActivityEvent.eventType,
+            schemaVersion: nextActivityEvent.schemaVersion,
+            aggregateType: 'Activity',
+            aggregateId: nextActivityEvent.aggregateId,
+            producer: nextActivityEvent.producer,
+            correlationId: nextActivityEvent.correlationId,
+            occurredAt: audit.createdAt,
+            payload: nextActivityEvent.payload,
+            dedupeKey: `ACTIVITY_CREATED:${audit.id}:${nextActivityId}`,
+          },
+        });
+      }
       return completed;
     });
   }
@@ -1150,7 +1859,44 @@ export class CommercialService {
         },
       });
 
-      await this.store.audit(tx, 'commercial.activity_rescheduled', actor, activityId, traceId);
+      const audit = await this.store.audit(
+        tx,
+        'commercial.activity_rescheduled',
+        actor,
+        activityId,
+        traceId,
+      );
+      const event: ActivityRescheduledEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'ACTIVITY_RESCHEDULED',
+        schemaVersion: 1,
+        occurredAt: audit.createdAt.toISOString(),
+        organizationId: actor.organizationId,
+        aggregateId: activityId,
+        producer: 'crm',
+        correlationId: traceId,
+        payload: {
+          activityId,
+          auditEventId: audit.id,
+          ...(activity.customerId ? { customerId: activity.customerId } : {}),
+          ...(activity.opportunityId ? { opportunityId: activity.opportunityId } : {}),
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Activity',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: audit.createdAt,
+          payload: event.payload,
+          dedupeKey: `ACTIVITY_RESCHEDULED:${audit.id}`,
+        },
+      });
       return updated;
     });
   }
@@ -1181,7 +1927,44 @@ export class CommercialService {
         },
       });
 
-      await this.store.audit(tx, 'commercial.activity_canceled', actor, activityId, traceId);
+      const audit = await this.store.audit(
+        tx,
+        'commercial.activity_canceled',
+        actor,
+        activityId,
+        traceId,
+      );
+      const event: ActivityCanceledEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'ACTIVITY_CANCELED',
+        schemaVersion: 1,
+        occurredAt: audit.createdAt.toISOString(),
+        organizationId: actor.organizationId,
+        aggregateId: activityId,
+        producer: 'crm',
+        correlationId: traceId,
+        payload: {
+          activityId,
+          auditEventId: audit.id,
+          ...(activity.customerId ? { customerId: activity.customerId } : {}),
+          ...(activity.opportunityId ? { opportunityId: activity.opportunityId } : {}),
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Activity',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: audit.createdAt,
+          payload: event.payload,
+          dedupeKey: `ACTIVITY_CANCELED:${audit.id}`,
+        },
+      });
       return updated;
     });
   }

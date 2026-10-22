@@ -22,6 +22,14 @@ model Organization {
   opportunities Opportunity[]
   activities  Activity[]
   energyReadings EnergyReading[]
+  energyBillImports EnergyBillImport[]
+  energyImportOutbox ImportOutbox[]
+  integrationOutboxEvents IntegrationOutbox[]
+  importReviews ImportReview[]
+  importApplications ImportApplication[]
+  energyReadingRevisions EnergyReadingRevision[]
+  energyImportTransitions EnergyImportTransition[]
+  extractionAttempts ExtractionAttempt[]
   surveys     Survey[]
   catalogItems CatalogItem[]
   designs     Design[]
@@ -82,6 +90,10 @@ model Organization {
   notificationPreferences NotificationPreference[]
   goalVersions           GoalVersion[]
   metricProjections      MetricProjection[]
+  dossierDocuments       DossierDocument[]
+  storedObjects          StoredObject[]
+  customerRepresentatives CustomerRepresentative[]
+  documentAccessEvents   DocumentAccessEvent[]
 
   @@map("organizations")
 }
@@ -124,6 +136,7 @@ model User {
   resolvedAttentionItems AttentionItem[] @relation("ResolvedAttentionItems")
   notifications          Notification[]
   notificationPreferences NotificationPreference[]
+  energyImportTransitions EnergyImportTransition[]
 
   @@map("users")
 }
@@ -255,6 +268,29 @@ model AuditEvent {
   @@map("audit_events")
 }
 
+model IntegrationOutbox {
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  eventType      String    @map("event_type")
+  schemaVersion  Int       @map("schema_version")
+  aggregateType  String    @map("aggregate_type")
+  aggregateId    String    @map("aggregate_id")
+  producer       String
+  correlationId  String    @map("correlation_id")
+  occurredAt     DateTime  @map("occurred_at")
+  payload        Json      @db.JsonB
+  dedupeKey      String    @map("dedupe_key")
+  publishedAt    DateTime? @map("published_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, dedupeKey])
+  @@index([organizationId, publishedAt, createdAt])
+  @@index([aggregateType, aggregateId, createdAt])
+  @@map("integration_outbox")
+}
+
 model IdentityCommand {
   key         String   @id
   actorId     String   @map("actor_id") @db.Uuid
@@ -292,9 +328,12 @@ model Customer {
   contacts          CustomerContact[]
   addresses         Address[]
   utilityUnits      UtilityUnit[]
+  energyBillImports EnergyBillImport[]
   opportunities     Opportunity[]
   activities        Activity[]
   supportTickets    SupportTicket[]
+  dossierDocuments  DossierDocument[]
+  customerRepresentatives CustomerRepresentative[]
 
   @@index([organizationId, status])
   @@index([organizationId, taxId])
@@ -364,7 +403,10 @@ model UtilityUnit {
   address         Address?      @relation(fields: [addressId], references: [id])
   opportunities   Opportunity[]
   energyReadings  EnergyReading[]
+  energyBillImports EnergyBillImport[]
+  energyReadingRevisions EnergyReadingRevision[]
   surveys         Survey[]
+  documentLinks   DocumentUtilityUnitLink[]
 
   @@index([organizationId, externalCode])
   @@index([customerId])
@@ -414,6 +456,8 @@ model Opportunity {
   purchaseOrders       PurchaseOrder[]
   serializedAssets     SerializedAsset[]
   operationalProject   OperationalProject?
+  dossierLinks         DocumentOpportunityLink[]
+  energyBillImports    EnergyBillImport[]
 
   @@unique([organizationId, code])
   @@index([organizationId, state])
@@ -477,16 +521,237 @@ model EnergyReading {
   billedAmount   Decimal?     @map("billed_amount") @db.Decimal(12, 2)
   source         String       @default("MANUAL")
   status         String       @default("ACTIVE")
+  version        Int          @default(1)
+  correctionReason String?     @map("correction_reason")
+  sourceImportId String?       @map("source_import_id") @db.Uuid
+  sourceReviewId String?        @map("source_review_id") @db.Uuid
   notes          String?
   createdAt      DateTime     @default(now()) @map("created_at")
   updatedAt      DateTime     @updatedAt @map("updated_at")
 
   organization   Organization @relation(fields: [organizationId], references: [id])
   utilityUnit    UtilityUnit  @relation(fields: [utilityUnitId], references: [id], onDelete: Cascade)
+  sourceImport   EnergyBillImport? @relation("ImportReadings", fields: [sourceImportId], references: [id], onDelete: Restrict)
+  sourceReview   ImportReview? @relation("ReviewReadings", fields: [sourceReviewId], references: [id], onDelete: Restrict)
+  revisions      EnergyReadingRevision[]
 
-  @@unique([utilityUnitId, referenceMonth])
-  @@index([utilityUnitId])
+  @@unique([utilityUnitId, referenceMonth, version])
+  @@index([utilityUnitId, status, referenceMonth])
   @@map("energy_readings")
+}
+
+model EnergyBillImport {
+  id                  String                  @id @default(uuid()) @db.Uuid
+  organizationId      String                  @map("organization_id") @db.Uuid
+  customerId          String                  @map("customer_id") @db.Uuid
+  utilityUnitId       String?                 @map("utility_unit_id") @db.Uuid
+  opportunityId       String?                 @map("opportunity_id") @db.Uuid
+  documentVersionId   String                  @unique @map("document_version_id") @db.Uuid
+  status              String                  @default("QUEUED")
+  version             Int                     @default(1)
+  createdById         String                  @map("created_by_id") @db.Uuid
+  cancellationRequestedAt DateTime?            @map("cancellation_requested_at")
+  appliedAt           DateTime?                @map("applied_at")
+  createdAt           DateTime                 @default(now()) @map("created_at")
+  updatedAt           DateTime                 @updatedAt @map("updated_at")
+
+  organization        Organization             @relation(fields: [organizationId], references: [id])
+  customer            Customer                 @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  utilityUnit         UtilityUnit?              @relation(fields: [utilityUnitId], references: [id], onDelete: Restrict)
+  opportunity         Opportunity?              @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
+  documentVersion     DossierDocumentVersion   @relation(fields: [documentVersionId], references: [id], onDelete: Restrict)
+  outboxEvents        ImportOutbox[]
+  transitions         EnergyImportTransition[]
+  extractionAttempts ExtractionAttempt[]
+  candidates          ExtractionCandidate[]
+  reviews             ImportReview[]
+  application         ImportApplication?
+  appliedReadings     EnergyReading[]          @relation("ImportReadings")
+  revisions           EnergyReadingRevision[]
+
+  @@index([organizationId, customerId, createdAt])
+  @@index([status, updatedAt])
+  @@map("energy_bill_imports")
+}
+
+model ImportOutbox {
+  id             String          @id @default(uuid()) @db.Uuid
+  organizationId String          @map("organization_id") @db.Uuid
+  importId       String          @map("import_id") @db.Uuid
+  eventType      String          @map("event_type")
+  schemaVersion  Int?            @map("schema_version")
+  correlationId  String?         @map("correlation_id")
+  dedupeKey      String          @unique @map("dedupe_key")
+  payload        Json
+  status         String          @default("PENDING")
+  attempts       Int             @default(0)
+  availableAt    DateTime        @default(now()) @map("available_at")
+  leaseUntil     DateTime?       @map("lease_until")
+  leaseOwner     String?         @map("lease_owner")
+  heartbeatAt    DateTime?       @map("heartbeat_at")
+  completedAt    DateTime?       @map("completed_at")
+  lastErrorCode  String?         @map("last_error_code")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  energyBillImport EnergyBillImport @relation(fields: [importId], references: [id], onDelete: Cascade)
+  extractionAttempt ExtractionAttempt?
+
+  @@index([status, availableAt])
+  @@index([importId])
+  @@map("import_outbox")
+}
+
+model EnergyImportTransition {
+  id             String          @id @default(uuid()) @db.Uuid
+  organizationId String          @map("organization_id") @db.Uuid
+  importId       String          @map("import_id") @db.Uuid
+  actorId        String          @map("actor_id") @db.Uuid
+  action         String
+  fromStatus     String          @map("from_status")
+  toStatus       String          @map("to_status")
+  version        Int
+  reason         String
+  createdAt      DateTime        @default(now()) @map("created_at")
+
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  energyBillImport EnergyBillImport @relation(fields: [importId], references: [id], onDelete: Restrict)
+  actor          User            @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@unique([importId, version])
+  @@index([organizationId, createdAt])
+  @@map("energy_import_transitions")
+}
+
+model ExtractionAttempt {
+  id                  String          @id @default(uuid()) @db.Uuid
+  organizationId      String          @map("organization_id") @db.Uuid
+  importId            String          @map("import_id") @db.Uuid
+  outboxId            String?         @unique @map("outbox_id") @db.Uuid
+  attemptNumber       Int             @map("attempt_number")
+  correlationId       String          @unique @map("correlation_id")
+  adapterName         String?         @map("adapter_name")
+  modelName           String?         @map("model_name")
+  modelVersion        String?         @map("model_version")
+  externalOperationId String?         @map("external_operation_id")
+  status              String          @default("CLAIMED")
+  leaseOwner          String?         @map("lease_owner")
+  leaseUntil          DateTime?       @map("lease_until")
+  heartbeatAt         DateTime?       @map("heartbeat_at")
+  startedAt           DateTime        @default(now()) @map("started_at")
+  finishedAt          DateTime?       @map("finished_at")
+  pageCount           Int?            @map("page_count")
+  chargedPages        Int?            @map("charged_pages")
+  estimatedCost       Decimal?        @map("estimated_cost") @db.Decimal(12, 6)
+  actualCost          Decimal?        @map("actual_cost") @db.Decimal(12, 6)
+  currency            String?
+  errorCode           String?         @map("error_code")
+  retryable           Boolean?
+  nextAttemptAt       DateTime?       @map("next_attempt_at")
+  createdAt           DateTime        @default(now()) @map("created_at")
+  updatedAt           DateTime        @updatedAt @map("updated_at")
+
+  organization        Organization    @relation(fields: [organizationId], references: [id])
+  energyBillImport    EnergyBillImport @relation(fields: [importId], references: [id], onDelete: Restrict)
+  outbox              ImportOutbox?   @relation(fields: [outboxId], references: [id], onDelete: Restrict)
+  candidates          ExtractionCandidate[]
+
+  @@unique([importId, attemptNumber])
+  @@index([organizationId, startedAt])
+  @@index([status, leaseUntil])
+  @@map("extraction_attempts")
+}
+
+model ExtractionCandidate {
+  id                 String          @id @default(uuid()) @db.Uuid
+  importId           String          @map("import_id") @db.Uuid
+  attemptId          String?         @map("attempt_id") @db.Uuid
+  source             String          @default("MANUAL")
+  field              String
+  rawValue           String?         @map("raw_value")
+  normalizedValue    String?         @map("normalized_value")
+  unit               String?
+  page               Int?
+  region             Json?
+  providerConfidence Json?           @map("provider_confidence")
+  qualitySignals     Json            @map("quality_signals")
+  systemValidation   Json            @map("system_validation")
+  createdAt          DateTime        @default(now()) @map("created_at")
+
+  energyBillImport   EnergyBillImport @relation(fields: [importId], references: [id], onDelete: Restrict)
+  attempt            ExtractionAttempt? @relation(fields: [attemptId], references: [id], onDelete: Restrict)
+
+  @@index([importId, field, createdAt])
+  @@map("extraction_candidates")
+}
+
+model ImportReview {
+  id             String             @id @default(uuid()) @db.Uuid
+  organizationId String             @map("organization_id") @db.Uuid
+  importId       String             @map("import_id") @db.Uuid
+  revision       Int
+  reviewedById   String             @map("reviewed_by_id") @db.Uuid
+  digest         String
+  decisions      Json
+  baseVersions   Json               @map("base_versions")
+  createdAt      DateTime           @default(now()) @map("created_at")
+
+  organization   Organization       @relation(fields: [organizationId], references: [id])
+  energyBillImport EnergyBillImport  @relation(fields: [importId], references: [id], onDelete: Restrict)
+  application    ImportApplication?
+  readings       EnergyReading[]    @relation("ReviewReadings")
+  revisions      EnergyReadingRevision[]
+
+  @@unique([importId, revision])
+  @@index([organizationId, createdAt])
+  @@map("import_reviews")
+}
+
+model ImportApplication {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  importId       String       @unique @map("import_id") @db.Uuid
+  reviewId       String       @unique @map("review_id") @db.Uuid
+  payloadHash    String       @map("payload_hash")
+  idempotencyKey String       @map("idempotency_key")
+  receipt        Json
+  committedAt    DateTime     @default(now()) @map("committed_at")
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  energyBillImport EnergyBillImport @relation(fields: [importId], references: [id], onDelete: Restrict)
+  review         ImportReview @relation(fields: [reviewId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, committedAt])
+  @@map("import_applications")
+}
+
+model EnergyReadingRevision {
+  id                String                @id @default(uuid()) @db.Uuid
+  organizationId    String                @map("organization_id") @db.Uuid
+  utilityUnitId     String                @map("utility_unit_id") @db.Uuid
+  readingId         String                @map("reading_id") @db.Uuid
+  version           Int
+  source            String
+  sourceImportId    String?               @map("source_import_id") @db.Uuid
+  sourceReviewId    String?               @map("source_review_id") @db.Uuid
+  documentVersionId String?               @map("document_version_id") @db.Uuid
+  authorId          String                @map("author_id") @db.Uuid
+  previousValues    Json?                 @map("previous_values")
+  currentValues     Json                  @map("current_values")
+  reason            String?
+  createdAt         DateTime              @default(now()) @map("created_at")
+
+  organization      Organization          @relation(fields: [organizationId], references: [id])
+  utilityUnit       UtilityUnit           @relation(fields: [utilityUnitId], references: [id], onDelete: Restrict)
+  reading           EnergyReading         @relation(fields: [readingId], references: [id], onDelete: Restrict)
+  sourceImport      EnergyBillImport?     @relation(fields: [sourceImportId], references: [id], onDelete: Restrict)
+  sourceReview      ImportReview?         @relation(fields: [sourceReviewId], references: [id], onDelete: Restrict)
+  documentVersion  DossierDocumentVersion? @relation(fields: [documentVersionId], references: [id], onDelete: Restrict)
+
+  @@index([readingId, version])
+  @@index([utilityUnitId, createdAt])
+  @@map("energy_reading_revisions")
 }
 
 model Survey {
@@ -807,6 +1072,7 @@ model Contract {
   signedReviews              SignedContractReview[]
   projectGates               ProjectGate[]
   paymentPlans               PaymentPlan[]
+  dossierLinks               DocumentContractLink[]
 
   @@unique([organizationId, code])
   @@index([opportunityId])
@@ -1481,6 +1747,7 @@ model OperationalProject {
   supportTickets                SupportTicket[]
   warrantyCoverages             WarrantyCoverage[]
   monitoringSystem              MonitoringSystem?
+  documentLinks                 DocumentProjectLink[]
 
   @@unique([organizationId, code])
   @@index([organizationId, state])
@@ -1563,6 +1830,7 @@ model WorkOrder {
   assignedTeam     Team?                    @relation(fields: [assignedTeamId], references: [id])
   checklistItems   WorkOrderChecklistItem[]
   serviceVisitQuotes ServiceVisitQuote[]
+  documentLinks      DocumentWorkOrderLink[]
 
   @@unique([organizationId, code])
   @@index([organizationId, state])
@@ -2005,5 +2273,205 @@ model MetricProjection {
   @@map("metric_projections")
 }
 
+// ==========================================
+// SPEC-013: Dossiê Documental Permanente e Armazenamento Durável
+// ==========================================
+
+model DossierDocument {
+  id             String                        @id @default(uuid()) @db.Uuid
+  organizationId String                        @map("organization_id") @db.Uuid
+  customerId     String                        @map("customer_id") @db.Uuid
+  category       String
+  title          String
+  status         String                        @default("ACTIVE") // ACTIVE, ARCHIVED
+  purpose        String?
+  metadataVersion Int                          @default(1) @map("metadata_version")
+  archiveReason  String?                       @map("archive_reason")
+  createdBy      String                        @map("created_by")
+  createdAt      DateTime                      @default(now()) @map("created_at")
+  updatedAt      DateTime                      @updatedAt @map("updated_at")
+
+  organization        Organization              @relation(fields: [organizationId], references: [id])
+  customer            Customer                  @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  versions            DossierDocumentVersion[]
+  utilityUnitLinks    DocumentUtilityUnitLink[]
+  opportunityLinks    DocumentOpportunityLink[]
+  projectLinks        DocumentProjectLink[]
+  representativeLinks DocumentRepresentativeLink[]
+  contractLinks       DocumentContractLink[]
+  workOrderLinks      DocumentWorkOrderLink[]
+
+  @@index([organizationId, customerId])
+  @@index([category, status])
+  @@map("dossier_documents")
+}
+
+model DossierDocumentVersion {
+  id               String          @id @default(uuid()) @db.Uuid
+  documentId       String          @map("document_id") @db.Uuid
+  versionNumber    Int             @map("version_number")
+  originalName     String          @map("original_name")
+  fileSize         Int             @map("file_size")
+  declaredMime     String          @map("declared_mime")
+  verifiedMime     String?         @map("verified_mime")
+  sha256           String
+  persistenceState String          @default("PENDING_UPLOAD") @map("persistence_state") // PENDING_UPLOAD, READY, FAILED
+  storedObjectId   String?         @map("stored_object_id") @db.Uuid
+  authorId         String          @map("author_id")
+  createdAt        DateTime        @default(now()) @map("created_at")
+
+  document         DossierDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  storedObject     StoredObject?   @relation(fields: [storedObjectId], references: [id])
+  energyBillImport EnergyBillImport?
+  energyReadingRevisions EnergyReadingRevision[]
+
+  @@unique([documentId, versionNumber])
+  @@index([sha256])
+  @@map("dossier_document_versions")
+}
+
+model StoredObject {
+  id             String                   @id @default(uuid()) @db.Uuid
+  organizationId String                   @map("organization_id") @db.Uuid
+  backend        String                   @default("MINIO") // MINIO, S3, LEGACY_LOCAL
+  bucket         String
+  key            String
+  sha256         String
+  byteSize       Int                      @map("byte_size")
+  verified       Boolean                  @default(false)
+  scannerVersion String?                  @map("scanner_version")
+  scanResult     String?                  @map("scan_result") // CLEAN, SUSPICIOUS, UNCHECKED
+  createdAt      DateTime                 @default(now()) @map("created_at")
+
+  organization     Organization            @relation(fields: [organizationId], references: [id])
+  documentVersions DossierDocumentVersion[]
+
+  @@unique([bucket, key])
+  @@index([organizationId, sha256])
+  @@map("stored_objects")
+}
+
+model CustomerRepresentative {
+  id             String                       @id @default(uuid()) @db.Uuid
+  organizationId String                       @map("organization_id") @db.Uuid
+  customerId     String                       @map("customer_id") @db.Uuid
+  name           String
+  documentNumber String?                      @map("document_number")
+  role           String                       @default("LEGAL_REPRESENTATIVE") // LEGAL_REPRESENTATIVE, ATTORNEY, TECHNICAL_RESPONSIBLE, FINANCIAL_CONTACT, OTHER
+  createdAt      DateTime                     @default(now()) @map("created_at")
+  updatedAt      DateTime                     @updatedAt @map("updated_at")
+
+  organization   Organization                 @relation(fields: [organizationId], references: [id])
+  customer       Customer                     @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  documentLinks  DocumentRepresentativeLink[]
+
+  @@index([organizationId, customerId])
+  @@map("customer_representatives")
+}
+
+model DocumentRepresentativeLink {
+  id               String                 @id @default(uuid()) @db.Uuid
+  documentId       String                 @map("document_id") @db.Uuid
+  representativeId String                 @map("representative_id") @db.Uuid
+
+  document         DossierDocument        @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  representative   CustomerRepresentative @relation(fields: [representativeId], references: [id], onDelete: Restrict)
+
+  @@unique([documentId, representativeId])
+  @@map("document_representative_links")
+}
+
+model DocumentUtilityUnitLink {
+  id            String          @id @default(uuid()) @db.Uuid
+  documentId    String          @map("document_id") @db.Uuid
+  utilityUnitId String          @map("utility_unit_id") @db.Uuid
+
+  document      DossierDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  utilityUnit   UtilityUnit     @relation(fields: [utilityUnitId], references: [id], onDelete: Restrict)
+
+  @@unique([documentId, utilityUnitId])
+  @@map("document_utility_unit_links")
+}
+
+model DocumentOpportunityLink {
+  id            String          @id @default(uuid()) @db.Uuid
+  documentId    String          @map("document_id") @db.Uuid
+  opportunityId String          @map("opportunity_id") @db.Uuid
+
+  document      DossierDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  opportunity   Opportunity     @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
+
+  @@unique([documentId, opportunityId])
+  @@map("document_opportunity_links")
+}
+
+model DocumentProjectLink {
+  id         String             @id @default(uuid()) @db.Uuid
+  documentId String             @map("document_id") @db.Uuid
+  projectId  String             @map("project_id") @db.Uuid
+
+  document   DossierDocument    @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  project    OperationalProject @relation(fields: [projectId], references: [id], onDelete: Restrict)
+
+  @@unique([documentId, projectId])
+  @@map("document_project_links")
+}
+
+model DocumentWorkOrderLink {
+  id          String          @id @default(uuid()) @db.Uuid
+  documentId  String          @map("document_id") @db.Uuid
+  workOrderId String          @map("work_order_id") @db.Uuid
+  phase       String?
+
+  document    DossierDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  workOrder   WorkOrder       @relation(fields: [workOrderId], references: [id], onDelete: Restrict)
+
+  @@unique([documentId, workOrderId])
+  @@map("document_work_order_links")
+}
+
+model DocumentContractLink {
+  id         String          @id @default(uuid()) @db.Uuid
+  documentId String          @map("document_id") @db.Uuid
+  contractId String          @map("contract_id") @db.Uuid
+
+  document   DossierDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  contract   Contract        @relation(fields: [contractId], references: [id], onDelete: Restrict)
+
+  @@unique([documentId, contractId])
+  @@map("document_contract_links")
+}
+
+model DocumentAccessEvent {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  actorId        String       @map("actor_id")
+  targetType     String       @map("target_type") // DOSSIER, PROPOSAL, CONTRACT
+  targetId       String       @map("target_id")
+  versionId      String?      @map("version_id")
+  purpose        String       @default("VIEW") // VIEW, DOWNLOAD
+  outcome        String       @default("SUCCESS") // SUCCESS, DENIED, ERROR
+  ipAddress      String?      @map("ip_address")
+  userAgent      String?      @map("user_agent")
+  occurredAt     DateTime     @default(now()) @map("occurred_at")
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, targetId])
+  @@index([actorId, occurredAt])
+  @@map("document_access_events")
+}
 
 
+
+
+model DossierCommand {
+  key            String   @id
+  organizationId String   @map("organization_id") @db.Uuid
+  actorId        String   @map("actor_id") @db.Uuid
+  fingerprint    String
+  result         Json
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("dossier_commands")
+}

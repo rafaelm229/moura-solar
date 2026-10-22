@@ -15,7 +15,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
       exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
     const traceId = request.requestId ?? randomUUID();
     if (status >= 500) {
-      console.error('API 500 EXCEPTION:', exception);
+      console.error('API request failed', { traceId, status });
     }
 
     const body = exception instanceof HttpException ? exception.getResponse() : null;

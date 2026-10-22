@@ -4,6 +4,8 @@ const password = 'E2e-test-password-2026';
 
 for (const [width, height] of [
   [360, 800],
+  [768, 1024],
+  [1024, 900],
   [1440, 900],
 ]) {
   test(`engineer/seller journey for sizing, consumption history, and margin governance at ${width}px`, async ({
@@ -47,7 +49,7 @@ for (const [width, height] of [
       .fill(`Solar Residencial Silva ${width}`);
     await page
       .getByLabel('Telefone / WhatsApp')
-      .fill(`(31) 97777-${width.toString().padStart(4, '0')}`);
+      .fill(`(31) 95555-${width.toString().padStart(4, '0')}`);
     await page.getByLabel('Cidade').fill('Belo Horizonte');
     await page.getByRole('button', { name: 'Salvar Cliente' }).click();
 
@@ -72,7 +74,7 @@ for (const [width, height] of [
     ).toBeVisible();
 
     // 5. Navigate to Consumo & Vistoria sub-tab
-    await page.getByRole('button', { name: '⚡ Consumo & Vistoria' }).click();
+    await page.getByRole('button', { name: 'Consumo & Vistoria' }).click();
 
     // Create and link utility unit
     await page.getByRole('button', { name: '+ Cadastrar Nova Unidade Consumidora' }).click();
@@ -90,6 +92,21 @@ for (const [width, height] of [
     const readingsContainer = page.locator(width < 768 ? '.mobile-readings-list' : '.desktop-only');
     await expect(readingsContainer.getByText('550 kWh')).toBeVisible();
 
+    // Duplicate creation must report a conflict without changing the saved reading.
+    await page.getByLabel('Consumo Mensal (kWh) *').fill('999');
+    await page.getByRole('button', { name: 'Salvar Leitura' }).click();
+    await expect(page.getByText(/Este mês já possui uma leitura/)).toBeVisible();
+    await expect(readingsContainer.getByText('550 kWh')).toBeVisible();
+
+    // Explicit correction records a new version and keeps the old value inspectable.
+    await readingsContainer.getByRole('button', { name: 'Corrigir' }).first().click();
+    await page.getByLabel('Consumo Mensal (kWh) *').fill('575');
+    await page.getByLabel('Motivo da correção *').fill('Valor conferido novamente na fatura.');
+    await page.getByRole('button', { name: 'Salvar nova versão corrigida' }).click();
+    await expect(readingsContainer.getByText('575 kWh')).toBeVisible();
+    await readingsContainer.getByText(/Ver 1 versão\(ões\) anterior\(es\)/).click();
+    await expect(readingsContainer.getByText(/550 kWh.*SUPERSEDED/s)).toBeVisible();
+
     await page.getByLabel('Mês de Referência (AAAA-MM) *').fill('2026-07');
     await page.getByLabel('Consumo Mensal (kWh) *').fill('650');
     await page.getByLabel('Valor Faturado (R$)').fill('620.00');
@@ -100,7 +117,7 @@ for (const [width, height] of [
     // SPEC-005 item 16 Acceptance Criteria: Incomplete history must be prominently warned
     await expect(page.getByTestId('incomplete-history-notice')).toBeVisible();
     await expect(page.getByText('2 / 12')).toBeVisible();
-    await expect(page.getByText('600 kWh').first()).toBeVisible(); // (550 + 650) / 2 = 600
+    await expect(page.getByText('612,5 kWh').first()).toBeVisible(); // (575 + 650) / 2 = 612.5
 
     // Fill in technical survey
     await page.getByRole('button', { name: '+ Iniciar Levantamento Técnico' }).click();
@@ -111,14 +128,39 @@ for (const [width, height] of [
     await expect(page.getByText('Vistoria Concluída')).toBeVisible();
 
     // 6. Navigate to Dimensionamento & Custos sub-tab
-    await page.getByRole('button', { name: '☀️ Dimensionamento & Custos' }).click();
+    await page.getByRole('button', { name: 'Dimensionamento & Custos' }).click();
 
     // Assistant pre-fills target kWh
     await expect(page.getByLabel('Geração Mensal Alvo (kWh/mês) *')).toHaveValue('600');
 
+    const modulePicker = page.getByRole('combobox', {
+      name: 'Selecionar módulo preferencial do catálogo',
+    });
+    const moduleSearch = page.getByRole('searchbox', {
+      name: 'Buscar módulo por nome, fabricante, modelo ou SKU',
+    });
+    await expect(modulePicker.locator('option').nth(1)).toBeAttached();
+    await expect(modulePicker.locator('option').nth(1)).toContainText(/un\. disponíveis/);
+    const selectedModuleLabel = (await modulePicker.locator('option').nth(1).textContent()) ?? '';
+    const selectedModulePower = selectedModuleLabel.match(/(\d+(?:[.,]\d+)?) Wp/)?.[1];
+    expect(selectedModulePower).toBeTruthy();
+    await moduleSearch.fill('nao-encontrar-este-modulo');
+    await expect(modulePicker).toContainText('Nenhum módulo encontrado no catálogo ativo');
+    await expect(
+      page.getByRole('button', { name: 'Calcular Sugestão de Dimensionamento' }),
+    ).toBeDisabled();
+    await moduleSearch.clear();
+    await expect(
+      page.getByRole('button', { name: 'Calcular Sugestão de Dimensionamento' }),
+    ).toBeEnabled();
+    await modulePicker.selectOption({ index: 1 });
+
     // Calculate suggestion
     await page.getByRole('button', { name: 'Calcular Sugestão de Dimensionamento' }).click();
     await expect(page.getByText('SUGESTÃO TÉCNICA AUTOMATIZADA')).toBeVisible();
+    await expect(page.getByTestId('suggested-module-summary')).toContainText(
+      `${selectedModulePower} Wp`,
+    );
 
     // Create Design from suggestion
     await page

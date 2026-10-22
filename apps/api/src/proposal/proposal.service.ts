@@ -15,9 +15,33 @@ import {
   RecordProposalAcceptanceDto,
   RecordProposalRejectionDto,
 } from './proposal.dto';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { ConfigService } from '@nestjs/config';
 import { AuditService } from '../database/audit.service';
+import type {
+  ActivityCreatedEventV1,
+  ProposalAcceptedEventV1,
+  ProposalCreatedEventV1,
+  ProposalDeliveredEventV1,
+  ProposalRejectedEventV1,
+  ProposalVersionCreatedEventV1,
+} from '@moura-solar/contracts';
+
+const proposalStatusLabels: Record<string, string> = {
+  DRAFT: 'rascunho',
+  PENDING_APPROVAL: 'aguardando aprovação',
+  APPROVED: 'aprovada para geração',
+  GENERATING: 'em geração',
+  READY: 'pronta para envio',
+  SENT: 'enviada ao cliente',
+  VIEWED: 'visualizada pelo cliente',
+  ACCEPTED: 'aceita',
+  REJECTED: 'recusada',
+  EXPIRED: 'vencida',
+  SUPERSEDED: 'substituída',
+  CANCELED: 'cancelada',
+  GENERATION_FAILED: 'falha ao gerar o documento',
+};
 
 @Injectable()
 export class ProposalService {
@@ -29,7 +53,12 @@ export class ProposalService {
     private readonly audit: AuditService,
   ) {}
 
-  async createProposal(organizationId: string, userId: string, dto: CreateProposalDto) {
+  async createProposal(
+    organizationId: string,
+    userId: string,
+    dto: CreateProposalDto,
+    correlationId: string,
+  ) {
     // 1. Fetch Opportunity
     const opportunity = await this.prisma.opportunity.findFirst({
       where: { id: dto.opportunityId, organizationId },
@@ -105,14 +134,14 @@ export class ProposalService {
         ? modules
             .map((m) => `${Number(m.quantity)}x ${m.catalogItem?.name ?? m.description}`)
             .join(' + ')
-        : `${Math.round(Number(designVersion.dcPowerKwp) * 1.8)}x Módulos Fotovoltaicos Monocristalinos Tier-1`;
+        : `${Math.round(Number(designVersion.dcPowerKwp) * 1.8)} módulos fotovoltaicos monocristalinos de fabricantes classificados como nível 1`;
 
     const invertersDescription =
       inverters.length > 0
         ? inverters
             .map((inv) => `${Number(inv.quantity)}x ${inv.catalogItem?.name ?? inv.description}`)
             .join(' + ')
-        : `Inversor Solar On-Grid ${designVersion.acPowerKw.toFixed(1)} kW homologado`;
+        : `Inversor solar de ${designVersion.acPowerKw.toFixed(1)} kW conectado à rede e homologado`;
 
     // 5. Build Snapshots
     const tariff = 0.95; // Default reference tariff
@@ -241,6 +270,38 @@ export class ProposalService {
             },
             tx,
           );
+
+          const event: ProposalCreatedEventV1 = {
+            eventId: randomUUID(),
+            eventType: 'PROPOSAL_CREATED',
+            schemaVersion: 1,
+            occurredAt: prop.createdAt.toISOString(),
+            organizationId,
+            aggregateId: prop.id,
+            producer: 'proposal',
+            correlationId,
+            payload: {
+              proposalId: prop.id,
+              proposalVersionId: version.id,
+              opportunityId: opportunity.id,
+            },
+          };
+
+          await tx.integrationOutbox.create({
+            data: {
+              id: event.eventId,
+              organizationId: event.organizationId,
+              eventType: event.eventType,
+              schemaVersion: event.schemaVersion,
+              aggregateType: 'Proposal',
+              aggregateId: event.aggregateId,
+              producer: event.producer,
+              correlationId: event.correlationId,
+              occurredAt: prop.createdAt,
+              payload: event.payload,
+              dedupeKey: `PROPOSAL_CREATED:${prop.id}`,
+            },
+          });
 
           return { proposal: prop, version };
         });
@@ -500,6 +561,7 @@ export class ProposalService {
     versionId: string,
     userId: string,
     dto: RecordProposalDeliveryDto,
+    correlationId: string,
   ) {
     const version = await this.prisma.proposalVersion.findFirst({
       where: { id: versionId, organizationId },
@@ -583,13 +645,13 @@ export class ProposalService {
 
       // 4. Create automatic follow-up activity
       const followUpDueAt = new Date(sentAt.getTime() + 2 * 86400000); // 2 days
-      await tx.activity.create({
+      const followUpActivity = await tx.activity.create({
         data: {
           organizationId,
           opportunityId: opp.id,
           customerId: opp.customerId,
           type: 'FOLLOW_UP',
-          subject: `Follow-up: Proposta ${version.proposal.code} v${version.versionNumber}`,
+          subject: `Acompanhar proposta ${version.proposal.code}, versão ${version.versionNumber}`,
           description: `Acompanhar análise da proposta comercial enviada via ${dto.channel} ao cliente. Validade: ${new Intl.DateTimeFormat('pt-BR').format(validUntil)}.`,
           assigneeUserId: opp.ownerUserId,
           dueAt: followUpDueAt,
@@ -598,7 +660,7 @@ export class ProposalService {
       });
 
       // 5. Audit event
-      await this.audit.record(
+      const deliveryAudit = await this.audit.record(
         {
           organizationId,
           actorId: userId,
@@ -607,6 +669,71 @@ export class ProposalService {
         },
         tx,
       );
+
+      const event: ProposalDeliveredEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'PROPOSAL_DELIVERED',
+        schemaVersion: 1,
+        occurredAt: delivery.sentAt.toISOString(),
+        organizationId,
+        aggregateId: version.proposal.id,
+        producer: 'proposal',
+        correlationId,
+        payload: {
+          proposalId: version.proposal.id,
+          proposalVersionId: version.id,
+          deliveryId: delivery.id,
+          opportunityId: opp.id,
+        },
+      };
+
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Proposal',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: delivery.sentAt,
+          payload: event.payload,
+          dedupeKey: `PROPOSAL_DELIVERED:${delivery.id}`,
+        },
+      });
+
+      const activityEvent: ActivityCreatedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'ACTIVITY_CREATED',
+        schemaVersion: 1,
+        occurredAt: deliveryAudit.createdAt.toISOString(),
+        organizationId,
+        aggregateId: followUpActivity.id,
+        producer: 'crm',
+        correlationId,
+        payload: {
+          activityId: followUpActivity.id,
+          auditEventId: deliveryAudit.id,
+          customerId: opp.customerId,
+          opportunityId: opp.id,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: activityEvent.eventId,
+          organizationId: activityEvent.organizationId,
+          eventType: activityEvent.eventType,
+          schemaVersion: activityEvent.schemaVersion,
+          aggregateType: 'Activity',
+          aggregateId: activityEvent.aggregateId,
+          producer: activityEvent.producer,
+          correlationId: activityEvent.correlationId,
+          occurredAt: deliveryAudit.createdAt,
+          payload: activityEvent.payload,
+          dedupeKey: `ACTIVITY_CREATED:${deliveryAudit.id}:${followUpActivity.id}`,
+        },
+      });
 
       return { delivery, version: updatedVersion };
     });
@@ -619,6 +746,7 @@ export class ProposalService {
     versionId: string,
     userId: string,
     dto: RecordProposalAcceptanceDto,
+    correlationId: string,
   ) {
     const acceptedAt = new Date();
 
@@ -656,7 +784,7 @@ export class ProposalService {
       // SPEC-006: Version must be SENT or VIEWED to be accepted
       if (version.status !== 'SENT' && version.status !== 'VIEWED') {
         throw new UnprocessableEntityException(
-          `Apenas propostas enviadas (SENT) podem ser aceitas. Status atual: ${version.status}`,
+          `O aceite só pode ser registrado depois que a proposta for enviada ao cliente. Situação atual: ${proposalStatusLabels[version.status] ?? 'indisponível'}.`,
         );
       }
 
@@ -724,7 +852,7 @@ export class ProposalService {
       });
 
       // 7. Create contract formalization activity
-      await tx.activity.create({
+      const contractActivity = await tx.activity.create({
         data: {
           organizationId,
           opportunityId: opp.id,
@@ -739,7 +867,7 @@ export class ProposalService {
       });
 
       // 8. Audit event
-      await this.audit.record(
+      const acceptanceAudit = await this.audit.record(
         {
           organizationId,
           actorId: userId,
@@ -748,6 +876,71 @@ export class ProposalService {
         },
         tx,
       );
+
+      const eventId = randomUUID();
+      const event: ProposalAcceptedEventV1 = {
+        eventId,
+        eventType: 'PROPOSAL_ACCEPTED',
+        schemaVersion: 1,
+        occurredAt: acceptedAt.toISOString(),
+        organizationId,
+        aggregateId: version.proposalId,
+        producer: 'proposal',
+        correlationId,
+        payload: {
+          acceptanceId: acceptance.id,
+          proposalVersionId: version.id,
+          opportunityId: opp.id,
+        },
+      };
+
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Proposal',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: acceptedAt,
+          payload: event.payload,
+          dedupeKey: `PROPOSAL_ACCEPTED:${acceptance.id}`,
+        },
+      });
+
+      const activityEvent: ActivityCreatedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'ACTIVITY_CREATED',
+        schemaVersion: 1,
+        occurredAt: acceptanceAudit.createdAt.toISOString(),
+        organizationId,
+        aggregateId: contractActivity.id,
+        producer: 'crm',
+        correlationId,
+        payload: {
+          activityId: contractActivity.id,
+          auditEventId: acceptanceAudit.id,
+          customerId: opp.customerId,
+          opportunityId: opp.id,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: activityEvent.eventId,
+          organizationId: activityEvent.organizationId,
+          eventType: activityEvent.eventType,
+          schemaVersion: activityEvent.schemaVersion,
+          aggregateType: 'Activity',
+          aggregateId: activityEvent.aggregateId,
+          producer: activityEvent.producer,
+          correlationId: activityEvent.correlationId,
+          occurredAt: acceptanceAudit.createdAt,
+          payload: activityEvent.payload,
+          dedupeKey: `ACTIVITY_CREATED:${acceptanceAudit.id}:${contractActivity.id}`,
+        },
+      });
 
       return acceptance;
     });
@@ -760,9 +953,11 @@ export class ProposalService {
     versionId: string,
     userId: string,
     dto: RecordProposalRejectionDto,
+    correlationId: string,
   ) {
     const version = await this.prisma.proposalVersion.findFirst({
       where: { id: versionId, organizationId },
+      include: { proposal: { select: { opportunityId: true } } },
     });
 
     if (!version) {
@@ -780,15 +975,49 @@ export class ProposalService {
         },
       });
 
-      await this.audit.record(
+      const rejection = await this.audit.record(
         {
           organizationId,
           actorId: userId,
           action: 'PROPOSAL_REJECTED',
           entityId: version.proposalId,
+          traceId: correlationId,
         },
         tx,
       );
+
+      const event: ProposalRejectedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'PROPOSAL_REJECTED',
+        schemaVersion: 1,
+        occurredAt: rejection.createdAt.toISOString(),
+        organizationId,
+        aggregateId: version.proposalId,
+        producer: 'proposal',
+        correlationId,
+        payload: {
+          rejectionId: rejection.id,
+          proposalId: version.proposalId,
+          proposalVersionId: version.id,
+          opportunityId: version.proposal.opportunityId,
+        },
+      };
+
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Proposal',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: rejection.createdAt,
+          payload: event.payload,
+          dedupeKey: `PROPOSAL_REJECTED:${rejection.id}`,
+        },
+      });
 
       return updated;
     });
@@ -796,7 +1025,12 @@ export class ProposalService {
     return result;
   }
 
-  async createNextVersion(organizationId: string, versionId: string, userId: string) {
+  async createNextVersion(
+    organizationId: string,
+    versionId: string,
+    userId: string,
+    correlationId: string,
+  ) {
     const baseVersion = await this.prisma.proposalVersion.findFirst({
       where: { id: versionId, organizationId },
       include: { proposal: true },
@@ -849,6 +1083,39 @@ export class ProposalService {
             },
             tx,
           );
+
+          const event: ProposalVersionCreatedEventV1 = {
+            eventId: randomUUID(),
+            eventType: 'PROPOSAL_VERSION_CREATED',
+            schemaVersion: 1,
+            occurredAt: created.createdAt.toISOString(),
+            organizationId,
+            aggregateId: baseVersion.proposalId,
+            producer: 'proposal',
+            correlationId,
+            payload: {
+              proposalId: baseVersion.proposalId,
+              proposalVersionId: created.id,
+              basedOnVersionId: baseVersion.id,
+              opportunityId: baseVersion.proposal.opportunityId,
+            },
+          };
+
+          await tx.integrationOutbox.create({
+            data: {
+              id: event.eventId,
+              organizationId: event.organizationId,
+              eventType: event.eventType,
+              schemaVersion: event.schemaVersion,
+              aggregateType: 'Proposal',
+              aggregateId: event.aggregateId,
+              producer: event.producer,
+              correlationId: event.correlationId,
+              occurredAt: created.createdAt,
+              payload: event.payload,
+              dedupeKey: `PROPOSAL_VERSION_CREATED:${created.id}`,
+            },
+          });
 
           return created;
         });

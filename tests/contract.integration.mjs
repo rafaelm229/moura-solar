@@ -1,3 +1,4 @@
+import { storageEnv } from './storage-env.mjs';
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
@@ -21,10 +22,7 @@ const env = {
   API_PORT: '3324',
   WEB_ORIGIN: 'http://localhost:3320',
   COOKIE_SECURE: 'false',
-  S3_ENDPOINT: 'http://localhost:9000',
-  S3_ACCESS_KEY: 'test',
-  S3_SECRET_KEY: 'test',
-  S3_BUCKET: 'test',
+  ...storageEnv,
   IDENTITY_LINK_SECRET: 'integration-test-link-secret-at-least-32-characters',
   BOOTSTRAP_TOKEN: 'integration-test-bootstrap-at-least-32-characters',
 };
@@ -249,10 +247,216 @@ test('1. Geração de minuta contratual a partir de proposta aceita (SPEC-007 It
   assert.ok(docxDoc.fileSize > 40000, 'Arquivo DOCX deve ter tamanho condizente');
   assert.ok(pdfDoc.fileSize > 5000, 'Arquivo PDF deve ter tamanho condizente');
 
-  // Verify initial project gate (CONTRACT / Gate C) created as PENDING
+  // Verify initial project gate (CONTRACT) is created as PENDING
   const contractGate = res.body.projectGates.find((g) => g.gateType === 'CONTRACT');
   assert.ok(contractGate);
   assert.equal(contractGate.status, 'PENDING');
+
+  const creationAudit = await db.auditEvent.findFirstOrThrow({
+    where: { action: 'CONTRACT_CREATED', entityId: res.body.id },
+  });
+  const contractActivity = await db.activity.findFirstOrThrow({
+    where: {
+      opportunityId: testOpportunityId,
+      subject: { contains: 'Assinatura de Contrato:' },
+    },
+  });
+  const activityEvent = await db.integrationOutbox.findFirstOrThrow({
+    where: {
+      organizationId: creationAudit.organizationId,
+      dedupeKey: `ACTIVITY_CREATED:${creationAudit.id}:${contractActivity.id}`,
+    },
+  });
+  assert.equal(activityEvent.correlationId, res.headers.get('x-request-id'));
+  assert.deepEqual(activityEvent.payload, {
+    activityId: contractActivity.id,
+    auditEventId: creationAudit.id,
+    customerId: testCustomerId,
+    opportunityId: testOpportunityId,
+  });
+
+  const contractEvent = await db.integrationOutbox.findFirstOrThrow({
+    where: {
+      organizationId: creationAudit.organizationId,
+      dedupeKey: `CONTRACT_CREATED:${creationAudit.id}:${res.body.id}`,
+    },
+  });
+  assert.equal(contractEvent.eventType, 'CONTRACT_CREATED');
+  assert.equal(contractEvent.schemaVersion, 1);
+  assert.equal(contractEvent.aggregateType, 'Contract');
+  assert.equal(contractEvent.aggregateId, res.body.id);
+  assert.equal(contractEvent.correlationId, res.headers.get('x-request-id'));
+  assert.equal(contractEvent.publishedAt, null);
+  assert.deepEqual(contractEvent.payload, {
+    contractId: res.body.id,
+    contractVersionId: activeVersion.id,
+    acceptedProposalVersionId,
+    auditEventId: creationAudit.id,
+    opportunityId: testOpportunityId,
+  });
+
+  const replayRes = await admin.call('contracts', 'POST', {
+    opportunityId: testOpportunityId,
+    acceptedProposalVersionId,
+    signingCity: 'Recife',
+    notes: 'Condição especial com seguro de instalação por 12 meses',
+  });
+  assert.equal(replayRes.status, 201);
+  assert.equal(replayRes.body.id, res.body.id);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: {
+        organizationId: creationAudit.organizationId,
+        dedupeKey: {
+          in: [
+            `ACTIVITY_CREATED:${creationAudit.id}:${contractActivity.id}`,
+            `CONTRACT_CREATED:${creationAudit.id}:${res.body.id}`,
+          ],
+        },
+      },
+    }),
+    2,
+  );
+
+  const reviewRequestId = `contract-review-request-${randomUUID()}`;
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_contract_review_event_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'CONTRACT_REVIEW_REQUESTED' THEN
+        RAISE EXCEPTION 'forced contract review outbox failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_contract_review_event_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_contract_review_event_for_test()
+  `);
+  const failedReviewRequest = await admin.call(`contracts/${res.body.id}/request-review`, 'POST', {
+    notes: 'Esta observação não deve ser persistida',
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_contract_review_event_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_contract_review_event_for_test()`);
+  assert.equal(failedReviewRequest.status, 500);
+  const afterReviewFailure = await db.contract.findUnique({ where: { id: res.body.id } });
+  assert.equal(afterReviewFailure.state, 'READY');
+  assert.equal(afterReviewFailure.notes, res.body.notes);
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'CONTRACT_REVIEW_REQUESTED', entityId: res.body.id },
+    }),
+    0,
+  );
+
+  const reviewRequestRes = await admin.call(
+    `contracts/${res.body.id}/request-review`,
+    'POST',
+    { notes: 'Observação privada para revisão jurídica' },
+    { 'x-request-id': reviewRequestId },
+  );
+  assert.equal(reviewRequestRes.status, 200);
+  assert.equal(reviewRequestRes.body.state, 'PENDING_REVIEW');
+  const reviewAudit = await db.auditEvent.findFirstOrThrow({
+    where: {
+      action: 'CONTRACT_REVIEW_REQUESTED',
+      entityId: res.body.id,
+      traceId: reviewRequestId,
+    },
+  });
+  const reviewEvent = await db.integrationOutbox.findFirstOrThrow({
+    where: { dedupeKey: `CONTRACT_REVIEW_REQUESTED:${reviewAudit.id}:${res.body.id}` },
+  });
+  assert.equal(reviewEvent.correlationId, reviewRequestId);
+  assert.equal(reviewEvent.aggregateType, 'Contract');
+  assert.equal(reviewEvent.aggregateId, res.body.id);
+  assert.deepEqual(reviewEvent.payload, {
+    contractId: res.body.id,
+    auditEventId: reviewAudit.id,
+    opportunityId: testOpportunityId,
+  });
+
+  const approvalRequestId = `contract-approval-${randomUUID()}`;
+  const approvalRes = await admin.call(
+    `contracts/${res.body.id}/approve`,
+    'POST',
+    { notes: 'Aprovação manual de revisão' },
+    { 'x-request-id': approvalRequestId },
+  );
+  assert.equal(approvalRes.status, 200);
+  assert.equal(approvalRes.body.state, 'READY');
+  assert.equal(approvalRes.body.versions[0].documents.length, 2);
+  assert.equal(
+    approvalRes.body.projectGates.find((gate) => gate.gateType === 'CONTRACT').status,
+    'PENDING',
+  );
+  const approvalAudit = await db.auditEvent.findFirstOrThrow({
+    where: {
+      action: 'CONTRACT_APPROVED',
+      entityId: res.body.id,
+      traceId: approvalRequestId,
+    },
+  });
+  const approvalEvent = await db.integrationOutbox.findFirstOrThrow({
+    where: { dedupeKey: `CONTRACT_APPROVED:${approvalAudit.id}:${res.body.id}` },
+  });
+  assert.equal(approvalEvent.correlationId, approvalRequestId);
+  assert.equal(approvalEvent.aggregateType, 'Contract');
+  assert.equal(approvalEvent.aggregateId, res.body.id);
+  assert.deepEqual(approvalEvent.payload, {
+    contractId: res.body.id,
+    auditEventId: approvalAudit.id,
+    opportunityId: testOpportunityId,
+  });
+
+  const apiExit = new Promise((resolve) => server.once('exit', resolve));
+  server.kill('SIGKILL');
+  await apiExit;
+  server = spawn('node', ['apps/api/dist/main.js'], { env, stdio: 'ignore' });
+  let apiReady = false;
+  for (let attempt = 0; attempt < 100; attempt++) {
+    try {
+      const ready = await fetch(`${base}/health/ready`);
+      if (ready.ok) {
+        apiReady = true;
+        break;
+      }
+    } catch {}
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  assert.equal(apiReady, true, 'API deve ficar pronta após reinício abrupto');
+  assert.equal((await admin.call('identity/me')).status, 200);
+
+  const persistedReviewEvent = await db.integrationOutbox.findUniqueOrThrow({
+    where: { id: reviewEvent.id },
+  });
+  const persistedApprovalEvent = await db.integrationOutbox.findUniqueOrThrow({
+    where: { id: approvalEvent.id },
+  });
+  assert.equal(persistedReviewEvent.correlationId, reviewRequestId);
+  assert.deepEqual(persistedReviewEvent.payload, reviewEvent.payload);
+  assert.equal(persistedReviewEvent.publishedAt, null);
+  assert.equal(persistedApprovalEvent.correlationId, approvalRequestId);
+  assert.deepEqual(persistedApprovalEvent.payload, approvalEvent.payload);
+  assert.equal(persistedApprovalEvent.publishedAt, null);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: {
+        aggregateId: res.body.id,
+        eventType: { in: ['CONTRACT_REVIEW_REQUESTED', 'CONTRACT_APPROVED'] },
+      },
+    }),
+    2,
+  );
+  assert.equal(
+    await db.auditEvent.count({
+      where: { id: { in: [reviewAudit.id, approvalAudit.id] }, entityId: res.body.id },
+    }),
+    2,
+  );
 });
 
 test('2. Download da Minuta DOCX com placeholders preenchidos', async () => {
@@ -284,6 +488,63 @@ test('3. Download do Contrato PDF institucional', async () => {
 test('4. Registro de envio do contrato formal (SPEC-007 Item 8)', async () => {
   const listRes = await admin.call(`opportunities/${testOpportunityId}/contracts`);
   const contractId = listRes.body[0].id;
+  const beforeActivityCount = await db.activity.count({
+    where: { opportunityId: testOpportunityId },
+  });
+  const beforeAuditCount = await db.auditEvent.count({
+    where: { action: 'CONTRACT_DELIVERED', entityId: contractId },
+  });
+  const beforeDeliveryCount = await db.contractDelivery.count({ where: { contractId } });
+  const beforeContractEventCount = await db.integrationOutbox.count({
+    where: { eventType: 'CONTRACT_DELIVERED' },
+  });
+  const beforeActivityEventCount = await db.integrationOutbox.count({
+    where: { eventType: 'ACTIVITY_CREATED' },
+  });
+
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_activity_created_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'CONTRACT_DELIVERED' THEN
+        RAISE EXCEPTION 'forced contract outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_activity_created_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_activity_created_outbox_for_test()
+  `);
+  const failedDeliveryRes = await admin.call(`contracts/${contractId}/deliveries`, 'POST', {
+    channel: 'WHATSAPP',
+    recipient: '5581988887777',
+    notes: 'Falha injetada na outbox da atividade',
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_activity_created_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_activity_created_outbox_for_test()`);
+  assert.equal(failedDeliveryRes.status, 500);
+  assert.equal(await db.contractDelivery.count({ where: { contractId } }), beforeDeliveryCount);
+  assert.equal(
+    await db.activity.count({ where: { opportunityId: testOpportunityId } }),
+    beforeActivityCount,
+  );
+  assert.equal(
+    await db.auditEvent.count({ where: { action: 'CONTRACT_DELIVERED', entityId: contractId } }),
+    beforeAuditCount,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'CONTRACT_DELIVERED' } }),
+    beforeContractEventCount,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'ACTIVITY_CREATED' } }),
+    beforeActivityEventCount,
+  );
+  assert.equal((await db.contract.findUnique({ where: { id: contractId } })).state, 'READY');
 
   const deliveryRes = await admin.call(`contracts/${contractId}/deliveries`, 'POST', {
     channel: 'WHATSAPP',
@@ -294,6 +555,59 @@ test('4. Registro de envio do contrato formal (SPEC-007 Item 8)', async () => {
   assert.equal(deliveryRes.status, 201);
   assert.equal(deliveryRes.body.contract.state, 'SENT');
   assert.equal(deliveryRes.body.delivery.channel, 'WHATSAPP');
+  const followUp = await db.activity.findFirst({
+    where: {
+      opportunityId: testOpportunityId,
+      subject: { contains: 'Acompanhar Assinatura:' },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  assert.ok(followUp, 'Entrega deve criar follow-up para assinatura');
+  const deliveryAudit = await db.auditEvent.findFirst({
+    where: { action: 'CONTRACT_DELIVERED', entityId: contractId },
+    orderBy: { createdAt: 'desc' },
+  });
+  const activityEvent = await db.integrationOutbox.findFirst({
+    where: {
+      organizationId: followUp.organizationId,
+      dedupeKey: `ACTIVITY_CREATED:${deliveryAudit.id}:${followUp.id}`,
+    },
+  });
+  assert.ok(activityEvent, 'Atividade de follow-up deve emitir evento outbox');
+  assert.equal(activityEvent.eventType, 'ACTIVITY_CREATED');
+  assert.equal(activityEvent.schemaVersion, 1);
+  assert.equal(activityEvent.aggregateType, 'Activity');
+  assert.equal(activityEvent.aggregateId, followUp.id);
+  assert.equal(activityEvent.correlationId, deliveryRes.headers.get('x-request-id'));
+  assert.equal(activityEvent.publishedAt, null);
+  assert.deepEqual(activityEvent.payload, {
+    activityId: followUp.id,
+    auditEventId: deliveryAudit.id,
+    customerId: testCustomerId,
+    opportunityId: testOpportunityId,
+  });
+  assert.equal(activityEvent.occurredAt.toISOString(), deliveryAudit.createdAt.toISOString());
+
+  const contractEvent = await db.integrationOutbox.findFirst({
+    where: {
+      organizationId: followUp.organizationId,
+      dedupeKey: `CONTRACT_DELIVERED:${deliveryAudit.id}:${deliveryRes.body.delivery.id}`,
+    },
+  });
+  assert.ok(contractEvent, 'Entrega manual deve emitir evento de contrato');
+  assert.equal(contractEvent.eventType, 'CONTRACT_DELIVERED');
+  assert.equal(contractEvent.schemaVersion, 1);
+  assert.equal(contractEvent.aggregateType, 'Contract');
+  assert.equal(contractEvent.aggregateId, contractId);
+  assert.equal(contractEvent.correlationId, deliveryRes.headers.get('x-request-id'));
+  assert.equal(contractEvent.publishedAt, null);
+  assert.deepEqual(contractEvent.payload, {
+    contractId,
+    deliveryId: deliveryRes.body.delivery.id,
+    auditEventId: deliveryAudit.id,
+    opportunityId: testOpportunityId,
+  });
+  assert.equal(contractEvent.occurredAt.toISOString(), deliveryAudit.createdAt.toISOString());
 });
 
 test('5. Upload de via assinada sem ativação prematura (SPEC-007 Item 4 e 9)', async () => {
@@ -310,9 +624,58 @@ test('5. Upload de via assinada sem ativação prematura (SPEC-007 Item 4 e 9)',
   assert.equal(uploadRes.status, 201);
   assert.equal(uploadRes.body.contract.state, 'SIGNED_UPLOADED');
 
-  // Verify that Gate C has NOT been satisfied yet (SPEC-007 Item 4 & 9)
+  const uploadAudit = await db.auditEvent.findFirstOrThrow({
+    where: { action: 'CONTRACT_SIGNED_UPLOADED', entityId: contractId },
+    orderBy: { createdAt: 'desc' },
+  });
+  const conferenceActivity = await db.activity.findFirstOrThrow({
+    where: {
+      opportunityId: testOpportunityId,
+      subject: { contains: 'Conferência de Assinatura:' },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  const activityEvent = await db.integrationOutbox.findFirstOrThrow({
+    where: {
+      organizationId: uploadAudit.organizationId,
+      dedupeKey: `ACTIVITY_CREATED:${uploadAudit.id}:${conferenceActivity.id}`,
+    },
+  });
+  assert.equal(activityEvent.correlationId, uploadRes.headers.get('x-request-id'));
+  assert.deepEqual(activityEvent.payload, {
+    activityId: conferenceActivity.id,
+    auditEventId: uploadAudit.id,
+    customerId: testCustomerId,
+    opportunityId: testOpportunityId,
+  });
+
+  const uploadEvent = await db.integrationOutbox.findFirstOrThrow({
+    where: {
+      organizationId: uploadAudit.organizationId,
+      dedupeKey: `CONTRACT_SIGNED_UPLOADED:${uploadAudit.id}:${uploadRes.body.document.id}`,
+    },
+  });
+  assert.equal(uploadEvent.eventType, 'CONTRACT_SIGNED_UPLOADED');
+  assert.equal(uploadEvent.schemaVersion, 1);
+  assert.equal(uploadEvent.aggregateType, 'Contract');
+  assert.equal(uploadEvent.aggregateId, contractId);
+  assert.equal(uploadEvent.correlationId, uploadRes.headers.get('x-request-id'));
+  assert.equal(uploadEvent.publishedAt, null);
+  assert.deepEqual(uploadEvent.payload, {
+    contractId,
+    documentId: uploadRes.body.document.id,
+    contractVersionId: uploadRes.body.document.contractVersionId,
+    auditEventId: uploadAudit.id,
+    opportunityId: testOpportunityId,
+  });
+
+  // Verify the contract gate has NOT been satisfied yet (SPEC-007 Item 4 & 9)
   const oppCheck = await admin.call(`opportunities/${testOpportunityId}`);
-  assert.notEqual(oppCheck.body.state, 'VENDIDO', 'Upload não deve liberar Gate C prematuramente');
+  assert.notEqual(
+    oppCheck.body.state,
+    'VENDIDO',
+    'Upload não deve liberar o gate contratual prematuramente',
+  );
 });
 
 test('6. Conferência com rejeição formal (SPEC-007 Item 10)', async () => {
@@ -335,9 +698,49 @@ test('6. Conferência com rejeição formal (SPEC-007 Item 10)', async () => {
     'Contrato deve voltar a READY para novo envio/upload',
   );
   assert.equal(rejectRes.body.review.decision, 'REJECTED');
+  const rejectAudit = await db.auditEvent.findFirst({
+    where: { action: 'CONTRACT_SIGNED_REJECTED', entityId: contractId },
+    orderBy: { createdAt: 'desc' },
+  });
+  const rejectActivity = await db.activity.findFirst({
+    where: {
+      opportunityId: testOpportunityId,
+      subject: { contains: 'Regularizar Assinatura do Contrato:' },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  const rejectEvent = await db.integrationOutbox.findFirst({
+    where: {
+      organizationId: rejectActivity.organizationId,
+      dedupeKey: `ACTIVITY_CREATED:${rejectAudit.id}:${rejectActivity.id}`,
+    },
+  });
+  assert.ok(rejectEvent, 'Rejeição deve emitir evento da atividade de regularização');
+  assert.equal(rejectEvent.correlationId, rejectRes.headers.get('x-request-id'));
+  assert.deepEqual(rejectEvent.payload, {
+    activityId: rejectActivity.id,
+    auditEventId: rejectAudit.id,
+    customerId: testCustomerId,
+    opportunityId: testOpportunityId,
+  });
+  const rejectedReviewEvent = await db.integrationOutbox.findFirstOrThrow({
+    where: {
+      organizationId: rejectRes.body.review.organizationId,
+      dedupeKey: `CONTRACT_SIGNED_REVIEWED:${rejectAudit.id}:${rejectRes.body.review.id}`,
+    },
+  });
+  assert.equal(rejectedReviewEvent.eventType, 'CONTRACT_SIGNED_REVIEWED');
+  assert.equal(rejectedReviewEvent.correlationId, rejectRes.headers.get('x-request-id'));
+  assert.deepEqual(rejectedReviewEvent.payload, {
+    contractId,
+    reviewId: rejectRes.body.review.id,
+    auditEventId: rejectAudit.id,
+    opportunityId: testOpportunityId,
+    decision: 'REJECTED',
+  });
 });
 
-test('7. Conferência com aprovação integral e liberação do Gate C (SPEC-007 Item 11)', async () => {
+test('7. Conferência integral e liberação do gate contratual (SPEC-007 Item 11)', async () => {
   const listRes = await admin.call(`opportunities/${testOpportunityId}/contracts`);
   const contractId = listRes.body[0].id;
 
@@ -348,6 +751,66 @@ test('7. Conferência com aprovação integral e liberação do Gate C (SPEC-007
     fileBase64: fakeSignedPdf2.toString('base64'),
     notes: 'Vias completas com todas as testemunhas',
   });
+
+  const beforeReviewCount = await db.signedContractReview.count({ where: { contractId } });
+  const beforeActivityCount = await db.activity.count({
+    where: { opportunityId: testOpportunityId },
+  });
+  const beforeAuditCount = await db.auditEvent.count({
+    where: { action: 'CONTRACT_VERIFIED_GATE_C', entityId: contractId },
+  });
+  const beforeReviewEventCount = await db.integrationOutbox.count({
+    where: { eventType: 'CONTRACT_SIGNED_REVIEWED', aggregateId: contractId },
+  });
+
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_signed_review_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'CONTRACT_SIGNED_REVIEWED' THEN
+        RAISE EXCEPTION 'forced signed contract review outbox failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_signed_review_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_signed_review_outbox_for_test()
+  `);
+  const failedVerifyRes = await admin.call(`contracts/${contractId}/verify-signed`, 'POST', {
+    partiesMatch: true,
+    allPagesPresent: true,
+    versionMatches: true,
+    signaturesLegible: true,
+    decision: 'VERIFIED',
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_signed_review_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_signed_review_outbox_for_test()`);
+  assert.equal(failedVerifyRes.status, 500);
+  assert.equal(await db.signedContractReview.count({ where: { contractId } }), beforeReviewCount);
+  assert.equal(
+    await db.activity.count({ where: { opportunityId: testOpportunityId } }),
+    beforeActivityCount,
+  );
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'CONTRACT_VERIFIED_GATE_C', entityId: contractId },
+    }),
+    beforeAuditCount,
+  );
+  assert.equal(
+    (await db.contract.findUnique({ where: { id: contractId } })).state,
+    'SIGNED_UPLOADED',
+  );
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'CONTRACT_SIGNED_REVIEWED', aggregateId: contractId },
+    }),
+    beforeReviewEventCount,
+  );
 
   // Verify signed with all 4 criteria satisfied
   const verifyRes = await admin.call(`contracts/${contractId}/verify-signed`, 'POST', {
@@ -361,8 +824,49 @@ test('7. Conferência com aprovação integral e liberação do Gate C (SPEC-007
 
   assert.equal(verifyRes.status, 200);
   assert.equal(verifyRes.body.contract.state, 'ACTIVE');
+  const verifyAudit = await db.auditEvent.findFirst({
+    where: { action: 'CONTRACT_VERIFIED_GATE_C', entityId: contractId },
+    orderBy: { createdAt: 'desc' },
+  });
+  const engineeringActivity = await db.activity.findFirst({
+    where: {
+      opportunityId: testOpportunityId,
+      subject: { contains: 'Engenharia & Executivo: Oportunidade' },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  const verifyEvent = await db.integrationOutbox.findFirst({
+    where: {
+      organizationId: engineeringActivity.organizationId,
+      dedupeKey: `ACTIVITY_CREATED:${verifyAudit.id}:${engineeringActivity.id}`,
+    },
+  });
+  assert.ok(verifyEvent, 'Conferência aprovada deve emitir evento para a atividade técnica');
+  assert.equal(verifyEvent.correlationId, verifyRes.headers.get('x-request-id'));
+  assert.deepEqual(verifyEvent.payload, {
+    activityId: engineeringActivity.id,
+    auditEventId: verifyAudit.id,
+    customerId: testCustomerId,
+    opportunityId: testOpportunityId,
+  });
+  const verifiedReview = verifyRes.body.review;
+  const verifiedReviewEvent = await db.integrationOutbox.findFirstOrThrow({
+    where: {
+      organizationId: verifiedReview.organizationId,
+      dedupeKey: `CONTRACT_SIGNED_REVIEWED:${verifyAudit.id}:${verifiedReview.id}`,
+    },
+  });
+  assert.equal(verifiedReviewEvent.eventType, 'CONTRACT_SIGNED_REVIEWED');
+  assert.equal(verifiedReviewEvent.correlationId, verifyRes.headers.get('x-request-id'));
+  assert.deepEqual(verifiedReviewEvent.payload, {
+    contractId,
+    reviewId: verifiedReview.id,
+    auditEventId: verifyAudit.id,
+    opportunityId: testOpportunityId,
+    decision: 'VERIFIED',
+  });
 
-  // Verify Opportunity transitioned to VENDIDO (Gate C superado!)
+  // Verify Opportunity transitioned to VENDIDO after contract verification.
   const oppRes = await admin.call(`opportunities/${testOpportunityId}`);
   assert.equal(oppRes.status, 200);
   assert.equal(oppRes.body.state, 'VENDIDO');
@@ -372,4 +876,186 @@ test('7. Conferência com aprovação integral e liberação do Gate C (SPEC-007
   const contractGate = gates.find((g) => g.gateType === 'CONTRACT');
   assert.ok(contractGate);
   assert.equal(contractGate.status, 'SATISFIED');
+});
+
+test('8. Registro de aditivo emite evento v1 atomicamente sem publicar motivo', async () => {
+  const listRes = await admin.call(`opportunities/${testOpportunityId}/contracts`);
+  assert.equal(listRes.status, 200);
+  const contractId = listRes.body[0].id;
+  const before = await db.contract.findUniqueOrThrow({ where: { id: contractId } });
+  const beforeAuditCount = await db.auditEvent.count({
+    where: { action: 'CONTRACT_AMENDMENT_CREATED', entityId: contractId },
+  });
+  const beforeEventCount = await db.integrationOutbox.count({
+    where: { eventType: 'CONTRACT_AMENDMENT_RECORDED', aggregateId: contractId },
+  });
+
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_contract_amendment_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'CONTRACT_AMENDMENT_RECORDED' THEN
+        RAISE EXCEPTION 'forced contract amendment outbox failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_contract_amendment_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_contract_amendment_outbox_for_test()
+  `);
+  let failedAmendmentRes;
+  try {
+    failedAmendmentRes = await admin.call(`contracts/${contractId}/amendments`, 'POST', {
+      reason: 'Termo confidencial usado para validar rollback',
+    });
+  } finally {
+    await db.$executeRawUnsafe(
+      `DROP TRIGGER reject_contract_amendment_outbox_for_test ON "${schema}"."integration_outbox"`,
+    );
+    await db.$executeRawUnsafe(
+      `DROP FUNCTION "${schema}".reject_contract_amendment_outbox_for_test()`,
+    );
+  }
+  assert.equal(failedAmendmentRes.status, 500);
+  const afterFailure = await db.contract.findUniqueOrThrow({ where: { id: contractId } });
+  assert.equal(afterFailure.state, before.state);
+  assert.equal(afterFailure.notes, before.notes);
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'CONTRACT_AMENDMENT_CREATED', entityId: contractId },
+    }),
+    beforeAuditCount,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'CONTRACT_AMENDMENT_RECORDED', aggregateId: contractId },
+    }),
+    beforeEventCount,
+  );
+
+  const amendmentRes = await admin.call(`contracts/${contractId}/amendments`, 'POST', {
+    reason: 'Aditivo confirmado pela pessoa responsável',
+  });
+  assert.equal(amendmentRes.status, 201);
+  assert.equal(amendmentRes.body.state, 'AMENDED');
+  assert.match(amendmentRes.body.notes, /Aditivo: Aditivo confirmado pela pessoa responsável/);
+  const amendmentAudit = await db.auditEvent.findFirstOrThrow({
+    where: { action: 'CONTRACT_AMENDMENT_CREATED', entityId: contractId },
+    orderBy: { createdAt: 'desc' },
+  });
+  const event = await db.integrationOutbox.findFirstOrThrow({
+    where: {
+      organizationId: amendmentAudit.organizationId,
+      dedupeKey: `CONTRACT_AMENDMENT_RECORDED:${amendmentAudit.id}`,
+    },
+  });
+  assert.equal(event.eventType, 'CONTRACT_AMENDMENT_RECORDED');
+  assert.equal(event.schemaVersion, 1);
+  assert.equal(event.aggregateType, 'Contract');
+  assert.equal(event.aggregateId, contractId);
+  assert.equal(event.correlationId, amendmentRes.headers.get('x-request-id'));
+  assert.equal(event.publishedAt, null);
+  assert.deepEqual(event.payload, {
+    contractId,
+    auditEventId: amendmentAudit.id,
+    opportunityId: testOpportunityId,
+  });
+  assert.equal(event.occurredAt.toISOString(), amendmentAudit.createdAt.toISOString());
+});
+
+test('9. Cancelamento registra evento v1 atomicamente sem publicar motivo', async () => {
+  const listRes = await admin.call(`opportunities/${testOpportunityId}/contracts`);
+  assert.equal(listRes.status, 200);
+  const contractId = listRes.body[0].id;
+  const before = await db.contract.findUniqueOrThrow({ where: { id: contractId } });
+  const beforeAuditCount = await db.auditEvent.count({
+    where: { action: 'CONTRACT_CANCELED', entityId: contractId },
+  });
+  const beforeEventCount = await db.integrationOutbox.count({
+    where: { eventType: 'CONTRACT_CANCELED', aggregateId: contractId },
+  });
+
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_contract_canceled_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'CONTRACT_CANCELED' THEN
+        RAISE EXCEPTION 'forced contract cancellation outbox failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_contract_canceled_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_contract_canceled_outbox_for_test()
+  `);
+  let failedCancelRes;
+  try {
+    failedCancelRes = await admin.call(`contracts/${contractId}/cancel`, 'POST', {
+      reason: 'Motivo confidencial usado para validar rollback',
+    });
+  } finally {
+    await db.$executeRawUnsafe(
+      `DROP TRIGGER reject_contract_canceled_outbox_for_test ON "${schema}"."integration_outbox"`,
+    );
+    await db.$executeRawUnsafe(
+      `DROP FUNCTION "${schema}".reject_contract_canceled_outbox_for_test()`,
+    );
+  }
+  assert.equal(failedCancelRes.status, 500);
+  const afterFailure = await db.contract.findUniqueOrThrow({ where: { id: contractId } });
+  assert.equal(afterFailure.state, before.state);
+  assert.equal(afterFailure.notes, before.notes);
+  assert.equal(
+    await db.auditEvent.count({ where: { action: 'CONTRACT_CANCELED', entityId: contractId } }),
+    beforeAuditCount,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'CONTRACT_CANCELED', aggregateId: contractId },
+    }),
+    beforeEventCount,
+  );
+
+  const cancelRes = await admin.call(`contracts/${contractId}/cancel`, 'POST', {
+    reason: 'Cancelamento confirmado pela pessoa responsável',
+  });
+  assert.equal(cancelRes.status, 200);
+  assert.equal(cancelRes.body.state, 'CANCELED');
+  const cancellationAudit = await db.auditEvent.findFirstOrThrow({
+    where: { action: 'CONTRACT_CANCELED', entityId: contractId },
+    orderBy: { createdAt: 'desc' },
+  });
+  const event = await db.integrationOutbox.findFirstOrThrow({
+    where: {
+      organizationId: cancellationAudit.organizationId,
+      dedupeKey: `CONTRACT_CANCELED:${cancellationAudit.id}`,
+    },
+  });
+  assert.equal(event.eventType, 'CONTRACT_CANCELED');
+  assert.equal(event.schemaVersion, 1);
+  assert.equal(event.aggregateType, 'Contract');
+  assert.equal(event.aggregateId, contractId);
+  assert.equal(event.correlationId, cancelRes.headers.get('x-request-id'));
+  assert.equal(event.publishedAt, null);
+  assert.deepEqual(event.payload, {
+    contractId,
+    auditEventId: cancellationAudit.id,
+    opportunityId: testOpportunityId,
+  });
+  assert.equal(event.occurredAt.toISOString(), cancellationAudit.createdAt.toISOString());
+
+  const repeatedCancelRes = await admin.call(`contracts/${contractId}/cancel`, 'POST', {
+    reason: 'Repetição não deve criar novo fato',
+  });
+  assert.equal(repeatedCancelRes.status, 400);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'CONTRACT_CANCELED', aggregateId: contractId },
+    }),
+    beforeEventCount + 1,
+  );
 });

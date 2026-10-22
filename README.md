@@ -48,7 +48,32 @@ pnpm dev
 
 ## Estado do projeto
 
-O projeto possui a fundação executável e os marcos M1 a M10 implementados e validados:
+O plano histórico registra a fundação executável e os marcos M1 a M10 como
+implementados e validados na época. Essa declaração não atesta consolidação na
+`main` nem liberação produtiva. O [R0 em branch](docs/r0-baseline-2026-10-08.md)
+inventariou capacidades e repetiu as verificações pertinentes; CI remoto passou
+no PR #22, mesclado em `feat/proposal-visual-clarity`. A revisão formal do
+baseline e a consolidação em `main` seguem pendentes. O
+[incremento R1-01](docs/r1-contratos-integracao-2026-10-08.md) foi mesclado
+nessa branch e implantado localmente. O
+[R1-02](docs/r1-correlacao-import-outbox-2026-10-08.md) foi consolidado e
+implantado localmente, sem publicação ou consumidor ativo. O
+[R1-03](docs/r1-versionamento-outbox-import-2026-10-08.md) foi mesclado e
+liberado somente no Compose local; versiona metadados do outbox existente sem
+alterar payloads ou ativar o worker.
+O [R1-04](docs/r1-validacao-eventos-import-2026-10-08.md) foi consolidado no
+PR #28: valida runtime os dois payloads conhecidos, sem ligar consumidor ou OCR;
+por isso não exigiu deploy local.
+O [R1-05](docs/r1-inventario-integracao-2026-10-08.md) documenta o inventário
+encontrado de auditoria, outbox de importação e projeções, sem ativar consumidor.
+A proposta histórica [ADR-007](docs/adr/ADR-007-transporte-integracao-proposta.md)
+avaliou polling PostgreSQL para o piloto OCR, depois retirado pela
+[ADR-008](docs/adr/ADR-008-importacao-manual-sem-ocr.md). Contas continuam com
+transcrição e conferência manuais; não há PoC nem extração automática planejada.
+O [R1-07](docs/r1-guard-evento-import-2026-10-08.md) restringe o claim a payloads
+v1 coerentes no worker; o entrypoint continua sem consumidor ativo.
+
+Capacidades registradas no plano histórico:
 
 - **M1:** Identidade, Autenticação, Perfis, Sessões e RBAC (SPEC-002)
 - **M2:** Comercial: Clientes, Unidades Consumidoras e Oportunidades (SPEC-004)
@@ -135,9 +160,12 @@ Nenhuma funcionalidade é considerada aprovada somente por existir na interface:
 - [Execução da primeira fatia vertical](docs/fatia-vertical-001-execucao.md)
 - [Definition of Done](docs/definition-of-done.md)
 
-## Evolução proposta — UX, documentos e contas
+## Evolução de UX, documentos e contas — plano histórico
 
-Documentação em proposta para revisão; não altera o status histórico dos marcos acima.
+O plano abaixo registra a proposta original e seus lotes. Há módulos de dossiê e
+importação no checkout de referência, mas políticas operacionais, PoC e execução
+do consumidor ainda exigem verificação em R0/R5. A proposta não altera o status
+histórico dos marcos acima.
 
 - [Plano incremental e baseline](docs/plano-evolucao-ux-documentos-contas.md)
 - [Matriz de rastreabilidade](docs/matriz-rastreabilidade-evolucao.md)
@@ -147,3 +175,23 @@ Documentação em proposta para revisão; não altera o status histórico dos ma
 - [SPEC-015 — UX da jornada operacional](specs/SPEC-015-ux-jornada-operacional/spec.md)
 - [ADR-003 — Dossiê e persistência documental](docs/adr/ADR-003-dossie-e-persistencia-documental.md)
 - [ADR-004 — Importação assistida durável](docs/adr/ADR-004-importacao-assistida-duravel.md)
+
+## Refatoração evolutiva — direção de 07/10/2026
+
+Manter a plataforma existente e o Material Design aplicado. A arquitetura atual
+continua sendo NestJS modular; a separação em serviços é incremental e planejada,
+sem reescrita integral ou declaração de prontidão produtiva a partir de M0–M10.
+
+- [Roadmap vigente e sequência R0–R13](docs/roadmap-refatoracao.md)
+- [Registro completo de features e evidências](docs/registro-features.md)
+- [SPEC-016 — Refatoração e fronteiras](specs/SPEC-016-refatoracao-evolutiva/spec.md)
+- [SPEC-017 — Catálogo completo](specs/SPEC-017-catalogo-produtos/spec.md)
+- [SPEC-018 — Localização, consumo, cálculo e preço](specs/SPEC-018-localizacao-consumo-preco/spec.md)
+- [SPEC-019 — Eventos e plataforma de dados](specs/SPEC-019-eventos-dados/spec.md)
+- [ADR-005 — Migração gradual para serviços](docs/adr/ADR-005-refatoracao-gradual-servicos.md)
+- [ADR-006 — Continuidade do Material Design](docs/adr/ADR-006-material-design.md)
+
+Os estados históricos e as referências de baseline dos documentos anteriores
+continuam como evidência da época. O roadmap vigente define prioridades futuras;
+os documentos de domínio continuam definindo regras. A última instrução explícita
+do usuário prevalece em caso de divergência.
