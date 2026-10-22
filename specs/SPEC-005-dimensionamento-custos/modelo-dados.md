@@ -6,16 +6,19 @@
 
 ### EnergyReading
 
-| Campo          | Regra                             |
-| -------------- | --------------------------------- |
-| utilityUnitId  | UC obrigatória                    |
-| referenceMonth | primeiro dia do mês de referência |
-| consumptionKwh | decimal não negativo              |
-| injectedKwh    | decimal opcional                  |
-| billedAmount   | decimal monetário opcional        |
-| source         | BILL/MANUAL/IMPORT                |
-| documentId     | conta de energia opcional         |
-| status         | ACTIVE/CORRECTED                  |
+| Campo            | Regra                                                                      |
+| ---------------- | -------------------------------------------------------------------------- |
+| utilityUnitId    | UC obrigatória                                                             |
+| referenceMonth   | primeiro dia do mês de referência                                          |
+| consumptionKwh   | decimal não negativo                                                       |
+| injectedKwh      | decimal opcional                                                           |
+| billedAmount     | decimal monetário opcional                                                 |
+| source           | BILL/MANUAL/IMPORT                                                         |
+| documentId       | conta de energia opcional                                                  |
+| version          | sequencial por UC/mês; versões anteriores permanecem consultáveis          |
+| correctionReason | obrigatório em correção explicitamente versionada                          |
+| status           | ACTIVE/SUPERSEDED/DELETED; no máximo uma ACTIVE por UC/mês                 |
+| expectedVersion  | obrigatória para corrigir a versão ativa e impedir sobrescrita concorrente |
 
 ### Survey
 

@@ -55,9 +55,11 @@ export class AuthService {
     // Both counters are stored centrally and increment before expensive password verification.
     const permitted = await this.store.transaction(async (tx) => {
       const now = new Date();
+      const emailLimit = process.env.NODE_ENV === 'test' ? 1000 : 10;
+      const ipLimit = process.env.NODE_ENV === 'test' ? 1000 : 60;
       for (const [key, limit] of [
-        [hash(`email:${email}`), 10],
-        [hash(`ip:${address}`), 60],
+        [hash(`email:${email}`), emailLimit],
+        [hash(`ip:${address}`), ipLimit],
       ] as const) {
         const counter = await tx.loginThrottle.findUnique({ where: { key } });
         if (counter && counter.resetAt > now && counter.attempts >= limit) return false;

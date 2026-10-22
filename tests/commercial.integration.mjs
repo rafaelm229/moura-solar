@@ -1,3 +1,4 @@
+import { storageEnv } from './storage-env.mjs';
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
@@ -21,10 +22,7 @@ const env = {
   API_PORT: '3321',
   WEB_ORIGIN: 'http://localhost:3320',
   COOKIE_SECURE: 'false',
-  S3_ENDPOINT: 'http://localhost:9000',
-  S3_ACCESS_KEY: 'test',
-  S3_SECRET_KEY: 'test',
-  S3_BUCKET: 'test',
+  ...storageEnv,
   IDENTITY_LINK_SECRET: 'integration-test-link-secret-at-least-32-characters',
   BOOTSTRAP_TOKEN: 'integration-test-bootstrap-at-least-32-characters',
 };
@@ -65,6 +63,7 @@ class Client {
 
 const admin = new Client();
 const seller = new Client();
+const otherSeller = new Client();
 
 before(async () => {
   const migration = spawnSync('pnpm', ['db:deploy'], { env, encoding: 'utf8' });
@@ -133,6 +132,28 @@ before(async () => {
     password,
   });
   assert.equal(sellerLogin.status, 201);
+
+  const secondInvite = await admin.call(
+    'identity/invitations',
+    'POST',
+    {
+      email: 'seller-two.comm@example.test',
+      name: 'Segundo Vendedor Commercial',
+      roleId: sellerRole.id,
+    },
+    { 'idempotency-key': randomUUID() },
+  );
+  assert.equal(secondInvite.status, 201);
+  const secondAccept = await otherSeller.call('identity/accept-link', 'POST', {
+    token: secondInvite.body.token,
+    password,
+  });
+  assert.equal(secondAccept.status, 201);
+  const secondLogin = await otherSeller.call('identity/login', 'POST', {
+    email: 'seller-two.comm@example.test',
+    password,
+  });
+  assert.equal(secondLogin.status, 201);
 });
 
 after(async () => {
@@ -171,6 +192,529 @@ test('duplicate prevention blocks identical taxId unless overridden', async () =
   assert.equal(c3.status, 201);
 });
 
+test('customer creation writes a minimal correlated outbox event atomically', async () => {
+  const requestId = `r1-customer-${randomUUID()}`;
+  const legalName = `Cliente R1 ${randomUUID()}`;
+  const created = await seller.call(
+    'customers',
+    'POST',
+    { kind: 'PERSON', legalName, taxId: '987.654.321-00' },
+    { 'x-request-id': requestId },
+  );
+  assert.equal(created.status, 201);
+
+  const event = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `CUSTOMER_CREATED:${created.body.id}` },
+  });
+  assert.ok(event, 'Cliente e evento outbox devem persistir juntos');
+  assert.equal(event.eventType, 'CUSTOMER_CREATED');
+  assert.equal(event.schemaVersion, 1);
+  assert.equal(event.aggregateType, 'Customer');
+  assert.equal(event.aggregateId, created.body.id);
+  assert.equal(event.producer, 'customer');
+  assert.equal(event.correlationId, requestId);
+  assert.equal(event.publishedAt, null);
+  assert.deepEqual(event.payload, { customerId: created.body.id });
+  assert.equal(JSON.stringify(event.payload).includes(legalName), false);
+  assert.equal(JSON.stringify(event.payload).includes('98765432100'), false);
+
+  const failedLegalName = `Cliente R1 rollback ${randomUUID()}`;
+  const eventCountBefore = await db.integrationOutbox.count({
+    where: { eventType: 'CUSTOMER_CREATED' },
+  });
+  const auditCountBefore = await db.auditEvent.count({
+    where: { action: 'commercial.customer_created' },
+  });
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_customer_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'CUSTOMER_CREATED' THEN
+        RAISE EXCEPTION 'forced customer outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_customer_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_customer_outbox_for_test()
+  `);
+  const failed = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: failedLegalName,
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_customer_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_customer_outbox_for_test()`);
+
+  assert.equal(failed.status, 500);
+  assert.equal(await db.customer.count({ where: { legalName: failedLegalName } }), 0);
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'CUSTOMER_CREATED' } }),
+    eventCountBefore,
+  );
+  assert.equal(
+    await db.auditEvent.count({ where: { action: 'commercial.customer_created' } }),
+    auditCountBefore,
+  );
+});
+
+test('opportunity creation emits minimal correlated event atomically with its first activity', async () => {
+  const customer = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: `Cliente da oportunidade ${randomUUID()}`,
+  });
+  assert.equal(customer.status, 201);
+
+  const failedTitle = `Oportunidade rollback ${randomUUID()}`;
+  const failedActivitySubject = `Atividade rollback ${randomUUID()}`;
+  const auditCountBefore = await db.auditEvent.count({
+    where: { action: 'commercial.opportunity_created' },
+  });
+  const opportunityEventCountBefore = await db.integrationOutbox.count({
+    where: { eventType: 'OPPORTUNITY_CREATED' },
+  });
+  const activityEventCountBefore = await db.integrationOutbox.count({
+    where: { eventType: 'ACTIVITY_CREATED' },
+  });
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_opportunity_activity_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'ACTIVITY_CREATED' THEN
+        RAISE EXCEPTION 'forced opportunity first activity outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_opportunity_activity_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_opportunity_activity_outbox_for_test()
+  `);
+  const failed = await seller.call('opportunities', 'POST', {
+    customerId: customer.body.id,
+    title: failedTitle,
+    needSummary: 'Dados que não devem ficar após falha',
+    firstActivity: {
+      type: 'CALL',
+      subject: failedActivitySubject,
+      dueAt: new Date(Date.now() + 86400000).toISOString(),
+    },
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_opportunity_activity_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(
+    `DROP FUNCTION "${schema}".reject_opportunity_activity_outbox_for_test()`,
+  );
+
+  assert.equal(failed.status, 500);
+  assert.equal(await db.opportunity.count({ where: { title: failedTitle } }), 0);
+  assert.equal(await db.activity.count({ where: { subject: failedActivitySubject } }), 0);
+  assert.equal(
+    await db.opportunityTransition.count({ where: { opportunity: { title: failedTitle } } }),
+    0,
+  );
+  assert.equal(
+    await db.auditEvent.count({ where: { action: 'commercial.opportunity_created' } }),
+    auditCountBefore,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'OPPORTUNITY_CREATED' } }),
+    opportunityEventCountBefore,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'ACTIVITY_CREATED' } }),
+    activityEventCountBefore,
+  );
+
+  const requestId = `r1-opportunity-${randomUUID()}`;
+  const title = `Oportunidade R1 ${randomUUID()}`;
+  const activitySubject = `Contato inicial ${randomUUID()}`;
+  const created = await seller.call(
+    'opportunities',
+    'POST',
+    {
+      customerId: customer.body.id,
+      title,
+      needSummary: 'Resumo comercial fora do payload do evento',
+      firstActivity: {
+        type: 'CALL',
+        subject: activitySubject,
+        dueAt: new Date(Date.now() + 86400000).toISOString(),
+      },
+    },
+    { 'x-request-id': requestId },
+  );
+  assert.equal(created.status, 201);
+
+  const event = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `OPPORTUNITY_CREATED:${created.body.id}` },
+  });
+  assert.ok(event, 'Oportunidade e evento outbox devem persistir juntos');
+  assert.equal(event.eventType, 'OPPORTUNITY_CREATED');
+  assert.equal(event.schemaVersion, 1);
+  assert.equal(event.aggregateType, 'Opportunity');
+  assert.equal(event.aggregateId, created.body.id);
+  assert.equal(event.producer, 'crm');
+  assert.equal(event.correlationId, requestId);
+  assert.equal(event.publishedAt, null);
+  assert.deepEqual(event.payload, {
+    opportunityId: created.body.id,
+    customerId: customer.body.id,
+  });
+  assert.equal(JSON.stringify(event.payload).includes(title), false);
+  assert.equal(JSON.stringify(event.payload).includes(activitySubject), false);
+
+  const firstActivity = await db.activity.findFirst({ where: { opportunityId: created.body.id } });
+  assert.ok(firstActivity);
+  const audit = await db.auditEvent.findFirst({
+    where: {
+      action: 'commercial.opportunity_created',
+      entityId: created.body.id,
+      traceId: requestId,
+    },
+  });
+  assert.ok(audit);
+  const activityEvent = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `ACTIVITY_CREATED:${audit.id}:${firstActivity.id}` },
+  });
+  assert.ok(activityEvent, 'A atividade inicial também deve gerar evento atômico');
+  assert.equal(activityEvent.eventType, 'ACTIVITY_CREATED');
+  assert.equal(activityEvent.schemaVersion, 1);
+  assert.equal(activityEvent.aggregateType, 'Activity');
+  assert.equal(activityEvent.aggregateId, firstActivity.id);
+  assert.equal(activityEvent.correlationId, requestId);
+  assert.equal(activityEvent.publishedAt, null);
+  assert.deepEqual(activityEvent.payload, {
+    activityId: firstActivity.id,
+    auditEventId: audit.id,
+    customerId: customer.body.id,
+    opportunityId: created.body.id,
+  });
+  assert.equal(JSON.stringify(activityEvent.payload).includes(activitySubject), false);
+});
+
+test('utility unit creation emits minimal correlated event atomically', async () => {
+  const customer = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: `Cliente UC R1 ${randomUUID()}`,
+  });
+  assert.equal(customer.status, 201);
+
+  const failedCode = `FAIL-${randomUUID()}`;
+  const auditCountBefore = await db.auditEvent.count({
+    where: { action: 'commercial.utility_unit_created' },
+  });
+  const eventCountBefore = await db.integrationOutbox.count({
+    where: { eventType: 'UTILITY_UNIT_CREATED' },
+  });
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_utility_unit_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'UTILITY_UNIT_CREATED' THEN
+        RAISE EXCEPTION 'forced utility unit outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_utility_unit_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_utility_unit_outbox_for_test()
+  `);
+  const failed = await seller.call(`customers/${customer.body.id}/utility-units`, 'POST', {
+    distributorName: 'Distribuidora R1 falha',
+    externalCode: failedCode,
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_utility_unit_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_utility_unit_outbox_for_test()`);
+
+  assert.equal(failed.status, 500);
+  assert.equal(await db.utilityUnit.count({ where: { customerId: customer.body.id } }), 0);
+  assert.equal(
+    await db.auditEvent.count({ where: { action: 'commercial.utility_unit_created' } }),
+    auditCountBefore,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'UTILITY_UNIT_CREATED' } }),
+    eventCountBefore,
+  );
+
+  const requestId = `r1-utility-unit-${randomUUID()}`;
+  const externalCode = `UC-${randomUUID()}`;
+  const created = await seller.call(
+    `customers/${customer.body.id}/utility-units`,
+    'POST',
+    {
+      distributorName: 'Distribuidora R1 validada',
+      externalCode,
+    },
+    { 'x-request-id': requestId },
+  );
+  assert.equal(created.status, 201);
+
+  const event = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `UTILITY_UNIT_CREATED:${created.body.id}` },
+  });
+  assert.ok(event, 'UC e evento outbox devem persistir juntos');
+  assert.equal(event.eventType, 'UTILITY_UNIT_CREATED');
+  assert.equal(event.schemaVersion, 1);
+  assert.equal(event.aggregateType, 'UtilityUnit');
+  assert.equal(event.aggregateId, created.body.id);
+  assert.equal(event.producer, 'crm');
+  assert.equal(event.correlationId, requestId);
+  assert.equal(event.publishedAt, null);
+  assert.deepEqual(event.payload, {
+    utilityUnitId: created.body.id,
+    customerId: customer.body.id,
+  });
+  assert.equal(JSON.stringify(event.payload).includes(externalCode), false);
+  assert.equal(JSON.stringify(event.payload).includes('Distribuidora'), false);
+});
+
+test('opportunity updates emit a minimal correlated event atomically with their audit', async () => {
+  const customer = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: `Cliente oportunidade atualizada ${randomUUID()}`,
+  });
+  assert.equal(customer.status, 201);
+  const opportunity = await seller.call('opportunities', 'POST', {
+    customerId: customer.body.id,
+    title: 'Oportunidade inicial',
+    needSummary: 'Consumo residencial inicial',
+    firstActivity: {
+      type: 'TASK',
+      subject: 'Contato inicial',
+      dueAt: new Date().toISOString(),
+    },
+  });
+  assert.equal(opportunity.status, 201);
+  const opportunityId = opportunity.body.id;
+  const auditCount = await db.auditEvent.count({
+    where: { action: 'commercial.opportunity_updated', entityId: opportunityId },
+  });
+  const eventCount = await db.integrationOutbox.count({
+    where: { eventType: 'OPPORTUNITY_UPDATED', aggregateId: opportunityId },
+  });
+
+  const unauthenticated = await new Client().call(`opportunities/${opportunityId}`, 'PATCH', {
+    expectedVersion: 1,
+    title: 'Sem autenticação',
+  });
+  assert.equal(unauthenticated.status, 401);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'OPPORTUNITY_UPDATED', aggregateId: opportunityId },
+    }),
+    eventCount,
+  );
+
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_opportunity_updated_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'OPPORTUNITY_UPDATED' THEN
+        RAISE EXCEPTION 'forced opportunity update outbox failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_opportunity_updated_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_opportunity_updated_outbox_for_test()
+  `);
+  const failed = await seller.call(`opportunities/${opportunityId}`, 'PATCH', {
+    expectedVersion: 1,
+    title: 'Título que deve reverter',
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_opportunity_updated_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(
+    `DROP FUNCTION "${schema}".reject_opportunity_updated_outbox_for_test()`,
+  );
+  assert.equal(failed.status, 500);
+  const afterFailure = await db.opportunity.findUnique({ where: { id: opportunityId } });
+  assert.equal(afterFailure.version, 1);
+  assert.equal(afterFailure.title, 'Oportunidade inicial');
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'commercial.opportunity_updated', entityId: opportunityId },
+    }),
+    auditCount,
+  );
+
+  const title = `Oportunidade alterada ${randomUUID()}`;
+  const needSummary = 'Necessidade comercial privada';
+  const requestId = `r1-opportunity-updated-${randomUUID()}`;
+  const updated = await seller.call(
+    `opportunities/${opportunityId}`,
+    'PATCH',
+    { expectedVersion: 1, title, needSummary, estimatedConsumption: 875 },
+    { 'x-request-id': requestId },
+  );
+  assert.equal(updated.status, 200);
+  assert.equal(updated.body.version, 2);
+  const audit = await db.auditEvent.findFirst({
+    where: {
+      action: 'commercial.opportunity_updated',
+      entityId: opportunityId,
+      traceId: requestId,
+    },
+  });
+  assert.ok(audit);
+  const event = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `OPPORTUNITY_UPDATED:${audit.id}` },
+  });
+  assert.ok(event);
+  assert.equal(event.eventType, 'OPPORTUNITY_UPDATED');
+  assert.equal(event.aggregateType, 'Opportunity');
+  assert.equal(event.aggregateId, opportunityId);
+  assert.equal(event.correlationId, requestId);
+  assert.equal(event.publishedAt, null);
+  assert.deepEqual(event.payload, {
+    opportunityId,
+    customerId: customer.body.id,
+    auditEventId: audit.id,
+  });
+  const serializedPayload = JSON.stringify(event.payload);
+  assert.equal(serializedPayload.includes(title), false);
+  assert.equal(serializedPayload.includes(needSummary), false);
+  assert.equal(Object.hasOwn(event.payload, 'estimatedConsumption'), false);
+
+  const stale = await seller.call(`opportunities/${opportunityId}`, 'PATCH', {
+    expectedVersion: 1,
+    priority: 'HOT',
+  });
+  assert.equal(stale.status, 409);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'OPPORTUNITY_UPDATED', aggregateId: opportunityId },
+    }),
+    eventCount + 1,
+  );
+});
+
+test('utility-unit updates emit a minimal correlated event atomically with their audit', async () => {
+  const customer = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: `Cliente UC atualização ${randomUUID()}`,
+  });
+  assert.equal(customer.status, 201);
+  const created = await seller.call(`customers/${customer.body.id}/utility-units`, 'POST', {
+    distributorName: 'Distribuidora inicial',
+    externalCode: `UC-${randomUUID()}`,
+  });
+  assert.equal(created.status, 201);
+  const utilityUnitId = created.body.id;
+  const auditCount = await db.auditEvent.count({
+    where: { action: 'commercial.utility_unit_updated', entityId: utilityUnitId },
+  });
+  const eventCount = await db.integrationOutbox.count({
+    where: { eventType: 'UTILITY_UNIT_UPDATED', aggregateId: utilityUnitId },
+  });
+  const unauthenticated = await new Client().call(`utility-units/${utilityUnitId}`, 'PATCH', {
+    expectedVersion: 1,
+    distributorName: 'Sem autenticação',
+  });
+  assert.equal(unauthenticated.status, 401);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'UTILITY_UNIT_UPDATED', aggregateId: utilityUnitId },
+    }),
+    eventCount,
+  );
+
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_utility_unit_updated_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'UTILITY_UNIT_UPDATED' THEN
+        RAISE EXCEPTION 'forced utility unit update outbox failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_utility_unit_updated_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_utility_unit_updated_outbox_for_test()
+  `);
+  const failed = await seller.call(`utility-units/${utilityUnitId}`, 'PATCH', {
+    expectedVersion: 1,
+    distributorName: 'Distribuidora que deve reverter',
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_utility_unit_updated_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(
+    `DROP FUNCTION "${schema}".reject_utility_unit_updated_outbox_for_test()`,
+  );
+  assert.equal(failed.status, 500);
+  const afterFailure = await db.utilityUnit.findUnique({ where: { id: utilityUnitId } });
+  assert.equal(afterFailure.version, 1);
+  assert.equal(afterFailure.distributorName, 'Distribuidora inicial');
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'commercial.utility_unit_updated', entityId: utilityUnitId },
+    }),
+    auditCount,
+  );
+
+  const requestId = `r1-utility-unit-updated-${randomUUID()}`;
+  const updated = await seller.call(
+    `utility-units/${utilityUnitId}`,
+    'PATCH',
+    { expectedVersion: 1, distributorName: 'Distribuidora validada' },
+    { 'x-request-id': requestId },
+  );
+  assert.equal(updated.status, 200);
+  assert.equal(updated.body.version, 2);
+  const audit = await db.auditEvent.findFirst({
+    where: {
+      action: 'commercial.utility_unit_updated',
+      entityId: utilityUnitId,
+      traceId: requestId,
+    },
+  });
+  assert.ok(audit);
+  const event = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `UTILITY_UNIT_UPDATED:${audit.id}` },
+  });
+  assert.ok(event);
+  assert.equal(event.eventType, 'UTILITY_UNIT_UPDATED');
+  assert.equal(event.aggregateType, 'UtilityUnit');
+  assert.equal(event.aggregateId, utilityUnitId);
+  assert.equal(event.correlationId, requestId);
+  assert.equal(event.publishedAt, null);
+  assert.deepEqual(event.payload, {
+    utilityUnitId,
+    customerId: customer.body.id,
+    auditEventId: audit.id,
+  });
+  assert.equal(JSON.stringify(event.payload).includes('Distribuidora'), false);
+
+  const stale = await seller.call(`utility-units/${utilityUnitId}`, 'PATCH', {
+    expectedVersion: 1,
+    distributorName: 'Atualização obsoleta',
+  });
+  assert.equal(stale.status, 409);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'UTILITY_UNIT_UPDATED', aggregateId: utilityUnitId },
+    }),
+    1,
+  );
+});
+
 test('optimistic concurrency prevents silent overwrite on customer updates', async () => {
   const created = await seller.call('customers', 'POST', {
     kind: 'COMPANY',
@@ -199,6 +743,115 @@ test('optimistic concurrency prevents silent overwrite on customer updates', asy
   assert.equal(stale.body.code, 'CONCURRENT_MODIFICATION');
 });
 
+test('customer updates emit a minimal correlated event atomically with their audit', async () => {
+  const originalName = `Cliente atualização ${randomUUID()}`;
+  const created = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: originalName,
+    taxId: randomUUID().replace(/\D/g, ''),
+  });
+  assert.equal(created.status, 201);
+  const customerId = created.body.id;
+  const auditCount = await db.auditEvent.count({
+    where: { action: 'commercial.customer_updated', entityId: customerId },
+  });
+  const eventCount = await db.integrationOutbox.count({
+    where: { eventType: 'CUSTOMER_UPDATED', aggregateId: customerId },
+  });
+
+  const unauthenticated = await new Client().call(`customers/${customerId}`, 'PATCH', {
+    expectedVersion: 1,
+    tradeName: 'Sem autenticação',
+  });
+  assert.equal(unauthenticated.status, 401);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'CUSTOMER_UPDATED', aggregateId: customerId },
+    }),
+    eventCount,
+  );
+
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_customer_updated_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'CUSTOMER_UPDATED' THEN
+        RAISE EXCEPTION 'forced customer update outbox failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_customer_updated_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_customer_updated_outbox_for_test()
+  `);
+  const failed = await seller.call(`customers/${customerId}`, 'PATCH', {
+    expectedVersion: 1,
+    legalName: 'Atualização que deve reverter',
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_customer_updated_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_customer_updated_outbox_for_test()`);
+  assert.equal(failed.status, 500);
+  const afterFailure = await db.customer.findUnique({ where: { id: customerId } });
+  assert.equal(afterFailure.version, 1);
+  assert.equal(afterFailure.legalName, originalName);
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'commercial.customer_updated', entityId: customerId },
+    }),
+    auditCount,
+  );
+
+  const legalName = `Cliente atualizado ${randomUUID()}`;
+  const taxId = randomUUID().replace(/\D/g, '');
+  const requestId = `r1-customer-updated-${randomUUID()}`;
+  const updated = await seller.call(
+    `customers/${customerId}`,
+    'PATCH',
+    { expectedVersion: 1, legalName, taxId, notes: 'Observação privada' },
+    { 'x-request-id': requestId },
+  );
+  assert.equal(updated.status, 200);
+  assert.equal(updated.body.version, 2);
+  const audit = await db.auditEvent.findFirst({
+    where: {
+      action: 'commercial.customer_updated',
+      entityId: customerId,
+      traceId: requestId,
+    },
+  });
+  assert.ok(audit);
+  const event = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `CUSTOMER_UPDATED:${audit.id}` },
+  });
+  assert.ok(event);
+  assert.equal(event.eventType, 'CUSTOMER_UPDATED');
+  assert.equal(event.aggregateType, 'Customer');
+  assert.equal(event.aggregateId, customerId);
+  assert.equal(event.correlationId, requestId);
+  assert.equal(event.publishedAt, null);
+  assert.deepEqual(event.payload, { customerId, auditEventId: audit.id });
+  const serializedPayload = JSON.stringify(event.payload);
+  assert.equal(serializedPayload.includes(legalName), false);
+  assert.equal(serializedPayload.includes(taxId), false);
+  assert.equal(serializedPayload.includes('Observação privada'), false);
+
+  const stale = await seller.call(`customers/${customerId}`, 'PATCH', {
+    expectedVersion: 1,
+    tradeName: 'Atualização obsoleta',
+  });
+  assert.equal(stale.status, 409);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'CUSTOMER_UPDATED', aggregateId: customerId },
+    }),
+    eventCount + 1,
+  );
+});
+
 test('utility unit rejects duplicate code for same distributor', async () => {
   const cust = await seller.call('customers', 'POST', {
     kind: 'PERSON',
@@ -219,6 +872,206 @@ test('utility unit rejects duplicate code for same distributor', async () => {
   });
   assert.equal(u2.status, 409);
   assert.equal(u2.body.code, 'UTILITY_UNIT_ALREADY_EXISTS');
+});
+
+test('utility units and opportunities keep customer ownership inside the organization', async () => {
+  const customerA = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: 'Cliente Contexto A',
+  });
+  const customerB = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: 'Cliente Contexto B',
+  });
+  assert.equal(customerA.status, 201);
+  assert.equal(customerB.status, 201);
+
+  const addressB = await seller.call(`customers/${customerB.body.id}/addresses`, 'POST', {
+    postalCode: '30140071',
+    street: 'Rua de teste',
+    number: '10',
+    city: 'Belo Horizonte',
+    state: 'MG',
+  });
+  assert.equal(addressB.status, 201);
+
+  const crossCustomerAddress = await seller.call(
+    `customers/${customerA.body.id}/utility-units`,
+    'POST',
+    { distributorName: 'CEMIG Contexto', addressId: addressB.body.id },
+  );
+  assert.equal(crossCustomerAddress.status, 404);
+  assert.equal(crossCustomerAddress.body.code, 'ADDRESS_NOT_FOUND');
+
+  const unitB = await seller.call(`customers/${customerB.body.id}/utility-units`, 'POST', {
+    distributorName: 'CEMIG Contexto',
+    externalCode: 'CONTEXT-UNIT-B',
+  });
+  assert.equal(unitB.status, 201);
+
+  const crossCustomerOpportunity = await seller.call('opportunities', 'POST', {
+    customerId: customerA.body.id,
+    utilityUnitId: unitB.body.id,
+    title: 'Oportunidade sem vínculo cruzado',
+    needSummary: 'Validar o vínculo de propriedade',
+    firstActivity: {
+      type: 'CALL',
+      subject: 'Confirmar propriedade da unidade',
+      dueAt: new Date(Date.now() + 86400000).toISOString(),
+    },
+  });
+  assert.equal(crossCustomerOpportunity.status, 404);
+  assert.equal(crossCustomerOpportunity.body.code, 'UTILITY_UNIT_NOT_FOUND');
+
+  const opportunity = await seller.call('opportunities', 'POST', {
+    customerId: customerA.body.id,
+    title: 'Oportunidade com vínculo válido',
+    needSummary: 'Validar o vínculo de propriedade',
+    firstActivity: {
+      type: 'CALL',
+      subject: 'Confirmar propriedade da unidade',
+      dueAt: new Date(Date.now() + 86400000).toISOString(),
+    },
+  });
+  assert.equal(opportunity.status, 201);
+
+  const crossCustomerUpdate = await seller.call(`opportunities/${opportunity.body.id}`, 'PATCH', {
+    expectedVersion: 1,
+    utilityUnitId: unitB.body.id,
+  });
+  assert.equal(crossCustomerUpdate.status, 404);
+  assert.equal(crossCustomerUpdate.body.code, 'UTILITY_UNIT_NOT_FOUND');
+
+  const unitA = await seller.call(`customers/${customerA.body.id}/utility-units`, 'POST', {
+    distributorName: 'CEMIG Contexto',
+    externalCode: 'CONTEXT-UNIT-A',
+  });
+  assert.equal(unitA.status, 201);
+
+  const validOpportunity = await seller.call('opportunities', 'POST', {
+    customerId: customerA.body.id,
+    utilityUnitId: unitA.body.id,
+    title: 'Oportunidade com UC do mesmo cliente',
+    needSummary: 'Vínculo válido no mesmo cliente',
+    firstActivity: {
+      type: 'CALL',
+      subject: 'Coletar dados da unidade',
+      dueAt: new Date(Date.now() + 86400000).toISOString(),
+    },
+  });
+  assert.equal(validOpportunity.status, 201);
+  assert.equal(validOpportunity.body.utilityUnitId, unitA.body.id);
+
+  const validUpdate = await seller.call(`opportunities/${opportunity.body.id}`, 'PATCH', {
+    expectedVersion: 1,
+    utilityUnitId: unitA.body.id,
+  });
+  assert.equal(validUpdate.status, 200);
+  assert.equal(validUpdate.body.utilityUnitId, unitA.body.id);
+
+  const saved = await db.opportunity.findUnique({ where: { id: opportunity.body.id } });
+  assert.equal(saved.customerId, customerA.body.id);
+  assert.equal(saved.utilityUnitId, unitA.body.id);
+});
+
+test('creating a utility unit and linking it to an opportunity is atomic and idempotent', async () => {
+  const customer = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: 'Cliente Vinculação Atômica',
+  });
+  assert.equal(customer.status, 201);
+
+  const opportunity = await seller.call('opportunities', 'POST', {
+    customerId: customer.body.id,
+    title: 'Oportunidade para UC atômica',
+    needSummary: 'Criar e vincular em um comando',
+    firstActivity: {
+      type: 'CALL',
+      subject: 'Confirmar dados da UC',
+      dueAt: new Date(Date.now() + 86400000).toISOString(),
+    },
+  });
+  assert.equal(opportunity.status, 201);
+
+  const payload = {
+    expectedVersion: 1,
+    distributorName: 'CEMIG Atomicidade',
+    externalCode: 'ATOMIC-UC-01',
+  };
+  const idempotencyKey = 'atomic-utility-unit-001';
+  const stale = await seller.call(
+    `opportunities/${opportunity.body.id}/utility-unit`,
+    'POST',
+    { ...payload, expectedVersion: 2 },
+    { 'idempotency-key': 'atomic-utility-unit-stale' },
+  );
+  assert.equal(stale.status, 409);
+  assert.equal(stale.body.code, 'CONCURRENT_MODIFICATION');
+  assert.equal(await db.utilityUnit.count({ where: { externalCode: payload.externalCode } }), 0);
+
+  const created = await seller.call(
+    `opportunities/${opportunity.body.id}/utility-unit`,
+    'POST',
+    payload,
+    { 'idempotency-key': idempotencyKey },
+  );
+  assert.equal(created.status, 201);
+
+  const replay = await seller.call(
+    `opportunities/${opportunity.body.id}/utility-unit`,
+    'POST',
+    payload,
+    { 'idempotency-key': idempotencyKey },
+  );
+  assert.equal(replay.status, 201);
+  assert.equal(replay.body.id, created.body.id);
+
+  const changedPayload = await seller.call(
+    `opportunities/${opportunity.body.id}/utility-unit`,
+    'POST',
+    { ...payload, externalCode: 'ATOMIC-UC-02' },
+    { 'idempotency-key': idempotencyKey },
+  );
+  assert.equal(changedPayload.status, 409);
+  assert.equal(changedPayload.body.code, 'IDEMPOTENCY_CONFLICT');
+
+  const savedOpportunity = await db.opportunity.findUnique({ where: { id: opportunity.body.id } });
+  assert.equal(savedOpportunity.utilityUnitId, created.body.id);
+  assert.equal(savedOpportunity.version, 2);
+  assert.equal(await db.utilityUnit.count({ where: { customerId: customer.body.id } }), 1);
+});
+
+test('atomic utility unit creation enforces the opportunity owner scope', async () => {
+  const customer = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: 'Cliente Escopo do Vendedor',
+  });
+  assert.equal(customer.status, 201);
+  const opportunity = await seller.call('opportunities', 'POST', {
+    customerId: customer.body.id,
+    title: 'Oportunidade de outro vendedor',
+    needSummary: 'Confirmar escopo efetivo do vendedor',
+    firstActivity: {
+      type: 'CALL',
+      subject: 'Confirmar permissões da oportunidade',
+      dueAt: new Date(Date.now() + 86400000).toISOString(),
+    },
+  });
+  assert.equal(opportunity.status, 201);
+
+  const denied = await otherSeller.call(
+    `opportunities/${opportunity.body.id}/utility-unit`,
+    'POST',
+    {
+      expectedVersion: 1,
+      distributorName: 'CEMIG Escopo',
+      externalCode: 'SCOPE-DENIED-01',
+    },
+    { 'idempotency-key': 'utility-unit-scope-denied' },
+  );
+  assert.equal(denied.status, 403);
+  assert.equal(denied.body.code, 'ACCESS_DENIED');
+  assert.equal(await db.utilityUnit.count({ where: { customerId: customer.body.id } }), 0);
 });
 
 test('opportunity creation is atomic with first activity; transition requires explicit command', async () => {
@@ -262,8 +1115,38 @@ test('opportunity creation is atomic with first activity; transition requires ex
   assert.equal(directPatch.status, 200);
   assert.equal(directPatch.body.state, 'NOVO'); // State stays NOVO!
 
-  // Qualify command moves state to QUALIFICADO
-  const qualify = await seller.call(`opportunities/${oppId}/qualify`, 'POST', {
+  // The outbox failure must roll back the status, transition, activity and audit.
+  const transitionCountBefore = await db.opportunityTransition.count({
+    where: { opportunityId: oppId },
+  });
+  const activityCountBeforeQualification = await db.activity.count({
+    where: { opportunityId: oppId },
+  });
+  const qualificationAuditCount = await db.auditEvent.count({
+    where: { action: 'commercial.opportunity_qualified', entityId: oppId },
+  });
+  const qualifiedEventCountBefore = await db.integrationOutbox.count({
+    where: { eventType: 'OPPORTUNITY_QUALIFIED' },
+  });
+  const activityEventCountBeforeQualification = await db.integrationOutbox.count({
+    where: { eventType: 'ACTIVITY_CREATED' },
+  });
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_qualification_followup_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'ACTIVITY_CREATED' THEN
+        RAISE EXCEPTION 'forced qualification follow-up outbox failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_qualification_followup_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_qualification_followup_outbox_for_test()
+  `);
+  const failedQualification = await seller.call(`opportunities/${oppId}/qualify`, 'POST', {
     expectedVersion: 2,
     confirmedNeedSummary: 'Necessidade confirmada: Sistema 5 kWp On-Grid',
     nextActivity: {
@@ -272,8 +1155,107 @@ test('opportunity creation is atomic with first activity; transition requires ex
       dueAt: new Date(Date.now() + 172800000).toISOString(),
     },
   });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_qualification_followup_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(
+    `DROP FUNCTION "${schema}".reject_qualification_followup_outbox_for_test()`,
+  );
+  assert.equal(failedQualification.status, 500);
+  const afterFailedQualification = await db.opportunity.findUnique({ where: { id: oppId } });
+  assert.equal(afterFailedQualification.state, 'NOVO');
+  assert.equal(afterFailedQualification.version, 2);
+  assert.equal(
+    await db.opportunityTransition.count({ where: { opportunityId: oppId } }),
+    transitionCountBefore,
+  );
+  assert.equal(
+    await db.activity.count({ where: { opportunityId: oppId } }),
+    activityCountBeforeQualification,
+  );
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'commercial.opportunity_qualified', entityId: oppId },
+    }),
+    qualificationAuditCount,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'OPPORTUNITY_QUALIFIED' } }),
+    qualifiedEventCountBefore,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'ACTIVITY_CREATED' } }),
+    activityEventCountBeforeQualification,
+  );
+
+  // Qualify command moves state to QUALIFICADO and emits an event for its transition.
+  const qualificationRequestId = `r1-qualified-${randomUUID()}`;
+  const qualify = await seller.call(
+    `opportunities/${oppId}/qualify`,
+    'POST',
+    {
+      expectedVersion: 2,
+      confirmedNeedSummary: 'Necessidade confirmada: Sistema 5 kWp On-Grid',
+      nextActivity: {
+        type: 'TASK',
+        subject: 'Realizar dimensionamento preliminar',
+        dueAt: new Date(Date.now() + 172800000).toISOString(),
+      },
+    },
+    { 'x-request-id': qualificationRequestId },
+  );
   assert.equal(qualify.status, 200);
   assert.equal(qualify.body.state, 'QUALIFICADO');
+  const qualificationTransition = await db.opportunityTransition.findFirst({
+    where: { opportunityId: oppId, command: 'qualify' },
+  });
+  assert.ok(qualificationTransition);
+  const qualificationEvent = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `OPPORTUNITY_QUALIFIED:${qualificationTransition.id}` },
+  });
+  assert.ok(qualificationEvent, 'Transição qualificada e evento outbox devem persistir juntos');
+  assert.equal(qualificationEvent.eventType, 'OPPORTUNITY_QUALIFIED');
+  assert.equal(qualificationEvent.schemaVersion, 1);
+  assert.equal(qualificationEvent.aggregateType, 'Opportunity');
+  assert.equal(qualificationEvent.aggregateId, oppId);
+  assert.equal(qualificationEvent.producer, 'crm');
+  assert.equal(qualificationEvent.correlationId, qualificationRequestId);
+  assert.equal(qualificationEvent.publishedAt, null);
+  assert.deepEqual(qualificationEvent.payload, {
+    opportunityId: oppId,
+    transitionId: qualificationTransition.id,
+    customerId: cust.body.id,
+    fromState: 'NOVO',
+    toState: 'QUALIFICADO',
+  });
+  const qualificationAudit = await db.auditEvent.findFirst({
+    where: {
+      action: 'commercial.opportunity_qualified',
+      entityId: oppId,
+      traceId: qualificationRequestId,
+    },
+  });
+  assert.ok(qualificationAudit);
+  const followup = await db.activity.findFirst({
+    where: { opportunityId: oppId, subject: 'Realizar dimensionamento preliminar' },
+  });
+  assert.ok(followup);
+  const followupEvent = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `ACTIVITY_CREATED:${qualificationAudit.id}:${followup.id}` },
+  });
+  assert.ok(followupEvent);
+  assert.equal(followupEvent.eventType, 'ACTIVITY_CREATED');
+  assert.equal(followupEvent.schemaVersion, 1);
+  assert.equal(followupEvent.aggregateType, 'Activity');
+  assert.equal(followupEvent.aggregateId, followup.id);
+  assert.equal(followupEvent.correlationId, qualificationRequestId);
+  assert.equal(followupEvent.publishedAt, null);
+  assert.deepEqual(followupEvent.payload, {
+    activityId: followup.id,
+    auditEventId: qualificationAudit.id,
+    customerId: cust.body.id,
+    opportunityId: oppId,
+  });
 
   // Verify activity completion requires resultCode
   const currentActivities = await seller.call(`activities?opportunityId=${oppId}`);
@@ -294,14 +1276,94 @@ test('opportunity creation is atomic with first activity; transition requires ex
   assert.equal(successComplete.status, 200);
   assert.equal(successComplete.body.status, 'COMPLETED');
 
-  // Lose opportunity requires lossReason and cancels open activities
-  const lose = await seller.call(`opportunities/${oppId}/lose`, 'POST', {
+  // Outbox failure must roll back the loss state, transition, activity cancellations and audit.
+  const transitionCountBeforeLoss = await db.opportunityTransition.count({
+    where: { opportunityId: oppId },
+  });
+  const activityCountBeforeLoss = await db.activity.count({
+    where: { opportunityId: oppId, status: 'OPEN' },
+  });
+  const lossAuditCount = await db.auditEvent.count({
+    where: { action: 'commercial.opportunity_lost', entityId: oppId },
+  });
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_opportunity_lost_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'OPPORTUNITY_LOST' THEN
+        RAISE EXCEPTION 'forced opportunity loss outbox failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_opportunity_lost_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_opportunity_lost_outbox_for_test()
+  `);
+  const failedLoss = await seller.call(`opportunities/${oppId}/lose`, 'POST', {
     expectedVersion: 3,
     lossReason: 'PRECO_ELEVADO',
-    lossNotes: 'Cliente optou por adiar a compra',
+    lossNotes: 'Falha esperada no outbox; não deve persistir.',
   });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_opportunity_lost_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_opportunity_lost_outbox_for_test()`);
+  assert.equal(failedLoss.status, 500);
+  const afterFailedLoss = await db.opportunity.findUnique({ where: { id: oppId } });
+  assert.equal(afterFailedLoss.state, 'QUALIFICADO');
+  assert.equal(afterFailedLoss.version, 3);
+  assert.equal(
+    await db.opportunityTransition.count({ where: { opportunityId: oppId } }),
+    transitionCountBeforeLoss,
+  );
+  assert.equal(
+    await db.activity.count({ where: { opportunityId: oppId, status: 'OPEN' } }),
+    activityCountBeforeLoss,
+  );
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'commercial.opportunity_lost', entityId: oppId },
+    }),
+    lossAuditCount,
+  );
+
+  // Loss requires a reason, cancels open activities, and emits only transition IDs/state.
+  const lossRequestId = `r1-opportunity-lost-${randomUUID()}`;
+  const lose = await seller.call(
+    `opportunities/${oppId}/lose`,
+    'POST',
+    {
+      expectedVersion: 3,
+      lossReason: 'PRECO_ELEVADO',
+      lossNotes: 'Cliente optou por adiar a compra',
+    },
+    { 'x-request-id': lossRequestId },
+  );
   assert.equal(lose.status, 200);
   assert.equal(lose.body.state, 'PERDIDO');
+  const lossTransition = await db.opportunityTransition.findFirst({
+    where: { opportunityId: oppId, command: 'lose' },
+  });
+  assert.ok(lossTransition);
+  const lossEvent = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `OPPORTUNITY_LOST:${lossTransition.id}` },
+  });
+  assert.ok(lossEvent, 'Perda, transição e evento outbox devem persistir juntos');
+  assert.equal(lossEvent.eventType, 'OPPORTUNITY_LOST');
+  assert.equal(lossEvent.schemaVersion, 1);
+  assert.equal(lossEvent.aggregateType, 'Opportunity');
+  assert.equal(lossEvent.aggregateId, oppId);
+  assert.equal(lossEvent.producer, 'crm');
+  assert.equal(lossEvent.correlationId, lossRequestId);
+  assert.equal(lossEvent.publishedAt, null);
+  assert.deepEqual(lossEvent.payload, {
+    opportunityId: oppId,
+    transitionId: lossTransition.id,
+    fromState: 'QUALIFICADO',
+    toState: 'PERDIDO',
+  });
 
   // Seller without opportunities:reopen receives 403
   const sellerReopen = await seller.call(`opportunities/${oppId}/reopen`, 'POST', {
@@ -310,13 +1372,145 @@ test('opportunity creation is atomic with first activity; transition requires ex
   });
   assert.equal(sellerReopen.status, 403);
 
-  // Admin with opportunities:reopen succeeds and restores state to NOVO
-  const adminReopen = await admin.call(`opportunities/${oppId}/reopen`, 'POST', {
-    expectedVersion: 4,
-    justification: 'Gerente/Admin aprovou reabertura após renegociação',
+  const transitionCountBeforeReopen = await db.opportunityTransition.count({
+    where: { opportunityId: oppId },
   });
+  const reopenAuditCountBefore = await db.auditEvent.count({
+    where: { action: 'commercial.opportunity_reopened', entityId: oppId },
+  });
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_opportunity_reopened_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'OPPORTUNITY_REOPENED' THEN
+        RAISE EXCEPTION 'forced opportunity reopen outbox failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_opportunity_reopened_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_opportunity_reopened_outbox_for_test()
+  `);
+  const failedReopen = await admin.call(`opportunities/${oppId}/reopen`, 'POST', {
+    expectedVersion: 4,
+    justification: 'Falha esperada no outbox; não deve persistir.',
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_opportunity_reopened_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(
+    `DROP FUNCTION "${schema}".reject_opportunity_reopened_outbox_for_test()`,
+  );
+  assert.equal(failedReopen.status, 500);
+  const afterFailedReopen = await db.opportunity.findUnique({ where: { id: oppId } });
+  assert.equal(afterFailedReopen.state, 'PERDIDO');
+  assert.equal(afterFailedReopen.version, 4);
+  assert.equal(afterFailedReopen.lossReason, 'PRECO_ELEVADO');
+  assert.equal(afterFailedReopen.lossNotes, 'Cliente optou por adiar a compra');
+  assert.equal(
+    await db.opportunityTransition.count({ where: { opportunityId: oppId } }),
+    transitionCountBeforeReopen,
+  );
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'commercial.opportunity_reopened', entityId: oppId },
+    }),
+    reopenAuditCountBefore,
+  );
+
+  // Admin with opportunities:reopen succeeds and restores state to NOVO
+  const reopenRequestId = `r1-opportunity-reopened-${randomUUID()}`;
+  const adminReopen = await admin.call(
+    `opportunities/${oppId}/reopen`,
+    'POST',
+    {
+      expectedVersion: 4,
+      justification: 'Gerente/Admin aprovou reabertura após renegociação',
+    },
+    { 'x-request-id': reopenRequestId },
+  );
   assert.equal(adminReopen.status, 200);
   assert.equal(adminReopen.body.state, 'NOVO');
+  const reopenTransition = await db.opportunityTransition.findFirst({
+    where: { opportunityId: oppId, command: 'reopen' },
+  });
+  assert.ok(reopenTransition);
+  const reopenEvent = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `OPPORTUNITY_REOPENED:${reopenTransition.id}` },
+  });
+  assert.ok(reopenEvent, 'Reabertura, transição e evento outbox devem persistir juntos');
+  assert.equal(reopenEvent.eventType, 'OPPORTUNITY_REOPENED');
+  assert.equal(reopenEvent.schemaVersion, 1);
+  assert.equal(reopenEvent.aggregateType, 'Opportunity');
+  assert.equal(reopenEvent.aggregateId, oppId);
+  assert.equal(reopenEvent.producer, 'crm');
+  assert.equal(reopenEvent.correlationId, reopenRequestId);
+  assert.equal(reopenEvent.publishedAt, null);
+  assert.deepEqual(reopenEvent.payload, {
+    opportunityId: oppId,
+    transitionId: reopenTransition.id,
+    fromState: 'PERDIDO',
+    toState: 'NOVO',
+  });
+});
+
+test('qualifying without a new follow-up does not emit another activity event', async () => {
+  const customer = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: `Cliente sem follow-up ${randomUUID()}`,
+    phone: '(31) 99999-1234',
+    email: `sem-followup-${randomUUID()}@moura.test`,
+  });
+  assert.equal(customer.status, 201);
+  const opportunity = await seller.call('opportunities', 'POST', {
+    customerId: customer.body.id,
+    title: `Oportunidade sem follow-up ${randomUUID()}`,
+    needSummary: 'Avaliar solução solar',
+    firstActivity: {
+      type: 'CALL',
+      subject: 'Contato já programado',
+      dueAt: new Date(Date.now() + 86400000).toISOString(),
+    },
+  });
+  assert.equal(opportunity.status, 201);
+  const opportunityId = opportunity.body.id;
+  const activityCountBefore = await db.activity.count({ where: { opportunityId } });
+  const activityEventCountBefore = await db.integrationOutbox.count({
+    where: { eventType: 'ACTIVITY_CREATED' },
+  });
+  const requestId = `r1-qualified-no-followup-${randomUUID()}`;
+  const qualified = await seller.call(
+    `opportunities/${opportunityId}/qualify`,
+    'POST',
+    {
+      expectedVersion: 1,
+      confirmedNeedSummary: 'Necessidade confirmada para análise',
+    },
+    { 'x-request-id': requestId },
+  );
+  assert.equal(qualified.status, 200);
+  assert.equal(qualified.body.state, 'QUALIFICADO');
+  assert.equal(await db.activity.count({ where: { opportunityId } }), activityCountBefore);
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'ACTIVITY_CREATED' } }),
+    activityEventCountBefore,
+  );
+  const audit = await db.auditEvent.findFirst({
+    where: {
+      action: 'commercial.opportunity_qualified',
+      entityId: opportunityId,
+      traceId: requestId,
+    },
+  });
+  assert.ok(audit);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'ACTIVITY_CREATED', dedupeKey: { contains: audit.id } },
+    }),
+    0,
+  );
 });
 
 test('archive customer is rejected when active opportunities exist', async () => {
@@ -349,4 +1543,764 @@ test('archive customer is rejected when active opportunities exist', async () =>
   });
   assert.equal(adminArchive.status, 422);
   assert.equal(adminArchive.body.code, 'CUSTOMER_HAS_ACTIVE_OPPORTUNITIES');
+});
+
+test('customer archive and restore emit minimal events atomically with their audit rows', async () => {
+  const created = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: `Cliente ciclo de vida ${randomUUID()}`,
+  });
+  assert.equal(created.status, 201);
+  const customerId = created.body.id;
+
+  const archiveAuditCount = await db.auditEvent.count({
+    where: { action: 'commercial.customer_archived', entityId: customerId },
+  });
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_customer_archived_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'CUSTOMER_ARCHIVED' THEN
+        RAISE EXCEPTION 'forced customer archive outbox failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_customer_archived_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_customer_archived_outbox_for_test()
+  `);
+  const failedArchive = await admin.call(`customers/${customerId}/archive`, 'POST', {
+    expectedVersion: 1,
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_customer_archived_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(
+    `DROP FUNCTION "${schema}".reject_customer_archived_outbox_for_test()`,
+  );
+  assert.equal(failedArchive.status, 500);
+  const afterFailedArchive = await db.customer.findUnique({ where: { id: customerId } });
+  assert.equal(afterFailedArchive.status, 'ACTIVE');
+  assert.equal(afterFailedArchive.version, 1);
+  assert.equal(afterFailedArchive.archivedAt, null);
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'commercial.customer_archived', entityId: customerId },
+    }),
+    archiveAuditCount,
+  );
+
+  const archiveRequestId = `r1-customer-archived-${randomUUID()}`;
+  const archived = await admin.call(
+    `customers/${customerId}/archive`,
+    'POST',
+    { expectedVersion: 1 },
+    { 'x-request-id': archiveRequestId },
+  );
+  assert.equal(archived.status, 200);
+  assert.equal(archived.body.status, 'ARCHIVED');
+  const archiveAudit = await db.auditEvent.findFirst({
+    where: {
+      action: 'commercial.customer_archived',
+      entityId: customerId,
+      traceId: archiveRequestId,
+    },
+  });
+  assert.ok(archiveAudit);
+  const archiveEvent = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `CUSTOMER_ARCHIVED:${archiveAudit.id}` },
+  });
+  assert.ok(archiveEvent);
+  assert.equal(archiveEvent.eventType, 'CUSTOMER_ARCHIVED');
+  assert.equal(archiveEvent.aggregateType, 'Customer');
+  assert.equal(archiveEvent.aggregateId, customerId);
+  assert.equal(archiveEvent.correlationId, archiveRequestId);
+  assert.equal(archiveEvent.publishedAt, null);
+  assert.deepEqual(archiveEvent.payload, { customerId, auditEventId: archiveAudit.id });
+
+  const archivedAt = archived.body.archivedAt;
+  const restoreAuditCount = await db.auditEvent.count({
+    where: { action: 'commercial.customer_restored', entityId: customerId },
+  });
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_customer_restored_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'CUSTOMER_RESTORED' THEN
+        RAISE EXCEPTION 'forced customer restore outbox failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_customer_restored_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_customer_restored_outbox_for_test()
+  `);
+  const failedRestore = await admin.call(`customers/${customerId}/restore`, 'POST', {
+    expectedVersion: 2,
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_customer_restored_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(
+    `DROP FUNCTION "${schema}".reject_customer_restored_outbox_for_test()`,
+  );
+  assert.equal(failedRestore.status, 500);
+  const afterFailedRestore = await db.customer.findUnique({ where: { id: customerId } });
+  assert.equal(afterFailedRestore.status, 'ARCHIVED');
+  assert.equal(afterFailedRestore.version, 2);
+  assert.equal(afterFailedRestore.archivedAt.toISOString(), archivedAt);
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'commercial.customer_restored', entityId: customerId },
+    }),
+    restoreAuditCount,
+  );
+
+  const restoreRequestId = `r1-customer-restored-${randomUUID()}`;
+  const restored = await admin.call(
+    `customers/${customerId}/restore`,
+    'POST',
+    { expectedVersion: 2 },
+    { 'x-request-id': restoreRequestId },
+  );
+  assert.equal(restored.status, 200);
+  assert.equal(restored.body.status, 'ACTIVE');
+  const restoreAudit = await db.auditEvent.findFirst({
+    where: {
+      action: 'commercial.customer_restored',
+      entityId: customerId,
+      traceId: restoreRequestId,
+    },
+  });
+  assert.ok(restoreAudit);
+  const restoreEvent = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `CUSTOMER_RESTORED:${restoreAudit.id}` },
+  });
+  assert.ok(restoreEvent);
+  assert.equal(restoreEvent.eventType, 'CUSTOMER_RESTORED');
+  assert.equal(restoreEvent.aggregateType, 'Customer');
+  assert.equal(restoreEvent.aggregateId, customerId);
+  assert.equal(restoreEvent.correlationId, restoreRequestId);
+  assert.equal(restoreEvent.publishedAt, null);
+  assert.deepEqual(restoreEvent.payload, { customerId, auditEventId: restoreAudit.id });
+});
+
+test('activity creation emits a minimal correlated event atomically with its audit', async () => {
+  const customer = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: `Cliente atividade R1 ${randomUUID()}`,
+  });
+  assert.equal(customer.status, 201);
+
+  const failedSubject = `Atividade rollback ${randomUUID()}`;
+  const eventCountBefore = await db.integrationOutbox.count({
+    where: { eventType: 'ACTIVITY_CREATED' },
+  });
+  const auditCountBefore = await db.auditEvent.count({
+    where: { action: 'commercial.activity_created' },
+  });
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_activity_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'ACTIVITY_CREATED' THEN
+        RAISE EXCEPTION 'forced activity outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_activity_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_activity_outbox_for_test()
+  `);
+  const failed = await seller.call('activities', 'POST', {
+    customerId: customer.body.id,
+    type: 'CALL',
+    subject: failedSubject,
+    description: 'Descrição de teste que deve ser revertida',
+    dueAt: new Date(Date.now() + 86400000).toISOString(),
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_activity_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_activity_outbox_for_test()`);
+
+  assert.equal(failed.status, 500);
+  assert.equal(await db.activity.count({ where: { subject: failedSubject } }), 0);
+  assert.equal(
+    await db.auditEvent.count({ where: { action: 'commercial.activity_created' } }),
+    auditCountBefore,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'ACTIVITY_CREATED' } }),
+    eventCountBefore,
+  );
+
+  const unauthenticated = await new Client().call('activities', 'POST', {
+    customerId: customer.body.id,
+    type: 'CALL',
+    subject: 'Sem autenticação',
+    dueAt: new Date(Date.now() + 86400000).toISOString(),
+  });
+  assert.equal(unauthenticated.status, 401);
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'ACTIVITY_CREATED' } }),
+    eventCountBefore,
+  );
+
+  const requestId = `r1-activity-${randomUUID()}`;
+  const subject = `Retorno ao cliente ${randomUUID()}`;
+  const description = `Descrição privada ${randomUUID()}`;
+  const created = await seller.call(
+    'activities',
+    'POST',
+    {
+      customerId: customer.body.id,
+      type: 'CALL',
+      subject,
+      description,
+      dueAt: new Date(Date.now() + 86400000).toISOString(),
+    },
+    { 'x-request-id': requestId },
+  );
+  assert.equal(created.status, 201);
+
+  const audit = await db.auditEvent.findFirst({
+    where: {
+      action: 'commercial.activity_created',
+      entityId: created.body.id,
+      traceId: requestId,
+    },
+  });
+  assert.ok(audit);
+  const event = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `ACTIVITY_CREATED:${audit.id}` },
+  });
+  assert.ok(event, 'Atividade e evento outbox devem persistir juntos');
+  assert.equal(event.eventType, 'ACTIVITY_CREATED');
+  assert.equal(event.schemaVersion, 1);
+  assert.equal(event.aggregateType, 'Activity');
+  assert.equal(event.aggregateId, created.body.id);
+  assert.equal(event.producer, 'crm');
+  assert.equal(event.correlationId, requestId);
+  assert.equal(event.publishedAt, null);
+  assert.deepEqual(event.payload, {
+    activityId: created.body.id,
+    auditEventId: audit.id,
+    customerId: customer.body.id,
+  });
+  assert.equal(JSON.stringify(event.payload).includes(subject), false);
+  assert.equal(JSON.stringify(event.payload).includes(description), false);
+});
+
+test('activity cancellation emits a minimal correlated event atomically with its audit', async () => {
+  const customer = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: `Cliente cancelamento atividade ${randomUUID()}`,
+  });
+  assert.equal(customer.status, 201);
+  const activity = await seller.call('activities', 'POST', {
+    customerId: customer.body.id,
+    type: 'TASK',
+    subject: 'Atividade a cancelar',
+    description: 'Descrição que não deve ser publicada',
+    dueAt: new Date(Date.now() + 86400000).toISOString(),
+  });
+  assert.equal(activity.status, 201);
+
+  const activityId = activity.body.id;
+  const eventCountBefore = await db.integrationOutbox.count({
+    where: { eventType: 'ACTIVITY_CANCELED', aggregateId: activityId },
+  });
+  const auditCountBefore = await db.auditEvent.count({
+    where: { action: 'commercial.activity_canceled', entityId: activityId },
+  });
+  const unauthenticated = await new Client().call(`activities/${activityId}/cancel`, 'POST', {
+    expectedVersion: 1,
+  });
+  assert.equal(unauthenticated.status, 401);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'ACTIVITY_CANCELED', aggregateId: activityId },
+    }),
+    eventCountBefore,
+  );
+
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_activity_canceled_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'ACTIVITY_CANCELED' THEN
+        RAISE EXCEPTION 'forced activity cancellation outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_activity_canceled_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_activity_canceled_outbox_for_test()
+  `);
+  const failed = await seller.call(`activities/${activityId}/cancel`, 'POST', {
+    expectedVersion: 1,
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_activity_canceled_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(
+    `DROP FUNCTION "${schema}".reject_activity_canceled_outbox_for_test()`,
+  );
+  assert.equal(failed.status, 500);
+  const afterFailure = await db.activity.findUnique({ where: { id: activityId } });
+  assert.equal(afterFailure.status, 'OPEN');
+  assert.equal(afterFailure.version, 1);
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'commercial.activity_canceled', entityId: activityId },
+    }),
+    auditCountBefore,
+  );
+
+  const requestId = `r1-activity-canceled-${randomUUID()}`;
+  const canceled = await seller.call(
+    `activities/${activityId}/cancel`,
+    'POST',
+    { expectedVersion: 1 },
+    { 'x-request-id': requestId },
+  );
+  assert.equal(canceled.status, 200);
+  assert.equal(canceled.body.status, 'CANCELED');
+  assert.equal(canceled.body.version, 2);
+  const audit = await db.auditEvent.findFirst({
+    where: {
+      action: 'commercial.activity_canceled',
+      entityId: activityId,
+      traceId: requestId,
+    },
+  });
+  assert.ok(audit);
+  const event = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `ACTIVITY_CANCELED:${audit.id}` },
+  });
+  assert.ok(event);
+  assert.equal(event.eventType, 'ACTIVITY_CANCELED');
+  assert.equal(event.schemaVersion, 1);
+  assert.equal(event.aggregateType, 'Activity');
+  assert.equal(event.aggregateId, activityId);
+  assert.equal(event.producer, 'crm');
+  assert.equal(event.correlationId, requestId);
+  assert.equal(event.publishedAt, null);
+  assert.deepEqual(event.payload, {
+    activityId,
+    auditEventId: audit.id,
+    customerId: customer.body.id,
+  });
+  assert.equal(JSON.stringify(event.payload).includes('Atividade a cancelar'), false);
+  assert.equal(
+    JSON.stringify(event.payload).includes('Descrição que não deve ser publicada'),
+    false,
+  );
+
+  const stale = await seller.call(`activities/${activityId}/cancel`, 'POST', {
+    expectedVersion: 1,
+  });
+  assert.equal(stale.status, 409);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'ACTIVITY_CANCELED', aggregateId: activityId },
+    }),
+    eventCountBefore + 1,
+  );
+});
+
+test('activity completion emits a minimal event with an optional follow-up ID atomically', async () => {
+  const customer = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: `Cliente conclusão atividade ${randomUUID()}`,
+  });
+  assert.equal(customer.status, 201);
+  const activity = await seller.call('activities', 'POST', {
+    customerId: customer.body.id,
+    type: 'CALL',
+    subject: 'Contato a concluir',
+    description: 'Descrição interna da atividade',
+    dueAt: new Date(Date.now() + 86400000).toISOString(),
+  });
+  assert.equal(activity.status, 201);
+  const activityId = activity.body.id;
+  const eventCountBefore = await db.integrationOutbox.count({
+    where: { eventType: 'ACTIVITY_COMPLETED', aggregateId: activityId },
+  });
+  const auditCountBefore = await db.auditEvent.count({
+    where: { action: 'commercial.activity_completed', entityId: activityId },
+  });
+  const activityCreatedEventCountBefore = await db.integrationOutbox.count({
+    where: { eventType: 'ACTIVITY_CREATED' },
+  });
+
+  const unauthenticated = await new Client().call(`activities/${activityId}/complete`, 'POST', {
+    expectedVersion: 1,
+    resultCode: 'DONE',
+  });
+  assert.equal(unauthenticated.status, 401);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'ACTIVITY_COMPLETED', aggregateId: activityId },
+    }),
+    eventCountBefore,
+  );
+
+  const followupSubject = `Follow-up rollback ${randomUUID()}`;
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_activity_completed_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'ACTIVITY_COMPLETED' THEN
+        RAISE EXCEPTION 'forced activity completion outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_activity_completed_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_activity_completed_outbox_for_test()
+  `);
+  const failed = await seller.call(`activities/${activityId}/complete`, 'POST', {
+    expectedVersion: 1,
+    resultCode: 'DONE',
+    resultNotes: 'Resultado privado rollback',
+    nextActivity: {
+      type: 'TASK',
+      subject: followupSubject,
+      description: 'Follow-up rollback privado',
+      dueAt: new Date(Date.now() + 172800000).toISOString(),
+    },
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_activity_completed_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(
+    `DROP FUNCTION "${schema}".reject_activity_completed_outbox_for_test()`,
+  );
+  assert.equal(failed.status, 500);
+  const afterFailure = await db.activity.findUnique({ where: { id: activityId } });
+  assert.equal(afterFailure.status, 'OPEN');
+  assert.equal(afterFailure.version, 1);
+  assert.equal(await db.activity.count({ where: { subject: followupSubject } }), 0);
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'commercial.activity_completed', entityId: activityId },
+    }),
+    auditCountBefore,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'ACTIVITY_COMPLETED', aggregateId: activityId },
+    }),
+    eventCountBefore,
+  );
+
+  const childFollowupSubject = `Follow-up event rollback ${randomUUID()}`;
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_completed_activity_created_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'ACTIVITY_CREATED' THEN
+        RAISE EXCEPTION 'forced completion follow-up activity outbox failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_completed_activity_created_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_completed_activity_created_outbox_for_test()
+  `);
+  const failedFollowupEvent = await seller.call(`activities/${activityId}/complete`, 'POST', {
+    expectedVersion: 1,
+    resultCode: 'DONE',
+    nextActivity: {
+      type: 'TASK',
+      subject: childFollowupSubject,
+      dueAt: new Date(Date.now() + 172800000).toISOString(),
+    },
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_completed_activity_created_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(
+    `DROP FUNCTION "${schema}".reject_completed_activity_created_outbox_for_test()`,
+  );
+  assert.equal(failedFollowupEvent.status, 500);
+  const afterFollowupEventFailure = await db.activity.findUnique({ where: { id: activityId } });
+  assert.equal(afterFollowupEventFailure.status, 'OPEN');
+  assert.equal(afterFollowupEventFailure.version, 1);
+  assert.equal(await db.activity.count({ where: { subject: childFollowupSubject } }), 0);
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'commercial.activity_completed', entityId: activityId },
+    }),
+    auditCountBefore,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'ACTIVITY_COMPLETED', aggregateId: activityId },
+    }),
+    eventCountBefore,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'ACTIVITY_CREATED' } }),
+    activityCreatedEventCountBefore,
+  );
+
+  const requestId = `r1-activity-completed-${randomUUID()}`;
+  const resultNotes = `Observação privada ${randomUUID()}`;
+  const followupDescription = `Descrição follow-up privada ${randomUUID()}`;
+  const completed = await seller.call(
+    `activities/${activityId}/complete`,
+    'POST',
+    {
+      expectedVersion: 1,
+      resultCode: 'DONE',
+      resultNotes,
+      nextActivity: {
+        type: 'TASK',
+        subject: `Próxima tarefa ${randomUUID()}`,
+        description: followupDescription,
+        dueAt: new Date(Date.now() + 172800000).toISOString(),
+      },
+    },
+    { 'x-request-id': requestId },
+  );
+  assert.equal(completed.status, 200);
+  assert.equal(completed.body.status, 'COMPLETED');
+  assert.equal(completed.body.version, 2);
+  const audit = await db.auditEvent.findFirst({
+    where: {
+      action: 'commercial.activity_completed',
+      entityId: activityId,
+      traceId: requestId,
+    },
+  });
+  assert.ok(audit);
+  const event = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `ACTIVITY_COMPLETED:${audit.id}` },
+  });
+  assert.ok(event);
+  const nextActivityId = event.payload.nextActivityId;
+  assert.ok(nextActivityId);
+  assert.equal(event.eventType, 'ACTIVITY_COMPLETED');
+  assert.equal(event.schemaVersion, 1);
+  assert.equal(event.aggregateType, 'Activity');
+  assert.equal(event.aggregateId, activityId);
+  assert.equal(event.producer, 'crm');
+  assert.equal(event.correlationId, requestId);
+  assert.equal(event.publishedAt, null);
+  assert.deepEqual(event.payload, {
+    activityId,
+    auditEventId: audit.id,
+    customerId: customer.body.id,
+    nextActivityId,
+  });
+  const nextActivity = await db.activity.findUnique({ where: { id: nextActivityId } });
+  assert.equal(nextActivity.previousActivityId, activityId);
+  assert.equal(JSON.stringify(event.payload).includes(resultNotes), false);
+  assert.equal(JSON.stringify(event.payload).includes(followupDescription), false);
+  const createdEvent = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `ACTIVITY_CREATED:${audit.id}:${nextActivityId}` },
+  });
+  assert.ok(createdEvent);
+  assert.equal(createdEvent.eventType, 'ACTIVITY_CREATED');
+  assert.equal(createdEvent.schemaVersion, 1);
+  assert.equal(createdEvent.aggregateType, 'Activity');
+  assert.equal(createdEvent.aggregateId, nextActivityId);
+  assert.equal(createdEvent.producer, 'crm');
+  assert.equal(createdEvent.correlationId, requestId);
+  assert.equal(createdEvent.publishedAt, null);
+  assert.deepEqual(createdEvent.payload, {
+    activityId: nextActivityId,
+    auditEventId: audit.id,
+    customerId: customer.body.id,
+  });
+  assert.equal(JSON.stringify(createdEvent.payload).includes(resultNotes), false);
+  assert.equal(JSON.stringify(createdEvent.payload).includes(followupDescription), false);
+
+  const stale = await seller.call(`activities/${activityId}/complete`, 'POST', {
+    expectedVersion: 1,
+    resultCode: 'DONE',
+  });
+  assert.equal(stale.status, 409);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'ACTIVITY_COMPLETED', aggregateId: activityId },
+    }),
+    eventCountBefore + 1,
+  );
+});
+
+test('activity completion without a follow-up emits no extra activity-created event', async () => {
+  const customer = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: `Cliente sem próximo follow-up ${randomUUID()}`,
+  });
+  assert.equal(customer.status, 201);
+  const activity = await seller.call('activities', 'POST', {
+    customerId: customer.body.id,
+    type: 'CALL',
+    subject: 'Atividade concluída sem follow-up',
+    dueAt: new Date(Date.now() + 86400000).toISOString(),
+  });
+  assert.equal(activity.status, 201);
+  const activityCreatedEventCountBefore = await db.integrationOutbox.count({
+    where: { eventType: 'ACTIVITY_CREATED' },
+  });
+  const completed = await seller.call(`activities/${activity.body.id}/complete`, 'POST', {
+    expectedVersion: 1,
+    resultCode: 'DONE',
+  });
+  assert.equal(completed.status, 200);
+  assert.equal(completed.body.status, 'COMPLETED');
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'ACTIVITY_CREATED' } }),
+    activityCreatedEventCountBefore,
+  );
+});
+
+test('activity reschedule emits a minimal correlated event atomically with its audit', async () => {
+  const customer = await seller.call('customers', 'POST', {
+    kind: 'PERSON',
+    legalName: `Cliente reagendamento atividade ${randomUUID()}`,
+  });
+  assert.equal(customer.status, 201);
+  const initialDueAt = new Date(Date.now() + 86400000);
+  const activity = await seller.call('activities', 'POST', {
+    customerId: customer.body.id,
+    type: 'CALL',
+    subject: 'Atividade a reagendar',
+    description: 'Descrição inicial',
+    dueAt: initialDueAt.toISOString(),
+  });
+  assert.equal(activity.status, 201);
+  const activityId = activity.body.id;
+  const eventCountBefore = await db.integrationOutbox.count({
+    where: { eventType: 'ACTIVITY_RESCHEDULED', aggregateId: activityId },
+  });
+  const auditCountBefore = await db.auditEvent.count({
+    where: { action: 'commercial.activity_rescheduled', entityId: activityId },
+  });
+
+  const unauthenticated = await new Client().call(`activities/${activityId}/reschedule`, 'POST', {
+    expectedVersion: 1,
+    dueAt: new Date(Date.now() + 172800000).toISOString(),
+  });
+  assert.equal(unauthenticated.status, 401);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'ACTIVITY_RESCHEDULED', aggregateId: activityId },
+    }),
+    eventCountBefore,
+  );
+
+  const rejectedDueAt = new Date(Date.now() + 259200000);
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_activity_rescheduled_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'ACTIVITY_RESCHEDULED' THEN
+        RAISE EXCEPTION 'forced activity reschedule outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_activity_rescheduled_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_activity_rescheduled_outbox_for_test()
+  `);
+  const failed = await seller.call(`activities/${activityId}/reschedule`, 'POST', {
+    expectedVersion: 1,
+    dueAt: rejectedDueAt.toISOString(),
+    notes: 'Observação privada rollback',
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_activity_rescheduled_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(
+    `DROP FUNCTION "${schema}".reject_activity_rescheduled_outbox_for_test()`,
+  );
+  assert.equal(failed.status, 500);
+  const afterFailure = await db.activity.findUnique({ where: { id: activityId } });
+  assert.equal(afterFailure.dueAt.toISOString(), initialDueAt.toISOString());
+  assert.equal(afterFailure.version, 1);
+  assert.equal(afterFailure.description, 'Descrição inicial');
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'commercial.activity_rescheduled', entityId: activityId },
+    }),
+    auditCountBefore,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'ACTIVITY_RESCHEDULED', aggregateId: activityId },
+    }),
+    eventCountBefore,
+  );
+
+  const requestId = `r1-activity-rescheduled-${randomUUID()}`;
+  const dueAt = new Date(Date.now() + 345600000);
+  const notes = `Observação privada ${randomUUID()}`;
+  const rescheduled = await seller.call(
+    `activities/${activityId}/reschedule`,
+    'POST',
+    { expectedVersion: 1, dueAt: dueAt.toISOString(), notes },
+    { 'x-request-id': requestId },
+  );
+  assert.equal(rescheduled.status, 200);
+  assert.equal(rescheduled.body.version, 2);
+  assert.equal(new Date(rescheduled.body.dueAt).toISOString(), dueAt.toISOString());
+  assert.match(rescheduled.body.description, /Observação privada/);
+  const audit = await db.auditEvent.findFirst({
+    where: {
+      action: 'commercial.activity_rescheduled',
+      entityId: activityId,
+      traceId: requestId,
+    },
+  });
+  assert.ok(audit);
+  const event = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `ACTIVITY_RESCHEDULED:${audit.id}` },
+  });
+  assert.ok(event);
+  assert.equal(event.eventType, 'ACTIVITY_RESCHEDULED');
+  assert.equal(event.schemaVersion, 1);
+  assert.equal(event.aggregateType, 'Activity');
+  assert.equal(event.aggregateId, activityId);
+  assert.equal(event.producer, 'crm');
+  assert.equal(event.correlationId, requestId);
+  assert.equal(event.publishedAt, null);
+  assert.deepEqual(event.payload, {
+    activityId,
+    auditEventId: audit.id,
+    customerId: customer.body.id,
+  });
+  assert.equal(JSON.stringify(event.payload).includes(dueAt.toISOString()), false);
+  assert.equal(JSON.stringify(event.payload).includes(notes), false);
+
+  const stale = await seller.call(`activities/${activityId}/reschedule`, 'POST', {
+    expectedVersion: 1,
+    dueAt: new Date(Date.now() + 432000000).toISOString(),
+  });
+  assert.equal(stale.status, 409);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { eventType: 'ACTIVITY_RESCHEDULED', aggregateId: activityId },
+    }),
+    eventCountBefore + 1,
+  );
 });

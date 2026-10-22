@@ -1,8 +1,11 @@
 # SPEC-000 — Arquitetura e padrões de engenharia
 
-**Status:** Aprovada  
-**Versão:** 0.2.0  
-**Escopo:** transversal  
+**Status:** Aprovada
+
+**Versão:** 0.3.0
+
+**Escopo:** transversal
+
 **Responsáveis:** Produto e Engenharia
 
 ## 1. Objetivo
@@ -48,9 +51,14 @@ Esta SPEC é normativa: módulos futuros não podem contrariá-la sem um ADR apr
 
 ### 4.1 Estilo
 
-O backend começará como **monólito modular**. Cada domínio terá fronteira explícita,
-casos de uso próprios e acesso controlado aos dados. Não serão adotados
-microsserviços na primeira versão.
+O backend atual é um **monólito modular NestJS**. A decisão de 07/10/2026
+mantém esta base e estabelece refatoração evolutiva rumo a serviços com propriedade
+de dados. Cada extração segue a [SPEC-016](../SPEC-016-refatoracao-evolutiva/spec.md),
+o [ADR-005](../../docs/adr/ADR-005-refatoracao-gradual-servicos.md) e o
+[roadmap vigente](../../docs/roadmap-refatoracao.md). Não reescrever a plataforma,
+não extrair todos os domínios de uma vez e não confundir arquitetura alvo com código
+já implementado. O ADR-001 descreve a decisão inicial e continua válido para o core
+ainda não extraído.
 
 ### 4.2 Aplicações
 
@@ -106,18 +114,24 @@ aplicação e eventos de domínio/aplicação.
 
 ## 5. Fonte de verdade e consistência
 
-1. PostgreSQL é a fonte única de verdade operacional.
+1. PostgreSQL é a persistência operacional autoritativa. Enquanto houver banco
+   compartilhado, a fonte de verdade permanece central; após cada extração, existe
+   um único proprietário de escrita por agregado, sem duplicação autoritativa.
 2. Local Storage, IndexedDB e cache não podem ser a fonte primária dos registros.
 3. Toda mutação ocorre pela API autenticada.
-4. Operações com múltiplos efeitos obrigatórios usam uma única transação.
+4. Operações no mesmo limite transacional usam uma única transação. Entre
+   serviços/bancos, usar transações locais e workflow/saga com compensação e estado
+   observável; não prometer uma transação ACID global.
 5. Processos assíncronos usam padrão de outbox para não perder eventos após commit.
 6. Comandos sujeitos a repetição aceitam chave de idempotência.
 7. Entidades mutáveis terão controle de versão para detectar concorrência otimista.
 8. Exclusão de registros de negócio será lógica quando necessária para auditoria.
 
-Exemplo: aprovar uma proposta deve, atomicamente, alterar a proposta, atualizar a
-oportunidade, criar a próxima atividade e registrar auditoria. Falha em qualquer
-parte reverte toda a operação.
+Exemplo histórico no monólito: aprovar uma proposta pode, na mesma transação,
+alterar a proposta, atualizar a oportunidade, criar a próxima atividade e registrar
+auditoria; falha em qualquer parte reverte essa transação. Após a extração de uma
+fronteira, preservar o efeito de negócio por transações locais, outbox/inbox e
+compensação/reconciliação conforme SPEC-016/019, sem prometer atomicidade global.
 
 ## 6. Contrato da API
 
@@ -276,3 +290,14 @@ Uma funcionalidade só está pronta quando:
 - [x] Aplicativo nativo complementar aprovado.
 - [x] Estratégia de transações, auditoria e concorrência aprovada.
 - [x] Política de testes e Pull Requests aprovada.
+
+## 17. Direção atual de evolução
+
+- Material Design e identidade Moura Solar seguem SPEC-003; sem Liquid Glass.
+- SPEC-016 governa fronteiras, propriedade de dados, migração e rollback.
+- SPEC-017 governa Product/catálogo; estoque e preço são projeções de seus donos.
+- SPEC-018 governa localização, consumo, cálculo e preço, preservando EnergyReading.
+- SPEC-019 governa contratos de eventos e dados analíticos.
+- M0–M10 permanecem como histórico; R0–R13 governam novas entregas.
+- NestJS, Next.js, PostgreSQL/Prisma e contratos atuais são preservados enquanto
+  compatíveis. Novos serviços podem coexistir com o core atrás de uma fachada.

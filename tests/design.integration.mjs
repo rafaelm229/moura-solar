@@ -1,3 +1,4 @@
+import { storageEnv } from './storage-env.mjs';
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
@@ -21,10 +22,7 @@ const env = {
   API_PORT: '3322',
   WEB_ORIGIN: 'http://localhost:3320',
   COOKIE_SECURE: 'false',
-  S3_ENDPOINT: 'http://localhost:9000',
-  S3_ACCESS_KEY: 'test',
-  S3_SECRET_KEY: 'test',
-  S3_BUCKET: 'test',
+  ...storageEnv,
   IDENTITY_LINK_SECRET: 'integration-test-link-secret-at-least-32-characters',
   BOOTSTRAP_TOKEN: 'integration-test-bootstrap-at-least-32-characters',
 };
@@ -59,7 +57,7 @@ class Client {
     } catch {
       parsedBody = text;
     }
-    return { status: response.status, body: parsedBody };
+    return { status: response.status, body: parsedBody, headers: response.headers };
   }
 }
 
@@ -67,6 +65,7 @@ let admin = new Client();
 let testCustomerId;
 let testUtilityUnitId;
 let testOpportunityId;
+let firstReadingId;
 
 before(async () => {
   await db.$executeRawUnsafe(`CREATE SCHEMA "${schema}"`);
@@ -158,28 +157,49 @@ after(async () => {
 
 test('histórico de consumo: calcula média para n meses e sinaliza histórico incompleto quando n < 12', async () => {
   // Cadastra 4 competências de consumo
-  const r1 = await admin.call(`utility-units/${testUtilityUnitId}/readings`, 'POST', {
-    referenceMonth: '2026-05',
-    consumptionKwh: 500.0,
-  });
+  const r1 = await admin.call(
+    `utility-units/${testUtilityUnitId}/readings`,
+    'POST',
+    {
+      referenceMonth: '2026-05',
+      consumptionKwh: 500.0,
+    },
+    { 'idempotency-key': 'design-reading-create-2026-05' },
+  );
   assert.equal(r1.status, 200);
+  firstReadingId = r1.body.id;
 
-  const r2 = await admin.call(`utility-units/${testUtilityUnitId}/readings`, 'POST', {
-    referenceMonth: '2026-06',
-    consumptionKwh: 600.0,
-  });
+  const r2 = await admin.call(
+    `utility-units/${testUtilityUnitId}/readings`,
+    'POST',
+    {
+      referenceMonth: '2026-06',
+      consumptionKwh: 600.0,
+    },
+    { 'idempotency-key': 'design-reading-create-2026-06' },
+  );
   assert.equal(r2.status, 200);
 
-  const r3 = await admin.call(`utility-units/${testUtilityUnitId}/readings`, 'POST', {
-    referenceMonth: '2026-07',
-    consumptionKwh: 550.0,
-  });
+  const r3 = await admin.call(
+    `utility-units/${testUtilityUnitId}/readings`,
+    'POST',
+    {
+      referenceMonth: '2026-07',
+      consumptionKwh: 550.0,
+    },
+    { 'idempotency-key': 'design-reading-create-2026-07' },
+  );
   assert.equal(r3.status, 200);
 
-  const r4 = await admin.call(`utility-units/${testUtilityUnitId}/readings`, 'POST', {
-    referenceMonth: '2026-08',
-    consumptionKwh: 750.0,
-  });
+  const r4 = await admin.call(
+    `utility-units/${testUtilityUnitId}/readings`,
+    'POST',
+    {
+      referenceMonth: '2026-08',
+      consumptionKwh: 750.0,
+    },
+    { 'idempotency-key': 'design-reading-create-2026-08' },
+  );
   assert.equal(r4.status, 200);
 
   // Consulta resumo de consumo da UC
@@ -192,16 +212,361 @@ test('histórico de consumo: calcula média para n meses e sinaliza histórico i
   assert.equal(summary.body.annualizedConsumptionKwh, 7200.0);
 });
 
+test('leitura mensal não sobrescreve e replay da chave de criação é idempotente', async () => {
+  const replay = await admin.call(
+    `utility-units/${testUtilityUnitId}/readings`,
+    'POST',
+    { referenceMonth: '2026-05', consumptionKwh: 500.0 },
+    { 'idempotency-key': 'design-reading-create-2026-05' },
+  );
+  assert.equal(replay.status, 200);
+  assert.equal(replay.body.id, firstReadingId);
+
+  const duplicate = await admin.call(
+    `utility-units/${testUtilityUnitId}/readings`,
+    'POST',
+    { referenceMonth: '2026-05', consumptionKwh: 999.0 },
+    { 'idempotency-key': 'design-reading-duplicate-2026-05' },
+  );
+  assert.equal(duplicate.status, 409);
+  assert.equal(duplicate.body.code, 'READING_ALREADY_EXISTS');
+
+  const stored = await db.energyReading.findUnique({ where: { id: firstReadingId } });
+  assert.equal(Number(stored.consumptionKwh), 500.0);
+  assert.equal(stored.version, 1);
+  const initialRevision = await db.energyReadingRevision.findFirst({
+    where: { readingId: firstReadingId },
+  });
+  assert.equal(initialRevision.source, 'MANUAL');
+  assert.equal(initialRevision.currentValues.consumptionKwh, '500');
+});
+
+test('correção cria versão auditável e rejeita replay alterado ou versão desatualizada', async () => {
+  const body = {
+    referenceMonth: '2026-05',
+    consumptionKwh: 575.0,
+    billedAmount: 550.3,
+    source: 'MANUAL',
+    notes: 'Conferida com a fatura enviada.',
+    expectedVersion: 1,
+    correctionReason: 'Valor transcrito incorretamente da fatura.',
+  };
+  const headers = { 'idempotency-key': 'design-reading-correct-2026-05' };
+  const anonymous = new Client();
+  const denied = await anonymous.call(
+    `utility-units/${testUtilityUnitId}/readings/${firstReadingId}/corrections`,
+    'POST',
+    body,
+    { 'idempotency-key': 'design-reading-anonymous-key' },
+  );
+  assert.equal(denied.status, 401);
+
+  const corrected = await admin.call(
+    `utility-units/${testUtilityUnitId}/readings/${firstReadingId}/corrections`,
+    'POST',
+    body,
+    headers,
+  );
+  assert.equal(corrected.status, 200);
+  assert.notEqual(corrected.body.id, firstReadingId);
+  assert.equal(corrected.body.version, 2);
+  assert.equal(corrected.body.status, 'ACTIVE');
+  assert.equal(corrected.body.correctionReason, body.correctionReason);
+
+  const replay = await admin.call(
+    `utility-units/${testUtilityUnitId}/readings/${firstReadingId}/corrections`,
+    'POST',
+    body,
+    headers,
+  );
+  assert.equal(replay.status, 200);
+  assert.equal(replay.body.id, corrected.body.id);
+
+  const keyConflict = await admin.call(
+    `utility-units/${testUtilityUnitId}/readings/${firstReadingId}/corrections`,
+    'POST',
+    { ...body, consumptionKwh: 590.0 },
+    headers,
+  );
+  assert.equal(keyConflict.status, 409);
+  assert.equal(keyConflict.body.code, 'IDEMPOTENCY_CONFLICT');
+
+  const stale = await admin.call(
+    `utility-units/${testUtilityUnitId}/readings/${corrected.body.id}/corrections`,
+    'POST',
+    { ...body, expectedVersion: 1 },
+    { 'idempotency-key': 'design-reading-stale-correction-key' },
+  );
+  assert.equal(stale.status, 409);
+
+  const summary = await admin.call(`utility-units/${testUtilityUnitId}/readings`, 'GET');
+  const may = summary.body.readings.find((reading) => reading.referenceMonth === '2026-05');
+  assert.equal(may.version, 2);
+  assert.equal(may.consumptionKwh, 575.0);
+  assert.equal(may.history.length, 1);
+  assert.equal(may.history[0].id, firstReadingId);
+  assert.equal(may.history[0].status, 'SUPERSEDED');
+  assert.equal(may.history[0].consumptionKwh, 500.0);
+
+  const correctionRevision = await db.energyReadingRevision.findFirst({
+    where: { readingId: corrected.body.id },
+  });
+  assert.equal(correctionRevision.version, 2);
+  assert.equal(correctionRevision.previousValues.consumptionKwh, '500');
+  assert.equal(correctionRevision.currentValues.consumptionKwh, '575');
+  assert.equal(correctionRevision.reason, body.correctionReason);
+
+  const versions = await db.energyReading.findMany({
+    where: { utilityUnitId: testUtilityUnitId, referenceMonth: '2026-05' },
+    orderBy: { version: 'asc' },
+  });
+  assert.deepEqual(
+    versions.map((reading) => [reading.version, reading.status]),
+    [
+      [1, 'SUPERSEDED'],
+      [2, 'ACTIVE'],
+    ],
+  );
+});
+
+test('correções concorrentes preservam uma única versão ativa', async () => {
+  const active = await db.energyReading.findFirst({
+    where: { utilityUnitId: testUtilityUnitId, referenceMonth: '2026-05', status: 'ACTIVE' },
+  });
+  const correction = {
+    referenceMonth: '2026-05',
+    consumptionKwh: 580.0,
+    expectedVersion: active.version,
+    correctionReason: 'Conferência concorrente da fatura.',
+  };
+  const requests = await Promise.all([
+    admin.call(
+      `utility-units/${testUtilityUnitId}/readings/${active.id}/corrections`,
+      'POST',
+      correction,
+      { 'idempotency-key': 'design-reading-race-correction-a' },
+    ),
+    admin.call(
+      `utility-units/${testUtilityUnitId}/readings/${active.id}/corrections`,
+      'POST',
+      correction,
+      { 'idempotency-key': 'design-reading-race-correction-b' },
+    ),
+  ]);
+  assert.deepEqual(requests.map((response) => response.status).sort(), [200, 409]);
+
+  const activeVersions = await db.energyReading.findMany({
+    where: { utilityUnitId: testUtilityUnitId, referenceMonth: '2026-05', status: 'ACTIVE' },
+  });
+  assert.equal(activeVersions.length, 1);
+  assert.equal(activeVersions[0].version, active.version + 1);
+});
+
+test('exclusão lógica é idempotente e uma nova leitura preserva toda a cadeia de versões', async () => {
+  const active = await db.energyReading.findFirst({
+    where: { utilityUnitId: testUtilityUnitId, referenceMonth: '2026-05', status: 'ACTIVE' },
+  });
+  const headers = { 'idempotency-key': 'design-reading-delete-version-key' };
+  const path = `utility-units/${testUtilityUnitId}/readings/${active.id}`;
+  const deleted = await admin.call(path, 'DELETE', undefined, headers);
+  assert.equal(deleted.status, 200);
+  const replay = await admin.call(path, 'DELETE', undefined, headers);
+  assert.equal(replay.status, 200);
+
+  const preserved = await db.energyReading.findUnique({ where: { id: active.id } });
+  assert.equal(preserved.status, 'DELETED');
+
+  const recreated = await admin.call(
+    `utility-units/${testUtilityUnitId}/readings`,
+    'POST',
+    { referenceMonth: '2026-05', consumptionKwh: 585.0 },
+    { 'idempotency-key': 'design-reading-recreate-month-key' },
+  );
+  assert.equal(recreated.status, 200);
+  assert.equal(recreated.body.version, active.version + 1);
+
+  const summary = await admin.call(`utility-units/${testUtilityUnitId}/readings`, 'GET');
+  const may = summary.body.readings.find((reading) => reading.referenceMonth === '2026-05');
+  assert.equal(may.history.length, active.version);
+  assert.equal(may.history[0].version, active.version);
+  assert.equal(may.history[0].status, 'DELETED');
+});
+
+test('eventos de catálogo são transacionais, correlacionados e não carregam valores comerciais', async () => {
+  const sku = `R1-35-${randomUUID().slice(0, 8).toUpperCase()}`;
+  const createBody = {
+    sku,
+    kind: 'MATERIAL',
+    category: 'MODULE',
+    name: 'Módulo fotovoltaico de integração',
+    manufacturer: 'Fixture',
+    model: 'R1-35',
+    unitOfMeasure: 'UN',
+    powerRatingWp: 600,
+    referenceCost: 650,
+    referencePrice: 850,
+  };
+
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_catalog_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type IN ('CATALOG_ITEM_CREATED', 'CATALOG_ITEM_UPDATED') THEN
+        RAISE EXCEPTION 'forced catalog outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_catalog_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_catalog_outbox_for_test()
+  `);
+  const organizationId = (await db.organization.findFirst()).id;
+  const catalogCountBeforeFailedCreate = await db.catalogItem.count({ where: { organizationId } });
+  const createAuditCountBeforeFailure = await db.auditEvent.count({
+    where: { action: 'CATALOG_ITEM_CREATED' },
+  });
+  const outboxCountBeforeFailure = await db.integrationOutbox.count({
+    where: { eventType: 'CATALOG_ITEM_CREATED' },
+  });
+  const failedCreate = await admin.call('catalog', 'POST', createBody);
+  assert.equal(failedCreate.status, 500);
+  assert.equal(
+    await db.catalogItem.count({ where: { organizationId } }),
+    catalogCountBeforeFailedCreate,
+  );
+  assert.equal(
+    await db.auditEvent.count({ where: { action: 'CATALOG_ITEM_CREATED' } }),
+    createAuditCountBeforeFailure,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'CATALOG_ITEM_CREATED' } }),
+    outboxCountBeforeFailure,
+  );
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_catalog_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_catalog_outbox_for_test()`);
+
+  const created = await admin.call('catalog', 'POST', createBody);
+  assert.equal(created.status, 200);
+  const item = await db.catalogItem.findUnique({ where: { id: created.body.id } });
+  const createAudit = await db.auditEvent.findFirst({
+    where: { action: 'CATALOG_ITEM_CREATED', entityId: item.id },
+    orderBy: { createdAt: 'desc' },
+  });
+  const createEvent = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `CATALOG_ITEM_CREATED:${createAudit.id}:${item.id}:${item.version}` },
+  });
+  assert.ok(createEvent);
+  assert.equal(createEvent.aggregateType, 'CatalogItem');
+  assert.equal(createEvent.aggregateId, item.id);
+  assert.equal(createEvent.payload.version, item.version);
+  assert.equal(createEvent.correlationId, created.headers.get('x-request-id'));
+  assert.deepEqual(createEvent.payload, {
+    catalogItemId: item.id,
+    auditEventId: createAudit.id,
+    version: item.version,
+  });
+
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_catalog_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'CATALOG_ITEM_UPDATED' THEN
+        RAISE EXCEPTION 'forced catalog update outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_catalog_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_catalog_outbox_for_test()
+  `);
+  const updateAuditCountBeforeFailure = await db.auditEvent.count({
+    where: { action: 'CATALOG_ITEM_UPDATED', entityId: item.id },
+  });
+  const updateOutboxCountBeforeFailure = await db.integrationOutbox.count({
+    where: { eventType: 'CATALOG_ITEM_UPDATED' },
+  });
+  const failedUpdate = await admin.call(`catalog/${item.id}`, 'PUT', {
+    referenceCost: 875,
+    expectedVersion: item.version,
+  });
+  assert.equal(failedUpdate.status, 500);
+  const afterFailure = await db.catalogItem.findUnique({ where: { id: item.id } });
+  assert.equal(afterFailure.version, item.version);
+  assert.equal(Number(afterFailure.referenceCost), Number(item.referenceCost));
+  assert.equal(
+    await db.auditEvent.count({ where: { action: 'CATALOG_ITEM_UPDATED', entityId: item.id } }),
+    updateAuditCountBeforeFailure,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'CATALOG_ITEM_UPDATED' } }),
+    updateOutboxCountBeforeFailure,
+  );
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_catalog_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_catalog_outbox_for_test()`);
+
+  const updated = await admin.call(`catalog/${item.id}`, 'PUT', {
+    referenceCost: 875,
+    expectedVersion: item.version,
+  });
+  assert.equal(updated.status, 200);
+  const updateAudit = await db.auditEvent.findFirst({
+    where: { action: 'CATALOG_ITEM_UPDATED', entityId: item.id },
+    orderBy: { createdAt: 'desc' },
+  });
+  const updateEvent = await db.integrationOutbox.findFirst({
+    where: {
+      dedupeKey: `CATALOG_ITEM_UPDATED:${updateAudit.id}:${item.id}:${updated.body.version}`,
+    },
+  });
+  assert.ok(updateEvent);
+  assert.equal(updateEvent.payload.version, updated.body.version);
+  assert.equal(updateEvent.correlationId, updated.headers.get('x-request-id'));
+  assert.deepEqual(updateEvent.payload, {
+    catalogItemId: item.id,
+    auditEventId: updateAudit.id,
+    version: updated.body.version,
+  });
+
+  const inverter = await admin.call('catalog', 'POST', {
+    sku: `R1-35-INV-${randomUUID().slice(0, 8).toUpperCase()}`,
+    kind: 'MATERIAL',
+    category: 'INVERTER',
+    name: 'Inversor fotovoltaico de integração',
+    manufacturer: 'Fixture',
+    model: 'R1-35-INV',
+    unitOfMeasure: 'UN',
+    powerRatingKw: 6,
+    referenceCost: 4200,
+    referencePrice: 5600,
+  });
+  assert.equal(inverter.status, 200);
+});
+
 test('sugestão de dimensionamento: calcula kWp, módulos e inversores compatíveis', async () => {
+  const catalog = await admin.call('catalog?category=MODULE&status=ACTIVE', 'GET');
+  const selectedModule = catalog.body.find((item) => Number(item.powerRatingWp) > 0);
+  assert.ok(selectedModule);
   const suggestion = await admin.call('designs/suggest', 'POST', {
     targetMonthlyGenerationKwh: 600.0,
     specificYield: 135.0,
-    preferredModulePowerWp: 630,
+    preferredModuleCatalogItemId: selectedModule.id,
   });
   assert.equal(suggestion.status, 200);
   assert.equal(suggestion.body.classification, 'ESTIMATED');
-  assert.equal(suggestion.body.suggestedModuleQuantity, 8); // Math.ceil((600/135 * 1000) / 630) = ceil(7.05) = 8
-  assert.equal(suggestion.body.suggestedDcPowerKwp, 5.04); // 8 * 630 / 1000 = 5.04 kWp
+  assert.equal(suggestion.body.suggestedModuleSku, selectedModule.sku);
+  assert.equal(suggestion.body.suggestedModulePowerWp, Number(selectedModule.powerRatingWp));
+  assert.equal(
+    suggestion.body.suggestedModuleQuantity,
+    Math.ceil((600 / 135) * (1000 / Number(selectedModule.powerRatingWp))),
+  );
   assert.ok(suggestion.body.suggestedInverterPowerKw > 0);
   assert.ok(suggestion.body.estimatedMonthlyGenerationKwh >= 600.0);
 });

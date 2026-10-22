@@ -92,9 +92,11 @@ for (const [width, height] of [
         body: JSON.stringify({ message: 'Serviço temporariamente indisponível.' }),
       }),
     );
+    if (width < 768) await seller.getByText('Mais', { exact: true }).click();
     await seller.getByRole('button', { name: 'Auditoria', exact: true }).click();
     await expect(seller.getByRole('alert').filter({ hasText: 'indisponível' })).toBeVisible();
     await expect(seller.getByRole('button', { name: 'Sair', exact: true })).toBeVisible();
+    if (width < 768) await seller.getByText('Mais', { exact: true }).click();
     await seller.getByRole('button', { name: 'Minhas sessões', exact: true }).click();
     await expect
       .poll(() => seller.evaluate(() => document.documentElement.scrollWidth <= innerWidth))

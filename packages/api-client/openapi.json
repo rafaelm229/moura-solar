@@ -1306,6 +1306,57 @@
         "tags": ["Comercial"]
       }
     },
+    "/api/v1/opportunities/{opportunityId}/utility-unit": {
+      "post": {
+        "operationId": "CommercialController_createAndLinkUtilityUnit",
+        "parameters": [
+          {
+            "name": "opportunityId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAndLinkUtilityUnitDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UtilityUnitViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ms_access": []
+          }
+        ],
+        "tags": ["Comercial"]
+      }
+    },
     "/api/v1/utility-units/{utilityUnitId}": {
       "patch": {
         "operationId": "CommercialController_updateUtilityUnit",
@@ -1935,12 +1986,20 @@
         "tags": ["design"]
       },
       "post": {
-        "operationId": "DesignController_createOrUpdateReading",
+        "operationId": "DesignController_createEnergyReading",
         "parameters": [
           {
             "name": "id",
             "required": true,
             "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
             "schema": {
               "type": "string"
             }
@@ -1952,6 +2011,65 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CreateEnergyReadingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnergyReadingViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["design"]
+      }
+    },
+    "/api/v1/utility-units/{id}/readings/{readingId}/corrections": {
+      "post": {
+        "operationId": "DesignController_correctReading",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "readingId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorrectEnergyReadingDto"
               }
             }
           }
@@ -1992,6 +2110,14 @@
             "name": "readingId",
             "required": true,
             "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
             "schema": {
               "type": "string"
             }
@@ -3666,6 +3792,33 @@
           }
         ],
         "tags": ["financial"]
+      }
+    },
+    "/api/v1/inventory/module-availability": {
+      "get": {
+        "operationId": "InventoryController_listModuleAvailability",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ModuleAvailabilityViewDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["inventory"]
       }
     },
     "/api/v1/inventory/locations": {
@@ -5813,6 +5966,990 @@
         ],
         "tags": ["Automações, Notificações, Gestão & Observabilidade"]
       }
+    },
+    "/api/v1/customers/{customerId}/documents": {
+      "get": {
+        "operationId": "DossierController_listCustomerDocuments",
+        "parameters": [
+          {
+            "name": "customerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "utilityUnitId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "opportunityId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DossierDocumentViewDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Listar documentos do dossiê do cliente (incluindo propostas e contratos)",
+        "tags": ["dossier"]
+      }
+    },
+    "/api/v1/customers/{customerId}/document-context": {
+      "get": {
+        "operationId": "DossierController_uploadContext",
+        "parameters": [
+          {
+            "name": "customerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DossierUploadContextDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["dossier"]
+      }
+    },
+    "/api/v1/opportunities/{opportunityId}/documents": {
+      "get": {
+        "operationId": "DossierController_listOpportunityDocuments",
+        "parameters": [
+          {
+            "name": "opportunityId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DossierDocumentViewDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Listar documentos do dossiê vinculados a uma oportunidade",
+        "tags": ["dossier"]
+      }
+    },
+    "/api/v1/customers/{customerId}/document-uploads": {
+      "post": {
+        "operationId": "DossierController_createDocumentUpload",
+        "parameters": [
+          {
+            "name": "customerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDocumentUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DossierDocumentViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Iniciar upload ou registrar documento no dossiê do cliente",
+        "tags": ["dossier"]
+      }
+    },
+    "/api/v1/document-uploads/{versionId}/complete": {
+      "post": {
+        "operationId": "DossierController_completeDocumentUpload",
+        "parameters": [
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DossierDocumentViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Concluir upload e validar persistência do arquivo",
+        "tags": ["dossier"]
+      }
+    },
+    "/api/v1/documents/{documentId}/versions/{versionId}/content": {
+      "get": {
+        "operationId": "DossierController_downloadContent",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "purpose",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": ["VIEW", "DOWNLOAD"],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Obter stream ou download do arquivo de uma versão documental",
+        "tags": ["dossier"]
+      }
+    },
+    "/api/v1/documents/{documentId}/archive": {
+      "post": {
+        "operationId": "DossierController_archiveDocument",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArchiveDocumentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Arquivar logicamente documento do dossiê",
+        "tags": ["dossier"]
+      }
+    },
+    "/api/v1/customers/{customerId}/representatives": {
+      "get": {
+        "operationId": "DossierController_listRepresentatives",
+        "parameters": [
+          {
+            "name": "customerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RepresentativeViewDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Listar representantes legais ou técnicos do cliente",
+        "tags": ["dossier"]
+      },
+      "post": {
+        "operationId": "DossierController_createRepresentative",
+        "parameters": [
+          {
+            "name": "customerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerRepresentativeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RepresentativeViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Cadastrar representante legal ou técnico do cliente",
+        "tags": ["dossier"]
+      }
+    },
+    "/api/v1/documents/{documentId}/versions": {
+      "post": {
+        "operationId": "DossierController_replace",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDocumentVersionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DossierDocumentViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["dossier"]
+      }
+    },
+    "/api/v1/documents/{documentId}/history": {
+      "get": {
+        "operationId": "DossierController_history",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DossierHistoryViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["dossier"]
+      }
+    },
+    "/api/v1/document-uploads/{versionId}/cancel": {
+      "post": {
+        "operationId": "DossierController_cancel",
+        "parameters": [
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["dossier"]
+      }
+    },
+    "/api/v1/document-uploads/{versionId}/reconcile": {
+      "post": {
+        "operationId": "DossierController_reconcile",
+        "parameters": [
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DossierDocumentViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["dossier"]
+      }
+    },
+    "/api/v1/dossier/proposal-documents/{documentId}/content": {
+      "get": {
+        "operationId": "DossierController_proposalContent",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "purpose",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["dossier"]
+      }
+    },
+    "/api/v1/dossier/contract-documents/{documentId}/content": {
+      "get": {
+        "operationId": "DossierController_contractContent",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "purpose",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["dossier"]
+      }
+    },
+    "/api/v1/customers/{customerId}/energy-imports": {
+      "post": {
+        "operationId": "EnergyImportController_create",
+        "parameters": [
+          {
+            "name": "customerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEnergyBillImportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnergyBillImportViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["energy-imports"]
+      }
+    },
+    "/api/v1/energy-imports/{id}": {
+      "get": {
+        "operationId": "EnergyImportController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnergyBillImportViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["energy-imports"]
+      }
+    },
+    "/api/v1/energy-imports/{id}/review": {
+      "put": {
+        "operationId": "EnergyImportController_review",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewEnergyBillImportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnergyBillImportViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["energy-imports"]
+      }
+    },
+    "/api/v1/energy-imports/{id}/confirm": {
+      "post": {
+        "operationId": "EnergyImportController_confirm",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmEnergyBillImportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnergyBillImportReceiptDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["energy-imports"]
+      }
+    },
+    "/api/v1/energy-imports/{id}/cancel": {
+      "post": {
+        "operationId": "EnergyImportController_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnergyBillImportLifecycleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnergyBillImportViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["energy-imports"]
+      }
+    },
+    "/api/v1/energy-imports/{id}/retry": {
+      "post": {
+        "operationId": "EnergyImportController_retry",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnergyBillImportLifecycleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnergyBillImportViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": ["energy-imports"]
+      }
     }
   },
   "info": {
@@ -6587,6 +7724,41 @@
         },
         "required": ["distributorName"]
       },
+      "CreateAndLinkUtilityUnitDto": {
+        "type": "object",
+        "properties": {
+          "distributorName": {
+            "type": "string"
+          },
+          "externalCode": {
+            "type": "string"
+          },
+          "consumerClass": {
+            "type": "string",
+            "default": "RESIDENTIAL"
+          },
+          "tariffMode": {
+            "type": "string",
+            "default": "CONVENTIONAL"
+          },
+          "connectionType": {
+            "type": "string",
+            "default": "BIPHASIC"
+          },
+          "voltage": {
+            "type": "string",
+            "default": "220V"
+          },
+          "addressId": {
+            "type": "string"
+          },
+          "expectedVersion": {
+            "type": "number",
+            "minimum": 1
+          }
+        },
+        "required": ["distributorName", "expectedVersion"]
+      },
       "UpdateUtilityUnitDto": {
         "type": "object",
         "properties": {
@@ -7091,6 +8263,57 @@
         },
         "required": ["expectedVersion", "dueAt"]
       },
+      "EnergyReadingVersionViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "referenceMonth": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          },
+          "consumptionKwh": {
+            "type": "number"
+          },
+          "injectedKwh": {
+            "type": "number",
+            "nullable": true
+          },
+          "billedAmount": {
+            "type": "number",
+            "nullable": true
+          },
+          "source": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "correctionReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "referenceMonth",
+          "version",
+          "consumptionKwh",
+          "source",
+          "status",
+          "createdAt"
+        ]
+      },
       "EnergyReadingViewDto": {
         "type": "object",
         "properties": {
@@ -7120,12 +8343,25 @@
           "status": {
             "type": "string"
           },
+          "version": {
+            "type": "number"
+          },
+          "correctionReason": {
+            "type": "string",
+            "nullable": true
+          },
           "notes": {
             "type": "string",
             "nullable": true
           },
           "createdAt": {
             "type": "string"
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EnergyReadingVersionViewDto"
+            }
           }
         },
         "required": [
@@ -7135,7 +8371,9 @@
           "consumptionKwh",
           "source",
           "status",
-          "createdAt"
+          "version",
+          "createdAt",
+          "history"
         ]
       },
       "ConsumptionSummaryViewDto": {
@@ -7201,6 +8439,45 @@
           }
         },
         "required": ["referenceMonth", "consumptionKwh"]
+      },
+      "CorrectEnergyReadingDto": {
+        "type": "object",
+        "properties": {
+          "referenceMonth": {
+            "type": "string",
+            "example": "2026-08"
+          },
+          "consumptionKwh": {
+            "type": "number",
+            "example": 450.5
+          },
+          "injectedKwh": {
+            "type": "number",
+            "example": 0
+          },
+          "billedAmount": {
+            "type": "number",
+            "example": 425.8
+          },
+          "source": {
+            "type": "string",
+            "default": "MANUAL",
+            "enum": ["MANUAL", "BILL", "IMPORT"]
+          },
+          "notes": {
+            "type": "string"
+          },
+          "expectedVersion": {
+            "type": "number",
+            "example": 1,
+            "minimum": 1
+          },
+          "correctionReason": {
+            "type": "string",
+            "example": "Valor corrigido conforme fatura conferida."
+          }
+        },
+        "required": ["referenceMonth", "consumptionKwh", "expectedVersion", "correctionReason"]
       },
       "SurveyViewDto": {
         "type": "object",
@@ -7495,6 +8772,10 @@
           "preferredModulePowerWp": {
             "type": "number",
             "default": 630
+          },
+          "preferredModuleCatalogItemId": {
+            "type": "string",
+            "format": "uuid"
           }
         },
         "required": ["targetMonthlyGenerationKwh"]
@@ -8643,6 +9924,20 @@
           }
         },
         "required": ["opportunityId", "beneficiaryName", "percentage"]
+      },
+      "ModuleAvailabilityViewDto": {
+        "type": "object",
+        "properties": {
+          "catalogItemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "available": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": ["catalogItemId", "available"]
       },
       "CreateStockLocationDto": {
         "type": "object",
@@ -9923,6 +11218,960 @@
           }
         },
         "required": ["metricKey", "name", "periodStart", "periodEnd", "targetValue"]
+      },
+      "DossierVersionViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "versionNumber": {
+            "type": "number"
+          },
+          "originalName": {
+            "type": "string"
+          },
+          "fileSize": {
+            "type": "number"
+          },
+          "declaredMime": {
+            "type": "string"
+          },
+          "verifiedMime": {
+            "type": "string",
+            "nullable": true
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "persistenceState": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "versionNumber",
+          "originalName",
+          "fileSize",
+          "declaredMime",
+          "sha256",
+          "persistenceState",
+          "createdAt"
+        ]
+      },
+      "DossierDocumentLinksDto": {
+        "type": "object",
+        "properties": {
+          "utilityUnitIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "opportunityIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "projectIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "representativeIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "contractIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "utilityUnitIds",
+          "opportunityIds",
+          "projectIds",
+          "representativeIds",
+          "contractIds"
+        ]
+      },
+      "DossierDocumentViewDto": {
+        "type": "object",
+        "properties": {
+          "metadataVersion": {
+            "type": "number"
+          },
+          "contentUrl": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "origin": {
+            "type": "string",
+            "enum": ["DOSSIER", "PROPOSAL_DOCUMENT", "CONTRACT_DOCUMENT"]
+          },
+          "category": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "currentVersion": {
+            "$ref": "#/components/schemas/DossierVersionViewDto"
+          },
+          "links": {
+            "$ref": "#/components/schemas/DossierDocumentLinksDto"
+          }
+        },
+        "required": [
+          "metadataVersion",
+          "id",
+          "origin",
+          "category",
+          "title",
+          "status",
+          "createdAt",
+          "updatedAt",
+          "createdBy",
+          "links"
+        ]
+      },
+      "DocumentContextOptionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "title"]
+      },
+      "DossierUploadContextDto": {
+        "type": "object",
+        "properties": {
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "requiresWorkOrder": {
+            "type": "boolean"
+          },
+          "requiresOpportunity": {
+            "type": "boolean"
+          },
+          "workOrders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentContextOptionDto"
+            }
+          },
+          "opportunities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentContextOptionDto"
+            }
+          }
+        },
+        "required": [
+          "categories",
+          "requiresWorkOrder",
+          "requiresOpportunity",
+          "workOrders",
+          "opportunities"
+        ]
+      },
+      "CreateDocumentUploadDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Título identificador do documento no dossiê",
+            "example": "Conta Cemig - Jan/2026"
+          },
+          "category": {
+            "type": "string",
+            "description": "Categoria documental no dossiê",
+            "enum": [
+              "IDENTITY",
+              "CORPORATE",
+              "REPRESENTATION",
+              "UTILITY_BILL",
+              "UC_DOCUMENT",
+              "COMMERCIAL_PROPOSAL",
+              "CONTRACT_ANNEX",
+              "PHOTO_BEFORE",
+              "PHOTO_DURING",
+              "PHOTO_AFTER",
+              "ART",
+              "HOMOLOGATION",
+              "DELIVERY_REPORT",
+              "OTHER"
+            ],
+            "example": "UTILITY_BILL"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "Nome original do arquivo enviado",
+            "example": "conta-cemig-jan2026.pdf"
+          },
+          "declaredMime": {
+            "type": "string",
+            "description": "MIME type declarado pelo cliente",
+            "enum": ["application/pdf", "image/jpeg", "image/png"],
+            "example": "application/pdf"
+          },
+          "fileSize": {
+            "type": "number",
+            "description": "Tamanho do arquivo em bytes (máximo 20 MiB)",
+            "example": 1048576
+          },
+          "sha256": {
+            "type": "string",
+            "description": "Hash SHA-256 do arquivo se já computado"
+          },
+          "purpose": {
+            "type": "string",
+            "description": "Finalidade específica do documento"
+          },
+          "fileBase64": {
+            "type": "string",
+            "description": "Conteúdo em base64 (para upload direto via API)"
+          },
+          "utilityUnitId": {
+            "type": "string",
+            "description": "ID da Unidade Consumidora vinculada"
+          },
+          "opportunityId": {
+            "type": "string",
+            "description": "ID da Oportunidade vinculada"
+          },
+          "projectId": {
+            "type": "string",
+            "description": "ID do Projeto Operacional vinculado"
+          },
+          "representativeId": {
+            "type": "string",
+            "description": "ID do Representante vinculado"
+          },
+          "contractId": {
+            "type": "string",
+            "description": "ID do Contrato vinculado"
+          },
+          "workOrderId": {
+            "type": "string",
+            "description": "ID da Ordem de Serviço vinculada"
+          },
+          "phase": {
+            "type": "string",
+            "description": "Fase da foto de execução (BEFORE, DURING, AFTER)"
+          }
+        },
+        "required": ["title", "category", "fileName", "declaredMime", "fileSize"]
+      },
+      "CompleteUploadDto": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "number",
+            "description": "Versão esperada para verificação concorrente"
+          },
+          "fileBase64": {
+            "type": "string",
+            "description": "Conteúdo em base64 se enviado na conclusão"
+          }
+        }
+      },
+      "ArchiveDocumentDto": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "number"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Motivo do arquivamento do documento"
+          }
+        },
+        "required": ["expectedVersion"]
+      },
+      "RepresentativeViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "customerId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "documentNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "customerId", "name", "role", "createdAt", "updatedAt"]
+      },
+      "CustomerRepresentativeDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Nome do representante legal/técnico",
+            "example": "Carlos Alberto Silva"
+          },
+          "documentNumber": {
+            "type": "string",
+            "description": "CPF ou CNPJ do representante"
+          },
+          "role": {
+            "type": "string",
+            "description": "Papel do representante",
+            "enum": [
+              "LEGAL_REPRESENTATIVE",
+              "ATTORNEY",
+              "TECHNICAL_RESPONSIBLE",
+              "FINANCIAL_CONTACT",
+              "OTHER"
+            ],
+            "example": "LEGAL_REPRESENTATIVE"
+          }
+        },
+        "required": ["name", "role"]
+      },
+      "CreateDocumentVersionDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Título identificador do documento no dossiê",
+            "example": "Conta Cemig - Jan/2026"
+          },
+          "category": {
+            "type": "string",
+            "description": "Categoria documental no dossiê",
+            "enum": [
+              "IDENTITY",
+              "CORPORATE",
+              "REPRESENTATION",
+              "UTILITY_BILL",
+              "UC_DOCUMENT",
+              "COMMERCIAL_PROPOSAL",
+              "CONTRACT_ANNEX",
+              "PHOTO_BEFORE",
+              "PHOTO_DURING",
+              "PHOTO_AFTER",
+              "ART",
+              "HOMOLOGATION",
+              "DELIVERY_REPORT",
+              "OTHER"
+            ],
+            "example": "UTILITY_BILL"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "Nome original do arquivo enviado",
+            "example": "conta-cemig-jan2026.pdf"
+          },
+          "declaredMime": {
+            "type": "string",
+            "description": "MIME type declarado pelo cliente",
+            "enum": ["application/pdf", "image/jpeg", "image/png"],
+            "example": "application/pdf"
+          },
+          "fileSize": {
+            "type": "number",
+            "description": "Tamanho do arquivo em bytes (máximo 20 MiB)",
+            "example": 1048576
+          },
+          "sha256": {
+            "type": "string",
+            "description": "Hash SHA-256 do arquivo se já computado"
+          },
+          "purpose": {
+            "type": "string",
+            "description": "Finalidade específica do documento"
+          },
+          "fileBase64": {
+            "type": "string",
+            "description": "Conteúdo em base64 (para upload direto via API)"
+          },
+          "utilityUnitId": {
+            "type": "string",
+            "description": "ID da Unidade Consumidora vinculada"
+          },
+          "opportunityId": {
+            "type": "string",
+            "description": "ID da Oportunidade vinculada"
+          },
+          "projectId": {
+            "type": "string",
+            "description": "ID do Projeto Operacional vinculado"
+          },
+          "representativeId": {
+            "type": "string",
+            "description": "ID do Representante vinculado"
+          },
+          "contractId": {
+            "type": "string",
+            "description": "ID do Contrato vinculado"
+          },
+          "workOrderId": {
+            "type": "string",
+            "description": "ID da Ordem de Serviço vinculada"
+          },
+          "phase": {
+            "type": "string",
+            "description": "Fase da foto de execução (BEFORE, DURING, AFTER)"
+          },
+          "expectedVersion": {
+            "type": "number"
+          }
+        },
+        "required": ["title", "category", "fileName", "declaredMime", "fileSize", "expectedVersion"]
+      },
+      "DossierHistoryEventDto": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "actorId": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": ["action", "createdAt"]
+      },
+      "DossierHistoryViewDto": {
+        "type": "object",
+        "properties": {
+          "metadataVersion": {
+            "type": "number"
+          },
+          "archiveReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DossierVersionViewDto"
+            }
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DossierHistoryEventDto"
+            }
+          }
+        },
+        "required": ["metadataVersion", "versions", "events"]
+      },
+      "CreateEnergyBillImportDto": {
+        "type": "object",
+        "properties": {
+          "documentVersionId": {
+            "type": "string",
+            "description": "Versão imutável e READY da conta no dossiê."
+          },
+          "utilityUnitId": {
+            "type": "string",
+            "description": "UC existente do mesmo cliente, quando selecionada."
+          },
+          "opportunityId": {
+            "type": "string",
+            "description": "Oportunidade vinculada ao mesmo cliente, quando selecionada."
+          }
+        },
+        "required": ["documentVersionId"]
+      },
+      "ExtractionAttemptViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "attemptNumber": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "CLAIMED",
+              "SUBMITTING",
+              "SUBMITTED",
+              "UNKNOWN",
+              "FAILED",
+              "SUCCEEDED",
+              "CANCELED"
+            ]
+          },
+          "adapterName": {
+            "type": "string",
+            "nullable": true
+          },
+          "modelName": {
+            "type": "string",
+            "nullable": true
+          },
+          "modelVersion": {
+            "type": "string",
+            "nullable": true
+          },
+          "externalOperationId": {
+            "type": "string",
+            "nullable": true
+          },
+          "errorCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "retryable": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "startedAt": {
+            "type": "string"
+          },
+          "finishedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "chargedPages": {
+            "type": "number",
+            "nullable": true
+          },
+          "estimatedCost": {
+            "type": "string",
+            "nullable": true
+          },
+          "actualCost": {
+            "type": "string",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "attemptNumber",
+          "status",
+          "adapterName",
+          "modelName",
+          "modelVersion",
+          "externalOperationId",
+          "errorCode",
+          "retryable",
+          "startedAt",
+          "finishedAt",
+          "chargedPages",
+          "estimatedCost",
+          "actualCost",
+          "currency"
+        ]
+      },
+      "ProviderConfidenceViewDto": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number"
+          },
+          "scale": {
+            "type": "string"
+          }
+        },
+        "required": ["value", "scale"]
+      },
+      "ExtractionCandidateViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "attemptId": {
+            "type": "string"
+          },
+          "field": {
+            "type": "string"
+          },
+          "rawValue": {
+            "type": "string",
+            "nullable": true
+          },
+          "normalizedValue": {
+            "type": "string",
+            "nullable": true
+          },
+          "unit": {
+            "type": "string",
+            "nullable": true
+          },
+          "page": {
+            "type": "number",
+            "nullable": true
+          },
+          "region": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true
+          },
+          "providerConfidence": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProviderConfidenceViewDto"
+              }
+            ]
+          },
+          "qualitySignals": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "systemValidation": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "id",
+          "attemptId",
+          "field",
+          "rawValue",
+          "normalizedValue",
+          "unit",
+          "page",
+          "region",
+          "qualitySignals",
+          "systemValidation"
+        ]
+      },
+      "EnergyBillImportViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "customerId": {
+            "type": "string"
+          },
+          "utilityUnitId": {
+            "type": "string",
+            "nullable": true
+          },
+          "opportunityId": {
+            "type": "string",
+            "nullable": true
+          },
+          "documentVersionId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "QUEUED",
+              "PROCESSING",
+              "REVIEW_REQUIRED",
+              "CONFIRMING",
+              "APPLIED",
+              "FAILED",
+              "CANCELED"
+            ]
+          },
+          "version": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "appliedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "latestReview": {
+            "type": "object"
+          },
+          "applicationReceipt": {
+            "type": "object"
+          },
+          "attempts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExtractionAttemptViewDto"
+            }
+          },
+          "candidates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExtractionCandidateViewDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "organizationId",
+          "customerId",
+          "utilityUnitId",
+          "opportunityId",
+          "documentVersionId",
+          "status",
+          "version",
+          "createdAt",
+          "appliedAt"
+        ]
+      },
+      "ImportMonthEvidenceDto": {
+        "type": "object",
+        "properties": {
+          "referenceMonthCandidateId": {
+            "type": "string",
+            "description": "Candidato de referência usado para identificar o mês."
+          },
+          "consumptionKwhCandidateId": {
+            "type": "string",
+            "description": "Candidato de consumo usado nesta decisão."
+          },
+          "injectedKwhCandidateId": {
+            "type": "string",
+            "description": "Candidato de energia injetada usado nesta decisão."
+          },
+          "billedAmountCandidateId": {
+            "type": "string",
+            "description": "Candidato de total faturado usado nesta decisão."
+          }
+        }
+      },
+      "ImportMonthDecisionDto": {
+        "type": "object",
+        "properties": {
+          "referenceMonth": {
+            "type": "string",
+            "example": "2026-08"
+          },
+          "decision": {
+            "type": "string",
+            "enum": ["KEEP", "INSERT", "REPLACE"]
+          },
+          "expectedReadingVersion": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 1
+          },
+          "consumptionKwh": {
+            "type": "string",
+            "example": "421.50"
+          },
+          "injectedKwh": {
+            "type": "string",
+            "example": "16.25",
+            "nullable": true
+          },
+          "billedAmount": {
+            "type": "string",
+            "example": "384.92",
+            "nullable": true
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "evidence": {
+            "$ref": "#/components/schemas/ImportMonthEvidenceDto"
+          }
+        },
+        "required": ["referenceMonth", "decision"]
+      },
+      "NewUtilityUnitReviewDto": {
+        "type": "object",
+        "properties": {
+          "distributorName": {
+            "type": "string",
+            "minLength": 2
+          },
+          "externalCode": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "consumerClass": {
+            "type": "string",
+            "description": "Classe confirmada pela pessoa revisora."
+          },
+          "tariffMode": {
+            "type": "string",
+            "description": "Modalidade tarifária confirmada pela pessoa revisora."
+          },
+          "connectionType": {
+            "type": "string",
+            "description": "Tipo de conexão confirmado pela pessoa revisora."
+          },
+          "voltage": {
+            "type": "string",
+            "description": "Tensão confirmada pela pessoa revisora."
+          }
+        },
+        "required": ["distributorName", "consumerClass", "tariffMode", "connectionType", "voltage"]
+      },
+      "ReviewEnergyBillImportDto": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "number",
+            "minimum": 1
+          },
+          "months": {
+            "minItems": 1,
+            "maxItems": 36,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportMonthDecisionDto"
+            }
+          },
+          "newUtilityUnit": {
+            "$ref": "#/components/schemas/NewUtilityUnitReviewDto"
+          }
+        },
+        "required": ["expectedVersion", "months"]
+      },
+      "ConfirmEnergyBillImportDto": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "number",
+            "minimum": 1
+          },
+          "reviewId": {
+            "type": "string"
+          },
+          "reviewDigest": {
+            "type": "string"
+          }
+        },
+        "required": ["expectedVersion", "reviewId", "reviewDigest"]
+      },
+      "AppliedEnergyReadingDto": {
+        "type": "object",
+        "properties": {
+          "referenceMonth": {
+            "type": "string"
+          },
+          "readingId": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          }
+        },
+        "required": ["referenceMonth", "readingId", "version"]
+      },
+      "EnergyBillImportReceiptDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["APPLIED"]
+          },
+          "importId": {
+            "type": "string"
+          },
+          "reviewId": {
+            "type": "string"
+          },
+          "reviewDigest": {
+            "type": "string"
+          },
+          "appliedAt": {
+            "type": "string"
+          },
+          "utilityUnitId": {
+            "type": "string"
+          },
+          "readingChanges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AppliedEnergyReadingDto"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "status",
+          "importId",
+          "reviewId",
+          "reviewDigest",
+          "appliedAt",
+          "utilityUnitId",
+          "readingChanges",
+          "warnings"
+        ]
+      },
+      "EnergyBillImportLifecycleDto": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "number",
+            "minimum": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "required": ["expectedVersion", "reason"]
       }
     }
   }

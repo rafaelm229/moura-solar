@@ -12,6 +12,11 @@ import {
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+export class ModuleAvailabilityViewDto {
+  @ApiProperty({ format: 'uuid' }) catalogItemId!: string;
+  @ApiProperty({ type: Number, minimum: 0 }) available!: number;
+}
+
 export class CreateStockLocationDto {
   @ApiProperty({ example: 'DEP-MATRIZ' })
   @IsString()

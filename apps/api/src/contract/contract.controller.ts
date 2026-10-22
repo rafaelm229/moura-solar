@@ -38,7 +38,12 @@ export class ContractController {
   @HttpCode(201)
   @ApiBody({ type: CreateContractDto })
   async createContract(@Req() req: IdentityRequest, @Body() dto: CreateContractDto) {
-    return this.service.createContract(req.actor.organizationId, req.actor.userId, dto);
+    return this.service.createContract(
+      req.actor.organizationId,
+      req.actor.userId,
+      dto,
+      req.requestId ?? 'trace',
+    );
   }
 
   @Get('contracts')
@@ -83,7 +88,13 @@ export class ContractController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: RequestContractReviewDto,
   ) {
-    return this.service.requestReview(req.actor.organizationId, id, req.actor.userId, dto);
+    return this.service.requestReview(
+      req.actor.organizationId,
+      id,
+      req.actor.userId,
+      dto,
+      req.requestId ?? 'trace',
+    );
   }
 
   @Post('contracts/:id/approve')
@@ -95,7 +106,13 @@ export class ContractController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ApproveContractDto,
   ) {
-    return this.service.approveContract(req.actor.organizationId, id, req.actor.userId, dto);
+    return this.service.approveContract(
+      req.actor.organizationId,
+      id,
+      req.actor.userId,
+      dto,
+      req.requestId ?? 'trace',
+    );
   }
 
   @Post('contracts/:id/deliveries')
@@ -107,7 +124,13 @@ export class ContractController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: RecordContractDeliveryDto,
   ) {
-    return this.service.recordDelivery(req.actor.organizationId, id, req.actor.userId, dto);
+    return this.service.recordDelivery(
+      req.actor.organizationId,
+      id,
+      req.actor.userId,
+      dto,
+      req.requestId ?? 'trace',
+    );
   }
 
   @Post('contracts/:id/upload-signed')
@@ -119,7 +142,13 @@ export class ContractController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UploadSignedContractDto,
   ) {
-    return this.service.uploadSignedContract(req.actor.organizationId, id, req.actor.userId, dto);
+    return this.service.uploadSignedContract(
+      req.actor.organizationId,
+      id,
+      req.actor.userId,
+      dto,
+      req.requestId ?? 'trace',
+    );
   }
 
   @Post('contracts/:id/verify-signed')
@@ -131,7 +160,13 @@ export class ContractController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: VerifySignedContractDto,
   ) {
-    return this.service.verifySignedContract(req.actor.organizationId, id, req.actor.userId, dto);
+    return this.service.verifySignedContract(
+      req.actor.organizationId,
+      id,
+      req.actor.userId,
+      dto,
+      req.requestId ?? 'trace',
+    );
   }
 
   @Post('contracts/:id/amendments')
@@ -143,7 +178,13 @@ export class ContractController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: CreateAmendmentDto,
   ) {
-    return this.service.createAmendment(req.actor.organizationId, id, req.actor.userId, dto);
+    return this.service.createAmendment(
+      req.actor.organizationId,
+      id,
+      req.actor.userId,
+      dto,
+      req.requestId ?? 'trace',
+    );
   }
 
   @Post('contracts/:id/cancel')
@@ -155,7 +196,13 @@ export class ContractController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: CancelContractDto,
   ) {
-    return this.service.cancelContract(req.actor.organizationId, id, req.actor.userId, dto);
+    return this.service.cancelContract(
+      req.actor.organizationId,
+      id,
+      req.actor.userId,
+      dto,
+      req.requestId ?? 'trace',
+    );
   }
 
   @Get('contracts/:id/docx')

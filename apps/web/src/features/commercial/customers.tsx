@@ -1,8 +1,9 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, result, allows } from '../identity/client';
 import { Feedback } from '../identity/feedback';
+import { CustomerDossier } from './dossier';
 import type { Schemas } from '@moura-solar/api-client';
 
 type Customer = Schemas['CustomerViewDto'];
@@ -16,7 +17,14 @@ interface CustomersProps {
 export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersProps) {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('ACTIVE');
+  const [status, setStatus] = useState(() => {
+    if (
+      typeof window !== 'undefined' &&
+      new URLSearchParams(window.location.search).has('customerId')
+    )
+      return 'ALL';
+    return 'ACTIVE';
+  });
   const [isCreating, setIsCreating] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
@@ -153,7 +161,15 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
     setDuplicatesWarning([]);
   }
 
-  const items = customersQuery.data?.items ?? [];
+  const fetchedItems = customersQuery.data?.items;
+  const items = useMemo(() => fetchedItems ?? [], [fetchedItems]);
+
+  useEffect(() => {
+    const customerId = new URLSearchParams(window.location.search).get('customerId');
+    if (!customerId || selectedCustomer?.id === customerId) return;
+    const match = items.find((item) => item.id === customerId);
+    if (match) setSelectedCustomer(match);
+  }, [items, selectedCustomer?.id]);
 
   return (
     <div className="commercial-customers">
@@ -373,12 +389,20 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
 
       {selectedCustomer && (
         <section className="panel" aria-label="Detalhe do cliente">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '0.5rem',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
             <div>
               <h3>{selectedCustomer.legalName}</h3>
               {selectedCustomer.tradeName && <p>{selectedCustomer.tradeName}</p>}
             </div>
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <div style={{ display: 'flex', flexShrink: 0, gap: '0.5rem', alignItems: 'center' }}>
               <span
                 className={`badge ${selectedCustomer.status === 'ACTIVE' ? 'badge-ativo' : 'badge-cancelado'}`}
               >
@@ -486,12 +510,25 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
               )}
             </div>
             <Feedback error={archiveMutation.error || restoreMutation.error} />
+
+            <div
+              style={{
+                marginTop: '1.5rem',
+                borderTop: '1px solid var(--color-border-subtle, #e0e0e0)',
+                paddingTop: '1.5rem',
+              }}
+            >
+              <CustomerDossier
+                customerId={selectedCustomer.id}
+                utilityUnits={customerDetailQuery.data?.utilityUnits ?? []}
+              />
+            </div>
           </div>
         </section>
       )}
 
       {/* Responsive Presentation: Table on Desktop, Cards on Mobile */}
-      <div className="desktop-view" style={{ display: 'contents' }}>
+      <div className="desktop-only">
         <div className="table-wrapper">
           <table className="data-table">
             <thead>
@@ -547,6 +584,29 @@ export function Customers({ onSelectCustomer, onCreateOpportunity }: CustomersPr
             </tbody>
           </table>
         </div>
+      </div>
+      <div className="customer-mobile-list">
+        {customersQuery.isPending && <p role="status">Carregando clientes…</p>}
+        {!customersQuery.isPending && items.length === 0 && <p>Nenhum cliente encontrado.</p>}
+        {items.map((customer) => (
+          <article className="card" key={customer.id}>
+            <strong>{customer.legalName}</strong>
+            {customer.tradeName && <p>{customer.tradeName}</p>}
+            <p>
+              {customer.kind === 'PERSON' ? 'Pessoa física' : 'Pessoa jurídica'} ·{' '}
+              {customer.status === 'ACTIVE' ? 'Ativo' : 'Arquivado'}
+            </p>
+            <p>Documento: {customer.taxId || 'Não informado'}</p>
+            <button
+              onClick={() => {
+                setSelectedCustomer(customer);
+                onSelectCustomer?.(customer);
+              }}
+            >
+              Ver detalhes
+            </button>
+          </article>
+        ))}
       </div>
     </div>
   );

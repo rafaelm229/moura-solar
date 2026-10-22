@@ -10,6 +10,8 @@ export class ApiFailure extends Error {
   constructor(
     message: string,
     readonly status: number,
+    readonly code?: string,
+    readonly details?: Record<string, unknown>,
   ) {
     super(message);
   }
@@ -69,10 +71,13 @@ export async function result<T>(
 ): Promise<T> {
   const response = await call;
   if (!response.response.ok) {
-    const error = response.error as { message?: string } | undefined;
+    const error = response.error as
+      { message?: string; code?: string; details?: Record<string, unknown> } | undefined;
     throw new ApiFailure(
       error?.message ?? 'Não foi possível concluir a ação.',
       response.response.status,
+      error?.code,
+      error?.details,
     );
   }
   return response.data as T;

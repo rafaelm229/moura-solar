@@ -2,7 +2,7 @@ FROM node:22-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 ENV CI=true
-RUN apk add --no-cache zip unzip
+RUN apk add --no-cache zip unzip poppler-utils
 RUN corepack enable
 WORKDIR /app
 
@@ -15,6 +15,7 @@ COPY packages/contracts/package.json packages/contracts/package.json
 COPY packages/api-client/package.json packages/api-client/package.json
 COPY packages/database/package.json packages/database/package.json
 COPY packages/design-tokens/package.json packages/design-tokens/package.json
+COPY packages/energy-import-poc/package.json packages/energy-import-poc/package.json
 COPY packages/typescript-config/package.json packages/typescript-config/package.json
 RUN pnpm install --frozen-lockfile
 

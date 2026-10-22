@@ -1,12 +1,16 @@
 # ADR-004 — Extração desacoplada e confirmação transacional
 
-**Status:** Proposta para revisão
+**Status:** Proposta histórica, supersedida pela [ADR-008](ADR-008-importacao-manual-sem-ocr.md)
 
 **Versão:** 0.1.0
 
 **Data:** 02/10/2026
 
 Escopo aprovado; contratos detalhados e aparência final sujeitos à revisão humana.
+
+Esta proposta não está vigente e não autoriza implementação, PoC, contratação de
+provedor ou planejamento de extração. O fluxo padrão de importação é manual,
+conforme ADR-008. O conteúdo abaixo é mantido para rastreabilidade histórica.
 
 ## Contexto
 

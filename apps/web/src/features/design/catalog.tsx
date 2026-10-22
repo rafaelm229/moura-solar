@@ -1,8 +1,9 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, result, allows } from '../identity/client';
 import { Feedback } from '../identity/feedback';
+import { Icon } from '../../components/icons/material-symbol';
 import type { Schemas } from '@moura-solar/api-client';
 
 type CatalogItem = Schemas['CatalogItemViewDto'];
@@ -12,6 +13,18 @@ export function Catalog() {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [search, setSearch] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
+
+  // Close modal on Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setEditingItem(null);
+        setShowAddForm(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // New item form
   const [sku, setSku] = useState('');
@@ -461,22 +474,18 @@ export function Catalog() {
                   <td>
                     <button
                       type="button"
+                      className="btn btn--secondary"
                       style={{
-                        background: '#f8fafc',
-                        color: '#087443',
-                        border: '1px solid #087443',
-                        borderRadius: '4px',
-                        padding: '0.35rem 0.75rem',
-                        cursor: 'pointer',
-                        fontSize: '0.8rem',
-                        fontWeight: 600,
+                        padding: '0.35rem 0.65rem',
+                        fontSize: '0.75rem',
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '0.25rem',
+                        gap: '0.35rem',
+                        fontWeight: 600,
                       }}
                       onClick={() => startEditing(item)}
                     >
-                      ✏️ Editar
+                      <Icon name="edit" size={14} /> Editar
                     </button>
                   </td>
                 )}
@@ -492,10 +501,14 @@ export function Catalog() {
           role="dialog"
           aria-modal="true"
           aria-labelledby="edit-item-modal-title"
+          className="modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setEditingItem(null);
+          }}
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(15, 23, 42, 0.5)',
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
             backdropFilter: 'blur(3px)',
             display: 'flex',
             alignItems: 'center',
@@ -505,6 +518,7 @@ export function Catalog() {
           }}
         >
           <div
+            className="modal-card"
             style={{
               backgroundColor: '#ffffff',
               borderRadius: '12px',
@@ -531,9 +545,16 @@ export function Catalog() {
               <div>
                 <h3
                   id="edit-item-modal-title"
-                  style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}
+                  style={{
+                    margin: 0,
+                    fontSize: '1.25rem',
+                    color: '#0f172a',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                  }}
                 >
-                  Editar Item de Catálogo
+                  <Icon name="inventory_2" size={20} /> Editar Item de Catálogo
                 </h3>
                 <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
                   SKU: <strong>{editingItem.sku}</strong>
@@ -543,18 +564,22 @@ export function Catalog() {
                 type="button"
                 aria-label="Fechar modal"
                 onClick={() => setEditingItem(null)}
+                className="btn btn--subtle"
                 style={{
-                  background: 'transparent',
-                  border: 'none',
-                  fontSize: '1.5rem',
-                  color: '#64748b',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '2rem',
+                  height: '2rem',
+                  padding: 0,
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#f1f5f9',
+                  color: '#334155',
                   cursor: 'pointer',
-                  padding: '0.25rem 0.5rem',
-                  borderRadius: '4px',
-                  lineHeight: 1,
                 }}
               >
-                ✕
+                <Icon name="close" size={18} />
               </button>
             </div>
 

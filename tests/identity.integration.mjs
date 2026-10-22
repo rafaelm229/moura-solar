@@ -1,3 +1,4 @@
+import { storageEnv } from './storage-env.mjs';
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
@@ -14,19 +15,17 @@ const env = {
   ...process.env,
   PATH: `${process.cwd()}/.bin:/tmp/moura-solar-tools:${process.env.PATH}`,
   DATABASE_URL: url.toString(),
-  NODE_ENV: 'test',
+  NODE_ENV: 'production',
   API_PORT: '3319',
   WEB_ORIGIN: 'http://localhost:3320',
   COOKIE_SECURE: 'false',
-  S3_ENDPOINT: 'http://localhost:9000',
-  S3_ACCESS_KEY: 'test',
-  S3_SECRET_KEY: 'test',
-  S3_BUCKET: 'test',
+  ...storageEnv,
   IDENTITY_LINK_SECRET: 'integration-test-link-secret-at-least-32-characters',
   BOOTSTRAP_TOKEN: 'integration-test-bootstrap-at-least-32-characters',
 };
 const db = new PrismaClient({ datasources: { db: { url: url.toString() } } });
 let server;
+let requestLogs = '';
 const base = 'http://localhost:3319/api/v1';
 const password = 'Integration-password-2026';
 class Client {
@@ -59,7 +58,10 @@ let sellerId;
 before(async () => {
   const migration = spawnSync('pnpm', ['db:deploy'], { env, encoding: 'utf8' });
   assert.equal(migration.status, 0, migration.stdout + migration.stderr);
-  server = spawn('node', ['apps/api/dist/main.js'], { env, stdio: ['ignore', 'ignore', 'pipe'] });
+  server = spawn('node', ['apps/api/dist/main.js'], { env, stdio: ['ignore', 'pipe', 'pipe'] });
+  server.stdout.on('data', (chunk) => {
+    requestLogs += chunk;
+  });
   let errors = '';
   server.stderr.on('data', (chunk) => {
     errors += chunk;
@@ -80,6 +82,57 @@ after(async () => {
   // Only the unique schema created by this test is removed; never the configured database.
   await db.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);
   await db.$disconnect();
+});
+test('request correlation accepts bounded safe IDs and replaces malformed or oversized values', async () => {
+  const safeRequestId = 'r1-correlation_test-001';
+  const safeResponse = await fetch(`${base}/health/ready`, {
+    headers: { 'x-request-id': safeRequestId },
+  });
+  assert.equal(safeResponse.status, 200);
+  assert.equal(safeResponse.headers.get('x-request-id'), safeRequestId);
+
+  for (const unsafeRequestId of ['r1 correlation test', 'x'.repeat(101)]) {
+    const response = await fetch(`${base}/health/ready`, {
+      headers: { 'x-request-id': unsafeRequestId },
+    });
+    assert.equal(response.status, 200);
+    assert.match(
+      response.headers.get('x-request-id') ?? '',
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    );
+    assert.notEqual(response.headers.get('x-request-id'), unsafeRequestId);
+  }
+});
+test('request logs retain correlation but omit authorization, cookies and private headers', async () => {
+  const requestId = 'r1-log-correlation-safe-001';
+  const authorization = 'Bearer authorization-secret-sentinel';
+  const cookie = 'ms_access=cookie-secret-sentinel';
+  const privateHeader = 'private-header-sentinel';
+  const response = await fetch(`${base}/health/ready`, {
+    headers: {
+      'x-request-id': requestId,
+      authorization,
+      cookie,
+      'x-private-probe': privateHeader,
+    },
+  });
+  assert.equal(response.status, 200);
+  await response.arrayBuffer();
+
+  let logLine;
+  for (let attempt = 0; attempt < 100 && !logLine; attempt++) {
+    logLine = requestLogs.split('\n').find((line) => line.includes(`"traceId":"${requestId}"`));
+    if (!logLine) await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  assert.ok(logLine, 'expected the request completion log to carry its correlation ID');
+  const entry = JSON.parse(logLine);
+  assert.equal(entry.traceId, requestId);
+  assert.equal(entry.method, 'GET');
+  assert.equal(entry.status, 200);
+  assert.ok(Number.isFinite(entry.durationMs));
+  for (const value of [authorization, cookie, privateHeader]) {
+    assert.equal(logLine.includes(value), false);
+  }
 });
 test('bootstrap requires secret, initializes seven approved roles once', async () => {
   const input = {
@@ -109,6 +162,69 @@ test('bootstrap requires secret, initializes seven approved roles once', async (
   roles = (await admin.call('roles')).body;
   assert.equal(roles.length, 7);
   assert.equal(await db.auditEvent.count({ where: { action: 'identity.bootstrap' } }), 1);
+});
+test('login correlation links the request log and audit without credentials', async () => {
+  const requestId = 'r1-identity-correlation-login-001';
+  const email = 'admin@example.test';
+  const result = await admin.call('login', 'POST', { email, password }, randomUUID(), {
+    'x-request-id': requestId,
+  });
+  assert.equal(result.status, 201);
+
+  const audit = await db.auditEvent.findFirst({
+    where: { action: 'identity.login', traceId: requestId },
+  });
+  assert.ok(audit);
+
+  let logLine;
+  for (let attempt = 0; attempt < 100 && !logLine; attempt++) {
+    logLine = requestLogs.split('\n').find((line) => line.includes(`"traceId":"${requestId}"`));
+    if (!logLine) await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  assert.ok(logLine, 'expected the request completion log to carry its correlation ID');
+  const entry = JSON.parse(logLine);
+  assert.equal(entry.method, 'POST');
+  assert.equal(entry.status, 201);
+  assert.equal(entry.traceId, audit.traceId);
+  assert.equal(logLine.includes(email), false);
+  assert.equal(logLine.includes(password), false);
+});
+test('failed login correlation links the request log and audit without credentials', async () => {
+  const requestId = 'r1-identity-correlation-login-failed-001';
+  const email = 'r1-failed-login@example.test';
+  const failedPassword = 'r1-failed-login-password-sentinel';
+  const response = await fetch(`${base}/identity/login`, {
+    method: 'POST',
+    headers: {
+      origin: env.WEB_ORIGIN,
+      'x-requested-with': 'MouraSolar',
+      'content-type': 'application/json',
+      'idempotency-key': randomUUID(),
+      'x-request-id': requestId,
+    },
+    body: JSON.stringify({ email, password: failedPassword }),
+  });
+  assert.equal(response.status, 401);
+  assert.equal(response.headers.get('x-request-id'), requestId);
+  await response.json();
+
+  const audit = await db.auditEvent.findFirst({
+    where: { action: 'identity.login_failed', traceId: requestId },
+  });
+  assert.ok(audit);
+
+  let logLine;
+  for (let attempt = 0; attempt < 100 && !logLine; attempt++) {
+    logLine = requestLogs.split('\n').find((line) => line.includes(`"traceId":"${requestId}"`));
+    if (!logLine) await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  assert.ok(logLine, 'expected the failed request completion log to carry its correlation ID');
+  const entry = JSON.parse(logLine);
+  assert.equal(entry.method, 'POST');
+  assert.equal(entry.status, 401);
+  assert.equal(entry.traceId, audit.traceId);
+  assert.equal(logLine.includes(email), false);
+  assert.equal(logLine.includes(failedPassword), false);
 });
 test('CSRF rejects cross-origin commands', async () => {
   assert.equal(

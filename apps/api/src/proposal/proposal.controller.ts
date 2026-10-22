@@ -34,7 +34,12 @@ export class ProposalController {
   @HttpCode(201)
   @ApiBody({ type: CreateProposalDto })
   async createProposal(@Req() req: IdentityRequest, @Body() dto: CreateProposalDto) {
-    return this.service.createProposal(req.actor.organizationId, req.actor.userId, dto);
+    return this.service.createProposal(
+      req.actor.organizationId,
+      req.actor.userId,
+      dto,
+      req.requestId ?? 'trace',
+    );
   }
 
   @Get('proposals')
@@ -101,7 +106,13 @@ export class ProposalController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: RecordProposalDeliveryDto,
   ) {
-    return this.service.recordDelivery(req.actor.organizationId, id, req.actor.userId, dto);
+    return this.service.recordDelivery(
+      req.actor.organizationId,
+      id,
+      req.actor.userId,
+      dto,
+      req.requestId ?? 'trace',
+    );
   }
 
   @Post('proposal-versions/:id/accept')
@@ -113,7 +124,13 @@ export class ProposalController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: RecordProposalAcceptanceDto,
   ) {
-    return this.service.recordAcceptance(req.actor.organizationId, id, req.actor.userId, dto);
+    return this.service.recordAcceptance(
+      req.actor.organizationId,
+      id,
+      req.actor.userId,
+      dto,
+      req.requestId ?? 'trace',
+    );
   }
 
   @Post('proposal-versions/:id/reject')
@@ -125,13 +142,24 @@ export class ProposalController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: RecordProposalRejectionDto,
   ) {
-    return this.service.recordRejection(req.actor.organizationId, id, req.actor.userId, dto);
+    return this.service.recordRejection(
+      req.actor.organizationId,
+      id,
+      req.actor.userId,
+      dto,
+      req.requestId ?? 'trace',
+    );
   }
 
   @Post('proposal-versions/:id/new-version')
   @RequirePermission('proposals:create')
   @HttpCode(201)
   async createNextVersion(@Req() req: IdentityRequest, @Param('id', ParseUUIDPipe) id: string) {
-    return this.service.createNextVersion(req.actor.organizationId, id, req.actor.userId);
+    return this.service.createNextVersion(
+      req.actor.organizationId,
+      id,
+      req.actor.userId,
+      req.requestId ?? 'trace',
+    );
   }
 }

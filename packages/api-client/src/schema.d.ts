@@ -500,6 +500,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/opportunities/{opportunityId}/utility-unit': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['CommercialController_createAndLinkUtilityUnit'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/utility-units/{utilityUnitId}': {
     parameters: {
       query?: never;
@@ -669,7 +685,23 @@ export interface paths {
     };
     get: operations['DesignController_getReadings'];
     put?: never;
-    post: operations['DesignController_createOrUpdateReading'];
+    post: operations['DesignController_createEnergyReading'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/utility-units/{id}/readings/{readingId}/corrections': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['DesignController_correctReading'];
     delete?: never;
     options?: never;
     head?: never;
@@ -1372,6 +1404,22 @@ export interface paths {
       cookie?: never;
     };
     get: operations['FinancialController_getCashFlow'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/inventory/module-availability': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['InventoryController_listModuleAvailability'];
     put?: never;
     post?: never;
     delete?: never;
@@ -2244,6 +2292,334 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/customers/{customerId}/documents': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Listar documentos do dossiê do cliente (incluindo propostas e contratos) */
+    get: operations['DossierController_listCustomerDocuments'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/customers/{customerId}/document-context': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['DossierController_uploadContext'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/opportunities/{opportunityId}/documents': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Listar documentos do dossiê vinculados a uma oportunidade */
+    get: operations['DossierController_listOpportunityDocuments'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/customers/{customerId}/document-uploads': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Iniciar upload ou registrar documento no dossiê do cliente */
+    post: operations['DossierController_createDocumentUpload'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/document-uploads/{versionId}/complete': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Concluir upload e validar persistência do arquivo */
+    post: operations['DossierController_completeDocumentUpload'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/documents/{documentId}/versions/{versionId}/content': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Obter stream ou download do arquivo de uma versão documental */
+    get: operations['DossierController_downloadContent'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/documents/{documentId}/archive': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Arquivar logicamente documento do dossiê */
+    post: operations['DossierController_archiveDocument'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/customers/{customerId}/representatives': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Listar representantes legais ou técnicos do cliente */
+    get: operations['DossierController_listRepresentatives'];
+    put?: never;
+    /** Cadastrar representante legal ou técnico do cliente */
+    post: operations['DossierController_createRepresentative'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/documents/{documentId}/versions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['DossierController_replace'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/documents/{documentId}/history': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['DossierController_history'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/document-uploads/{versionId}/cancel': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['DossierController_cancel'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/document-uploads/{versionId}/reconcile': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['DossierController_reconcile'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/dossier/proposal-documents/{documentId}/content': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['DossierController_proposalContent'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/dossier/contract-documents/{documentId}/content': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['DossierController_contractContent'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/customers/{customerId}/energy-imports': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['EnergyImportController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/energy-imports/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['EnergyImportController_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/energy-imports/{id}/review': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put: operations['EnergyImportController_review'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/energy-imports/{id}/confirm': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['EnergyImportController_confirm'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/energy-imports/{id}/cancel': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['EnergyImportController_cancel'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/energy-imports/{id}/retry': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['EnergyImportController_retry'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2482,6 +2858,20 @@ export interface components {
       voltage: string;
       addressId?: string;
     };
+    CreateAndLinkUtilityUnitDto: {
+      distributorName: string;
+      externalCode?: string;
+      /** @default RESIDENTIAL */
+      consumerClass: string;
+      /** @default CONVENTIONAL */
+      tariffMode: string;
+      /** @default BIPHASIC */
+      connectionType: string;
+      /** @default 220V */
+      voltage: string;
+      addressId?: string;
+      expectedVersion: number;
+    };
     UpdateUtilityUnitDto: {
       expectedVersion: number;
       distributorName?: string;
@@ -2645,6 +3035,19 @@ export interface components {
       dueAt: string;
       notes?: string;
     };
+    EnergyReadingVersionViewDto: {
+      id: string;
+      referenceMonth: string;
+      version: number;
+      consumptionKwh: number;
+      injectedKwh?: number | null;
+      billedAmount?: number | null;
+      source: string;
+      status: string;
+      correctionReason?: string | null;
+      notes?: string | null;
+      createdAt: string;
+    };
     EnergyReadingViewDto: {
       id: string;
       utilityUnitId: string;
@@ -2654,8 +3057,11 @@ export interface components {
       billedAmount?: number | null;
       source: string;
       status: string;
+      version: number;
+      correctionReason?: string | null;
       notes?: string | null;
       createdAt: string;
+      history: components['schemas']['EnergyReadingVersionViewDto'][];
     };
     ConsumptionSummaryViewDto: {
       readings: components['schemas']['EnergyReadingViewDto'][];
@@ -2680,6 +3086,26 @@ export interface components {
        */
       source: 'MANUAL' | 'BILL' | 'IMPORT';
       notes?: string;
+    };
+    CorrectEnergyReadingDto: {
+      /** @example 2026-08 */
+      referenceMonth: string;
+      /** @example 450.5 */
+      consumptionKwh: number;
+      /** @example 0 */
+      injectedKwh?: number;
+      /** @example 425.8 */
+      billedAmount?: number;
+      /**
+       * @default MANUAL
+       * @enum {string}
+       */
+      source: 'MANUAL' | 'BILL' | 'IMPORT';
+      notes?: string;
+      /** @example 1 */
+      expectedVersion: number;
+      /** @example Valor corrigido conforme fatura conferida. */
+      correctionReason: string;
     };
     SurveyViewDto: {
       id: string;
@@ -2794,6 +3220,8 @@ export interface components {
       specificYield: number;
       /** @default 630 */
       preferredModulePowerWp: number;
+      /** Format: uuid */
+      preferredModuleCatalogItemId?: string;
     };
     DesignSuggestionViewDto: {
       targetMonthlyGenerationKwh: number;
@@ -3321,6 +3749,11 @@ export interface components {
       triggerGate: string;
       /** @description Notas da comissão */
       notes?: string;
+    };
+    ModuleAvailabilityViewDto: {
+      /** Format: uuid */
+      catalogItemId: string;
+      available: number;
     };
     CreateStockLocationDto: {
       /** @example DEP-MATRIZ */
@@ -4082,6 +4515,370 @@ export interface components {
        * @enum {string}
        */
       unit: 'BRL' | 'COUNT' | 'PERCENT' | 'KWH';
+    };
+    DossierVersionViewDto: {
+      id: string;
+      versionNumber: number;
+      originalName: string;
+      fileSize: number;
+      declaredMime: string;
+      verifiedMime?: string | null;
+      sha256: string;
+      persistenceState: string;
+      createdAt: string;
+    };
+    DossierDocumentLinksDto: {
+      utilityUnitIds: string[];
+      opportunityIds: string[];
+      projectIds: string[];
+      representativeIds: string[];
+      contractIds: string[];
+    };
+    DossierDocumentViewDto: {
+      metadataVersion: number;
+      contentUrl?: string;
+      id: string;
+      /** @enum {string} */
+      origin: 'DOSSIER' | 'PROPOSAL_DOCUMENT' | 'CONTRACT_DOCUMENT';
+      category: string;
+      title: string;
+      status: string;
+      purpose?: string | null;
+      createdAt: string;
+      updatedAt: string;
+      createdBy: string;
+      currentVersion?: components['schemas']['DossierVersionViewDto'];
+      links: components['schemas']['DossierDocumentLinksDto'];
+    };
+    DocumentContextOptionDto: {
+      id: string;
+      title: string;
+    };
+    DossierUploadContextDto: {
+      categories: string[];
+      requiresWorkOrder: boolean;
+      requiresOpportunity: boolean;
+      workOrders: components['schemas']['DocumentContextOptionDto'][];
+      opportunities: components['schemas']['DocumentContextOptionDto'][];
+    };
+    CreateDocumentUploadDto: {
+      /**
+       * @description Título identificador do documento no dossiê
+       * @example Conta Cemig - Jan/2026
+       */
+      title: string;
+      /**
+       * @description Categoria documental no dossiê
+       * @example UTILITY_BILL
+       * @enum {string}
+       */
+      category:
+        | 'IDENTITY'
+        | 'CORPORATE'
+        | 'REPRESENTATION'
+        | 'UTILITY_BILL'
+        | 'UC_DOCUMENT'
+        | 'COMMERCIAL_PROPOSAL'
+        | 'CONTRACT_ANNEX'
+        | 'PHOTO_BEFORE'
+        | 'PHOTO_DURING'
+        | 'PHOTO_AFTER'
+        | 'ART'
+        | 'HOMOLOGATION'
+        | 'DELIVERY_REPORT'
+        | 'OTHER';
+      /**
+       * @description Nome original do arquivo enviado
+       * @example conta-cemig-jan2026.pdf
+       */
+      fileName: string;
+      /**
+       * @description MIME type declarado pelo cliente
+       * @example application/pdf
+       * @enum {string}
+       */
+      declaredMime: 'application/pdf' | 'image/jpeg' | 'image/png';
+      /**
+       * @description Tamanho do arquivo em bytes (máximo 20 MiB)
+       * @example 1048576
+       */
+      fileSize: number;
+      /** @description Hash SHA-256 do arquivo se já computado */
+      sha256?: string;
+      /** @description Finalidade específica do documento */
+      purpose?: string;
+      /** @description Conteúdo em base64 (para upload direto via API) */
+      fileBase64?: string;
+      /** @description ID da Unidade Consumidora vinculada */
+      utilityUnitId?: string;
+      /** @description ID da Oportunidade vinculada */
+      opportunityId?: string;
+      /** @description ID do Projeto Operacional vinculado */
+      projectId?: string;
+      /** @description ID do Representante vinculado */
+      representativeId?: string;
+      /** @description ID do Contrato vinculado */
+      contractId?: string;
+      /** @description ID da Ordem de Serviço vinculada */
+      workOrderId?: string;
+      /** @description Fase da foto de execução (BEFORE, DURING, AFTER) */
+      phase?: string;
+    };
+    CompleteUploadDto: {
+      /** @description Versão esperada para verificação concorrente */
+      expectedVersion?: number;
+      /** @description Conteúdo em base64 se enviado na conclusão */
+      fileBase64?: string;
+    };
+    ArchiveDocumentDto: {
+      expectedVersion: number;
+      /** @description Motivo do arquivamento do documento */
+      reason?: string;
+    };
+    RepresentativeViewDto: {
+      id: string;
+      customerId: string;
+      name: string;
+      documentNumber?: string | null;
+      role: string;
+      createdAt: string;
+      updatedAt: string;
+    };
+    CustomerRepresentativeDto: {
+      /**
+       * @description Nome do representante legal/técnico
+       * @example Carlos Alberto Silva
+       */
+      name: string;
+      /** @description CPF ou CNPJ do representante */
+      documentNumber?: string;
+      /**
+       * @description Papel do representante
+       * @example LEGAL_REPRESENTATIVE
+       * @enum {string}
+       */
+      role:
+        | 'LEGAL_REPRESENTATIVE'
+        | 'ATTORNEY'
+        | 'TECHNICAL_RESPONSIBLE'
+        | 'FINANCIAL_CONTACT'
+        | 'OTHER';
+    };
+    CreateDocumentVersionDto: {
+      /**
+       * @description Título identificador do documento no dossiê
+       * @example Conta Cemig - Jan/2026
+       */
+      title: string;
+      /**
+       * @description Categoria documental no dossiê
+       * @example UTILITY_BILL
+       * @enum {string}
+       */
+      category:
+        | 'IDENTITY'
+        | 'CORPORATE'
+        | 'REPRESENTATION'
+        | 'UTILITY_BILL'
+        | 'UC_DOCUMENT'
+        | 'COMMERCIAL_PROPOSAL'
+        | 'CONTRACT_ANNEX'
+        | 'PHOTO_BEFORE'
+        | 'PHOTO_DURING'
+        | 'PHOTO_AFTER'
+        | 'ART'
+        | 'HOMOLOGATION'
+        | 'DELIVERY_REPORT'
+        | 'OTHER';
+      /**
+       * @description Nome original do arquivo enviado
+       * @example conta-cemig-jan2026.pdf
+       */
+      fileName: string;
+      /**
+       * @description MIME type declarado pelo cliente
+       * @example application/pdf
+       * @enum {string}
+       */
+      declaredMime: 'application/pdf' | 'image/jpeg' | 'image/png';
+      /**
+       * @description Tamanho do arquivo em bytes (máximo 20 MiB)
+       * @example 1048576
+       */
+      fileSize: number;
+      /** @description Hash SHA-256 do arquivo se já computado */
+      sha256?: string;
+      /** @description Finalidade específica do documento */
+      purpose?: string;
+      /** @description Conteúdo em base64 (para upload direto via API) */
+      fileBase64?: string;
+      /** @description ID da Unidade Consumidora vinculada */
+      utilityUnitId?: string;
+      /** @description ID da Oportunidade vinculada */
+      opportunityId?: string;
+      /** @description ID do Projeto Operacional vinculado */
+      projectId?: string;
+      /** @description ID do Representante vinculado */
+      representativeId?: string;
+      /** @description ID do Contrato vinculado */
+      contractId?: string;
+      /** @description ID da Ordem de Serviço vinculada */
+      workOrderId?: string;
+      /** @description Fase da foto de execução (BEFORE, DURING, AFTER) */
+      phase?: string;
+      expectedVersion: number;
+    };
+    DossierHistoryEventDto: {
+      action: string;
+      actorId?: string | null;
+      createdAt: string;
+    };
+    DossierHistoryViewDto: {
+      metadataVersion: number;
+      archiveReason?: string | null;
+      versions: components['schemas']['DossierVersionViewDto'][];
+      events: components['schemas']['DossierHistoryEventDto'][];
+    };
+    CreateEnergyBillImportDto: {
+      /** @description Versão imutável e READY da conta no dossiê. */
+      documentVersionId: string;
+      /** @description UC existente do mesmo cliente, quando selecionada. */
+      utilityUnitId?: string;
+      /** @description Oportunidade vinculada ao mesmo cliente, quando selecionada. */
+      opportunityId?: string;
+    };
+    ExtractionAttemptViewDto: {
+      id: string;
+      attemptNumber: number;
+      /** @enum {string} */
+      status:
+        'CLAIMED' | 'SUBMITTING' | 'SUBMITTED' | 'UNKNOWN' | 'FAILED' | 'SUCCEEDED' | 'CANCELED';
+      adapterName: string | null;
+      modelName: string | null;
+      modelVersion: string | null;
+      externalOperationId: string | null;
+      errorCode: string | null;
+      retryable: boolean | null;
+      startedAt: string;
+      finishedAt: string | null;
+      chargedPages: number | null;
+      estimatedCost: string | null;
+      actualCost: string | null;
+      currency: string | null;
+    };
+    ProviderConfidenceViewDto: {
+      value: number;
+      scale: string;
+    };
+    ExtractionCandidateViewDto: {
+      id: string;
+      attemptId: string;
+      field: string;
+      rawValue: string | null;
+      normalizedValue: string | null;
+      unit: string | null;
+      page: number | null;
+      region: {
+        [key: string]: unknown;
+      } | null;
+      providerConfidence?: components['schemas']['ProviderConfidenceViewDto'] | null;
+      qualitySignals: {
+        [key: string]: unknown;
+      };
+      systemValidation: {
+        [key: string]: unknown;
+      };
+    };
+    EnergyBillImportViewDto: {
+      id: string;
+      organizationId: string;
+      customerId: string;
+      utilityUnitId: string | null;
+      opportunityId: string | null;
+      documentVersionId: string;
+      /** @enum {string} */
+      status:
+        | 'QUEUED'
+        | 'PROCESSING'
+        | 'REVIEW_REQUIRED'
+        | 'CONFIRMING'
+        | 'APPLIED'
+        | 'FAILED'
+        | 'CANCELED';
+      version: number;
+      createdAt: string;
+      appliedAt: string | null;
+      latestReview?: Record<string, never>;
+      applicationReceipt?: Record<string, never>;
+      attempts?: components['schemas']['ExtractionAttemptViewDto'][];
+      candidates?: components['schemas']['ExtractionCandidateViewDto'][];
+    };
+    ImportMonthEvidenceDto: {
+      /** @description Candidato de referência usado para identificar o mês. */
+      referenceMonthCandidateId?: string;
+      /** @description Candidato de consumo usado nesta decisão. */
+      consumptionKwhCandidateId?: string;
+      /** @description Candidato de energia injetada usado nesta decisão. */
+      injectedKwhCandidateId?: string;
+      /** @description Candidato de total faturado usado nesta decisão. */
+      billedAmountCandidateId?: string;
+    };
+    ImportMonthDecisionDto: {
+      /** @example 2026-08 */
+      referenceMonth: string;
+      /** @enum {string} */
+      decision: 'KEEP' | 'INSERT' | 'REPLACE';
+      expectedReadingVersion?: number | null;
+      /** @example 421.50 */
+      consumptionKwh?: string;
+      /** @example 16.25 */
+      injectedKwh?: string | null;
+      /** @example 384.92 */
+      billedAmount?: string | null;
+      reason?: string;
+      evidence?: components['schemas']['ImportMonthEvidenceDto'];
+    };
+    NewUtilityUnitReviewDto: {
+      distributorName: string;
+      externalCode?: string;
+      /** @description Classe confirmada pela pessoa revisora. */
+      consumerClass: string;
+      /** @description Modalidade tarifária confirmada pela pessoa revisora. */
+      tariffMode: string;
+      /** @description Tipo de conexão confirmado pela pessoa revisora. */
+      connectionType: string;
+      /** @description Tensão confirmada pela pessoa revisora. */
+      voltage: string;
+    };
+    ReviewEnergyBillImportDto: {
+      expectedVersion: number;
+      months: components['schemas']['ImportMonthDecisionDto'][];
+      newUtilityUnit?: components['schemas']['NewUtilityUnitReviewDto'];
+    };
+    ConfirmEnergyBillImportDto: {
+      expectedVersion: number;
+      reviewId: string;
+      reviewDigest: string;
+    };
+    AppliedEnergyReadingDto: {
+      referenceMonth: string;
+      readingId: string;
+      version: number;
+    };
+    EnergyBillImportReceiptDto: {
+      /** @enum {string} */
+      status: 'APPLIED';
+      importId: string;
+      reviewId: string;
+      reviewDigest: string;
+      appliedAt: string;
+      utilityUnitId: string;
+      readingChanges: components['schemas']['AppliedEnergyReadingDto'][];
+      warnings: string[];
+    };
+    EnergyBillImportLifecycleDto: {
+      expectedVersion: number;
+      reason: string;
     };
   };
   responses: never;
@@ -4899,6 +5696,33 @@ export interface operations {
       };
     };
   };
+  CommercialController_createAndLinkUtilityUnit: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+      };
+      path: {
+        opportunityId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateAndLinkUtilityUnitDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UtilityUnitViewDto'];
+        };
+      };
+    };
+  };
   CommercialController_updateUtilityUnit: {
     parameters: {
       query?: never;
@@ -5240,10 +6064,12 @@ export interface operations {
       };
     };
   };
-  DesignController_createOrUpdateReading: {
+  DesignController_createEnergyReading: {
     parameters: {
       query?: never;
-      header?: never;
+      header: {
+        'idempotency-key': string;
+      };
       path: {
         id: string;
       };
@@ -5265,10 +6091,40 @@ export interface operations {
       };
     };
   };
+  DesignController_correctReading: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+      };
+      path: {
+        id: string;
+        readingId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CorrectEnergyReadingDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EnergyReadingViewDto'];
+        };
+      };
+    };
+  };
   DesignController_deleteReading: {
     parameters: {
       query?: never;
-      header?: never;
+      header: {
+        'idempotency-key': string;
+      };
       path: {
         id: string;
         readingId: string;
@@ -6401,6 +7257,25 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  InventoryController_listModuleAvailability: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ModuleAvailabilityViewDto'][];
+        };
       };
     };
   };
@@ -7844,6 +8719,523 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  DossierController_listCustomerDocuments: {
+    parameters: {
+      query?: {
+        category?: string;
+        status?: string;
+        utilityUnitId?: string;
+        opportunityId?: string;
+        projectId?: string;
+        from?: string;
+        to?: string;
+      };
+      header?: never;
+      path: {
+        customerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DossierDocumentViewDto'][];
+        };
+      };
+    };
+  };
+  DossierController_uploadContext: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        customerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DossierUploadContextDto'];
+        };
+      };
+    };
+  };
+  DossierController_listOpportunityDocuments: {
+    parameters: {
+      query?: {
+        category?: string;
+        status?: string;
+      };
+      header?: never;
+      path: {
+        opportunityId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DossierDocumentViewDto'][];
+        };
+      };
+    };
+  };
+  DossierController_createDocumentUpload: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+      };
+      path: {
+        customerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateDocumentUploadDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DossierDocumentViewDto'];
+        };
+      };
+    };
+  };
+  DossierController_completeDocumentUpload: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+      };
+      path: {
+        versionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CompleteUploadDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DossierDocumentViewDto'];
+        };
+      };
+    };
+  };
+  DossierController_downloadContent: {
+    parameters: {
+      query?: {
+        purpose?: 'VIEW' | 'DOWNLOAD';
+      };
+      header?: never;
+      path: {
+        documentId: string;
+        versionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DossierController_archiveDocument: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+      };
+      path: {
+        documentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['ArchiveDocumentDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DossierController_listRepresentatives: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        customerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RepresentativeViewDto'][];
+        };
+      };
+    };
+  };
+  DossierController_createRepresentative: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+      };
+      path: {
+        customerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CustomerRepresentativeDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RepresentativeViewDto'];
+        };
+      };
+    };
+  };
+  DossierController_replace: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+      };
+      path: {
+        documentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateDocumentVersionDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DossierDocumentViewDto'];
+        };
+      };
+    };
+  };
+  DossierController_history: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        documentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DossierHistoryViewDto'];
+        };
+      };
+    };
+  };
+  DossierController_cancel: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+      };
+      path: {
+        versionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CompleteUploadDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DossierController_reconcile: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+      };
+      path: {
+        versionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DossierDocumentViewDto'];
+        };
+      };
+    };
+  };
+  DossierController_proposalContent: {
+    parameters: {
+      query: {
+        purpose: string;
+      };
+      header?: never;
+      path: {
+        documentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DossierController_contractContent: {
+    parameters: {
+      query: {
+        purpose: string;
+      };
+      header?: never;
+      path: {
+        documentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  EnergyImportController_create: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+      };
+      path: {
+        customerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateEnergyBillImportDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EnergyBillImportViewDto'];
+        };
+      };
+    };
+  };
+  EnergyImportController_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EnergyBillImportViewDto'];
+        };
+      };
+    };
+  };
+  EnergyImportController_review: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+      };
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReviewEnergyBillImportDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EnergyBillImportViewDto'];
+        };
+      };
+    };
+  };
+  EnergyImportController_confirm: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+      };
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ConfirmEnergyBillImportDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EnergyBillImportReceiptDto'];
+        };
+      };
+    };
+  };
+  EnergyImportController_cancel: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+      };
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['EnergyBillImportLifecycleDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EnergyBillImportViewDto'];
+        };
+      };
+    };
+  };
+  EnergyImportController_retry: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+      };
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['EnergyBillImportLifecycleDto'];
+      };
+    };
+    responses: {
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EnergyBillImportViewDto'];
+        };
       };
     };
   };

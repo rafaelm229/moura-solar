@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { randomUUID } from 'node:crypto';
+import type { CatalogItemCreatedEventV1, CatalogItemUpdatedEventV1 } from '@moura-solar/contracts';
 import { IdentityStore, Tx } from '../identity/identity.store';
 import { fail } from '../identity/security';
 import type { ContextDto } from '../identity/identity.dto';
@@ -9,6 +11,7 @@ import type {
   CatalogItemViewDto,
   ConsumptionSummaryViewDto,
   CreateCatalogItemDto,
+  CorrectEnergyReadingDto,
   CreateDesignDto,
   CreateEnergyReadingDto,
   CreateSurveyDto,
@@ -31,6 +34,32 @@ function round2(value: number): number {
 
 function round3(value: number): number {
   return Math.round(value * 1000) / 1000;
+}
+
+type EnergyReadingRecord = Prisma.EnergyReadingGetPayload<object>;
+
+function toEnergyReadingVersionView(reading: EnergyReadingRecord) {
+  return {
+    id: reading.id,
+    referenceMonth: reading.referenceMonth,
+    version: reading.version,
+    consumptionKwh: Number(reading.consumptionKwh),
+    injectedKwh: reading.injectedKwh === null ? null : Number(reading.injectedKwh),
+    billedAmount: reading.billedAmount === null ? null : Number(reading.billedAmount),
+    source: reading.source,
+    status: reading.status,
+    correctionReason: reading.correctionReason,
+    notes: reading.notes,
+    createdAt: reading.createdAt.toISOString(),
+  };
+}
+
+function toEnergyReadingView(reading: EnergyReadingRecord) {
+  return {
+    ...toEnergyReadingVersionView(reading),
+    utilityUnitId: reading.utilityUnitId,
+    history: [],
+  };
 }
 
 @Injectable()
@@ -58,17 +87,22 @@ export class DesignService {
       take: 12,
     });
 
-    const readingViews: EnergyReadingViewDto[] = readings.map((r) => ({
-      id: r.id,
-      utilityUnitId: r.utilityUnitId,
-      referenceMonth: r.referenceMonth,
-      consumptionKwh: Number(r.consumptionKwh),
-      injectedKwh: r.injectedKwh ? Number(r.injectedKwh) : null,
-      billedAmount: r.billedAmount ? Number(r.billedAmount) : null,
-      source: r.source,
-      status: r.status,
-      notes: r.notes,
-      createdAt: r.createdAt.toISOString(),
+    const priorVersions = readings.length
+      ? await this.store.db.energyReading.findMany({
+          where: {
+            utilityUnitId,
+            organizationId: context.organizationId,
+            referenceMonth: { in: readings.map((reading) => reading.referenceMonth) },
+            status: { not: 'ACTIVE' },
+          },
+          orderBy: [{ referenceMonth: 'desc' }, { version: 'desc' }],
+        })
+      : [];
+    const readingViews: EnergyReadingViewDto[] = readings.map((reading) => ({
+      ...toEnergyReadingView(reading),
+      history: priorVersions
+        .filter((version) => version.referenceMonth === reading.referenceMonth)
+        .map(toEnergyReadingVersionView),
     }));
 
     const validMonthsCount = readingViews.length;
@@ -88,96 +122,244 @@ export class DesignService {
     };
   }
 
-  async createOrUpdateReading(
+  async createReading(
     context: ContextDto,
     utilityUnitId: string,
     dto: CreateEnergyReadingDto,
+    idempotencyKey: string,
     traceId = 'system',
   ): Promise<EnergyReadingViewDto> {
-    const uc = await this.store.db.utilityUnit.findFirst({
-      where: { id: utilityUnitId, organizationId: context.organizationId },
-    });
-    if (!uc) {
-      fail('UTILITY_UNIT_NOT_FOUND', 'Unidade consumidora não encontrada.', 404);
-    }
+    return this.store.command(
+      context,
+      idempotencyKey,
+      { utilityUnitId, ...dto },
+      'consumer_units:manage',
+      async (tx) => {
+        const uc = await tx.utilityUnit.findFirst({
+          where: { id: utilityUnitId, organizationId: context.organizationId },
+        });
+        if (!uc) fail('UTILITY_UNIT_NOT_FOUND', 'Unidade consumidora não encontrada.', 404);
 
-    return this.store.transaction(async (tx) => {
-      const reading = await tx.energyReading.upsert({
-        where: {
-          utilityUnitId_referenceMonth: {
+        const active = await tx.energyReading.findFirst({
+          where: {
             utilityUnitId,
+            organizationId: context.organizationId,
+            referenceMonth: dto.referenceMonth,
+            status: 'ACTIVE',
+          },
+        });
+        if (active) {
+          fail(
+            'READING_ALREADY_EXISTS',
+            'Este mês já possui uma leitura. Use a ação de correção para criar uma nova versão.',
+            409,
+          );
+        }
+
+        const lastVersion = await tx.energyReading.findFirst({
+          where: {
+            utilityUnitId,
+            organizationId: context.organizationId,
             referenceMonth: dto.referenceMonth,
           },
-        },
-        create: {
-          organizationId: context.organizationId,
-          utilityUnitId,
-          referenceMonth: dto.referenceMonth,
-          consumptionKwh: dto.consumptionKwh,
-          injectedKwh: dto.injectedKwh ?? null,
-          billedAmount: dto.billedAmount ?? null,
-          source: dto.source ?? 'MANUAL',
-          status: 'ACTIVE',
-          notes: dto.notes ?? null,
-        },
-        update: {
-          consumptionKwh: dto.consumptionKwh,
-          injectedKwh: dto.injectedKwh ?? null,
-          billedAmount: dto.billedAmount ?? null,
-          source: dto.source ?? 'MANUAL',
-          status: 'ACTIVE',
-          notes: dto.notes ?? null,
-        },
-      });
+          orderBy: { version: 'desc' },
+        });
+        const reading = await tx.energyReading.create({
+          data: {
+            organizationId: context.organizationId,
+            utilityUnitId,
+            referenceMonth: dto.referenceMonth,
+            consumptionKwh: dto.consumptionKwh,
+            injectedKwh: dto.injectedKwh ?? null,
+            billedAmount: dto.billedAmount ?? null,
+            source: dto.source ?? 'MANUAL',
+            status: 'ACTIVE',
+            version: (lastVersion?.version ?? 0) + 1,
+            correctionReason: null,
+            notes: dto.notes ?? null,
+          },
+        });
 
-      await this.store.audit(
-        tx,
-        'COMMERCIAL_ENERGY_READING_RECORDED',
-        { organizationId: context.organizationId, id: context.id },
-        reading.id,
-        traceId,
-      );
+        await tx.energyReadingRevision.create({
+          data: {
+            organizationId: context.organizationId,
+            utilityUnitId,
+            readingId: reading.id,
+            version: reading.version,
+            source: reading.source,
+            authorId: context.userId,
+            currentValues: {
+              consumptionKwh: reading.consumptionKwh.toString(),
+              injectedKwh: reading.injectedKwh?.toString() ?? null,
+              billedAmount: reading.billedAmount?.toString() ?? null,
+            },
+          },
+        });
 
-      return {
-        id: reading.id,
-        utilityUnitId: reading.utilityUnitId,
-        referenceMonth: reading.referenceMonth,
-        consumptionKwh: Number(reading.consumptionKwh),
-        injectedKwh: reading.injectedKwh ? Number(reading.injectedKwh) : null,
-        billedAmount: reading.billedAmount ? Number(reading.billedAmount) : null,
-        source: reading.source,
-        status: reading.status,
-        notes: reading.notes,
-        createdAt: reading.createdAt.toISOString(),
-      };
-    });
+        await this.store.audit(
+          tx,
+          'COMMERCIAL_ENERGY_READING_RECORDED',
+          context,
+          reading.id,
+          traceId,
+        );
+        return toEnergyReadingView(reading);
+      },
+    );
+  }
+
+  async correctReading(
+    context: ContextDto,
+    utilityUnitId: string,
+    readingId: string,
+    dto: CorrectEnergyReadingDto,
+    idempotencyKey: string,
+    traceId = 'system',
+  ): Promise<EnergyReadingViewDto> {
+    return this.store.command(
+      context,
+      idempotencyKey,
+      { utilityUnitId, readingId, ...dto },
+      'consumer_units:manage',
+      async (tx) => {
+        const current = await tx.energyReading.findFirst({
+          where: {
+            id: readingId,
+            utilityUnitId,
+            organizationId: context.organizationId,
+          },
+        });
+        if (!current) fail('READING_NOT_FOUND', 'Leitura de consumo não encontrada.', 404);
+        if (current.status !== 'ACTIVE' || current.version !== dto.expectedVersion) {
+          fail(
+            'CONCURRENT_MODIFICATION',
+            'A leitura foi alterada por outro usuário. Atualize o histórico e tente novamente.',
+            409,
+          );
+        }
+
+        const superseded = await tx.energyReading.updateMany({
+          where: {
+            id: readingId,
+            utilityUnitId,
+            organizationId: context.organizationId,
+            status: 'ACTIVE',
+            version: dto.expectedVersion,
+          },
+          data: { status: 'SUPERSEDED' },
+        });
+        if (!superseded.count) {
+          fail(
+            'CONCURRENT_MODIFICATION',
+            'A leitura foi alterada por outro usuário. Atualize o histórico e tente novamente.',
+            409,
+          );
+        }
+
+        const corrected = await tx.energyReading.create({
+          data: {
+            organizationId: context.organizationId,
+            utilityUnitId,
+            referenceMonth: current.referenceMonth,
+            consumptionKwh: dto.consumptionKwh,
+            injectedKwh: dto.injectedKwh ?? null,
+            billedAmount: dto.billedAmount ?? null,
+            source: dto.source ?? 'MANUAL',
+            status: 'ACTIVE',
+            version: current.version + 1,
+            correctionReason: dto.correctionReason,
+            notes: dto.notes ?? null,
+          },
+        });
+
+        await tx.energyReadingRevision.create({
+          data: {
+            organizationId: context.organizationId,
+            utilityUnitId,
+            readingId: corrected.id,
+            version: corrected.version,
+            source: corrected.source,
+            authorId: context.userId,
+            previousValues: {
+              consumptionKwh: current.consumptionKwh.toString(),
+              injectedKwh: current.injectedKwh?.toString() ?? null,
+              billedAmount: current.billedAmount?.toString() ?? null,
+              version: current.version,
+            },
+            currentValues: {
+              consumptionKwh: corrected.consumptionKwh.toString(),
+              injectedKwh: corrected.injectedKwh?.toString() ?? null,
+              billedAmount: corrected.billedAmount?.toString() ?? null,
+            },
+            reason: dto.correctionReason,
+          },
+        });
+
+        await this.store.audit(
+          tx,
+          'COMMERCIAL_ENERGY_READING_CORRECTED',
+          context,
+          corrected.id,
+          traceId,
+        );
+        return {
+          ...toEnergyReadingView(corrected),
+          history: [toEnergyReadingVersionView(current)],
+        };
+      },
+    );
   }
 
   async deleteReading(
     context: ContextDto,
     utilityUnitId: string,
     readingId: string,
+    idempotencyKey: string,
     traceId = 'system',
   ): Promise<{ success: boolean }> {
-    const reading = await this.store.db.energyReading.findFirst({
-      where: { id: readingId, utilityUnitId, organizationId: context.organizationId },
-    });
-    if (!reading) {
-      fail('READING_NOT_FOUND', 'Leitura de consumo não encontrada.', 404);
-    }
+    return this.store.command(
+      context,
+      idempotencyKey,
+      { utilityUnitId, readingId },
+      'consumer_units:manage',
+      async (tx) => {
+        const reading = await tx.energyReading.findFirst({
+          where: {
+            id: readingId,
+            utilityUnitId,
+            organizationId: context.organizationId,
+            status: 'ACTIVE',
+          },
+        });
+        if (!reading) fail('READING_NOT_FOUND', 'Leitura de consumo não encontrada.', 404);
 
-    await this.store.transaction(async (tx) => {
-      await tx.energyReading.delete({ where: { id: readingId } });
-      await this.store.audit(
-        tx,
-        'COMMERCIAL_ENERGY_READING_DELETED',
-        { organizationId: context.organizationId, id: context.id },
-        readingId,
-        traceId,
-      );
-    });
-
-    return { success: true };
+        const removed = await tx.energyReading.updateMany({
+          where: {
+            id: readingId,
+            utilityUnitId,
+            organizationId: context.organizationId,
+            status: 'ACTIVE',
+            version: reading.version,
+          },
+          data: { status: 'DELETED' },
+        });
+        if (!removed.count) {
+          fail(
+            'CONCURRENT_MODIFICATION',
+            'A leitura foi alterada por outro usuário. Atualize o histórico e tente novamente.',
+            409,
+          );
+        }
+        await this.store.audit(
+          tx,
+          'COMMERCIAL_ENERGY_READING_DELETED',
+          context,
+          readingId,
+          traceId,
+        );
+        return { success: true };
+      },
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -428,13 +610,44 @@ export class DesignService {
         },
       });
 
-      await this.store.audit(
+      const audit = await this.store.audit(
         tx,
         'CATALOG_ITEM_CREATED',
         { organizationId: context.organizationId, id: context.id },
         item.id,
         traceId,
       );
+
+      const event: CatalogItemCreatedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'CATALOG_ITEM_CREATED',
+        schemaVersion: 1,
+        occurredAt: audit.createdAt.toISOString(),
+        organizationId: context.organizationId,
+        aggregateId: item.id,
+        producer: 'catalog',
+        correlationId: traceId,
+        payload: {
+          catalogItemId: item.id,
+          auditEventId: audit.id,
+          version: item.version,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'CatalogItem',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: audit.createdAt,
+          payload: event.payload,
+          dedupeKey: `CATALOG_ITEM_CREATED:${audit.id}:${item.id}:${item.version}`,
+        },
+      });
 
       return {
         id: item.id,
@@ -496,13 +709,44 @@ export class DesignService {
         },
       });
 
-      await this.store.audit(
+      const audit = await this.store.audit(
         tx,
         'CATALOG_ITEM_UPDATED',
         { organizationId: context.organizationId, id: context.id },
         id,
         traceId,
       );
+
+      const event: CatalogItemUpdatedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'CATALOG_ITEM_UPDATED',
+        schemaVersion: 1,
+        occurredAt: audit.createdAt.toISOString(),
+        organizationId: context.organizationId,
+        aggregateId: updated.id,
+        producer: 'catalog',
+        correlationId: traceId,
+        payload: {
+          catalogItemId: updated.id,
+          auditEventId: audit.id,
+          version: updated.version,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'CatalogItem',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: audit.createdAt,
+          payload: event.payload,
+          dedupeKey: `CATALOG_ITEM_UPDATED:${audit.id}:${updated.id}:${updated.version}`,
+        },
+      });
 
       return {
         id: updated.id,
@@ -675,11 +919,28 @@ export class DesignService {
     const rawDcPowerKwp = targetMonthlyGenerationKwh / specificYield;
 
     // 2. Módulos sugeridos: busca módulo ativo no catálogo
-    const activeModule = await this.store.db.catalogItem.findFirst({
-      where: { organizationId: context.organizationId, category: 'MODULE', status: 'ACTIVE' },
-      orderBy: { referenceCost: 'asc' },
-    });
-    const modulePowerWp = dto.preferredModulePowerWp ?? Number(activeModule?.powerRatingWp ?? 630);
+    const activeModule = dto.preferredModuleCatalogItemId
+      ? await this.store.db.catalogItem.findFirst({
+          where: {
+            id: dto.preferredModuleCatalogItemId,
+            organizationId: context.organizationId,
+            category: 'MODULE',
+            status: 'ACTIVE',
+          },
+        })
+      : await this.store.db.catalogItem.findFirst({
+          where: { organizationId: context.organizationId, category: 'MODULE', status: 'ACTIVE' },
+          orderBy: { referenceCost: 'asc' },
+        });
+    if (dto.preferredModuleCatalogItemId && !activeModule) {
+      fail('MODULE_NOT_FOUND', 'O módulo selecionado não está ativo no catálogo.', 404);
+    }
+    const modulePowerWp = dto.preferredModuleCatalogItemId
+      ? Number(activeModule?.powerRatingWp)
+      : (dto.preferredModulePowerWp ?? Number(activeModule?.powerRatingWp ?? 630));
+    if (!Number.isFinite(modulePowerWp) || modulePowerWp <= 0) {
+      fail('MODULE_POWER_MISSING', 'O módulo selecionado não possui potência cadastrada.', 400);
+    }
     const suggestedModuleQuantity = Math.max(1, Math.ceil((rawDcPowerKwp * 1000) / modulePowerWp));
     const suggestedDcPowerKwp = round3((suggestedModuleQuantity * modulePowerWp) / 1000);
 

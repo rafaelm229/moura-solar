@@ -57,6 +57,19 @@ class EnvironmentVariables {
 
   @IsString()
   S3_BUCKET!: string;
+
+  @IsIn(['MINIO', 'S3'])
+  S3_BACKEND = 'MINIO';
+
+  @IsOptional()
+  @IsString()
+  CLAMD_HOST?: string;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(65535)
+  CLAMD_PORT = 3310;
 }
 
 export function validateEnvironment(config: Record<string, unknown>): EnvironmentVariables {

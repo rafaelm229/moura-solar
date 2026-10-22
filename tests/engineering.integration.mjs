@@ -1,3 +1,4 @@
+import { storageEnv } from './storage-env.mjs';
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
@@ -23,10 +24,7 @@ const env = {
   API_PORT: '3325',
   WEB_ORIGIN: 'http://localhost:3320',
   COOKIE_SECURE: 'false',
-  S3_ENDPOINT: 'http://localhost:9000',
-  S3_ACCESS_KEY: 'test',
-  S3_SECRET_KEY: 'test',
-  S3_BUCKET: 'test',
+  ...storageEnv,
   IDENTITY_LINK_SECRET: 'integration-test-link-secret-at-least-32-characters',
   BOOTSTRAP_TOKEN: 'integration-test-bootstrap-at-least-32-characters',
 };

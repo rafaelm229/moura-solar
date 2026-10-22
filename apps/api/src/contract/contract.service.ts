@@ -6,11 +6,23 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { basename } from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../database/prisma.service';
 import { AuditService } from '../database/audit.service';
 import { StorageService } from '../proposal/storage.service';
 import { ContractGeneratorService, type ContractTemplateData } from './contract-generator.service';
 import { FinancialService } from '../financial/financial.service';
+import type {
+  ActivityCreatedEventV1,
+  ContractAmendmentRecordedEventV1,
+  ContractCanceledEventV1,
+  ContractApprovedEventV1,
+  ContractCreatedEventV1,
+  ContractDeliveredEventV1,
+  ContractReviewRequestedEventV1,
+  ContractSignedReviewedEventV1,
+  ContractSignedUploadedEventV1,
+} from '@moura-solar/contracts';
 import {
   CreateContractDto,
   UpdateContractDraftDto,
@@ -93,7 +105,12 @@ export class ContractService {
     };
   }
 
-  async createContract(organizationId: string, userId: string, dto: CreateContractDto) {
+  async createContract(
+    organizationId: string,
+    userId: string,
+    dto: CreateContractDto,
+    correlationId: string,
+  ) {
     const opp = await this.prisma.opportunity.findFirst({
       where: { id: dto.opportunityId, organizationId },
       include: {
@@ -548,7 +565,7 @@ export class ContractService {
             },
           });
 
-          // Initialize ProjectGate for Contract (Pending Gate C)
+          // Initialize the contract ProjectGate in its pending state.
           await tx.projectGate.create({
             data: {
               organizationId,
@@ -616,7 +633,7 @@ export class ContractService {
           }
 
           // Create activity for contract review & signature collection
-          await tx.activity.create({
+          const contractActivity = await tx.activity.create({
             data: {
               organizationId,
               opportunityId: opp.id,
@@ -630,7 +647,7 @@ export class ContractService {
             },
           });
 
-          await this.audit.record(
+          const creationAudit = await this.audit.record(
             {
               organizationId,
               actorId: userId,
@@ -639,6 +656,71 @@ export class ContractService {
             },
             tx,
           );
+
+          const activityEvent: ActivityCreatedEventV1 = {
+            eventId: randomUUID(),
+            eventType: 'ACTIVITY_CREATED',
+            schemaVersion: 1,
+            occurredAt: creationAudit.createdAt.toISOString(),
+            organizationId,
+            aggregateId: contractActivity.id,
+            producer: 'crm',
+            correlationId,
+            payload: {
+              activityId: contractActivity.id,
+              auditEventId: creationAudit.id,
+              customerId: opp.customerId,
+              opportunityId: opp.id,
+            },
+          };
+          await tx.integrationOutbox.create({
+            data: {
+              id: activityEvent.eventId,
+              organizationId: activityEvent.organizationId,
+              eventType: activityEvent.eventType,
+              schemaVersion: activityEvent.schemaVersion,
+              aggregateType: 'Activity',
+              aggregateId: activityEvent.aggregateId,
+              producer: activityEvent.producer,
+              correlationId: activityEvent.correlationId,
+              occurredAt: creationAudit.createdAt,
+              payload: activityEvent.payload,
+              dedupeKey: `ACTIVITY_CREATED:${creationAudit.id}:${contractActivity.id}`,
+            },
+          });
+
+          const contractCreatedEvent: ContractCreatedEventV1 = {
+            eventId: randomUUID(),
+            eventType: 'CONTRACT_CREATED',
+            schemaVersion: 1,
+            occurredAt: creationAudit.createdAt.toISOString(),
+            organizationId,
+            aggregateId: createdContract.id,
+            producer: 'contracts',
+            correlationId,
+            payload: {
+              contractId: createdContract.id,
+              contractVersionId: createdVersion.id,
+              acceptedProposalVersionId: acceptedProposalVersion.id,
+              auditEventId: creationAudit.id,
+              opportunityId: opp.id,
+            },
+          };
+          await tx.integrationOutbox.create({
+            data: {
+              id: contractCreatedEvent.eventId,
+              organizationId: contractCreatedEvent.organizationId,
+              eventType: contractCreatedEvent.eventType,
+              schemaVersion: contractCreatedEvent.schemaVersion,
+              aggregateType: 'Contract',
+              aggregateId: contractCreatedEvent.aggregateId,
+              producer: contractCreatedEvent.producer,
+              correlationId: contractCreatedEvent.correlationId,
+              occurredAt: creationAudit.createdAt,
+              payload: contractCreatedEvent.payload,
+              dedupeKey: `CONTRACT_CREATED:${creationAudit.id}:${createdContract.id}`,
+            },
+          });
 
           return createdContract;
         });
@@ -960,16 +1042,60 @@ export class ContractService {
     id: string,
     userId: string,
     dto: RequestContractReviewDto,
+    correlationId: string,
   ) {
     const contract = await this.getContract(organizationId, id);
-    await this.prisma.contract.update({
-      where: { id: contract.id },
-      data: {
-        state: 'PENDING_REVIEW',
-        notes: dto.notes
-          ? `${contract.notes ? `${contract.notes}\n` : ''}Revisão solicitada: ${dto.notes}`
-          : contract.notes,
-      },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.contract.update({
+        where: { id: contract.id },
+        data: {
+          state: 'PENDING_REVIEW',
+          notes: dto.notes
+            ? `${contract.notes ? `${contract.notes}\n` : ''}Revisão solicitada: ${dto.notes}`
+            : contract.notes,
+        },
+      });
+
+      const reviewAudit = await this.audit.record(
+        {
+          organizationId,
+          actorId: userId,
+          action: 'CONTRACT_REVIEW_REQUESTED',
+          entityId: contract.id,
+          traceId: correlationId,
+        },
+        tx,
+      );
+      const event: ContractReviewRequestedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'CONTRACT_REVIEW_REQUESTED',
+        schemaVersion: 1,
+        occurredAt: reviewAudit.createdAt.toISOString(),
+        organizationId,
+        aggregateId: contract.id,
+        producer: 'contracts',
+        correlationId,
+        payload: {
+          contractId: contract.id,
+          auditEventId: reviewAudit.id,
+          opportunityId: contract.opportunityId,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Contract',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: reviewAudit.createdAt,
+          payload: event.payload,
+          dedupeKey: `CONTRACT_REVIEW_REQUESTED:${reviewAudit.id}:${contract.id}`,
+        },
+      });
     });
     return this.getContract(organizationId, id);
   }
@@ -979,16 +1105,60 @@ export class ContractService {
     id: string,
     userId: string,
     dto: ApproveContractDto,
+    correlationId: string,
   ) {
     const contract = await this.getContract(organizationId, id);
-    await this.prisma.contract.update({
-      where: { id: contract.id },
-      data: {
-        state: 'READY',
-        notes: dto.notes
-          ? `${contract.notes ? `${contract.notes}\n` : ''}Aprovado: ${dto.notes}`
-          : contract.notes,
-      },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.contract.update({
+        where: { id: contract.id },
+        data: {
+          state: 'READY',
+          notes: dto.notes
+            ? `${contract.notes ? `${contract.notes}\n` : ''}Aprovado: ${dto.notes}`
+            : contract.notes,
+        },
+      });
+
+      const approvalAudit = await this.audit.record(
+        {
+          organizationId,
+          actorId: userId,
+          action: 'CONTRACT_APPROVED',
+          entityId: contract.id,
+          traceId: correlationId,
+        },
+        tx,
+      );
+      const event: ContractApprovedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'CONTRACT_APPROVED',
+        schemaVersion: 1,
+        occurredAt: approvalAudit.createdAt.toISOString(),
+        organizationId,
+        aggregateId: contract.id,
+        producer: 'contracts',
+        correlationId,
+        payload: {
+          contractId: contract.id,
+          auditEventId: approvalAudit.id,
+          opportunityId: contract.opportunityId,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Contract',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: approvalAudit.createdAt,
+          payload: event.payload,
+          dedupeKey: `CONTRACT_APPROVED:${approvalAudit.id}:${contract.id}`,
+        },
+      });
     });
     return this.getContract(organizationId, id);
   }
@@ -998,6 +1168,7 @@ export class ContractService {
     contractId: string,
     userId: string,
     dto: RecordContractDeliveryDto,
+    correlationId: string,
   ) {
     const contract = await this.getContract(organizationId, contractId);
 
@@ -1038,7 +1209,7 @@ export class ContractService {
       });
 
       // Follow-up activity for signing
-      await tx.activity.create({
+      const followUpActivity = await tx.activity.create({
         data: {
           organizationId,
           opportunityId: contract.opportunityId,
@@ -1052,7 +1223,7 @@ export class ContractService {
         },
       });
 
-      await this.audit.record(
+      const deliveryAudit = await this.audit.record(
         {
           organizationId,
           actorId: userId,
@@ -1061,6 +1232,70 @@ export class ContractService {
         },
         tx,
       );
+
+      const activityEvent: ActivityCreatedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'ACTIVITY_CREATED',
+        schemaVersion: 1,
+        occurredAt: deliveryAudit.createdAt.toISOString(),
+        organizationId,
+        aggregateId: followUpActivity.id,
+        producer: 'crm',
+        correlationId,
+        payload: {
+          activityId: followUpActivity.id,
+          auditEventId: deliveryAudit.id,
+          customerId: contract.opportunity.customer.id,
+          opportunityId: contract.opportunityId,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: activityEvent.eventId,
+          organizationId: activityEvent.organizationId,
+          eventType: activityEvent.eventType,
+          schemaVersion: activityEvent.schemaVersion,
+          aggregateType: 'Activity',
+          aggregateId: activityEvent.aggregateId,
+          producer: activityEvent.producer,
+          correlationId: activityEvent.correlationId,
+          occurredAt: deliveryAudit.createdAt,
+          payload: activityEvent.payload,
+          dedupeKey: `ACTIVITY_CREATED:${deliveryAudit.id}:${followUpActivity.id}`,
+        },
+      });
+
+      const contractEvent: ContractDeliveredEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'CONTRACT_DELIVERED',
+        schemaVersion: 1,
+        occurredAt: deliveryAudit.createdAt.toISOString(),
+        organizationId,
+        aggregateId: contract.id,
+        producer: 'contracts',
+        correlationId,
+        payload: {
+          contractId: contract.id,
+          deliveryId: del.id,
+          auditEventId: deliveryAudit.id,
+          opportunityId: contract.opportunityId,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: contractEvent.eventId,
+          organizationId: contractEvent.organizationId,
+          eventType: contractEvent.eventType,
+          schemaVersion: contractEvent.schemaVersion,
+          aggregateType: 'Contract',
+          aggregateId: contractEvent.aggregateId,
+          producer: contractEvent.producer,
+          correlationId: contractEvent.correlationId,
+          occurredAt: deliveryAudit.createdAt,
+          payload: contractEvent.payload,
+          dedupeKey: `CONTRACT_DELIVERED:${deliveryAudit.id}:${del.id}`,
+        },
+      });
 
       return del;
     });
@@ -1073,6 +1308,7 @@ export class ContractService {
     contractId: string,
     userId: string,
     dto: UploadSignedContractDto,
+    correlationId: string,
   ) {
     const contract = await this.getContract(organizationId, contractId);
     if (['CANCELED', 'TERMINATED', 'ACTIVE'].includes(contract.state)) {
@@ -1140,21 +1376,21 @@ export class ContractService {
       });
 
       // Create activity for conference
-      await tx.activity.create({
+      const conferenceActivity = await tx.activity.create({
         data: {
           organizationId,
           opportunityId: contract.opportunityId,
           customerId: contract.opportunity.customer.id,
           type: 'TASK',
           subject: `Conferência de Assinatura: ${contract.code}`,
-          description: `Novo arquivo assinado "${safeFileName}" anexado. Realizar conferência das partes, páginas completas, correspondência da versão e legibilidade antes de liberar o Gate C.`,
+          description: `Novo arquivo assinado "${safeFileName}" anexado. Realizar conferência das partes, páginas completas, correspondência da versão e legibilidade antes de liberar o gate contratual.`,
           assigneeUserId: userId,
           dueAt: new Date(Date.now() + 24 * 3600000),
           status: 'OPEN',
         },
       });
 
-      await this.audit.record(
+      const uploadAudit = await this.audit.record(
         {
           organizationId,
           actorId: userId,
@@ -1163,6 +1399,71 @@ export class ContractService {
         },
         tx,
       );
+
+      const activityEvent: ActivityCreatedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'ACTIVITY_CREATED',
+        schemaVersion: 1,
+        occurredAt: uploadAudit.createdAt.toISOString(),
+        organizationId,
+        aggregateId: conferenceActivity.id,
+        producer: 'crm',
+        correlationId,
+        payload: {
+          activityId: conferenceActivity.id,
+          auditEventId: uploadAudit.id,
+          customerId: contract.opportunity.customer.id,
+          opportunityId: contract.opportunityId,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: activityEvent.eventId,
+          organizationId: activityEvent.organizationId,
+          eventType: activityEvent.eventType,
+          schemaVersion: activityEvent.schemaVersion,
+          aggregateType: 'Activity',
+          aggregateId: activityEvent.aggregateId,
+          producer: activityEvent.producer,
+          correlationId: activityEvent.correlationId,
+          occurredAt: uploadAudit.createdAt,
+          payload: activityEvent.payload,
+          dedupeKey: `ACTIVITY_CREATED:${uploadAudit.id}:${conferenceActivity.id}`,
+        },
+      });
+
+      const uploadEvent: ContractSignedUploadedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'CONTRACT_SIGNED_UPLOADED',
+        schemaVersion: 1,
+        occurredAt: uploadAudit.createdAt.toISOString(),
+        organizationId,
+        aggregateId: contract.id,
+        producer: 'contracts',
+        correlationId,
+        payload: {
+          contractId: contract.id,
+          documentId: document.id,
+          contractVersionId: activeVersion.id,
+          auditEventId: uploadAudit.id,
+          opportunityId: contract.opportunityId,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: uploadEvent.eventId,
+          organizationId: uploadEvent.organizationId,
+          eventType: uploadEvent.eventType,
+          schemaVersion: uploadEvent.schemaVersion,
+          aggregateType: 'Contract',
+          aggregateId: uploadEvent.aggregateId,
+          producer: uploadEvent.producer,
+          correlationId: uploadEvent.correlationId,
+          occurredAt: uploadAudit.createdAt,
+          payload: uploadEvent.payload,
+          dedupeKey: `CONTRACT_SIGNED_UPLOADED:${uploadAudit.id}:${document.id}`,
+        },
+      });
 
       return document;
     });
@@ -1175,6 +1476,7 @@ export class ContractService {
     contractId: string,
     userId: string,
     dto: VerifySignedContractDto,
+    correlationId: string,
   ) {
     const contract = await this.getContract(organizationId, contractId);
 
@@ -1207,6 +1509,8 @@ export class ContractService {
     const reviewedAt = new Date();
 
     const result = await this.prisma.$transaction(async (tx) => {
+      let reviewActivityId = '';
+
       // 1. Record review
       const review = await tx.signedContractReview.create({
         data: {
@@ -1231,7 +1535,7 @@ export class ContractService {
           data: { state: 'ACTIVE' },
         });
 
-        // 3. Satisfy Gate C (CONTRACT)
+        // 3. Satisfy the contract gate (CONTRACT)
         const gate = await tx.projectGate.findFirst({
           where: {
             opportunityId: contract.opportunityId,
@@ -1264,7 +1568,7 @@ export class ContractService {
           });
         }
 
-        // 4. Advance Opportunity to VENDIDO (Closed/Won, Gate C)
+        // 4. Advance Opportunity to VENDIDO after contract verification.
         const opp = contract.opportunity;
         if (opp.state !== 'VENDIDO') {
           await tx.opportunity.update({
@@ -1282,25 +1586,26 @@ export class ContractService {
               toState: 'VENDIDO',
               command: 'CONCLUIR_CONTRATO_GATE_C',
               actorId: userId,
-              justification: `Contrato assinado ${contract.code} conferido e verificado. Gate C superado com sucesso.`,
+              justification: `Contrato assinado ${contract.code} conferido e verificado. Gate contratual superado com sucesso.`,
             },
           });
         }
 
         // 5. Schedule next engineering activity
-        await tx.activity.create({
+        const reviewActivity = await tx.activity.create({
           data: {
             organizationId,
             opportunityId: opp.id,
             customerId: opp.customer.id,
             type: 'TASK',
             subject: `Engenharia & Executivo: Oportunidade ${opp.code}`,
-            description: `Contrato assinado e verificado (Gate C). Iniciar elaboração do projeto executivo de engenharia e solicitação de acesso junto à concessionária.`,
+            description: `Contrato assinado e verificado. Gate contratual superado. Iniciar elaboração do projeto executivo de engenharia e solicitação de acesso junto à concessionária.`,
             assigneeUserId: userId,
             dueAt: new Date(reviewedAt.getTime() + 3 * 86400000),
             status: 'OPEN',
           },
         });
+        reviewActivityId = reviewActivity.id;
       } else {
         // REJECTED
         // Contract reverts to READY so a corrected file can be sent/uploaded
@@ -1309,7 +1614,7 @@ export class ContractService {
           data: { state: 'READY' },
         });
 
-        await tx.activity.create({
+        const reviewActivity = await tx.activity.create({
           data: {
             organizationId,
             opportunityId: contract.opportunityId,
@@ -1322,9 +1627,10 @@ export class ContractService {
             status: 'OPEN',
           },
         });
+        reviewActivityId = reviewActivity.id;
       }
 
-      await this.audit.record(
+      const reviewAudit = await this.audit.record(
         {
           organizationId,
           actorId: userId,
@@ -1336,6 +1642,71 @@ export class ContractService {
         },
         tx,
       );
+
+      const activityEvent: ActivityCreatedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'ACTIVITY_CREATED',
+        schemaVersion: 1,
+        occurredAt: reviewAudit.createdAt.toISOString(),
+        organizationId,
+        aggregateId: reviewActivityId,
+        producer: 'crm',
+        correlationId,
+        payload: {
+          activityId: reviewActivityId,
+          auditEventId: reviewAudit.id,
+          customerId: contract.opportunity.customer.id,
+          opportunityId: contract.opportunityId,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: activityEvent.eventId,
+          organizationId: activityEvent.organizationId,
+          eventType: activityEvent.eventType,
+          schemaVersion: activityEvent.schemaVersion,
+          aggregateType: 'Activity',
+          aggregateId: activityEvent.aggregateId,
+          producer: activityEvent.producer,
+          correlationId: activityEvent.correlationId,
+          occurredAt: reviewAudit.createdAt,
+          payload: activityEvent.payload,
+          dedupeKey: `ACTIVITY_CREATED:${reviewAudit.id}:${reviewActivityId}`,
+        },
+      });
+
+      const reviewEvent: ContractSignedReviewedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'CONTRACT_SIGNED_REVIEWED',
+        schemaVersion: 1,
+        occurredAt: reviewAudit.createdAt.toISOString(),
+        organizationId,
+        aggregateId: contract.id,
+        producer: 'contracts',
+        correlationId,
+        payload: {
+          contractId: contract.id,
+          reviewId: review.id,
+          auditEventId: reviewAudit.id,
+          opportunityId: contract.opportunityId,
+          decision: dto.decision,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: reviewEvent.eventId,
+          organizationId: reviewEvent.organizationId,
+          eventType: reviewEvent.eventType,
+          schemaVersion: reviewEvent.schemaVersion,
+          aggregateType: 'Contract',
+          aggregateId: reviewEvent.aggregateId,
+          producer: reviewEvent.producer,
+          correlationId: reviewEvent.correlationId,
+          occurredAt: reviewAudit.createdAt,
+          payload: reviewEvent.payload,
+          dedupeKey: `CONTRACT_SIGNED_REVIEWED:${reviewAudit.id}:${review.id}`,
+        },
+      });
 
       return review;
     });
@@ -1360,6 +1731,7 @@ export class ContractService {
     contractId: string,
     userId: string,
     dto: CreateAmendmentDto,
+    correlationId: string,
   ) {
     const contract = await this.getContract(organizationId, contractId);
     if (['CANCELED', 'TERMINATED'].includes(contract.state)) {
@@ -1375,7 +1747,7 @@ export class ContractService {
           notes: `${contract.notes ? `${contract.notes}\n` : ''}Aditivo: ${dto.reason}`,
         },
       });
-      await this.audit.record(
+      const amendmentAudit = await this.audit.record(
         {
           organizationId,
           actorId: userId,
@@ -1384,6 +1756,37 @@ export class ContractService {
         },
         tx,
       );
+
+      const event: ContractAmendmentRecordedEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'CONTRACT_AMENDMENT_RECORDED',
+        schemaVersion: 1,
+        occurredAt: amendmentAudit.createdAt.toISOString(),
+        organizationId,
+        aggregateId: contract.id,
+        producer: 'contracts',
+        correlationId,
+        payload: {
+          contractId: contract.id,
+          auditEventId: amendmentAudit.id,
+          opportunityId: contract.opportunityId,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Contract',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: amendmentAudit.createdAt,
+          payload: event.payload,
+          dedupeKey: `CONTRACT_AMENDMENT_RECORDED:${amendmentAudit.id}`,
+        },
+      });
     });
     return this.getContract(organizationId, contractId);
   }
@@ -1393,6 +1796,7 @@ export class ContractService {
     contractId: string,
     userId: string,
     dto: CancelContractDto,
+    correlationId: string,
   ) {
     const contract = await this.getContract(organizationId, contractId);
     if (['CANCELED', 'TERMINATED'].includes(contract.state)) {
@@ -1408,7 +1812,7 @@ export class ContractService {
           notes: `${contract.notes ? `${contract.notes}\n` : ''}Cancelado: ${dto.reason}`,
         },
       });
-      await this.audit.record(
+      const cancellationAudit = await this.audit.record(
         {
           organizationId,
           actorId: userId,
@@ -1417,6 +1821,37 @@ export class ContractService {
         },
         tx,
       );
+
+      const event: ContractCanceledEventV1 = {
+        eventId: randomUUID(),
+        eventType: 'CONTRACT_CANCELED',
+        schemaVersion: 1,
+        occurredAt: cancellationAudit.createdAt.toISOString(),
+        organizationId,
+        aggregateId: contract.id,
+        producer: 'contracts',
+        correlationId,
+        payload: {
+          contractId: contract.id,
+          auditEventId: cancellationAudit.id,
+          opportunityId: contract.opportunityId,
+        },
+      };
+      await tx.integrationOutbox.create({
+        data: {
+          id: event.eventId,
+          organizationId: event.organizationId,
+          eventType: event.eventType,
+          schemaVersion: event.schemaVersion,
+          aggregateType: 'Contract',
+          aggregateId: event.aggregateId,
+          producer: event.producer,
+          correlationId: event.correlationId,
+          occurredAt: cancellationAudit.createdAt,
+          payload: event.payload,
+          dedupeKey: `CONTRACT_CANCELED:${cancellationAudit.id}`,
+        },
+      });
     });
     return this.getContract(organizationId, contractId);
   }

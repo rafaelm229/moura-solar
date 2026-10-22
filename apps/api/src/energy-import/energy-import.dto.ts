@@ -1,0 +1,280 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  ArrayUnique,
+  IsArray,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Matches,
+  MaxLength,
+  MinLength,
+  Min,
+  ValidateNested,
+} from 'class-validator';
+
+export class CreateEnergyBillImportDto {
+  @ApiProperty({ description: 'Versão imutável e READY da conta no dossiê.' })
+  @IsUUID()
+  documentVersionId!: string;
+
+  @ApiPropertyOptional({ description: 'UC existente do mesmo cliente, quando selecionada.' })
+  @IsOptional()
+  @IsUUID()
+  utilityUnitId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Oportunidade vinculada ao mesmo cliente, quando selecionada.',
+  })
+  @IsOptional()
+  @IsUUID()
+  opportunityId?: string;
+}
+
+export class EnergyBillImportViewDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() organizationId!: string;
+  @ApiProperty() customerId!: string;
+  @ApiProperty({ type: String, nullable: true }) utilityUnitId!: string | null;
+  @ApiProperty({ type: String, nullable: true }) opportunityId!: string | null;
+  @ApiProperty() documentVersionId!: string;
+  @ApiProperty({
+    enum: [
+      'QUEUED',
+      'PROCESSING',
+      'REVIEW_REQUIRED',
+      'CONFIRMING',
+      'APPLIED',
+      'FAILED',
+      'CANCELED',
+    ],
+  })
+  status!: string;
+  @ApiProperty() version!: number;
+  @ApiProperty() createdAt!: string;
+  @ApiProperty({ type: String, nullable: true }) appliedAt!: string | null;
+  @ApiPropertyOptional({ type: Object }) latestReview?: Record<string, unknown>;
+  @ApiPropertyOptional({ type: Object }) applicationReceipt?: Record<string, unknown>;
+  @ApiPropertyOptional({ type: () => [ExtractionAttemptViewDto] })
+  attempts?: ExtractionAttemptViewDto[];
+  @ApiPropertyOptional({ type: () => [ExtractionCandidateViewDto] })
+  candidates?: ExtractionCandidateViewDto[];
+}
+
+export class ExtractionAttemptViewDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() attemptNumber!: number;
+  @ApiProperty({
+    enum: ['CLAIMED', 'SUBMITTING', 'SUBMITTED', 'UNKNOWN', 'FAILED', 'SUCCEEDED', 'CANCELED'],
+  })
+  status!: string;
+  @ApiProperty({ type: String, nullable: true }) adapterName!: string | null;
+  @ApiProperty({ type: String, nullable: true }) modelName!: string | null;
+  @ApiProperty({ type: String, nullable: true }) modelVersion!: string | null;
+  @ApiProperty({ type: String, nullable: true }) externalOperationId!: string | null;
+  @ApiProperty({ type: String, nullable: true }) errorCode!: string | null;
+  @ApiProperty({ type: Boolean, nullable: true }) retryable!: boolean | null;
+  @ApiProperty() startedAt!: string;
+  @ApiProperty({ type: String, nullable: true }) finishedAt!: string | null;
+  @ApiProperty({ type: Number, nullable: true }) chargedPages!: number | null;
+  @ApiProperty({ type: String, nullable: true }) estimatedCost!: string | null;
+  @ApiProperty({ type: String, nullable: true }) actualCost!: string | null;
+  @ApiProperty({ type: String, nullable: true }) currency!: string | null;
+}
+
+export class ExtractionCandidateViewDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() attemptId!: string;
+  @ApiProperty() field!: string;
+  @ApiProperty({ type: String, nullable: true }) rawValue!: string | null;
+  @ApiProperty({ type: String, nullable: true }) normalizedValue!: string | null;
+  @ApiProperty({ type: String, nullable: true }) unit!: string | null;
+  @ApiProperty({ type: Number, nullable: true }) page!: number | null;
+  @ApiProperty({ type: 'object', additionalProperties: true, nullable: true })
+  region!: Record<string, unknown> | null;
+  @ApiPropertyOptional({ type: () => ProviderConfidenceViewDto, nullable: true })
+  providerConfidence!: ProviderConfidenceViewDto | null;
+  @ApiProperty({ type: 'object', additionalProperties: true })
+  qualitySignals!: Record<string, unknown>;
+  @ApiProperty({ type: 'object', additionalProperties: true })
+  systemValidation!: Record<string, unknown>;
+}
+
+export class ProviderConfidenceViewDto {
+  @ApiProperty() value!: number;
+  @ApiProperty() scale!: string;
+}
+
+export class ImportMonthEvidenceDto {
+  @ApiPropertyOptional({ description: 'Candidato de referência usado para identificar o mês.' })
+  @IsOptional()
+  @IsUUID()
+  referenceMonthCandidateId?: string;
+
+  @ApiPropertyOptional({ description: 'Candidato de consumo usado nesta decisão.' })
+  @IsOptional()
+  @IsUUID()
+  consumptionKwhCandidateId?: string;
+
+  @ApiPropertyOptional({ description: 'Candidato de energia injetada usado nesta decisão.' })
+  @IsOptional()
+  @IsUUID()
+  injectedKwhCandidateId?: string;
+
+  @ApiPropertyOptional({ description: 'Candidato de total faturado usado nesta decisão.' })
+  @IsOptional()
+  @IsUUID()
+  billedAmountCandidateId?: string;
+}
+
+export class NewUtilityUnitReviewDto {
+  @ApiProperty({ minLength: 2 })
+  @IsString()
+  @MinLength(2)
+  @MaxLength(160)
+  distributorName!: string;
+
+  @ApiPropertyOptional({ maxLength: 80 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  externalCode?: string;
+
+  @ApiProperty({ description: 'Classe confirmada pela pessoa revisora.' })
+  @IsString()
+  @MinLength(2)
+  @MaxLength(80)
+  consumerClass!: string;
+
+  @ApiProperty({ description: 'Modalidade tarifária confirmada pela pessoa revisora.' })
+  @IsString()
+  @MinLength(2)
+  @MaxLength(80)
+  tariffMode!: string;
+
+  @ApiProperty({ description: 'Tipo de conexão confirmado pela pessoa revisora.' })
+  @IsString()
+  @MinLength(2)
+  @MaxLength(80)
+  connectionType!: string;
+
+  @ApiProperty({ description: 'Tensão confirmada pela pessoa revisora.' })
+  @IsString()
+  @MinLength(2)
+  @MaxLength(80)
+  voltage!: string;
+}
+
+export class ImportMonthDecisionDto {
+  @ApiProperty({ example: '2026-08' })
+  @IsString()
+  @Matches(/^\d{4}-(0[1-9]|1[0-2])$/)
+  referenceMonth!: string;
+
+  @ApiProperty({ enum: ['KEEP', 'INSERT', 'REPLACE'] })
+  @IsIn(['KEEP', 'INSERT', 'REPLACE'])
+  decision!: 'KEEP' | 'INSERT' | 'REPLACE';
+
+  @ApiPropertyOptional({ nullable: true, minimum: 1, type: Number })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  expectedReadingVersion?: number | null;
+
+  @ApiPropertyOptional({ example: '421.50' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^(0|[1-9]\d{0,7})(\.\d{1,2})?$/)
+  consumptionKwh?: string;
+
+  @ApiPropertyOptional({ example: '16.25', nullable: true, type: String })
+  @IsOptional()
+  @IsString()
+  @Matches(/^(0|[1-9]\d{0,7})(\.\d{1,2})?$/)
+  injectedKwh?: string | null;
+
+  @ApiPropertyOptional({ example: '384.92', nullable: true, type: String })
+  @IsOptional()
+  @IsString()
+  @Matches(/^(0|[1-9]\d{0,9})(\.\d{1,2})?$/)
+  billedAmount?: string | null;
+
+  @ApiPropertyOptional({ maxLength: 500 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  reason?: string;
+
+  @ApiPropertyOptional({ type: () => ImportMonthEvidenceDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ImportMonthEvidenceDto)
+  evidence?: ImportMonthEvidenceDto;
+}
+
+export class ReviewEnergyBillImportDto {
+  @ApiProperty({ minimum: 1 })
+  @IsInt()
+  @Min(1)
+  expectedVersion!: number;
+
+  @ApiProperty({ type: [ImportMonthDecisionDto], minItems: 1, maxItems: 36 })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(36)
+  @ArrayUnique((item: ImportMonthDecisionDto) => item.referenceMonth)
+  @ValidateNested({ each: true })
+  @Type(() => ImportMonthDecisionDto)
+  months!: ImportMonthDecisionDto[];
+
+  @ApiPropertyOptional({ type: () => NewUtilityUnitReviewDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => NewUtilityUnitReviewDto)
+  newUtilityUnit?: NewUtilityUnitReviewDto;
+}
+
+export class ConfirmEnergyBillImportDto {
+  @ApiProperty({ minimum: 1 })
+  @IsInt()
+  @Min(1)
+  expectedVersion!: number;
+
+  @ApiProperty() @IsUUID() reviewId!: string;
+  @ApiProperty() @IsString() @Matches(/^[a-f0-9]{64}$/) reviewDigest!: string;
+}
+
+export class EnergyBillImportLifecycleDto {
+  @ApiProperty({ minimum: 1 })
+  @IsInt()
+  @Min(1)
+  expectedVersion!: number;
+
+  @ApiProperty({ minLength: 3, maxLength: 500 })
+  @IsString()
+  @MinLength(3)
+  @MaxLength(500)
+  reason!: string;
+}
+
+export class AppliedEnergyReadingDto {
+  @ApiProperty() referenceMonth!: string;
+  @ApiProperty() readingId!: string;
+  @ApiProperty() version!: number;
+}
+
+export class EnergyBillImportReceiptDto {
+  @ApiProperty({ enum: ['APPLIED'] }) status!: 'APPLIED';
+  @ApiProperty() importId!: string;
+  @ApiProperty() reviewId!: string;
+  @ApiProperty() reviewDigest!: string;
+  @ApiProperty() appliedAt!: string;
+  @ApiProperty() utilityUnitId!: string;
+  @ApiProperty({ type: [AppliedEnergyReadingDto] })
+  readingChanges!: AppliedEnergyReadingDto[];
+  @ApiProperty({ type: [String] }) warnings!: string[];
+}

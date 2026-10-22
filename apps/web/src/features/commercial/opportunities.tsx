@@ -3,12 +3,14 @@ import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, result, allows } from '../identity/client';
 import { Feedback } from '../identity/feedback';
+import { Icon } from '../../components/icons/material-symbol';
 import { EnergyReadings } from '../design/consumption';
 import { TechnicalSurvey } from '../design/survey';
 import { SolarDesigner } from '../design/solar-designer';
-import { Proposals } from '../proposal/proposals';
+import { Proposals, opportunityStateLabels } from '../proposal/proposals';
 import { ContractsView } from '../contract/contracts';
 import { OpportunityFinancial } from '../financial/financial';
+import { CustomerDossier } from './dossier';
 import type { Schemas } from '@moura-solar/api-client';
 
 type Opportunity = Schemas['OpportunityViewDto'];
@@ -24,7 +26,7 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
   const [search, setSearch] = useState('');
   const [selectedOpp, setSelectedOpp] = useState<Opportunity | null>(null);
   const [oppTab, setOppTab] = useState<
-    'commercial' | 'consumption' | 'design' | 'proposals' | 'contracts' | 'financial'
+    'commercial' | 'consumption' | 'design' | 'proposals' | 'contracts' | 'financial' | 'dossier'
   >('commercial');
   const [isCreating, setIsCreating] = useState(!!initialCustomerId);
 
@@ -422,7 +424,10 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
                 <span
                   className={`badge badge-${(detailQuery.data?.state ?? selectedOpp.state).toLowerCase()}`}
                 >
-                  {detailQuery.data?.state ?? selectedOpp.state}
+                  {opportunityStateLabels[detailQuery.data?.state ?? selectedOpp.state] ??
+                    (detailQuery.data?.state ?? selectedOpp.state)
+                      .replaceAll('_', ' ')
+                      .toLocaleLowerCase('pt-BR')}
                 </span>{' '}
                 | Versão: {detailQuery.data?.version ?? selectedOpp.version}
               </p>
@@ -450,72 +455,104 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
               type="button"
               aria-current={oppTab === 'commercial' ? 'page' : undefined}
               style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
                 background:
                   oppTab === 'commercial' ? 'var(--brand-primary)' : 'var(--color-surface)',
                 color: oppTab === 'commercial' ? 'var(--color-surface)' : 'var(--text-primary)',
               }}
               onClick={() => setOppTab('commercial')}
             >
-              📋 Dados Comerciais
+              <Icon name="checklist" size={16} /> Dados Comerciais
             </button>
             <button
               type="button"
               aria-current={oppTab === 'consumption' ? 'page' : undefined}
               style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
                 background:
                   oppTab === 'consumption' ? 'var(--brand-primary)' : 'var(--color-surface)',
                 color: oppTab === 'consumption' ? 'var(--color-surface)' : 'var(--text-primary)',
               }}
               onClick={() => setOppTab('consumption')}
             >
-              ⚡ Consumo & Vistoria
+              <Icon name="bolt" size={16} /> Consumo & Vistoria
             </button>
             <button
               type="button"
               aria-current={oppTab === 'design' ? 'page' : undefined}
               style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
                 background: oppTab === 'design' ? 'var(--brand-primary)' : 'var(--color-surface)',
                 color: oppTab === 'design' ? 'var(--color-surface)' : 'var(--text-primary)',
               }}
               onClick={() => setOppTab('design')}
             >
-              ☀️ Dimensionamento & Custos
+              <Icon name="solar_power" size={16} /> Dimensionamento & Custos
             </button>
             <button
               type="button"
               aria-current={oppTab === 'proposals' ? 'page' : undefined}
               style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
                 background:
                   oppTab === 'proposals' ? 'var(--brand-primary)' : 'var(--color-surface)',
                 color: oppTab === 'proposals' ? 'var(--color-surface)' : 'var(--text-primary)',
               }}
               onClick={() => setOppTab('proposals')}
             >
-              📄 Propostas Comerciais
+              <Icon name="description" size={16} /> Propostas Comerciais
             </button>
             <button
               type="button"
               aria-current={oppTab === 'contracts' ? 'page' : undefined}
               style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
                 background:
                   oppTab === 'contracts' ? 'var(--brand-primary)' : 'var(--color-surface)',
                 color: oppTab === 'contracts' ? 'var(--color-surface)' : 'var(--text-primary)',
               }}
               onClick={() => setOppTab('contracts')}
             >
-              📝 Contratos & Documentos
+              <Icon name="receipt_long" size={16} /> Contratos & Documentos
             </button>
             <button
               type="button"
               aria-current={oppTab === 'financial' ? 'page' : undefined}
               style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
                 background:
                   oppTab === 'financial' ? 'var(--brand-primary)' : 'var(--color-surface)',
                 color: oppTab === 'financial' ? 'var(--color-surface)' : 'var(--text-primary)',
               }}
               onClick={() => setOppTab('financial')}
             >
-              💰 Financeiro & Margem
+              <Icon name="payments" size={16} /> Financeiro & Margem
+            </button>
+            <button
+              type="button"
+              aria-current={oppTab === 'dossier' ? 'page' : undefined}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                background: oppTab === 'dossier' ? 'var(--brand-primary)' : 'var(--color-surface)',
+                color: oppTab === 'dossier' ? 'var(--color-surface)' : 'var(--text-primary)',
+              }}
+              onClick={() => setOppTab('dossier')}
+            >
+              <Icon name="folder" size={16} /> Dossiê Documental
             </button>
           </div>
 
@@ -534,12 +571,15 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
               <div className="actions" style={{ marginBlock: '1rem' }}>
                 {selectedOpp.state === 'NOVO' && (
                   <button
+                    type="button"
+                    className="btn btn--primary"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
                     onClick={() => {
                       setQualifySummary(selectedOpp.needSummary);
                       setIsQualifying(true);
                     }}
                   >
-                    ✔ Qualificar Oportunidade (Gate A)
+                    <Icon name="verified" size={16} /> Qualificar Oportunidade (Gate A)
                   </button>
                 )}
 
@@ -755,6 +795,16 @@ export function Opportunities({ initialCustomerId, onCreated }: OpportunitiesPro
                   queryClient.invalidateQueries({ queryKey: ['opportunity', selectedOpp.id] });
                   queryClient.invalidateQueries({ queryKey: ['opportunities'] });
                 }}
+              />
+            </div>
+          )}
+
+          {oppTab === 'dossier' && (
+            <div style={{ marginTop: '1rem' }}>
+              <CustomerDossier
+                customerId={selectedOpp.customerId}
+                opportunityId={selectedOpp.id}
+                title={`Dossiê Documental — ${selectedOpp.code}`}
               />
             </div>
           )}

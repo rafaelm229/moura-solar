@@ -1,3 +1,4 @@
+import { storageEnv } from './storage-env.mjs';
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
@@ -21,10 +22,7 @@ const env = {
   API_PORT: '3323',
   WEB_ORIGIN: 'http://localhost:3320',
   COOKIE_SECURE: 'false',
-  S3_ENDPOINT: 'http://localhost:9000',
-  S3_ACCESS_KEY: 'test',
-  S3_SECRET_KEY: 'test',
-  S3_BUCKET: 'test',
+  ...storageEnv,
   IDENTITY_LINK_SECRET: 'integration-test-link-secret-at-least-32-characters',
   BOOTSTRAP_TOKEN: 'integration-test-bootstrap-at-least-32-characters',
 };
@@ -150,11 +148,16 @@ before(async () => {
   // Add 12 readings
   for (let m = 1; m <= 12; m++) {
     const month = m.toString().padStart(2, '0');
-    await admin.call(`utility-units/${testUtilityUnitId}/readings`, 'POST', {
-      referenceMonth: `2025-${month}`,
-      consumptionKwh: 500 + m * 10,
-      billedAmount: 480 + m * 9,
-    });
+    await admin.call(
+      `utility-units/${testUtilityUnitId}/readings`,
+      'POST',
+      {
+        referenceMonth: `2025-${month}`,
+        consumptionKwh: 500 + m * 10,
+        billedAmount: 480 + m * 9,
+      },
+      { 'idempotency-key': `proposal-reading-create-2025-${month}` },
+    );
   }
 
   // Setup Opportunity
@@ -213,6 +216,39 @@ test('tentativa de criar proposta para dimensionamento NÃO aprovado é rejeitad
 });
 
 test('criação de proposta a partir de dimensionamento aprovado inicializa versão, congela snapshots e gera PDF READY', async () => {
+  const auditCountBefore = await db.auditEvent.count({ where: { action: 'PROPOSAL_CREATED' } });
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_proposal_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'PROPOSAL_CREATED' THEN
+        RAISE EXCEPTION 'forced proposal outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_proposal_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_proposal_outbox_for_test()
+  `);
+  const failedRes = await admin.call('proposals', 'POST', {
+    opportunityId: testOpportunityId,
+    designVersionId: approvedDesignVersionId,
+    validityDays: 10,
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_proposal_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_proposal_outbox_for_test()`);
+  assert.equal(failedRes.status, 500);
+  assert.equal(await db.proposal.count(), 0);
+  assert.equal(await db.proposalVersion.count(), 0);
+  assert.equal(
+    await db.auditEvent.count({ where: { action: 'PROPOSAL_CREATED' } }),
+    auditCountBefore,
+  );
+
   const res = await admin.call('proposals', 'POST', {
     opportunityId: testOpportunityId,
     designVersionId: approvedDesignVersionId,
@@ -235,6 +271,24 @@ test('criação de proposta a partir de dimensionamento aprovado inicializa vers
   assert.equal(version.documents[0].generationStatus, 'READY');
   assert.equal(version.documents[0].mimeType, 'application/pdf');
   assert.ok(version.documents[0].contentHash);
+
+  const proposal = await db.proposal.findUnique({ where: { id: res.body.id } });
+  const createdEvent = await db.integrationOutbox.findFirst({
+    where: { eventType: 'PROPOSAL_CREATED', dedupeKey: `PROPOSAL_CREATED:${res.body.id}` },
+  });
+  assert.ok(createdEvent, 'Proposta, versão e evento devem persistir juntos');
+  assert.equal(createdEvent.eventType, 'PROPOSAL_CREATED');
+  assert.equal(createdEvent.schemaVersion, 1);
+  assert.equal(createdEvent.aggregateType, 'Proposal');
+  assert.equal(createdEvent.aggregateId, res.body.id);
+  assert.equal(createdEvent.correlationId, res.headers.get('x-request-id'));
+  assert.equal(createdEvent.publishedAt, null);
+  assert.deepEqual(createdEvent.payload, {
+    proposalId: res.body.id,
+    proposalVersionId: version.id,
+    opportunityId: testOpportunityId,
+  });
+  assert.ok(proposal);
 });
 
 test('download de PDF retorna stream com Content-Type application/pdf e integridade ETag', async () => {
@@ -264,6 +318,117 @@ test('registro de envio (WHATSAPP) atualiza validade (10 dias), transita oportun
   const propList = await admin.call(`opportunities/${testOpportunityId}/proposals`);
   const versionId = propList.body[0].versions[0].id;
 
+  const deliveryCountBefore = await db.proposalDelivery.count({
+    where: { proposalVersionId: versionId },
+  });
+  const auditCountBefore = await db.auditEvent.count({ where: { action: 'PROPOSAL_DELIVERED' } });
+  const followUpCountBefore = await db.activity.count({
+    where: { opportunityId: testOpportunityId, type: 'FOLLOW_UP' },
+  });
+  const proposalDeliveredEventCountBefore = await db.integrationOutbox.count({
+    where: { eventType: 'PROPOSAL_DELIVERED' },
+  });
+  const activityCreatedEventCountBefore = await db.integrationOutbox.count({
+    where: { eventType: 'ACTIVITY_CREATED' },
+  });
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_proposal_delivery_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'PROPOSAL_DELIVERED' THEN
+        RAISE EXCEPTION 'forced proposal delivery outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_proposal_delivery_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_proposal_delivery_outbox_for_test()
+  `);
+  const failedDelivery = await admin.call(`proposal-versions/${versionId}/deliveries`, 'POST', {
+    channel: 'WHATSAPP',
+    recipient: '(31) 98765-4321',
+    notes: 'Esta tentativa deve ser revertida pelo teste.',
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_proposal_delivery_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(
+    `DROP FUNCTION "${schema}".reject_proposal_delivery_outbox_for_test()`,
+  );
+  assert.equal(failedDelivery.status, 500);
+  assert.equal(
+    await db.proposalDelivery.count({ where: { proposalVersionId: versionId } }),
+    deliveryCountBefore,
+  );
+  assert.equal((await db.proposalVersion.findUnique({ where: { id: versionId } })).status, 'READY');
+  assert.equal(
+    await db.auditEvent.count({ where: { action: 'PROPOSAL_DELIVERED' } }),
+    auditCountBefore,
+  );
+  assert.equal(
+    await db.activity.count({
+      where: { opportunityId: testOpportunityId, type: 'FOLLOW_UP' },
+    }),
+    followUpCountBefore,
+  );
+
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_proposal_followup_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'ACTIVITY_CREATED' THEN
+        RAISE EXCEPTION 'forced proposal follow-up outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_proposal_followup_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_proposal_followup_outbox_for_test()
+  `);
+  const failedFollowUpEvent = await admin.call(
+    `proposal-versions/${versionId}/deliveries`,
+    'POST',
+    {
+      channel: 'EMAIL',
+      recipient: 'financeiro@moura.test',
+      notes: 'A falha do evento filho deve reverter a entrega.',
+    },
+  );
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_proposal_followup_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(
+    `DROP FUNCTION "${schema}".reject_proposal_followup_outbox_for_test()`,
+  );
+  assert.equal(failedFollowUpEvent.status, 500);
+  assert.equal(
+    await db.proposalDelivery.count({ where: { proposalVersionId: versionId } }),
+    deliveryCountBefore,
+  );
+  assert.equal((await db.proposalVersion.findUnique({ where: { id: versionId } })).status, 'READY');
+  assert.equal(
+    await db.auditEvent.count({ where: { action: 'PROPOSAL_DELIVERED' } }),
+    auditCountBefore,
+  );
+  assert.equal(
+    await db.activity.count({
+      where: { opportunityId: testOpportunityId, type: 'FOLLOW_UP' },
+    }),
+    followUpCountBefore,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'PROPOSAL_DELIVERED' } }),
+    proposalDeliveredEventCountBefore,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({ where: { eventType: 'ACTIVITY_CREATED' } }),
+    activityCreatedEventCountBefore,
+  );
+
   const deliveryRes = await admin.call(`proposal-versions/${versionId}/deliveries`, 'POST', {
     channel: 'WHATSAPP',
     recipient: '(31) 98765-4321',
@@ -274,6 +439,25 @@ test('registro de envio (WHATSAPP) atualiza validade (10 dias), transita oportun
   assert.equal(deliveryRes.body.delivery.channel, 'WHATSAPP');
   assert.equal(deliveryRes.body.version.status, 'SENT');
   assert.ok(deliveryRes.body.version.validUntil);
+
+  const deliveredEvent = await db.integrationOutbox.findFirst({
+    where: {
+      eventType: 'PROPOSAL_DELIVERED',
+      dedupeKey: `PROPOSAL_DELIVERED:${deliveryRes.body.delivery.id}`,
+    },
+  });
+  assert.ok(deliveredEvent, 'Registro de entrega e evento devem persistir juntos');
+  assert.equal(deliveredEvent.schemaVersion, 1);
+  assert.equal(deliveredEvent.aggregateType, 'Proposal');
+  assert.equal(deliveredEvent.aggregateId, propList.body[0].id);
+  assert.equal(deliveredEvent.correlationId, deliveryRes.headers.get('x-request-id'));
+  assert.equal(deliveredEvent.publishedAt, null);
+  assert.deepEqual(deliveredEvent.payload, {
+    proposalId: propList.body[0].id,
+    proposalVersionId: versionId,
+    deliveryId: deliveryRes.body.delivery.id,
+    opportunityId: testOpportunityId,
+  });
 
   // Check Opportunity Stage has advanced to PROPOSTA_APRESENTADA (Gate B)
   const oppRes = await admin.call(`opportunities/${testOpportunityId}`);
@@ -286,12 +470,98 @@ test('registro de envio (WHATSAPP) atualiza validade (10 dias), transita oportun
   const followUp = actRes.body.find((a) => a.type === 'FOLLOW_UP');
   assert.ok(followUp, 'Atividade automática de follow-up deve existir');
   assert.equal(followUp.status, 'OPEN');
-  assert.match(followUp.subject, /Follow-up: Proposta PROP-0001/);
+  assert.match(followUp.subject, /Acompanhar proposta PROP-0001, versão 1/);
+  const deliveryAudit = await db.auditEvent.findFirst({
+    where: {
+      action: 'PROPOSAL_DELIVERED',
+      entityId: propList.body[0].id,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  assert.ok(deliveryAudit);
+  const followUpRecord = await db.activity.findUnique({ where: { id: followUp.id } });
+  assert.ok(followUpRecord);
+  const followUpEvent = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `ACTIVITY_CREATED:${deliveryAudit.id}:${followUp.id}` },
+  });
+  assert.ok(followUpEvent);
+  assert.equal(followUpEvent.eventType, 'ACTIVITY_CREATED');
+  assert.equal(followUpEvent.schemaVersion, 1);
+  assert.equal(followUpEvent.aggregateType, 'Activity');
+  assert.equal(followUpEvent.aggregateId, followUp.id);
+  assert.equal(followUpEvent.producer, 'crm');
+  assert.equal(followUpEvent.correlationId, deliveryRes.headers.get('x-request-id'));
+  assert.equal(followUpEvent.publishedAt, null);
+  assert.deepEqual(followUpEvent.payload, {
+    activityId: followUp.id,
+    auditEventId: deliveryAudit.id,
+    customerId: followUpRecord.customerId,
+    opportunityId: testOpportunityId,
+  });
 });
 
-test('registro de aceite marca proposta como ACCEPTED, avança oportunidade para CONTRATACAO e bloqueia novos aceites (HTTP 409)', async () => {
+test('registro de aceite cria eventos de aceite e atividade atomicamente, avança oportunidade e bloqueia novo aceite (HTTP 409)', async () => {
   const propList = await admin.call(`opportunities/${testOpportunityId}/proposals`);
   const versionId = propList.body[0].versions[0].id;
+  const beforeActivityCount = await db.activity.count({
+    where: { opportunityId: testOpportunityId },
+  });
+  const beforeAuditCount = await db.auditEvent.count({
+    where: { action: 'PROPOSAL_ACCEPTED', entityId: propList.body[0].id },
+  });
+
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_activity_created_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'ACTIVITY_CREATED' THEN
+        RAISE EXCEPTION 'forced activity outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_activity_created_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_activity_created_outbox_for_test()
+  `);
+  const failedAcceptRes = await admin.call(`proposal-versions/${versionId}/accept`, 'POST', {
+    method: 'MESSAGE',
+    acceptedByName: 'Aceite com falha de persistência',
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_activity_created_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_activity_created_outbox_for_test()`);
+  assert.equal(failedAcceptRes.status, 500);
+  assert.equal(await db.proposalAcceptance.count({ where: { proposalVersionId: versionId } }), 0);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { aggregateId: propList.body[0].id, eventType: 'PROPOSAL_ACCEPTED' },
+    }),
+    0,
+  );
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: { aggregateId: propList.body[0].id, eventType: 'PROPOSAL_ACCEPTED' },
+    }),
+    0,
+  );
+  assert.equal(
+    await db.activity.count({ where: { opportunityId: testOpportunityId } }),
+    beforeActivityCount,
+  );
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'PROPOSAL_ACCEPTED', entityId: propList.body[0].id },
+    }),
+    beforeAuditCount,
+  );
+  assert.equal(
+    (await db.opportunity.findUnique({ where: { id: testOpportunityId } })).state,
+    'PROPOSTA_APRESENTADA',
+  );
+  assert.equal((await db.proposalVersion.findUnique({ where: { id: versionId } })).status, 'SENT');
 
   const acceptRes = await admin.call(`proposal-versions/${versionId}/accept`, 'POST', {
     method: 'MESSAGE',
@@ -301,6 +571,28 @@ test('registro de aceite marca proposta como ACCEPTED, avança oportunidade para
 
   assert.equal(acceptRes.status, 200);
   assert.equal(acceptRes.body.acceptedByName, 'Dr. Roberto Silva (Proprietário)');
+
+  const acceptance = await db.proposalAcceptance.findUnique({
+    where: { id: acceptRes.body.id },
+    select: { organizationId: true },
+  });
+  assert.ok(acceptance);
+  const acceptedEvent = await db.integrationOutbox.findFirst({
+    where: {
+      organizationId: acceptance.organizationId,
+      dedupeKey: `PROPOSAL_ACCEPTED:${acceptRes.body.id}`,
+    },
+  });
+  assert.ok(acceptedEvent, 'Aceite e evento outbox devem persistir juntos');
+  assert.equal(acceptedEvent.eventType, 'PROPOSAL_ACCEPTED');
+  assert.equal(acceptedEvent.schemaVersion, 1);
+  assert.equal(acceptedEvent.aggregateId, propList.body[0].id);
+  assert.equal(acceptedEvent.correlationId, acceptRes.headers.get('x-request-id'));
+  assert.deepEqual(acceptedEvent.payload, {
+    acceptanceId: acceptRes.body.id,
+    proposalVersionId: versionId,
+    opportunityId: testOpportunityId,
+  });
 
   // Verify Proposal details
   const updatedProp = await admin.call(`proposals/${propList.body[0].id}`);
@@ -320,6 +612,30 @@ test('registro de aceite marca proposta como ACCEPTED, avança oportunidade para
     (a) => a.type === 'MEETING' && a.subject.includes('Formalização Contratual'),
   );
   assert.ok(contractActivity, 'Atividade de formalização contratual deve ser criada');
+  const acceptanceAudit = await db.auditEvent.findFirst({
+    where: { action: 'PROPOSAL_ACCEPTED', entityId: propList.body[0].id },
+    orderBy: { createdAt: 'desc' },
+  });
+  const activityEvent = await db.integrationOutbox.findFirst({
+    where: {
+      organizationId: acceptance.organizationId,
+      dedupeKey: `ACTIVITY_CREATED:${acceptanceAudit.id}:${contractActivity.id}`,
+    },
+  });
+  assert.ok(activityEvent, 'Criação da atividade deve ter evento na outbox');
+  assert.equal(activityEvent.eventType, 'ACTIVITY_CREATED');
+  assert.equal(activityEvent.schemaVersion, 1);
+  assert.equal(activityEvent.aggregateType, 'Activity');
+  assert.equal(activityEvent.aggregateId, contractActivity.id);
+  assert.equal(activityEvent.correlationId, acceptRes.headers.get('x-request-id'));
+  assert.equal(activityEvent.publishedAt, null);
+  assert.deepEqual(activityEvent.payload, {
+    activityId: contractActivity.id,
+    auditEventId: acceptanceAudit.id,
+    customerId: testCustomerId,
+    opportunityId: testOpportunityId,
+  });
+  assert.equal(activityEvent.occurredAt.toISOString(), acceptanceAudit.createdAt.toISOString());
 
   // SPEC-006 Item 19: Second acceptance attempt on the same opportunity must fail with 409 Conflict
   const secondAcceptRes = await admin.call(`proposal-versions/${versionId}/accept`, 'POST', {
@@ -327,4 +643,173 @@ test('registro de aceite marca proposta como ACCEPTED, avança oportunidade para
     acceptedByName: 'Outro Aceite',
   });
   assert.equal(secondAcceptRes.status, 409);
+  assert.equal(
+    await db.integrationOutbox.count({
+      where: {
+        eventType: 'PROPOSAL_ACCEPTED',
+        dedupeKey: `PROPOSAL_ACCEPTED:${acceptRes.body.id}`,
+      },
+    }),
+    1,
+    'Repetir o comando rejeitado não cria outro evento',
+  );
+});
+
+test('criar nova versão persiste linhagem e evento outbox na mesma transação', async () => {
+  const proposal = await db.proposal.findFirst({ where: { opportunityId: testOpportunityId } });
+  const baseVersion = await db.proposalVersion.findFirst({
+    where: { proposalId: proposal.id, versionNumber: 1 },
+  });
+  const versionAuditCount = await db.auditEvent.count({
+    where: { action: 'PROPOSAL_VERSION_CREATED' },
+  });
+
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_proposal_version_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'PROPOSAL_VERSION_CREATED' THEN
+        RAISE EXCEPTION 'forced proposal version outbox insert failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_proposal_version_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_proposal_version_outbox_for_test()
+  `);
+  const failedVersion = await admin.call(`proposal-versions/${baseVersion.id}/new-version`, 'POST');
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_proposal_version_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(`DROP FUNCTION "${schema}".reject_proposal_version_outbox_for_test()`);
+  assert.equal(failedVersion.status, 500);
+  assert.equal(await db.proposalVersion.count({ where: { proposalId: proposal.id } }), 1);
+  assert.equal(
+    await db.auditEvent.count({ where: { action: 'PROPOSAL_VERSION_CREATED' } }),
+    versionAuditCount,
+  );
+
+  const newVersionRes = await admin.call(
+    `proposal-versions/${baseVersion.id}/new-version`,
+    'POST',
+    undefined,
+    { 'x-request-id': 'proposal-version-created-test-request' },
+  );
+  assert.equal(newVersionRes.status, 201);
+  const newVersion = newVersionRes.body.versions.find((candidate) => candidate.versionNumber === 2);
+  assert.ok(newVersion);
+  assert.equal(newVersion.status, 'READY');
+  assert.equal(newVersion.basedOnVersionId, baseVersion.id);
+  const versionEvent = await db.integrationOutbox.findFirst({
+    where: {
+      eventType: 'PROPOSAL_VERSION_CREATED',
+      dedupeKey: `PROPOSAL_VERSION_CREATED:${newVersion.id}`,
+    },
+  });
+  assert.ok(versionEvent, 'Nova versão e evento devem persistir juntos');
+  assert.equal(versionEvent.schemaVersion, 1);
+  assert.equal(versionEvent.aggregateType, 'Proposal');
+  assert.equal(versionEvent.aggregateId, proposal.id);
+  assert.equal(versionEvent.correlationId, 'proposal-version-created-test-request');
+  assert.equal(versionEvent.publishedAt, null);
+  assert.deepEqual(versionEvent.payload, {
+    proposalId: proposal.id,
+    proposalVersionId: newVersion.id,
+    basedOnVersionId: baseVersion.id,
+    opportunityId: testOpportunityId,
+  });
+});
+
+test('rejeitar proposta persiste evento mínimo correlacionado atomicamente com status e auditoria', async () => {
+  const proposal = await db.proposal.findFirst({ where: { opportunityId: testOpportunityId } });
+  const version = await db.proposalVersion.findFirst({
+    where: { proposalId: proposal.id, versionNumber: 2 },
+  });
+  assert.ok(version);
+  const auditCountBefore = await db.auditEvent.count({
+    where: { action: 'PROPOSAL_REJECTED', entityId: proposal.id },
+  });
+  const observationsBefore = version.observations;
+  const anonymous = new Client();
+  const unauthorized = await anonymous.call(`proposal-versions/${version.id}/reject`, 'POST', {
+    reason: 'Unauthenticated rejection must be denied',
+  });
+  assert.equal(unauthorized.status, 401);
+  assert.equal(await db.integrationOutbox.count({ where: { eventType: 'PROPOSAL_REJECTED' } }), 0);
+
+  await db.$executeRawUnsafe(`
+    CREATE FUNCTION "${schema}".reject_proposal_rejected_outbox_for_test() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.event_type = 'PROPOSAL_REJECTED' THEN
+        RAISE EXCEPTION 'forced proposal rejection outbox failure';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.$executeRawUnsafe(`
+    CREATE TRIGGER reject_proposal_rejected_outbox_for_test
+    BEFORE INSERT ON "${schema}"."integration_outbox"
+    FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_proposal_rejected_outbox_for_test()
+  `);
+  const failedRejection = await admin.call(`proposal-versions/${version.id}/reject`, 'POST', {
+    reason: 'Rollback test reason must not persist',
+    notes: 'Rollback test notes must not persist',
+  });
+  await db.$executeRawUnsafe(
+    `DROP TRIGGER reject_proposal_rejected_outbox_for_test ON "${schema}"."integration_outbox"`,
+  );
+  await db.$executeRawUnsafe(
+    `DROP FUNCTION "${schema}".reject_proposal_rejected_outbox_for_test()`,
+  );
+  assert.equal(failedRejection.status, 500);
+  const afterFailure = await db.proposalVersion.findUnique({ where: { id: version.id } });
+  assert.equal(afterFailure.status, 'READY');
+  assert.equal(afterFailure.observations, observationsBefore);
+  assert.equal(
+    await db.auditEvent.count({
+      where: { action: 'PROPOSAL_REJECTED', entityId: proposal.id },
+    }),
+    auditCountBefore,
+  );
+
+  const requestId = 'r1-proposal-rejected-integration';
+  const rejection = await admin.call(
+    `proposal-versions/${version.id}/reject`,
+    'POST',
+    {
+      reason: 'Cliente escolheu outra condição comercial',
+      notes: 'Conferência privada do time comercial',
+    },
+    { 'x-request-id': requestId },
+  );
+  assert.equal(rejection.status, 200);
+  assert.equal(rejection.body.status, 'REJECTED');
+  const rejectionAudit = await db.auditEvent.findFirst({
+    where: {
+      action: 'PROPOSAL_REJECTED',
+      entityId: proposal.id,
+      traceId: requestId,
+    },
+  });
+  assert.ok(rejectionAudit);
+  const event = await db.integrationOutbox.findFirst({
+    where: { dedupeKey: `PROPOSAL_REJECTED:${rejectionAudit.id}` },
+  });
+  assert.ok(event, 'Rejeição, auditoria e evento outbox devem persistir juntos');
+  assert.equal(event.eventType, 'PROPOSAL_REJECTED');
+  assert.equal(event.schemaVersion, 1);
+  assert.equal(event.aggregateType, 'Proposal');
+  assert.equal(event.aggregateId, proposal.id);
+  assert.equal(event.producer, 'proposal');
+  assert.equal(event.correlationId, requestId);
+  assert.equal(event.publishedAt, null);
+  assert.deepEqual(event.payload, {
+    rejectionId: rejectionAudit.id,
+    proposalId: proposal.id,
+    proposalVersionId: version.id,
+    opportunityId: testOpportunityId,
+  });
 });

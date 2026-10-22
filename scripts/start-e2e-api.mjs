@@ -1,3 +1,4 @@
+import { storageEnv } from '../tests/storage-env.mjs';
 import { spawn, spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
@@ -17,10 +18,7 @@ const env = {
   API_PORT: '3318',
   WEB_ORIGIN: 'http://localhost:3320',
   COOKIE_SECURE: 'false',
-  S3_ENDPOINT: 'http://localhost:9000',
-  S3_ACCESS_KEY: 'test',
-  S3_SECRET_KEY: 'test',
-  S3_BUCKET: 'test',
+  ...storageEnv,
   IDENTITY_LINK_SECRET: 'e2e-test-link-secret-at-least-32-characters',
   BOOTSTRAP_TOKEN: 'e2e-test-bootstrap-secret-at-least-32-characters',
 };
