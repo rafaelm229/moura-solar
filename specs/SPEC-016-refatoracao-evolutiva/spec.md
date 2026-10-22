@@ -112,6 +112,7 @@ de integridade do modelo de referência/eventos equivalente.
 - [x] R1-58: cobrir ausência e tipos não objeto em `payload` ([relatório](../../docs/r1-58-payload-object-boundaries.md)); apenas testes, sem mudança de comportamento; PR #122 consolidado em `ca716cd`, CI run `38069720776` verde.
 - [x] R1-59: substituir busca probabilística de `875` por asserção direta de ausência de `estimatedConsumption` no evento de oportunidade ([relatório](../../docs/r1-59-stable-payload-assertion.md)); somente teste, sem mudança de comportamento; PR #124 consolidado em `e4abfd5`, CI run `38071336282` verde.
 - [x] R1-60: rejeitar datas impossíveis em `occurredAt` sem rejeitar dias bissextos válidos ([relatório](../../docs/r1-60-strict-calendar-timestamp.md)); parser e testes, sem mudança de contrato válido ou migration; PR #126 consolidado em `d10578c`, CI run `38073001087` verde.
+- [ ] R1-61: aceitar `24:00:00` como fim do dia segundo ISO 8601-1:2019/Amd 1:2022, somente com fração zero e fuso válido ([relatório](../../docs/r1-61-iso-end-of-day-timestamp.md)); expansão compatível do parser, sem migration; CI pendente.
 - [ ] R2: identidade com coexistência e rollback.
 - [ ] R3: customer/CRM e decisão de ciclo/mapeamento de Project.
 - [ ] R4–R9: extrair por domínio seguindo roadmap e testes existentes.

@@ -296,6 +296,10 @@ e seus testes mudam; nenhuma migration ou integração de fornecedor é necessá
 CI completa passou no run `38073001087` e o PR #126 foi consolidado em
 `d10578c`.
 
+O [R1-61](r1-61-iso-end-of-day-timestamp.md) cobre a representação ISO de fim
+do dia `24:00:00`, sem permitir minutos, segundos ou frações não zero nessa
+forma. Parser e testes em andamento; sem mudança de payload ou migration.
+
 | Marco | Entrega                                                                                            | Dependências                               | Evidência de saída                                                                                                |
 | ----- | -------------------------------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
 | R0    | Inventário, estabilização, mapa de branches, baseline e plano de consolidação                      | Estado atual e SPEC-000                    | check, migrations, integrações, E2E existentes, build/Compose, restauração e reconciliação; commits identificados |
